@@ -49,6 +49,9 @@ class User(UserBase, table=True):
     # Relationship to DataSource
     data_sources: list["DataSource"] = Relationship(back_populates="creator")
 
+    # Relationship to Factor
+    factors: list["Factor"] = Relationship(back_populates="creator")
+
 
 # Properties to return via API, id is always required
 class UserPublic(UserBase):
@@ -185,6 +188,70 @@ class DataSource(DataSourceBase, table=True):
 
 # Properties to return via API
 class DataSourcePublic(DataSourceBase):
+    id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+    created_by: uuid.UUID
+
+
+# ====================================================================
+# Factor Model
+# ====================================================================
+class FactorCategory(str, Enum):
+    """Enumeration of factor categories"""
+
+    TECHNICAL = "technical"
+    PRICE_VOLUME = "price_volume"
+    FUNDAMENTAL = "fundamental"
+    CUSTOM = "custom"
+
+
+class FactorStatus(str, Enum):
+    """Enumeration of factor status"""
+
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+
+
+# Shared properties for Factor
+class FactorBase(SQLModel):
+    name: str = Field(max_length=100, description="Factor name")
+    expression: str = Field(description="Factor expression in Qlib format")
+    description: str | None = Field(
+        default=None, max_length=500, description="Factor description"
+    )
+    category: FactorCategory = Field(description="Factor category")
+    status: FactorStatus = Field(
+        default=FactorStatus.ACTIVE, description="Factor status"
+    )
+
+
+# Properties to receive via API on creation
+class FactorCreate(FactorBase):
+    pass
+
+
+# Properties to receive via API on update
+class FactorUpdate(SQLModel):
+    name: str | None = Field(default=None, max_length=100)
+    expression: str | None = Field(default=None)
+    description: str | None = Field(default=None, max_length=500)
+    category: FactorCategory | None = Field(default=None)
+    status: FactorStatus | None = Field(default=None)
+
+
+# Database model for Factor
+class Factor(FactorBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_by: uuid.UUID = Field(foreign_key="user.id")
+    # Relationship back to User
+    creator: "User" = Relationship(back_populates="factors")
+
+
+# Properties to return via API
+class FactorPublic(FactorBase):
     id: uuid.UUID
     created_at: datetime
     updated_at: datetime
