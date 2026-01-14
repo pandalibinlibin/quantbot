@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
@@ -44,6 +45,9 @@ class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
     items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
+
+    # Relationship to DataSource
+    data_sources: list["DataSource"] = Relationship(back_populates="creator")
 
 
 # Properties to return via API, id is always required
@@ -111,3 +115,77 @@ class TokenPayload(SQLModel):
 class NewPassword(SQLModel):
     token: str
     new_password: str = Field(min_length=8, max_length=128)
+
+
+# ===============================================================
+# Quantitative Finance Models
+# ===============================================================
+
+from enum import Enum
+
+
+class DataSourceType(str, Enum):
+    """Enumeration of supported data source type"""
+
+    YAHOO_FINANCE = "yahoo_finance"
+    TUSHARE = "tushare"
+    AKSHARE = "akshare"
+    LOCAL_FILE = "local_file"
+    CUSTOM_API = "custom_api"
+
+
+class DataSourceStatus(str, Enum):
+    """Enumeration of data source status"""
+
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+
+
+# Shared properties for DataSource
+class DataSourceBase(SQLModel):
+    name: str = Field(max_length=100, description="Data source name")
+    data_source_type: DataSourceType = Field(description="Type of data source")
+    description: str | None = Field(
+        default=None, max_length=500, description="Data source description"
+    )
+    config: str = Field(
+        default="{}", description="Data source configuration (JSON string)"
+    )
+    status: DataSourceStatus = Field(
+        default=DataSourceStatus.ACTIVE, description="Data source status"
+    )
+    last_update: datetime | None = Field(
+        default=None, description="Last successful data update time"
+    )
+
+
+# Properties to receive via API on creation
+class DataSourceCreate(DataSourceBase):
+    pass
+
+
+# Properties to receive via API on update
+class DataSourceUpdate(SQLModel):
+    name: str | None = Field(default=None, max_length=100)
+    description: str | None = Field(default=None, max_length=500)
+    config: str | None = Field(default=None)
+    status: DataSourceStatus | None = Field(default=None)
+
+
+# Database model for DataSource
+class DataSource(DataSourceBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_by: uuid.UUID = Field(foreign_key="user.id")
+
+    # Relationship back to User
+    creator: "User" = Relationship(back_populates="data_sources")
+
+
+# Properties to return via API
+class DataSourcePublic(DataSourceBase):
+    id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+    created_by: uuid.UUID
