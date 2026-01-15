@@ -267,12 +267,8 @@ class FactorPublic(FactorBase):
 # ==========================================================
 # Model (Machine Learning Model) Module
 # ==========================================================
-class ModelStatus(str, Enum):
-    """Enumeration of model status"""
-
-    TRAINED = "trained"  # Model is trained with latest data
-    OUTDATED = "outdated"  # Model file exists but data has been updated
-    UNTRAINED = "untrained"  # Model has never been trained
+# Note: MLModel stores model definition/template only.
+# For trained models and training tasks, see ModelTraining module.
 
 
 # Shared properties for Model
@@ -287,13 +283,7 @@ class ModelBase(SQLModel):
     )
     config: str = Field(
         default="{}",
-        description="Model configuration (JSON string, e.g., hyperparameters)",
-    )
-    model_file_path: str | None = Field(
-        default=None, max_length=500, description="Path to trained model file"
-    )
-    status: ModelStatus = Field(
-        default=ModelStatus.UNTRAINED, description="Model training status"
+        description="Model configuration (JSON string, e.g., default hyperparameters)",
     )
 
 
@@ -308,8 +298,6 @@ class ModelUpdate(SQLModel):
     class_path: str | None = Field(default=None, max_length=255)
     description: str | None = Field(default=None, max_length=500)
     config: str | None = Field(default=None)
-    model_file_path: str | None = Field(default=None, max_length=500)
-    status: ModelStatus | None = Field(default=None)
 
 
 # Database model for Model

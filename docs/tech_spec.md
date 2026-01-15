@@ -412,14 +412,221 @@ services:
 - 支持Qlib内置策略类（如：qlib.contrib.strategy.TopkDropoutStrategy）
 - 使用class_path + config JSON配置策略参数
 
-📋 **即将开始的任务**
+🔄 **正在进行的任务 (2026年1月15日 08:13)**
 
-1. 完成Backtest（回测）模块开发
-   - 回测时用户自由选择：策略 + 模型 + 因子 + 数据源
-   - 支持两种模式：使用已训练模型（快速）/ 重新训练模型（准确）
-   - 关联所有组件，执行完整回测流程
-   - 记录回测结果和性能指标
-2. 开发前端数据管理界面
+**Backtest（回测）模块设计和开发**
+
+### Backtest模块设计方案
+
+#### 1. 核心设计理念
+
+Based on Qlib documentation research, the backtest module is the core execution layer of the entire quantitative system. It combines all user-configured components (data source, factors, model, strategy) to execute the complete backtest workflow.
+
+**Qlib Backtest Workflow:**
+
+```
+Data Loading → Factor Calculation → Model Training/Prediction → Strategy Execution → Backtest Analysis
+     ↓               ↓                      ↓                         ↓                    ↓
+DataSource  →    Factor      →      Model.predict        →      Strategy      →   backtest_daily
+```
+
+#### 2. Data Storage Strategy
+
+**Raw Data (DataSource):**
+
+- **Network API data (tushare/akshare)**: NOT stored in DB, fetched in real-time and cached in memory
+- **Local data**: Read directly from Qlib data directory
+- **Rationale**: Avoid data redundancy, maintain data freshness, reduce storage costs
+
+**Computed Results (Factor):**
+
+- **Factor values**: Store in dedicated factor data table (to be implemented)
+- **Format**: Time-series data, support fast query and reuse
+- **Rationale**: Factor calculation is time-consuming, caching significantly improves performance
+
+**Backtest Results:**
+
+- **Performance metrics summary**: Store in `backtest.result_summary` field (JSON format)
+- **Detailed reports**: Store in file system `storage/backtests/{backtest_id}/`
+  - `report.csv` - Daily return report (return, bench, cost, etc.)
+  - `positions.csv` - Position records
+  - `metrics.json` - Complete performance metrics (annualized return, Sharpe ratio, max drawdown, etc.)
+- **Rationale**: Database stores key metrics for querying, file system stores detailed data for download and analysis
+
+#### 3. Asynchronous Execution Solution
+
+**Problem Analysis:**
+Backtest tasks take considerable time (several minutes to tens of minutes):
+
+- Data loading and preprocessing (10-30 seconds)
+- Factor calculation (30 seconds - 2 minutes)
+- Model training (if needed, 1-10 minutes)
+- Backtest execution (1-5 minutes)
+
+**Solution: Background Tasks + Progress Tracking**
+
+Use Python's built-in `concurrent.futures.ThreadPoolExecutor` for async execution:
+
+```python
+# State machine
+PENDING → RUNNING → COMPLETED/FAILED
+
+# Progress tracking (0-100%)
+0%   - Task created
+20%  - Data loading completed
+40%  - Factor calculation completed
+60%  - Model training/loading completed
+80%  - Backtest execution completed
+100% - Results saved
+```
+
+**Frontend Display:**
+
+- Return task ID immediately after creating backtest
+- Frontend polls `/backtests/{id}` to get status and progress
+- Display progress bar and current step description
+- Show result summary and download link when completed
+
+#### 4. Qlib Initialization Solution
+
+**Configuration Management:**
+
+```python
+# backend/app/core/config.py
+class Settings(BaseSettings):
+    QLIB_DATA_PATH: str = "./qlib_data"  # Qlib data directory
+    QLIB_REGION: str = "cn"  # Market region (cn/us)
+    QLIB_CACHE_PATH: str = "./qlib_cache"  # Cache directory
+```
+
+**Initialization Strategy:**
+
+- Each backtest task initializes Qlib independently (avoid conflicts)
+- Use user-selected data source configuration
+- Support switching between multiple data sources
+
+#### 5. Factor Calculation Solution
+
+**User-defined factor expressions → Qlib DataHandler:**
+
+```python
+# Factor expressions defined by user in Factor table
+factor_expressions = [
+    "$close / $open - 1",           # Intraday return
+    "Mean($close, 5)",              # 5-day moving average
+    "$volume / Mean($volume, 20)"   # Volume ratio
+]
+
+# System dynamically builds Qlib DataHandler
+class CustomHandler(DataHandlerLP):
+    def __init__(self, instruments, start_time, end_time, factor_expressions):
+        self.factor_exprs = factor_expressions
+        super().__init__(instruments, start_time, end_time)
+
+    def get_feature_config(self):
+        # Convert factor expressions to Qlib format
+        return [(expr, expr) for expr in self.factor_exprs]
+```
+
+#### 6. Data Model Design
+
+```python
+class BacktestStatus(str, Enum):
+    PENDING = "pending"      # Waiting for execution
+    RUNNING = "running"      # Executing
+    COMPLETED = "completed"  # Completed
+    FAILED = "failed"        # Failed
+
+class Backtest(SQLModel, table=True):
+    id: uuid.UUID
+    name: str  # Backtest name
+    description: str | None  # Backtest description
+
+    # Associated components (user freely selects)
+    strategy_id: uuid.UUID  # Required: which strategy to use
+    model_id: uuid.UUID | None  # Optional: which model to use
+    factor_ids: str  # JSON array: which factors to use
+    datasource_id: uuid.UUID  # Required: which data source to use
+
+    # Backtest configuration
+    start_time: str  # Backtest start time (e.g., 2017-01-01)
+    end_time: str    # Backtest end time (e.g., 2020-08-01)
+    benchmark: str   # Benchmark index (e.g., SH000300)
+    initial_capital: float  # Initial capital (e.g., 100000000)
+
+    # Trading configuration (JSON string)
+    exchange_config: str  # Contains trading costs, limit thresholds, etc.
+    # Example: {"limit_threshold": 0.095, "deal_price": "close",
+    #           "open_cost": 0.0005, "close_cost": 0.0015, "min_cost": 5}
+
+    # Execution mode
+    retrain_model: bool  # Whether to retrain the model
+
+    # Status and results
+    status: BacktestStatus
+    progress: int  # Execution progress (0-100)
+    current_step: str | None  # Current step description
+    result_summary: str | None  # JSON format performance metrics summary
+    result_file_path: str | None  # Detailed result file path
+    error_message: str | None  # Error message
+
+    # Timestamps
+    created_at: datetime
+    updated_at: datetime
+    started_at: datetime | None  # Execution start time
+    completed_at: datetime | None  # Completion time
+    created_by: uuid.UUID
+```
+
+#### 7. API Endpoint Design
+
+```
+POST   /api/v1/backtests/          - Create backtest task
+GET    /api/v1/backtests/          - Get all backtest list
+GET    /api/v1/backtests/{id}      - Get backtest details (with status and progress)
+POST   /api/v1/backtests/{id}/execute  - Execute backtest (async)
+GET    /api/v1/backtests/{id}/results  - Get backtest results
+DELETE /api/v1/backtests/{id}      - Delete backtest
+```
+
+#### 8. Execution Flow
+
+```python
+# 1. User creates backtest configuration (select strategy, model, factors, data source, time range, etc.)
+# 2. System validates all components exist and are valid
+# 3. Create backtest record, set status to PENDING
+# 4. User calls execute endpoint, system submits to background task queue
+# 5. Background task execution:
+#    a. Update status to RUNNING, progress 0%
+#    b. Initialize Qlib (progress 10%)
+#    c. Load data source (progress 20%)
+#    d. Calculate factors (progress 40%)
+#    e. Train/load model (progress 60%)
+#    f. Generate prediction scores (progress 70%)
+#    g. Execute strategy backtest (progress 80%)
+#    h. Calculate performance metrics (progress 90%)
+#    i. Save result files (progress 95%)
+#    j. Update database record (progress 100%)
+# 6. Frontend polls to get status and progress, display progress bar
+# 7. Show result summary and download link when completed
+```
+
+#### 9. Development Steps
+
+1. ✅ Research Qlib backtest documentation and workflow
+2. ✅ Design complete Backtest module architecture
+3. ⏳ Add Backtest data model to `models.py`
+4. ⏳ Create database migration
+5. ⏳ Create Backtest API route file
+6. ⏳ Register routes to main application
+7. ⏳ Test CRUD API via Swagger UI
+8. ⏳ Implement backtest execution engine
+9. ⏳ Test complete backtest workflow
+10. ⏳ Commit code
+
+📋 **Next Tasks**
+
+1. Develop frontend data management interface
 
 📋 **后续功能规划**
 
@@ -442,6 +649,89 @@ services:
    - 策略参数优化（网格搜索、贝叶斯优化）
    - 多策略对比分析
    - 策略组合和集成
+
+---
+
+## 🔄 重大架构调整 (2026年1月15日 10:45)
+
+### 架构重构：三模块分离设计
+
+经过深入讨论，我们决定对系统架构进行重大调整，将**因子计算、模型训练、回测推理**分离为三个独立的任务模块。
+
+#### 调整原因
+
+**原设计问题：**
+
+1. `MLModel` 表既存储模型定义，又存储训练结果（`model_file_path`, `status`），职责不清
+2. 每次回测都需要重新训练模型，速度慢，不适合模拟盘场景
+3. 无法灵活地用不同训练集训练多个模型版本
+4. 无法复用训练好的模型进行多次回测
+
+**新架构优势：**
+
+1. **性能优化**：因子计算一次多次复用，模型训练一次多次推理，回测速度极快
+2. **灵活性**：用户完全控制每个环节，可以用不同训练集训练多个模型版本
+3. **可追溯性**：每个任务独立记录，清晰的数据血缘关系
+4. **商业化潜力**：因子数据和训练好的模型可以通过API对外售卖
+
+#### 新架构工作流程
+
+```
+User Workflow:
+  Step 1: Create Model Definition (MLModel)
+  Step 2: Create Training Task (ModelTraining) → trained_model.pkl
+  Step 3: Create Backtest Task (Backtest) → performance results
+  Step 4: Reuse trained model for multiple backtests
+```
+
+#### 模块重构计划
+
+**1. MLModel 重构**
+
+- 移除 `model_file_path` 和 `status` 字段
+- 只存储模型定义/模板（class_path + default config）
+- 一个 MLModel 可以对应多个 ModelTraining
+
+**2. ModelTraining 新增**
+
+- 存储训练任务和结果
+- 关联 `model_id`（使用哪个模型定义）
+- 关联 `factor_ids`（使用哪些因子）
+- 训练/验证时间段配置
+- 训练状态和进度跟踪
+- 训练结果：`model_file_path`, `training_metrics`
+
+**3. Backtest 调整**
+
+- 关联 `model_training_id`（使用哪个训练好的模型）
+- 关联 `strategy_id`（使用哪个策略）
+- 只做推理，不训练模型
+- 快速执行，适合模拟盘
+
+#### 重构步骤
+
+**Phase 1: MLModel 重构（已完成 2026-01-15）**
+
+1. ✅ 更新 tech_spec.md 记录架构调整
+2. ✅ 重构 MLModel 数据模型（移除 model_file_path 和 status）
+3. ✅ 更新 MLModel API 路由（无需修改，自动适配）
+4. ✅ 创建数据库迁移修改 mlmodel 表
+5. ✅ 执行数据库迁移
+6. ✅ 测试 MLModel API 确保正常
+7. ✅ 提交代码：MLModel 重构完成
+
+**Phase 2: 新模块开发（待开始）**
+
+8. ⏳ 添加 ModelTraining 数据模型到 models.py
+9. ⏳ 添加 Backtest 数据模型到 models.py
+10. ⏳ 更新 User 模型关系
+11. ⏳ 创建数据库迁移添加新表
+12. ⏳ 开发 ModelTraining API 路由
+13. ⏳ 开发 Backtest API 路由
+14. ⏳ 测试完整工作流程
+15. ⏳ 提交代码：新架构完全就绪
+
+---
 
 ## Qlib深度理解总结 (2026年1月13日)
 
