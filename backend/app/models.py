@@ -55,6 +55,9 @@ class User(UserBase, table=True):
     # Relationship to Model
     models: list["MLModel"] = Relationship(back_populates="creator")
 
+    # Relationship to Strategy
+    strategies: list["Strategy"] = Relationship(back_populates="creator")
+
 
 # Properties to return via API, id is always required
 class UserPublic(UserBase):
@@ -323,6 +326,67 @@ class MLModel(ModelBase, table=True):
 
 # Properties to return via API
 class ModelPublic(ModelBase):
+    id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+    created_by: uuid.UUID
+
+
+# ===============================================================
+# Strategy Model
+# ===============================================================
+class StrategyStatus(str, Enum):
+    """Enumeration of strategy status"""
+
+    ACTIVE = "active"
+    INACTIVE = "inactive"
+
+
+# Shared properties for Strategy
+class StrategyBase(SQLModel):
+    name: str = Field(max_length=100, description="Strategy name")
+    class_path: str = Field(
+        max_length=255,
+        description="Strategy class path (e.g., qlib.contrib.strategy.TopkDropoutStrategy)",
+    )
+    description: str | None = Field(
+        default=None, max_length=500, description="Strategy description"
+    )
+    config: str = Field(
+        default="{}",
+        description='Strategy configuration (JSON string, e.g., {"topk": 50, "n_drop": 5})',
+    )
+    status: StrategyStatus = Field(
+        default=StrategyStatus.ACTIVE, description="Strategy status"
+    )
+
+
+# Properties to receive via API on creation
+class StrategyCreate(StrategyBase):
+    pass
+
+
+# Properties to receive via API on update
+class StrategyUpdate(SQLModel):
+    name: str | None = Field(default=None, max_length=100)
+    class_path: str | None = Field(default=None, max_length=255)
+    description: str | None = Field(default=None, max_length=500)
+    config: str | None = Field(default=None)
+    status: StrategyStatus | None = Field(default=None)
+
+
+# Database model for Strategy
+class Strategy(StrategyBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_by: uuid.UUID = Field(foreign_key="user.id")
+    # Relationship back to User
+    creator: "User" = Relationship(back_populates="strategies")
+
+
+# Properties to return via API
+class StrategyPublic(StrategyBase):
     id: uuid.UUID
     created_at: datetime
     updated_at: datetime

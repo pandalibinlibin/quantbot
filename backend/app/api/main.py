@@ -6,6 +6,7 @@ from app.api.routes import (
     items,
     login,
     models,
+    strategies,
     private,
     users,
     utils,
@@ -20,7 +21,7 @@ api_router.include_router(items.router)
 api_router.include_router(datasources.router)
 api_router.include_router(factors.router)
 api_router.include_router(models.router)
-
+api_router.include_router(strategies.router)
 
 if settings.ENVIRONMENT == "local":
     api_router.include_router(private.router)
