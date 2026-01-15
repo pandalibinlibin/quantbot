@@ -52,6 +52,9 @@ class User(UserBase, table=True):
     # Relationship to Factor
     factors: list["Factor"] = Relationship(back_populates="creator")
 
+    # Relationship to Model
+    models: list["MLModel"] = Relationship(back_populates="creator")
+
 
 # Properties to return via API, id is always required
 class UserPublic(UserBase):
@@ -252,6 +255,74 @@ class Factor(FactorBase, table=True):
 
 # Properties to return via API
 class FactorPublic(FactorBase):
+    id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+    created_by: uuid.UUID
+
+
+# ==========================================================
+# Model (Machine Learning Model) Module
+# ==========================================================
+class ModelStatus(str, Enum):
+    """Enumeration of model status"""
+
+    TRAINED = "trained"  # Model is trained with latest data
+    OUTDATED = "outdated"  # Model file exists but data has been updated
+    UNTRAINED = "untrained"  # Model has never been trained
+
+
+# Shared properties for Model
+class ModelBase(SQLModel):
+    name: str = Field(max_length=100, description="Model name")
+    class_path: str = Field(
+        max_length=255,
+        description="Model class path (e.g., qlib.contrib.model.gbdt.LGBModel)",
+    )
+    description: str | None = Field(
+        default=None, max_length=500, description="Model description"
+    )
+    config: str = Field(
+        default="{}",
+        description="Model configuration (JSON string, e.g., hyperparameters)",
+    )
+    model_file_path: str | None = Field(
+        default=None, max_length=500, description="Path to trained model file"
+    )
+    status: ModelStatus = Field(
+        default=ModelStatus.UNTRAINED, description="Model training status"
+    )
+
+
+# Properties to receive via API on creation
+class ModelCreate(ModelBase):
+    pass
+
+
+# Properties to receive via API on update
+class ModelUpdate(SQLModel):
+    name: str | None = Field(default=None, max_length=100)
+    class_path: str | None = Field(default=None, max_length=255)
+    description: str | None = Field(default=None, max_length=500)
+    config: str | None = Field(default=None)
+    model_file_path: str | None = Field(default=None, max_length=500)
+    status: ModelStatus | None = Field(default=None)
+
+
+# Database model for Model
+class MLModel(ModelBase, table=True):
+    __tablename__ = "mlmodel"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    created_by: uuid.UUID = Field(foreign_key="user.id")
+    # Relationship back to User
+    creator: "User" = Relationship(back_populates="models")
+
+
+# Properties to return via API
+class ModelPublic(ModelBase):
     id: uuid.UUID
     created_at: datetime
     updated_at: datetime
