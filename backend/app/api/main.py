@@ -6,6 +6,8 @@ from app.api.routes import (
     items,
     login,
     models,
+    model_trainings,
+    backtests,
     strategies,
     private,
     users,
@@ -21,7 +23,10 @@ api_router.include_router(items.router)
 api_router.include_router(datasources.router)
 api_router.include_router(factors.router)
 api_router.include_router(models.router)
+api_router.include_router(model_trainings.router)
+api_router.include_router(backtests.router)
 api_router.include_router(strategies.router)
+
 
 if settings.ENVIRONMENT == "local":
     api_router.include_router(private.router)

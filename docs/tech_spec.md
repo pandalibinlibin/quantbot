@@ -720,16 +720,44 @@ User Workflow:
 6. ✅ 测试 MLModel API 确保正常
 7. ✅ 提交代码：MLModel 重构完成
 
-**Phase 2: 新模块开发（待开始）**
+**Phase 2: 新模块开发（已完成 2026-01-16）**
 
-8. ⏳ 添加 ModelTraining 数据模型到 models.py
-9. ⏳ 添加 Backtest 数据模型到 models.py
-10. ⏳ 更新 User 模型关系
-11. ⏳ 创建数据库迁移添加新表
-12. ⏳ 开发 ModelTraining API 路由
-13. ⏳ 开发 Backtest API 路由
-14. ⏳ 测试完整工作流程
-15. ⏳ 提交代码：新架构完全就绪
+8. ✅ 添加 ModelTraining 数据模型到 models.py
+9. ✅ 添加 Backtest 数据模型到 models.py
+10. ✅ 更新 User 模型关系
+11. ✅ 创建数据库迁移添加新表（迁移文件：77f04ed09ace）
+12. ✅ 执行数据库迁移
+13. ✅ 开发 ModelTraining API 路由（/api/model-trainings）
+14. ✅ 开发 Backtest API 路由（/api/backtests）
+15. ✅ 注册 API 路由到主路由器
+16. ✅ 通过 Swagger UI 测试 API（全部通过）
+17. ✅ 提交代码：新架构完全就绪
+
+**测试结果：**
+
+- ModelTraining API 测试通过（创建任务 ID: 558eef06-a0c7-4a36-9113-12c05b506980）
+- Backtest API 测试通过（创建任务 ID: fc137d05-f0c3-4bce-91a6-5095864c6f94）
+- 所有 CRUD 操作正常
+- 外键关联正确
+- 数据验证正常
+
+**新增文件：**
+
+- `backend/app/api/routes/model_trainings.py` - ModelTraining API 路由
+- `backend/app/api/routes/backtests.py` - Backtest API 路由
+- `backend/app/alembic/versions/77f04ed09ace_add_modeltraining_and_backtest_tables.py` - 数据库迁移文件
+
+**修改文件：**
+
+- `backend/app/models.py` - 添加 ModelTraining 和 Backtest 数据模型，更新 User 关系
+- `backend/app/api/main.py` - 注册新的 API 路由
+
+**下一步计划（Phase 3）：**
+
+- 开发 ModelTraining 执行引擎（调用 Qlib 进行模型训练）
+- 开发 Backtest 执行引擎（调用 Qlib 进行回测）
+- 添加任务队列和异步执行机制
+- 开发前端页面
 
 ---
 

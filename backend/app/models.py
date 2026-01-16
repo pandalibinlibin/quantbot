@@ -58,6 +58,12 @@ class User(UserBase, table=True):
     # Relationship to Strategy
     strategies: list["Strategy"] = Relationship(back_populates="creator")
 
+    # Relationship to ModelTraining
+    model_trainings: list["ModelTraining"] = Relationship(back_populates="creator")
+
+    # Relationship to Backtest
+    backtests: list["Backtest"] = Relationship(back_populates="creator")
+
 
 # Properties to return via API, id is always required
 class UserPublic(UserBase):
@@ -317,6 +323,225 @@ class ModelPublic(ModelBase):
     id: uuid.UUID
     created_at: datetime
     updated_at: datetime
+    created_by: uuid.UUID
+
+
+# ===============================================================
+# ModelTraining Module
+# ===============================================================
+# Note: ModelTraining stores training tasks and trained  model results.
+# Each training task links to a MLModel (model definition) and produces
+# a trained model file that can be used for backtesting.
+class TrainingStatus(str, Enum):
+    """Enumeration of training task status"""
+
+    PENDING = "pending"  # Task created, waiting to start
+    RUNNING = "running"  # Training in progress
+    COMPLETED = "completed"  # Training completed successfully
+    FAILED = "failed"  # Training failed with error
+
+
+# Shared properties for ModelTraining
+class ModelTrainingBase(SQLModel):
+    name: str = Field(max_length=100, description="Training task name")
+    model_id: uuid.UUID = Field(
+        foreign_key="mlmodel.id", description="Model definition to use for training"
+    )
+    factor_ids: str = Field(
+        default="[]",
+        description="JSON array of factors IDs to use (e.g., ['uuid1', 'uuid2'])",
+    )
+    # Training/validation time split
+    train_start_time: str = Field(
+        max_length=50, description="Training start date (e.g., 2008-01-01)"
+    )
+    train_end_time: str = Field(
+        max_length=50, description="Training end date (e.g., 2014-12-31)"
+    )
+    valid_start_time: str = Field(
+        max_length=50, description="Validation start date (e.g., 2015-01-01)"
+    )
+    valid_end_time: str = Field(
+        max_length=50, description="Validation end date (e.g., 2016-12-31)"
+    )
+
+    # Training configuration
+    training_config: str = Field(
+        default="{}",
+        description="Training configuration (JSON string, e.g., batch_size, epochs)",
+    )
+    use_gpu: bool = Field(default=False, description="Whether to use GPU for training")
+    num_workers: int = Field(default=1, description="Number of parallel workers")
+
+    # Execution status
+    status: TrainingStatus = Field(
+        default=TrainingStatus.PENDING, description="Training task status"
+    )
+    progress: int = Field(default=0, description="Training progress (0-100)")
+    current_step: str | None = Field(
+        default=None, max_length=200, description="Current step description"
+    )
+
+    # Results
+    model_file_path: str | None = Field(
+        default=None, max_length=500, description="Path to trained model file"
+    )
+    training_metrics: str | None = Field(
+        default=None,
+        description="Training metrics (JSON string, e.g., loss, IC, Rank IC)",
+    )
+    error_message: str | None = Field(
+        default=None, description="Error message if training failed"
+    )
+
+
+# Properties to receive via API on creation
+class ModelTrainingCreate(ModelTrainingBase):
+    pass
+
+
+# Properties to receive via API on update
+class ModelTrainingUpdate(SQLModel):
+    name: str | None = Field(default=None, max_length=100)
+    training_config: str | None = Field(default=None)
+    use_gpu: bool | None = Field(default=None)
+    num_workers: int | None = Field(default=None)
+    status: TrainingStatus | None = Field(default=None)
+    progress: int | None = Field(default=None)
+    current_step: str | None = Field(default=None, max_length=200)
+    model_file_path: str | None = Field(default=None, max_length=500)
+    training_metrics: str | None = Field(default=None)
+    error_message: str | None = Field(default=None)
+
+
+# Database model for ModelTraining
+class ModelTraining(ModelTrainingBase, table=True):
+    __tablename__ = "modeltraining"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    started_at: datetime | None = Field(default=None)
+    completed_at: datetime | None = Field(default=None)
+    created_by: uuid.UUID = Field(foreign_key="user.id")
+    # Relationship back to User
+    creator: "User" = Relationship(back_populates="model_trainings")
+
+
+# Properties to return via API
+class ModelTrainingPublic(ModelTrainingBase):
+    id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+    started_at: datetime | None
+    completed_at: datetime | None
+    created_by: uuid.UUID
+
+
+# ===============================================================
+# Backtest Module
+# ===============================================================
+# Note: Backtest stores backtest tasks and results.
+# Each backtest task uses a trained model (from ModelTraining) for inference only.
+# combined with a strategy to generate trading decision and evaluate performance.
+class BacktestStatus(str, Enum):
+    """Enumeration of backtest task status"""
+
+    PENDING = "pending"  # Task created, waiting to start
+    RUNNING = "running"  # Backtest in progress
+    COMPLETED = "completed"  # Backtest completed successfully
+    FAILED = "failed"  # Backtest failed with error
+
+
+# Shared properties for Backtest
+class BacktestBase(SQLModel):
+    name: str = Field(max_length=100, description="Backtest task name")
+    model_training_id: uuid.UUID = Field(
+        foreign_key="modeltraining.id",
+        description="Trained model to use for prediction",
+    )
+    strategy_id: uuid.UUID = Field(
+        foreign_key="strategy.id", description="Strategy to use for trading decisions"
+    )
+    # Backtest time period
+    backtest_start_time: str = Field(
+        max_length=50, description="Backtest start date (e.g., 2017-01-01)"
+    )
+    backtest_end_time: str = Field(
+        max_length=50, description="Backtest end date (e.g., 2020-08-01)"
+    )
+    # Backtest configuration
+    benchmark: str = Field(
+        max_length=50, description="Benchmark symbol (e.g., SH000300 for CSI300)"
+    )
+    account: float = Field(default=100000000.0, description="Initial account balance")
+    exchange_config: str = Field(
+        default="{}",
+        description="Exchange configuration (JSON string, e.g., commission rates)",
+    )
+
+    # Execution status
+    status: BacktestStatus = Field(
+        default=BacktestStatus.PENDING, description="Backtest task status"
+    )
+    progress: int = Field(default=0, description="Backtest progress (0-100)")
+    current_step: str | None = Field(
+        default=None, max_length=200, description="Current step description"
+    )
+
+    # Results
+    report_path: str | None = Field(
+        default=None, max_length=500, description="Path to backtest report file"
+    )
+    positions_path: str | None = Field(
+        default=None, max_length=500, description="Path to positions file"
+    )
+    performance_metrics: str | None = Field(
+        default=None,
+        description="Performance metrics (JSON string, e.g., annual return, sharpe ratio, max drawdown)",
+    )
+    error_message: str | None = Field(
+        default=None, description="Error message if backtest failed"
+    )
+
+
+# Properties to receive via API on creation
+class BacktestCreate(BacktestBase):
+    pass
+
+
+# Properties to receive via API on update
+class BacktestUpdate(SQLModel):
+    name: str | None = Field(default=None, max_length=100)
+    exchange_config: str | None = Field(default=None)
+    status: BacktestStatus | None = Field(default=None)
+    progress: int | None = Field(default=None)
+    current_step: str | None = Field(default=None, max_length=200)
+    report_path: str | None = Field(default=None, max_length=500)
+    positions_path: str | None = Field(default=None, max_length=500)
+    performance_metrics: str | None = Field(default=None)
+    error_message: str | None = Field(default=None)
+
+
+# Database model for Backtest
+class Backtest(BacktestBase, table=True):
+    __tablename__ = "backtest"
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    started_at: datetime | None = Field(default=None)
+    completed_at: datetime | None = Field(default=None)
+    created_by: uuid.UUID = Field(foreign_key="user.id")
+    # Relationship back to User
+    creator: "User" = Relationship(back_populates="backtests")
+
+
+# Properties to return via API
+class BacktestPublic(BacktestBase):
+    id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+    started_at: datetime | None
+    completed_at: datetime | None
     created_by: uuid.UUID
 
 
