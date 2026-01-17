@@ -56,6 +56,9 @@ services:
 
   backend:
     restart: "no"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     ports:
       - "8000:8000"
     build:
@@ -85,6 +88,9 @@ services:
       SMTP_PORT: "1025"
       SMTP_TLS: "false"
       EMAILS_FROM_EMAIL: "noreply@example.com"
+      HTTP_PROXY: "http://192.168.0.103:7890"
+      HTTPS_PROXY: "http://192.168.0.103:7890"
+      NO_PROXY: "localhost,127.0.0.1,db,mailcatcher"
 
   mailcatcher:
     image: schickling/mailcatcher
