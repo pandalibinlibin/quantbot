@@ -77,6 +77,26 @@ class QlibYahooDataSource(BaseDataSource):
             home / ".qlib" / "stock_data" / "normalize" / f"{self.region.lower()}_data"
         )
 
+    def _convert_qlib_to_yfinance_symbol(self, qlib_symbol: str) -> str:
+        """
+        Convert Qlib symbol format to Yahoo Finance format.
+
+        Args:
+            qlib_symbol: Qlib format symbol (e.g., 'SH600000', 'SZ000001')
+
+        Returns:
+            Yahoo Finance format symbol (e.g., '600000.SS', '000001.SZ')
+        """
+        if qlib_symbol.startswith("SH"):
+            # Shanghai Stock Exchange: SH600000 -> 600000.SS
+            return qlib_symbol[2:] + ".SS"
+        elif qlib_symbol.startswith("SZ"):
+            # Shenzhen Stock Exchange: SZ000001 -> 000001.SZ
+            return qlib_symbol[2:] + ".SZ"
+        else:
+            # For other formats, return as-is (might be already in Yahoo format)
+            return qlib_symbol
+
     def get_stock_list(self, market: str = "stock") -> pd.DataFrame:
         """
         Get stock list from Qlib data.
@@ -95,20 +115,15 @@ class QlibYahooDataSource(BaseDataSource):
         """
 
         try:
-            # Import qlib first
-            import qlib
+            # Use Qlib to get comprehensive stock list, but yfinance for data
             from ..qlib_utils import init_qlib
-
-            # Initialize Qlib to access data
-            init_qlib(provider_uri=str(self.qlib_data_dir), region=self.region)
-            # Use Qlib's D module to get instrument list
             from qlib.data import D
 
-            # Get instruments config for 'all' market
-            instruments_config = D.instruments(market="all")
+            # Initialize Qlib only for getting stock list
+            init_qlib(provider_uri=str(self.qlib_data_dir), region=self.region)
 
-            # Use D.list_instruments() with a wide time range to get all stocks
-            # We use a very wide time range to ensure we get all available stocks
+            # Get comprehensive stock list from Qlib
+            instruments_config = D.instruments(market="all")
             stock_list = D.list_instruments(
                 instruments=instruments_config,
                 start_time="2000-01-01",
@@ -121,7 +136,10 @@ class QlibYahooDataSource(BaseDataSource):
                 "status": "success",
                 "count": len(stock_list),
                 "instruments": stock_list,
-                "message": f"Found {len(stock_list)} instruments in {self.region} market",
+                "message": f"Found {len(stock_list)} instruments in {self.region} market (Qlib list + YFinance data)",
+                "data_source": "yfinance",
+                "list_source": "qlib",
+                "note": "Stock list from Qlib, real-time data from YFinance",
             }
         except Exception as e:
             return {
@@ -158,42 +176,63 @@ class QlibYahooDataSource(BaseDataSource):
         """
 
         try:
-            # Initialize Qlib to access data
-            from ..qlib_utils import init_qlib
-
-            init_qlib(provider_uri=str(self.qlib_data_dir), region=self.region)
-
-            # Use Qlib's D module to get daily data
-            from qlib.data import D
+            import yfinance as yf
 
             # Default fields if not specified
             if fields is None:
-                fields = ["$open", "$high", "$low", "$close", "$volume"]
-            else:
-                # Convert field names to Qlib format (add $ prefix if not present)
-                qlib_fields = []
-                for field in fields:
-                    if not field.startswith("$"):
-                        qlib_fields.append(f"${field}")
-                    else:
-                        qlib_fields.append(field)
-                fields = qlib_fields
+                fields = ["open", "high", "low", "close", "volume"]
 
-            # Get data using Qlib's DataLoader
-            data = D.features(
-                instruments=symbols,
-                fields=fields,
-                start_time=start_date,
-                end_time=end_date,
-            )
+            # Remove $ prefix if present (for yfinance compatibility)
+            clean_fields = []
+            for field in fields:
+                clean_field = field.lstrip("$").lower()
+                clean_fields.append(clean_field)
+
+            all_data = {}
+
+            for symbol in symbols:
+                try:
+                    # Convert Qlib format to Yahoo Finance format
+                    yf_symbol = self._convert_qlib_to_yfinance_symbol(symbol)
+                    ticker = yf.Ticker(yf_symbol)
+                    hist = ticker.history(start=start_date, end=end_date)
+
+                    if not hist.empty:
+                        # Convert to the expected format (same as current Qlib format)
+                        for clean_field in clean_fields:
+                            # Map field names to yfinance columns
+                            yf_field_map = {
+                                "open": "Open",
+                                "high": "High",
+                                "low": "Low",
+                                "close": "Close",
+                                "volume": "Volume",
+                            }
+
+                            yf_column = yf_field_map.get(clean_field)
+                            if yf_column and yf_column in hist.columns:
+                                field_key = f"${clean_field}"  # Keep $ prefix for API compatibility
+                                if field_key not in all_data:
+                                    all_data[field_key] = {}
+
+                                # Format: "SYMBOL,YYYY-MM-DD HH:MM:SS"
+                                for date, value in hist[yf_column].items():
+                                    date_str = date.strftime("%Y-%m-%d %H:%M:%S")
+                                    key = f"{symbol},{date_str}"
+                                    all_data[field_key][key] = float(value)
+
+                except Exception as symbol_error:
+                    print(f"Error fetching data for {symbol}: {symbol_error}")
+                    continue
+
             return {
                 "status": "success",
-                "data": data.to_dict() if data is not None else {},
+                "data": all_data,
                 "symbols": symbols,
-                "fields": fields,
+                "fields": [f"${field}" for field in clean_fields],
                 "start_date": start_date,
                 "end_date": end_date,
-                "message": f"Retrieved data for {len(symbols)} symbols from {start_date} to {end_date}",
+                "message": f"Retrieved YFinance data for {len(symbols)} symbols from {start_date} to {end_date}",
             }
 
         except Exception as e:
@@ -224,19 +263,26 @@ class QlibYahooDataSource(BaseDataSource):
             FileNotFoundError: If Qlib data not found
         """
         try:
-            # Initialize Qlib to access data
-            from ..qlib_utils import init_qlib
+            import yfinance as yf
 
-            init_qlib(provider_uri=str(self.qlib_data_dir), region=self.region)
+            # Use a representative stock to determine trading days
+            reference_symbol = "000001.SZ" if self.region == "cn" else "AAPL"
 
-            # Use Qlib's D module to get trading calendar
-            from qlib.data import D
+            ticker = yf.Ticker(reference_symbol)
+            hist = ticker.history(start=start_date, end=end_date)
 
-            # Get trading calendar (list of trading dates)
-            calendar = D.calendar(start_time=start_date, end_time=end_date)
+            if hist.empty:
+                return {
+                    "status": "success",
+                    "count": 0,
+                    "trading_dates": [],
+                    "start_date": start_date,
+                    "end_date": end_date,
+                    "message": f"No trading days found from {start_date} to {end_date}",
+                }
 
-            # Convert to list format
-            trading_dates = [str(date) for date in calendar]
+            # Extract trading dates
+            trading_dates = [date.strftime("%Y-%m-%d %H:%M:%S") for date in hist.index]
 
             return {
                 "status": "success",
@@ -245,6 +291,7 @@ class QlibYahooDataSource(BaseDataSource):
                 "start_date": start_date,
                 "end_date": end_date,
                 "message": f"Found {len(trading_dates)} trading days from {start_date} to {end_date}",
+                "reference_symbol": reference_symbol,
             }
 
         except Exception as e:
