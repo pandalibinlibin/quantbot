@@ -94,8 +94,42 @@ class QlibYahooDataSource(BaseDataSource):
             FileNotFoundError: If Qlib data not found
         """
 
-        # TODO: Implement in next step
-        raise NotImplementedError("Will implement in next step")
+        try:
+            # Import qlib first
+            import qlib
+            from ..qlib_utils import init_qlib
+
+            # Initialize Qlib to access data
+            init_qlib(provider_uri=str(self.qlib_data_dir), region=self.region)
+            # Use Qlib's D module to get instrument list
+            from qlib.data import D
+
+            # Get instruments config for 'all' market
+            instruments_config = D.instruments(market="all")
+
+            # Use D.list_instruments() with a wide time range to get all stocks
+            # We use a very wide time range to ensure we get all available stocks
+            stock_list = D.list_instruments(
+                instruments=instruments_config,
+                start_time="2000-01-01",
+                end_time="2099-12-31",
+                freq="day",
+                as_list=True,
+            )
+
+            return {
+                "status": "success",
+                "count": len(stock_list),
+                "instruments": stock_list,
+                "message": f"Found {len(stock_list)} instruments in {self.region} market",
+            }
+        except Exception as e:
+            return {
+                "status": "error",
+                "count": 0,
+                "instruments": [],
+                "message": f"Failed to get stock list: {str(e)}",
+            }
 
     def get_daily_data(
         self,
@@ -123,11 +157,55 @@ class QlibYahooDataSource(BaseDataSource):
             NotImplementedError: Use Qlib's DataLoader instead
         """
 
-        raise NotImplementedError(
-            "Please use Qlib's DataLoader to read data: \n"
-            "from qlib.data import D\n"
-            "data = D.features(symbols, fields, start_time, end_time)"
-        )
+        try:
+            # Initialize Qlib to access data
+            from ..qlib_utils import init_qlib
+
+            init_qlib(provider_uri=str(self.qlib_data_dir), region=self.region)
+
+            # Use Qlib's D module to get daily data
+            from qlib.data import D
+
+            # Default fields if not specified
+            if fields is None:
+                fields = ["$open", "$high", "$low", "$close", "$volume"]
+            else:
+                # Convert field names to Qlib format (add $ prefix if not present)
+                qlib_fields = []
+                for field in fields:
+                    if not field.startswith("$"):
+                        qlib_fields.append(f"${field}")
+                    else:
+                        qlib_fields.append(field)
+                fields = qlib_fields
+
+            # Get data using Qlib's DataLoader
+            data = D.features(
+                instruments=symbols,
+                fields=fields,
+                start_time=start_date,
+                end_time=end_date,
+            )
+            return {
+                "status": "success",
+                "data": data.to_dict() if data is not None else {},
+                "symbols": symbols,
+                "fields": fields,
+                "start_date": start_date,
+                "end_date": end_date,
+                "message": f"Retrieved data for {len(symbols)} symbols from {start_date} to {end_date}",
+            }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "data": {},
+                "symbols": symbols,
+                "fields": fields or [],
+                "start_date": start_date,
+                "end_date": end_date,
+                "message": f"Failed to get daily data: {str(e)}",
+            }
 
     def get_trading_calendar(self, start_date: str, end_date: str) -> pd.DataFrame:
         """
@@ -145,8 +223,39 @@ class QlibYahooDataSource(BaseDataSource):
         Raises:
             FileNotFoundError: If Qlib data not found
         """
-        # TODO: Implement in next step
-        raise NotImplementedError("Will implement in next step")
+        try:
+            # Initialize Qlib to access data
+            from ..qlib_utils import init_qlib
+
+            init_qlib(provider_uri=str(self.qlib_data_dir), region=self.region)
+
+            # Use Qlib's D module to get trading calendar
+            from qlib.data import D
+
+            # Get trading calendar (list of trading dates)
+            calendar = D.calendar(start_time=start_date, end_time=end_date)
+
+            # Convert to list format
+            trading_dates = [str(date) for date in calendar]
+
+            return {
+                "status": "success",
+                "count": len(trading_dates),
+                "trading_dates": trading_dates,
+                "start_date": start_date,
+                "end_date": end_date,
+                "message": f"Found {len(trading_dates)} trading days from {start_date} to {end_date}",
+            }
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "count": 0,
+                "trading_dates": [],
+                "start_date": start_date,
+                "end_date": end_date,
+                "message": f"Failed to get trading calendar: {str(e)}",
+            }
 
     def download_prebuilt_data(self) -> dict:
         """

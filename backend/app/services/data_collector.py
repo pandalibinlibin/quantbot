@@ -152,3 +152,110 @@ class DataCollectorService:
             "features_exist": features_dir.exists(),
             "message": "Data directory found",
         }
+
+    def get_stock_list(self, source: str = "qlib_yahoo") -> dict:
+        """
+        Get stock list from data source.
+
+        Args:
+            source: Data source name ('qlib_yahoo')
+        Returns:
+            dict with stock list
+        Examples:
+            >>> service = DataCollectorService(region="cn")
+            >>> result = service.get_stock_list()
+            >>> print(result["count"])
+            4000
+        """
+        if source != "qlib_yahoo":
+            return {
+                "status": "error",
+                "message": f"Unsupported data source: {source}",
+            }
+
+        config = {
+            "region": self.region,
+            "qlib_data_dir": str(self.qlib_data_path),
+        }
+        data_source = QlibYahooDataSource(config)
+        return data_source.get_stock_list()
+
+    def get_daily_data(
+        self,
+        symbols: list[str],
+        start_date: str,
+        end_date: str,
+        fields: list[str] | None = None,
+        source: str = "qlib_yahoo",
+    ) -> dict:
+        """
+        Get daily data for specified symbols.
+
+        Args:
+            symbols: List of stock symbols
+            start_date: Start date (YYYY-MM-DD)
+            end_date: End date (YYYY-MM-DD)
+            fields: List of fields to retrieve
+            source: Data souce name ('qlib_yahoo')
+        Returns:
+            dict with daily data
+        Examples:
+            >>> service = DataCollectorService(region="cn")
+            >>> result = service.get_daily_date(
+            ...     symbols=["000001.SZ"],
+            ...     start_date="2020-01-01",
+            ...     end_date="2020-12-31"
+            ... )
+            >>> print(result["status"])
+            'success'
+        """
+        if source != "qlib_yahoo":
+            return {
+                "status": "error",
+                "message": f"Unsupported data source: {source}",
+            }
+
+        config = {
+            "region": self.region,
+            "qlib_data_dir": str(self.qlib_data_path),
+        }
+        data_source = QlibYahooDataSource(config)
+        return data_source.get_daily_data(symbols, start_date, end_date, fields)
+
+    def get_trading_calendar(
+        self,
+        start_date: str,
+        end_date: str,
+        source: str = "qlib_yahoo",
+    ) -> dict:
+        """
+        Get trading calendar for specified data range.
+
+        Args:
+            start_date: Start date (YYYY-MM-DD)
+            end_date: End date (YYYY-MM-DD)
+            source: Data source name ('qlib_yahoo')
+        Returns:
+            dict with trading dates
+        Example:
+            >>> service = DataCollectorService(region="cn")
+            >>> result = service.get_trading_calendar(
+            ...     start_date="2020-01-01",
+            ...     end_date="2020-12-31",
+            ... )
+            >>> print(result["count"])
+            244
+        """
+        if source != "qlib_yahoo":
+            return {
+                "status": "error",
+                "message": f"Unsupported data source: {source}",
+            }
+
+        config = {
+            "region": self.region,
+            "qlib_data_dir": str(self.qlib_data_path),
+        }
+
+        data_source = QlibYahooDataSource(config)
+        return data_source.get_trading_calendar(start_date, end_date)

@@ -42,11 +42,13 @@ def init_qlib(provider_uri: str | None = None, region: str = "cn") -> None:
         home = Path.home()
         provider_uri = str(home / ".qlib" / "qlib_data" / f"{region}_data")
 
-    # Check if already initialized
+    # Check if already initialized by checking if provider is set
     try:
-        # Try to get Qlib's logger - if it works, Qlib is initialized
-        qlib.get_module_logger("qlib")
-        return  # Already initialized, skip
+        from qlib.data.data import ProviderManager
+
+        # If we can get the default provider, Qlib is initialized
+        if ProviderManager.get_default_provider() is not None:
+            return  # Already initialized, skip
     except Exception:
         pass  # Not initialized yet, continue
 
