@@ -1044,3 +1044,231 @@ _最后更新时间: 2026年1月14日_
 - 开始因子工程模块开发
 - 集成Alpha158因子库
 - 实现自定义因子计算引擎
+
+## Phase 6 规划：因子工程模块开发
+
+### 因子工程核心概念（金融背景）
+
+**Alpha因子定义**：
+
+- **Alpha**：超额收益，即超过市场基准的收益部分
+- **因子**：能够解释和预测股票收益的特征变量
+- **目标**：发现能够产生稳定超额收益的数学公式
+
+**因子分类**：
+
+1. **技术因子**：基于价格和成交量的技术指标（如MACD、RSI、布林带）
+2. **基本面因子**：基于财务数据的指标（如PE、ROE、债务比率）
+3. **量价因子**：结合价格和成交量的复合指标
+4. **时序因子**：基于时间序列特征的指标（如动量、反转）
+
+### Qlib因子工程架构
+
+**Alpha158因子库**：
+
+- **因子数量**：158个预定义因子
+- **覆盖范围**：技术指标、价量特征、时序特征
+- **计算引擎**：基于Qlib高性能数据处理引擎
+- **配置方式**：通过YAML配置文件即插即用
+
+**表达式系统**：
+
+- **Feature**：从数据提供者加载基础数据（$close, $volume等）
+- **ExpressionOps**：使用算子进行特征构造
+- **自定义算子**：支持用户定义新的计算算子
+
+### 因子工程模块API设计
+
+**核心功能模块**：
+
+1. **因子计算引擎**：
+
+   - 计算Alpha158预定义因子
+   - 支持批量因子计算
+   - 高性能并行计算
+
+2. **因子评估系统**：
+
+   - IC（信息系数）：因子与收益的相关性
+   - IR（信息比率）：IC的稳定性指标
+   - 因子分布分析和统计检验
+
+3. **自定义因子开发**：
+
+   - 表达式解析器
+   - 因子公式验证
+   - 因子回测和验证
+
+4. **因子管理系统**：
+   - 因子库版本控制
+   - 因子元数据管理
+   - 因子使用统计
+
+**API端点设计**：
+
+```
+# 因子列表和信息
+GET /api/v1/factors/list/{category} - 获取因子列表（按类别）
+GET /api/v1/factors/info/{factor_name} - 获取因子详细信息
+
+# 因子计算
+POST /api/v1/factors/calculate - 计算指定因子
+POST /api/v1/factors/batch_calculate - 批量计算多个因子
+
+# 因子评估
+POST /api/v1/factors/evaluate - 因子有效性评估
+GET /api/v1/factors/performance/{factor_name} - 因子历史表现
+
+# 自定义因子
+POST /api/v1/factors/custom/create - 创建自定义因子
+GET /api/v1/factors/custom/list - 获取自定义因子列表
+PUT /api/v1/factors/custom/{factor_id} - 更新自定义因子
+DELETE /api/v1/factors/custom/{factor_id} - 删除自定义因子
+
+# 因子组合
+POST /api/v1/factors/combination/create - 创建因子组合
+GET /api/v1/factors/combination/optimize - 因子组合优化
+```
+
+**数据流设计**：
+
+```
+原始数据(OHLCV) → 因子计算引擎 → 因子值 → 因子评估 → 因子排序 → 投资决策
+```
+
+### 开发优先级
+
+**Phase 6.1**：Alpha158因子库集成
+
+- 实现Alpha158因子计算API
+- 集成Qlib因子计算引擎
+- 完成因子列表和信息查询API
+
+**Phase 6.2**：因子评估系统
+
+- 实现IC/IR计算
+- 因子有效性统计分析
+- 因子表现可视化数据
+
+**Phase 6.3**：自定义因子开发
+
+- 表达式解析器实现
+- 自定义因子CRUD操作
+- 因子验证和回测功能
+
+**Phase 6.4**：前端界面开发
+
+- 因子浏览和搜索界面
+- 因子计算参数配置
+- 因子评估结果展示
+
+### 2026年1月20日 - Phase 6 架构重设计
+
+**重大架构决策**: 发现数据流问题，决定重新设计数据源架构
+
+**问题分析**:
+
+- **数据流冲突**: YFinance通过API获取实时数据但不保存本地，Alpha158从Qlib本地数据库读取但只有2020年旧数据
+- **架构不清晰**: 数据获取与因子计算混合在一起，违反单一职责原则
+- **扩展困难**: 现有架构难以支持tushare、akshare等多数据源
+
+**新架构设计原则**:
+
+1. **统一数据接口**: 所有数据源实现相同的接口标准
+2. **Qlib原生兼容**: 数据源直接实现Qlib DataLoader接口
+3. **职责分离**: 数据获取与因子计算完全分离
+4. **易于扩展**: 为未来数据源提供清晰的实现模板
+
+**新架构设计**:
+
+```
+services/data_sources/
+├── base_data_provider.py       # 抽象基类 (继承Qlib DataLoader)
+├── yfinance_provider.py        # YFinance实时数据提供者
+├── qlib_provider.py           # Qlib本地数据提供者 (未来)
+└── tushare_provider.py        # Tushare数据提供者 (未来)
+
+services/factors/
+├── alpha158_handler.py        # 纯因子计算，使用data_providers
+└── factor_service.py          # 因子服务协调器
+```
+
+**核心技术方案**:
+
+- **BaseDataProvider**: 继承Qlib的DataLoader，同时提供Web API接口
+- **双重接口**: 每个数据源既支持Qlib的load()方法，又支持Web API方法
+- **数据格式统一**: 内部统一转换为Qlib标准的MultiIndex DataFrame格式
+- **缓存机制**: 避免重复获取相同数据，提高性能
+
+**实施计划**:
+
+1. 清理现有代码，保留备份
+2. 创建BaseDataProvider抽象基类
+3. 实现YFinanceDataProvider
+4. 重写Alpha158Handler使用新的数据提供者
+5. 通过Swagger UI测试新架构
+6. 为tushare等数据源建立实现模板
+
+**预期优势**:
+
+- ✅ 解决数据流问题：Alpha158直接使用YFinance实时数据
+- ✅ 保持Qlib兼容：完全利用Qlib的高性能因子计算引擎
+- ✅ 架构清晰：数据源与因子计算职责分离
+- ✅ 易于扩展：标准化的数据源实现模板
+- ✅ 高性能：原生Qlib DataLoader接口，无额外转换开销
+
+### 2026年1月20日 - BaseDataProvider抽象基类完成
+
+**重大里程碑**: 完成统一数据源架构的抽象基类设计和实现
+
+**核心成果**:
+
+- ✅ **BaseDataProvider抽象基类**:
+
+  - 继承Qlib的DataLoader接口，确保与因子计算引擎完全兼容
+  - 定义标准化的Web API接口，支持FastAPI端点集成
+  - 实现双重接口设计：既支持Qlib原生调用，又支持Web服务
+  - 提供完整的工具方法：日期标准化、符号验证、响应格式化
+
+- ✅ **核心接口设计**:
+
+  - `load()`: Qlib DataLoader标准接口，支持fields参数扩展
+  - `get_stock_list()`: 获取股票列表的Web API接口
+  - `get_trading_calendar()`: 获取交易日历的Web API接口
+  - `get_daily_data()`: 获取日线数据的Web API接口
+  - `get_data_source_name()`: 动态返回数据源名称
+
+- ✅ **设计特色**:
+  - **字段扩展性**: 支持OHLCV基础字段和自定义扩展字段
+  - **错误处理**: 统一的成功/错误响应格式，便于API集成
+  - **类型安全**: 完整的类型注解，支持IDE智能提示
+  - **文档完善**: 详细的方法文档和使用示例
+
+**技术亮点**:
+
+- **双重继承**: 同时继承DataLoader和ABC，确保Qlib兼容性和接口强制实现
+- **字段灵活性**: load()方法支持fields参数，可获取超过OHLCV的扩展字段
+- **响应标准化**: 统一的\_create_success_response和\_create_error_response方法
+- **符号验证**: \_validate_symbols方法确保输入数据的有效性
+- **日期标准化**: \_normalize_date方法支持多种日期格式输入
+
+**代码质量**:
+
+- 250行完整实现，包含详细文档和类型注解
+- 遵循Python抽象基类最佳实践
+- 支持扩展字段，为未来功能预留接口
+- 错误处理完善，支持生产环境使用
+
+**下一步计划**:
+
+1. 实现YFinanceDataProvider具体实现
+2. 创建Alpha158Handler使用新数据源架构
+3. 通过Swagger UI测试新架构
+4. 为tushare、akshare等数据源建立实现模板
+
+**架构优势验证**:
+
+- ✅ 职责分离：数据获取与因子计算完全解耦
+- ✅ 标准化接口：所有数据源遵循相同的实现标准
+- ✅ Qlib原生兼容：直接实现DataLoader，无性能损失
+- ✅ 扩展性强：新数据源只需实现抽象方法即可集成
