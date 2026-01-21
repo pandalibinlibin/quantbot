@@ -17,7 +17,7 @@ class BaseDataProvider(DataLoader, ABC):
 
     This class defines the standard interface that all data providers must implement.
     It inherits from Qlib's DataLoader to ensure compatibility with Qlib's factor
-    calculation engines while providing additional API methods for web services.
+    calculation engines.
 
     Design Philosophy:
     - Dual Interface: Both Qlib DataLoader and Web API compatibility
@@ -27,9 +27,8 @@ class BaseDataProvider(DataLoader, ABC):
 
     All data providers should:
     1. Implement the load() method for Qlib compatibility
-    2. Implement API methods for web service endpoints
-    3. Handle data format conversion between source and Qlib formats
-    4. Provide metadata about available instruments and date ranges
+    2. Handle data format conversion between source and Qlib formats
+    3. Provide metadata about available instruments and date ranges
     """
 
     def __init__(self, config: Dict[str, Any]):
@@ -87,61 +86,6 @@ class BaseDataProvider(DataLoader, ABC):
         """
         pass
 
-    # Web API Interface (Required for FastAPI Endpoints)
-    @abstractmethod
-    def get_stock_list(self, market: str = "stock") -> Dict[str, Any]:
-        """
-        Get available stock symbols for web API.
-
-        Args:
-            market: Market type filter (e.g., 'stock', 'index', 'fund')
-
-        Returns:
-            Standardized response dictionary with keys:
-            - status: 'success' or 'error'
-            - data: List of stock symbols or None if error
-            - message: Human-readable message
-            - count: Number of symbols (if success)
-            - provider: Provider name for debugging
-        """
-        pass
-
-    @abstractmethod
-    def get_trading_calendar(self, start_date: str, end_date: str) -> Dict[str, Any]:
-        """
-        Get trading calendar for date range.
-
-        Args:
-            start_date: Start date in 'YYYY-MM-DD' format
-            end_date: End date in 'YYYY-MM-DD' format
-
-        Returns:
-            Standardized response dictionary with trading dates
-        """
-        pass
-
-    @abstractmethod
-    def get_daily_data(
-        self,
-        symbols: List[str],
-        start_date: str,
-        end_date: str,
-        fields: Optional[List[str]] = None,
-    ) -> Dict[str, Any]:
-        """
-        Get daily OHLCV data for web API.
-
-        Args:
-            symbols: List of stock symbols
-            start_date: Start date in 'YYYY-MM-DD' format
-            end_date: End date in 'YYYY-MM-DD' format
-            fields: Data fields to retrieve (default: ['open', 'high', 'low', 'close', 'volume'])
-
-        Returns:
-            Standardized response dictionary with OHLCV data
-        """
-        pass
-
     # Utility Methods (Shared Implementation)
     def get_provider_info(self) -> Dict[str, Any]:
         """
@@ -154,7 +98,6 @@ class BaseDataProvider(DataLoader, ABC):
             "provider_name": self.__class__.__name__,
             "region": self.region,
             "data_source": self.get_data_source_name(),
-            "capabilities": ["stock_list", "trading_calendar", "daily_data"],
             "qlib_compatible": True,
             "config": {k: v for k, v in self.config.items() if not k.startswith("_")},
         }
@@ -203,47 +146,3 @@ class BaseDataProvider(DataLoader, ABC):
             validated_symbols.append(symbol.upper().strip())
 
         return validated_symbols
-
-    def _create_success_response(
-        self, data: Any, message: str = "Operation completed successfully", **kwargs
-    ) -> Dict[str, Any]:
-        """
-        Create standardized success response.
-
-        Args:
-            data: Response data
-            message: Success message
-            **kwargs: Additional response fields
-
-        Returns:
-            Standardized success response dictionary
-        """
-        response = {
-            "status": "success",
-            "data": data,
-            "message": message,
-            "provider": self.__class__.__name__,
-        }
-        response.update(kwargs)
-
-        return response
-
-    def _create_error_response(self, error: str, **kwargs) -> Dict[str, Any]:
-        """
-        Create standardized error response.
-
-        Args:
-            error: Error message
-            **kwargs: Additional response fields
-
-        Returns:
-            Standardized error response dictionary
-        """
-        response = {
-            "status": "error",
-            "data": None,
-            "message": error,
-            "provider": self.__class__.__name__,
-        }
-        response.update(kwargs)
-        return response
