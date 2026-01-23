@@ -604,3 +604,100 @@ class StrategyPublic(StrategyBase):
     created_at: datetime
     updated_at: datetime
     created_by: uuid.UUID
+
+
+# Data Collection Models
+class DataCollectionRequest(SQLModel):
+    """
+    Request model for data collection task.
+
+    Educational Notes:
+    - Pydantic model for request validation
+    - All fields are validated automatically by FastAPI
+    - Type hints ensure type safety
+    """
+
+    collector_name: str = Field(
+        description="Name of the data collector (e.g., 'yahoo')", examples=["yahoo"]
+    )
+    instruments: list[str] = Field(
+        description="List of instrument codes to collect",
+        examples=[["AAPL", "MSFT", "GOOGL"]],
+        min_length=1,
+    )
+    start_date: str = Field(
+        description="Start date in YYYY-MM-DD format",
+        examples=["2024-01-01"],
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+    )
+    end_date: str = Field(
+        description="End date in YYYY-MM-DD format",
+        examples=["2024-12-31"],
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+    )
+    output_dir: str | None = Field(
+        default=None,
+        description="Optional output directory (default: ~/.qlib/stock_data)",
+    )
+
+
+class DataCollectionResponse(SQLModel):
+    """
+    Response model for data collection task.
+
+    Educational Notes:
+    - Provides detailed information about collection result
+    - Includes success status and error information
+    - API-friendly format for frontend consumption
+    """
+
+    success: bool = Field(description="Whether the collection was successful")
+    collector: str = Field(description="Name of the collector used")
+    total_instruments: int = Field(description="Total number of instruments requested")
+    successful_count: int = Field(
+        description="Number of instruments successfully collected"
+    )
+    csv_dir: str | None = Field(
+        default=None, description="Directory where CSV files are saved"
+    )
+    qlib_dir: str | None = Field(
+        default=None, description="Directory where Qlib .bin files are saved"
+    )
+    errors: list[str] = Field(
+        default_factory=list, description="List of error messages if any"
+    )
+    error: str | None = Field(
+        default=None, description="Error message if collection failed"
+    )
+
+
+class CollectorInfo(SQLModel):
+    """
+    Information about a data collector.
+
+    Educational Notes:
+    - Metadata about collector capabilities
+    - Includes field coverage information
+    - Helps users understand what data is available
+    """
+
+    name: str = Field(description="Collector name")
+    supported_fields: list[str] = Field(description="List of supported data fields")
+    field_coverage: dict = Field(description="Detailed field coverage information")
+    config_keys: list[str] = Field(description="Required configuration keys")
+
+
+class CollectorsInfoResponse(SQLModel):
+    """
+    Response model for collectors information.
+
+    Educational Notes:
+    - Provides overview of all available collectors
+    - Useful for API discovery
+    - Frontend can use this to build UI
+    """
+
+    total_collectors: int = Field(description="Total number of registered collectors")
+    collectors: dict[str, CollectorInfo] = Field(
+        description="Dictionary of collector information"
+    )

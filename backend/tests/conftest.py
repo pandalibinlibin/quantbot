@@ -12,6 +12,14 @@ from tests.utils.user import authentication_token_from_email
 from tests.utils.utils import get_superuser_token_headers
 
 
+def pytest_configure(config):
+    """Register custom marker."""
+    config.addinivalue_line(
+        "markers",
+        "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+    )
+
+
 @pytest.fixture(scope="session", autouse=True)
 def db() -> Generator[Session, None, None]:
     with Session(engine) as session:

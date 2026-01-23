@@ -1255,6 +1255,7 @@ services/factors/
 **代码质量**:
 
 **架构验证**:
+
 - **职责分离**: 数据获取与因子计算完全解耦
 - **标准化接口**: 遵循BaseDataProvider抽象类规范
 - **Qlib原生兼容**: 直接实现DataLoader，零性能损失
@@ -1262,6 +1263,7 @@ services/factors/
 - **创新设计**: 多API策略解决传统单API限制问题
 
 **使用示例**:
+
 ```python
 # 创建数据提供者
 config = {"region": "cn", "timeout": 30}
@@ -1277,13 +1279,867 @@ data = provider.load(
 # 指定字段加载（包含基本面数据）
 data = provider.load(
     instruments=['SH600000'],
-    start_time='2026-01-01', 
+    start_time='2026-01-01',
     end_time='2026-01-20',
     fields=['close', 'volume', 'market_cap', 'pe_ratio']
 )
 ```
 
 **下一步计划**:
-1. 创建Alpha158Handler使用新数据源架构
-2. 通过Swagger UI测试新架构
-3. 为tushare、akshare等数据源建立实现模板
+
+1. ✅ 实现YFinanceProvider具体实现
+2. 创建Alpha158Handler使用新数据源架构
+3. 通过Swagger UI测试新架构
+4. 为tushare、akshare等数据源建立实现模板
+
+### 2026年1月21日 - 架构重大调整：统一标准字段集规范
+
+**重大架构决策**: 基于Qlib文档深入研究和架构讨论，确立统一标准字段集原则
+
+**问题分析**:
+
+经过与用户的深入讨论和Qlib文档研究，发现了之前架构设计的关键问题：
+
+1. **字段扩展性问题**:
+
+   - 初始设计只考虑OHLCV基础字段
+   - 忽略了Qlib明确支持扩展字段的能力
+   - Qlib文档第1937行明确说明：可以添加PE、EPS等基本面数据作为基础字段
+
+2. **数据源一致性问题**:
+
+   - 不同DataProvider可能返回不同的字段集
+   - 导致数据源不可互换
+   - 上层因子计算依赖特定数据源
+
+3. **字段管理混乱**:
+   - 缺乏统一的字段集规范
+   - 扩展字段时各provider独立决策
+   - 难以保证一致性
+
+**Qlib字段架构真相**:
+
+基于Qlib文档研究，明确了Qlib的两层字段架构：
+
+1. **基础字段层（Base Fields）**:
+
+   - 存储在`.bin`文件中的原始数据
+   - 由`dump_bin.py --include_fields`参数定义
+   - **完全可扩展**：不限于OHLCV，可包含任何字段
+   - 示例：OHLCV + factor + vwap + amount + PE + EPS + ROE等
+
+2. **计算字段层（Computed Fields）**:
+   - 通过Qlib Expression Engine动态计算
+   - 基于基础字段使用算子构造
+   - 示例：`Ref($close, 1)`, `Mean($close, 3)`, `$high-$low`
+
+**关键发现**（Qlib文档第1937行）:
+
+```
+If you want to use your own alpha-factor which can't be calculate by OCHLV,
+like PE, EPS and so on, you could add it to the CSV or Parquet files with
+OHCLV together and then dump it to the Qlib format data.
+```
+
+这证明：
+
+- ✅ Qlib明确支持扩展字段
+- ✅ 基本面数据（PE、EPS等）可以作为基础字段
+- ✅ 字段集是完全可扩展的
+
+**新架构设计原则**:
+
+用户提出的核心原则（完全正确且重要）：
+
+1. **统一标准字段集**: 所有DataProvider必须提供相同的标准字段集
+2. **一致性保证**: 确保数据源可互换，不影响上层因子计算
+3. **统一扩展机制**: 扩展字段时，所有DataProvider同步扩展
+4. **接口契约**: 明确定义DataProvider的数据契约
+
+**新架构核心组件**:
+
+1. **QuantBotDataStandard（标准字段集规范）**:
+
+   ```python
+   # 定义平台统一的标准字段集
+   CORE_FIELDS = ['open', 'high', 'low', 'close', 'volume', 'factor']
+   EXTENDED_PRICE_FIELDS = ['vwap', 'amount']
+   FUNDAMENTAL_FIELDS = ['market_cap', 'pe_ratio', 'pb_ratio', 'ps_ratio',
+                         'dividend_yield', 'shares_outstanding']
+   ```
+
+2. **BaseDataProvider（强制标准字段集）**:
+
+   - 所有provider必须返回完整的标准字段集
+   - 不支持自定义fields参数
+   - 如果某字段不可用，填充NaN（遵循Qlib惯例）
+   - 提供字段验证机制
+
+3. **YFinanceProvider（实现标准字段集）**:
+   - 从ticker.history()获取OHLCV
+   - 计算vwap和amount
+   - 从ticker.info获取基本面数据
+   - 返回完整的标准字段集
+
+**架构优势**:
+
+1. **数据源可互换性**:
+
+   ```python
+   # 所有provider返回相同字段集，可以随意切换
+   yf_provider = YFinanceProvider(config)
+   tushare_provider = TushareProvider(config)
+
+   # 两者返回的DataFrame结构完全相同
+   data1 = yf_provider.load(['SH600000'], '2026-01-01', '2026-01-20')
+   data2 = tushare_provider.load(['SH600000'], '2026-01-01', '2026-01-20')
+   assert list(data1.columns) == list(data2.columns)
+   ```
+
+2. **开发一致性**:
+
+   - 所有provider遵循相同规范
+   - 新provider实现清晰明确
+   - 减少理解和维护成本
+
+3. **规范化扩展**:
+
+   - 新增字段在QuantBotDataStandard中统一定义
+   - 所有provider同步实现
+   - 版本化管理（V1.0 -> V1.1）
+
+4. **因子计算稳定性**:
+   - Alpha158等因子计算不依赖特定数据源
+   - 字段集保证完整性
+   - 避免因数据源切换导致的问题
+
+**标准字段集V1.0定义**:
+
+```python
+# Core Fields (Required by Qlib)
+- open: Adjusted opening price
+- high: Adjusted highest price
+- low: Adjusted lowest price
+- close: Adjusted closing price
+- volume: Adjusted trading volume
+- factor: Adjustment factor (adjusted_price / original_price)
+
+# Extended Price-Volume Fields (Recommended)
+- vwap: Volume-weighted average price
+- amount: Trading amount (volume * price)
+
+# Basic Fundamental Fields (Optional but recommended)
+- market_cap: Market capitalization
+- pe_ratio: Price-to-earnings ratio
+- pb_ratio: Price-to-book ratio
+- ps_ratio: Price-to-sales ratio
+- dividend_yield: Dividend yield
+- shares_outstanding: Total shares outstanding
+```
+
+**实施计划**:
+
+1. **删除旧代码**:
+
+   - 删除现有的data_sources模块
+   - 删除现有的factors模块
+   - 从零开始重建
+
+2. **创建新架构**:
+
+   - `field_standard.py`: 定义QuantBotDataStandard
+   - `base_data_provider.py`: 强制标准字段集的抽象基类
+   - `yfinance_provider.py`: 实现标准字段集的YFinance提供者
+   - `alpha158_handler.py`: 通用因子计算引擎
+
+3. **文档和测试**:
+   - 更新tech_spec.md记录架构决策
+   - 创建字段集验证测试
+   - 编写使用文档
+
+**架构对比**:
+
+| 方面   | 旧架构           | 新架构         |
+| ------ | ---------------- | -------------- |
+| 字段集 | 可变，由用户指定 | 固定，标准规范 |
+| 一致性 | 不保证           | 强制保证       |
+| 扩展性 | 各provider独立   | 统一同步扩展   |
+| 互换性 | 不支持           | 完全支持       |
+| 维护性 | 复杂             | 简单清晰       |
+
+**预期成果**:
+
+- ✅ 所有DataProvider返回一致的数据格式
+- ✅ 数据源可以随意切换而不影响因子计算
+- ✅ 新数据源实现有清晰的规范可遵循
+- ✅ 字段扩展有统一的管理机制
+- ✅ 为未来的基本面因子开发打下基础
+
+**下一步行动**:
+
+1. 删除旧的data_sources和factors模块 ✅ (已完成 2026-01-21)
+2. 重新设计架构，基于Qlib原生机制
+3. 创建field_config.py定义标准字段集
+4. 实现data_collector层封装Qlib采集器
+5. 实现Alpha158Handler基于Qlib原生接口
+6. 测试新架构的完整性和一致性
+
+---
+
+### 2026年1月21日 - 架构重大调整：回归Qlib原生机制
+
+**重要发现**: 经过深入研究Qlib文档和架构讨论，发现之前的自定义DataProvider方案是在"造轮子"，违背了项目核心原则。
+
+**核心问题**:
+
+1. **自定义DataProvider是错误的**: 试图继承Qlib的DataLoader实现自定义数据获取，绕过了Qlib的完整机制
+2. **忽略了Qlib的data_collector**: Qlib已经提供了完善的数据采集脚本（scripts/data_collector）
+3. **数据过时问题已有解决方案**: Qlib的data_collector可以实时爬取最新数据，不依赖预构建数据
+
+**Qlib的标准数据流程**（文档第1718-1722行）:
+
+```
+1. 数据采集: 使用data_collector从数据源（Yahoo Finance/Tushare）爬取数据
+   ↓
+2. 格式转换: 通过dump_bin.py将CSV/Parquet转换为.bin格式
+   ↓
+3. 数据存储: 存储在~/.qlib/qlib_data/目录
+   ↓
+4. 数据读取: 使用D.features()直接读取.bin文件
+   ↓
+5. 因子计算: 使用Alpha158等Qlib内置handler
+   ↓
+6. 模型训练: 使用Qlib的Model接口
+```
+
+**关键发现**（文档第1773行和第1780行）:
+
+- Qlib提供`scripts/data_collector`帮助用户爬取最新数据
+- Yahoo collector支持自动更新机制（update_data_to_bin）
+- 数据源无关性：只要能生成CSV/Parquet，就能转换为Qlib格式
+
+**新架构设计原则**:
+
+1. **不造轮子**: 充分利用Qlib提供的机制
+
+   - ✅ 使用Qlib的data_collector爬取数据
+   - ✅ 使用Qlib的dump_bin.py转换格式
+   - ✅ 使用Qlib的D.features()读取数据
+   - ✅ 使用Qlib的Alpha158计算因子
+   - ❌ 不自定义DataProvider
+   - ❌ 不重新实现缓存机制
+   - ❌ 不绕过Qlib的数据流程
+
+2. **我们的角色**: 数据管理和调度层
+
+   - 封装Qlib的data_collector为服务
+   - 提供API接口触发数据更新
+   - 监控数据状态和质量
+   - 提供前端界面管理数据
+
+3. **多数据源支持**: 基于Qlib的扩展性
+   - Qlib只关心.bin格式，不关心数据来源
+   - 任何数据源 → CSV → dump_bin.py → .bin
+   - 可以同时支持Yahoo Finance、Tushare、本地数据等
+
+**新架构组件**:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                  QuantBot Platform                       │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  ┌────────────────────────────────────────────┐         │
+│  │     Frontend (React + TypeScript)          │         │
+│  │  - Data Management UI                      │         │
+│  │  - Factor Calculation UI                   │         │
+│  │  - Backtest UI                             │         │
+│  └──────────────────┬─────────────────────────┘         │
+│                     │ REST API                           │
+│  ┌──────────────────▼─────────────────────────┐         │
+│  │     Backend (FastAPI)                      │         │
+│  │                                            │         │
+│  │  ┌──────────────────────────────────────┐ │         │
+│  │  │  Data Collector Service              │ │         │
+│  │  │  - Wrap Qlib data_collector          │ │         │
+│  │  │  - Schedule updates                  │ │         │
+│  │  │  - Monitor status                    │ │         │
+│  │  └──────────────┬───────────────────────┘ │         │
+│  │                 │                          │         │
+│  │  ┌──────────────▼───────────────────────┐ │         │
+│  │  │  Field Config                        │ │         │
+│  │  │  - Define standard 10 fields         │ │         │
+│  │  │  - Support extension                 │ │         │
+│  │  │  - Ensure consistency                │ │         │
+│  │  └──────────────┬───────────────────────┘ │         │
+│  │                 │                          │         │
+│  └─────────────────┼──────────────────────────┘         │
+│                    │                                     │
+└────────────────────┼─────────────────────────────────────┘
+                     │
+┌────────────────────▼─────────────────────────────────────┐
+│                  Qlib Framework                          │
+├──────────────────────────────────────────────────────────┤
+│                                                          │
+│  ┌────────────────────────────────────────────┐         │
+│  │  Data Collector (Qlib Native)              │         │
+│  │  - scripts/data_collector/yahoo/           │         │
+│  │  - scripts/data_collector/tushare/         │         │
+│  │  - Crawl latest data from sources          │         │
+│  └──────────────────┬─────────────────────────┘         │
+│                     │ CSV/Parquet                        │
+│  ┌──────────────────▼─────────────────────────┐         │
+│  │  dump_bin.py                               │         │
+│  │  - Convert CSV/Parquet to .bin format      │         │
+│  │  - --include_fields parameter              │         │
+│  └──────────────────┬─────────────────────────┘         │
+│                     │ .bin files                         │
+│  ┌──────────────────▼─────────────────────────┐         │
+│  │  Data Storage                              │         │
+│  │  ~/.qlib/qlib_data/cn_data/features/       │         │
+│  │  - Cache mechanism (automatic)             │         │
+│  │  - MemCache + ExpressionCache + DatasetCache│        │
+│  └──────────────────┬─────────────────────────┘         │
+│                     │                                    │
+│  ┌──────────────────▼─────────────────────────┐         │
+│  │  D.features() - Data Access                │         │
+│  │  - Load data from .bin files               │         │
+│  │  - Automatic caching                       │         │
+│  └──────────────────┬─────────────────────────┘         │
+│                     │                                    │
+│  ┌──────────────────▼─────────────────────────┐         │
+│  │  Alpha158 Handler (Qlib Native)            │         │
+│  │  - Calculate 158 factors                   │         │
+│  │  - Based on expression engine              │         │
+│  └──────────────────┬─────────────────────────┘         │
+│                     │                                    │
+│  ┌──────────────────▼─────────────────────────┐         │
+│  │  Model Training & Backtest                 │         │
+│  │  - LightGBM, MLP, LSTM, etc.               │         │
+│  │  - Strategy backtest                       │         │
+│  └────────────────────────────────────────────┘         │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
+```
+
+**标准字段集设计**:
+
+基于Qlib最低要求（文档第1903行）和实用性考虑：
+
+```python
+# Core Fields (Required by Qlib - 6 fields)
+CORE_FIELDS = {
+    'open': 'Adjusted opening price',
+    'high': 'Adjusted highest price',
+    'low': 'Adjusted lowest price',
+    'close': 'Adjusted closing price',
+    'volume': 'Adjusted trading volume',
+    'factor': 'Adjustment factor (adjusted_price / original_price)',
+}
+
+# Extended Fields (Commonly used - 4 fields)
+EXTENDED_FIELDS = {
+    'adj_close': 'Forward-adjusted closing price (most commonly used)',
+    'vwap': 'Volume-weighted average price',
+    'amount': 'Trading amount (volume * price)',
+    'turnover': 'Turnover rate (volume / shares_outstanding)',
+}
+
+# Total: 10 standard fields
+# All data collectors MUST provide these 10 fields
+# If a field is not available, fill with NaN
+```
+
+**字段一致性保证**:
+
+1. **配置化管理**:
+
+   - `field_config.py` 定义标准字段集
+   - 所有collector必须遵循此配置
+
+2. **强制验证**:
+
+   - collector注册时验证字段支持
+   - 数据输出时验证字段完整性
+   - 缺失字段自动填充NaN
+
+3. **扩展同步**:
+   - 新增字段在`field_config.py`中定义
+   - 所有collector自动需要提供
+   - 注册时警告不支持的collector
+
+**数据更新机制**:
+
+```python
+# 手动触发更新
+POST /api/v1/data/update
+{
+    "region": "cn",
+    "start_date": "2020-09-26",
+    "end_date": "2026-01-21",
+    "instruments": ["SH600000", "SZ000001"]
+}
+
+# 响应
+{
+    "task_id": "uuid",
+    "status": "running",
+    "progress": 0
+}
+
+# 查询状态
+GET /api/v1/data/update/{task_id}
+
+# 响应
+{
+    "task_id": "uuid",
+    "status": "completed",
+    "progress": 100,
+    "result": {
+        "instruments_updated": 2,
+        "date_range": ["2020-09-26", "2026-01-21"],
+        "fields": [...],
+        "errors": []
+    }
+}
+```
+
+**实施计划**:
+
+**Phase 6.3.1: 基础配置层**
+
+1. 创建`field_config.py`定义标准字段集
+2. 创建`data_collector/`目录结构
+3. 实现`base_collector.py`抽象基类
+
+**Phase 6.3.2: 数据采集层** 4. 实现`yahoo_collector.py`（封装Qlib的Yahoo collector）5. 实现`collector_service.py`（服务编排层）6. 实现数据更新API
+
+**Phase 6.3.3: 因子计算层** 7. 实现`alpha158_handler.py`（基于Qlib原生Alpha158）8. 创建因子计算API
+
+**Phase 6.3.4: 测试验证** 9. 通过Swagger UI测试所有API 10. 验证数据完整性和一致性11. 测试多数据源支持
+
+**关键优势**:
+
+1. **完全基于Qlib**: 不造轮子，充分利用Qlib的成熟机制
+2. **数据最新**: 通过data_collector实时爬取，不依赖过时的预构建数据
+3. **多数据源**: 支持Yahoo Finance、Tushare等，易于扩展
+4. **字段一致性**: 强制所有数据源提供相同字段集，保证可替代性
+5. **前后端分离**: FastAPI提供REST API，React前端调用
+6. **生产就绪**: Qlib的缓存、表达式引擎等都是经过验证的
+
+**下一步行动**:
+
+1. 更新tech_spec.md记录新架构 ✅
+2. 创建field_config.py ✅
+3. 研究Qlib源码确定实现方案 ✅
+4. 创建base_collector.py
+5. 实现YahooCollector（使用yfinance库）
+6. 实现DataCollectorService
+7. 创建数据更新API
+8. 通过Swagger UI测试
+9. 实现Alpha158Handler
+
+---
+
+### 2026年1月22日 - Qlib 源码研究与方案确定
+
+**研究目标**: 确定是使用 Qlib 的 Python API 还是 subprocess 调用脚本。
+
+**研究过程**:
+
+1. **Qlib 安装情况**:
+
+   - 版本: 0.9.7
+   - 位置: `/app/.venv/lib/python3.10/site-packages/qlib/`
+   - 包管理: uv（不是 pip）
+   - 依赖声明: `pyqlib>=0.9.0`
+
+2. **Qlib 模块结构**:
+
+   ```
+   qlib/
+   ├── data/           # 数据处理模块
+   │   ├── data.py     # D.features() 数据访问
+   │   ├── cache.py    # 缓存机制
+   │   ├── dataset/    # 数据集
+   │   └── storage/    # 存储
+   ├── contrib/        # 贡献模块（Alpha158等）
+   ├── model/          # 模型
+   ├── workflow/       # 工作流
+   └── utils/          # 工具函数
+   ```
+
+3. **关键发现**:
+
+   - ❌ Qlib 包内**没有** collector 相关模块
+   - ❌ Qlib 包内**没有** dump_bin 相关模块
+   - ✅ Qlib 提供 `GetData` 类用于下载预构建数据
+   - ✅ Qlib 的 utils 模块提供 `read_bin`, `exists_qlib_data` 等工具
+   - ❌ pip 安装的 Qlib **不包含** scripts 目录
+
+4. **GetData 类分析**:
+
+   ```python
+   from qlib.tests.data import GetData
+
+   # 可用方法:
+   - download_data()      # 下载预构建数据
+   - qlib_data()          # 获取 qlib 数据路径
+   - check_dataset()      # 检查数据集
+   - delete_zip_file()    # 删除下载的压缩包
+   ```
+
+   **限制**: 只能下载历史预构建数据，不支持实时更新。
+
+5. **已安装的数据源库**（从 pyproject.toml）:
+   - `yfinance>=0.2.18` - Yahoo Finance API
+   - `tushare>=1.2.89` - Tushare API
+   - `akshare>=1.12.0` - AKShare API
+
+**最终方案决策**:
+
+采用**直接使用数据源库 + Qlib 数据格式**的方案：
+
+```
+┌─────────────────────────────────────────────────────────┐
+│           Data Collection Architecture                   │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  ┌────────────────────────────────────────────┐         │
+│  │  Data Source Libraries (Python API)        │         │
+│  │  - yfinance (Yahoo Finance)                │         │
+│  │  - tushare (Tushare)                       │         │
+│  │  - akshare (AKShare)                       │         │
+│  └──────────────────┬─────────────────────────┘         │
+│                     │ Direct API calls                   │
+│  ┌──────────────────▼─────────────────────────┐         │
+│  │  Our Collectors (Python classes)           │         │
+│  │  - YahooCollector                          │         │
+│  │  - TushareCollector                        │         │
+│  │  - Fetch data via library API              │         │
+│  │  - Convert to pandas DataFrame             │         │
+│  └──────────────────┬─────────────────────────┘         │
+│                     │ Standard DataFrame                 │
+│  ┌──────────────────▼─────────────────────────┐         │
+│  │  Data Processing                           │         │
+│  │  - Ensure all 10 standard fields           │         │
+│  │  - Fill missing fields with NaN            │         │
+│  │  - Validate data format                    │         │
+│  └──────────────────┬─────────────────────────┘         │
+│                     │ Qlib-compatible CSV                │
+│  ┌──────────────────▼─────────────────────────┐         │
+│  │  CSV Storage                               │         │
+│  │  - Save to ~/.qlib/csv_data/               │         │
+│  │  - Format: instrument.csv                  │         │
+│  │  - Columns: date, open, high, low, ...     │         │
+│  └──────────────────┬─────────────────────────┘         │
+│                     │                                    │
+└─────────────────────┼────────────────────────────────────┘
+                      │
+┌─────────────────────▼────────────────────────────────────┐
+│                  Qlib Framework                          │
+├──────────────────────────────────────────────────────────┤
+│                                                          │
+│  ┌────────────────────────────────────────────┐         │
+│  │  D.features() - Data Access                │         │
+│  │  - Read CSV files directly                 │         │
+│  │  - Automatic caching                       │         │
+│  │  - Return MultiIndex DataFrame             │         │
+│  └──────────────────┬─────────────────────────┘         │
+│                     │                                    │
+│  ┌──────────────────▼─────────────────────────┐         │
+│  │  Alpha158 Handler                          │         │
+│  │  - Calculate 158 factors                   │         │
+│  │  - Based on expression engine              │         │
+│  └────────────────────────────────────────────┘         │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
+```
+
+**方案优势**:
+
+1. **完全基于 Python API**: 不使用 subprocess，类型安全，易调试
+2. **实时数据**: 直接从数据源获取最新数据，不依赖预构建数据
+3. **灵活性**: 可以自定义数据处理逻辑，支持增量更新
+4. **已有依赖**: yfinance、tushare、akshare 已安装，无需额外依赖
+5. **符合 Qlib**: 数据格式符合 Qlib 要求，可直接使用 D.features()
+6. **不造轮子**: 充分利用现有库，只做数据格式转换
+
+**实现要点**:
+
+1. **BaseCollector 抽象基类**:
+
+   - 定义统一接口：`collect_data()`
+   - 强制字段一致性：所有 collector 提供相同的10个字段
+   - 数据验证：确保数据格式符合 Qlib 要求
+
+2. **YahooCollector 实现**:
+
+   ```python
+   import yfinance as yf
+
+   def collect_data(self, instruments, start_date, end_date):
+       for instrument in instruments:
+           # 1. 使用 yfinance 获取数据
+           ticker = yf.Ticker(instrument)
+           df = ticker.history(start=start_date, end=end_date)
+
+           # 2. 转换为 Qlib 格式
+           df = self._convert_to_qlib_format(df)
+
+           # 3. 确保所有字段存在
+           df = self._ensure_all_fields(df)
+
+           # 4. 保存为 CSV
+           csv_file = f"~/.qlib/csv_data/{instrument}.csv"
+           df.to_csv(csv_file)
+   ```
+
+3. **TushareCollector 实现**:
+
+   ```python
+   import tushare as ts
+
+   def collect_data(self, instruments, start_date, end_date):
+       pro = ts.pro_api(self.token)
+
+       for instrument in instruments:
+           # 1. 使用 Tushare API 获取数据
+           df = pro.daily(
+               ts_code=instrument,
+               start_date=start_date,
+               end_date=end_date
+           )
+
+           # 2. 转换为 Qlib 格式
+           df = self._convert_to_qlib_format(df)
+
+           # 3. 确保所有字段存在
+           df = self._ensure_all_fields(df)
+
+           # 4. 保存为 CSV
+           csv_file = f"~/.qlib/csv_data/{instrument}.csv"
+           df.to_csv(csv_file)
+   ```
+
+4. **Qlib 数据读取**:
+
+   ```python
+   import qlib
+   from qlib.data import D
+
+   # 初始化 Qlib（指向 CSV 数据目录）
+   qlib.init(provider_uri="~/.qlib/csv_data", region="cn")
+
+   # 读取数据
+   instruments = ["SH600000", "SZ000001"]
+   fields = ["$open", "$close", "$high", "$low", "$volume"]
+   df = D.features(instruments, fields, start_time="2020-01-01", end_time="2024-01-01")
+   ```
+
+**下一步行动**:
+
+1. ✅ 创建 base_collector.py（抽象基类）
+2. ✅ 实现 YahooCollector（使用 yfinance）
+3. ✅ 实现 DataCollectorService（编排层）
+4. 创建数据更新 API
+5. 通过 Swagger UI 测试
+6. 实现 Alpha158Handler
+
+---
+
+### 2026年1月23日 - YahooCollector 和 DataCollectorService 实现完成
+
+**实现目标**: 完成数据收集的核心组件，包括 YahooCollector、DataCollectorService 和相关的 Pydantic 模型。
+
+**已完成的工作**:
+
+#### 1. **BaseCollector 和 QuantBotFieldConfig** ✅
+
+**文件**: `backend/app/services/data_sources/base_collector.py`
+
+**核心组件**:
+- `QuantBotFieldConfig`: 定义标准字段配置（10个字段）
+- `BaseCollector`: 抽象基类，定义 collector 接口
+
+**关键方法**:
+- `collect_data()`: 数据收集的主流程
+- `get_supported_fields()`: 返回支持的字段
+- `validate_field_coverage()`: 验证字段覆盖率
+- `_convert_csv_to_bin()`: 调用 dump_bin.py 转换数据
+
+**设计亮点**:
+- 使用 subprocess 调用 Qlib 的 dump_bin.py 脚本
+- 确保所有 collector 提供一致的字段
+- 缺失字段自动填充 NaN
+
+#### 2. **YahooCollector 实现** ✅
+
+**文件**: `backend/app/services/data_sources/yahoo_collector.py`
+
+**核心功能**:
+- 使用 `yfinance` 库获取 Yahoo Finance 数据
+- 支持 7 个字段：open, high, low, close, volume, adj_close, factor
+- 自动计算 factor 字段（adj_close / close）
+- 保存 CSV 文件并转换为 Qlib .bin 格式
+
+**关键方法**:
+- `_fetch_instrument_data()`: 使用 yfinance 获取单个股票数据
+- `_convert_to_standard_format()`: 转换为标准格式
+- `collect_data()`: 完整的数据收集流程
+
+**测试结果**:
+- ✅ 基础测试：3/3 通过
+- ✅ 集成测试：3/3 通过
+- ✅ 成功获取 AAPL 真实数据
+- ✅ CSV 和 .bin 文件生成正常
+
+#### 3. **DataCollectorService 实现** ✅
+
+**文件**: `backend/app/services/data_collector_service.py`
+
+**架构重构**:
+- 将 `CollectorRegistry` 从 `base_collector.py` 移到 `data_collector_service.py`
+- 原因：Registry 是服务层组件，不应在数据层定义
+- 符合分层架构原则
+
+**核心组件**:
+
+**CollectorRegistry**:
+- 管理多个 collector 的注册和查询
+- 验证 collector 的字段兼容性
+- 提供注册表信息查询
+
+**DataCollectorService**:
+- 业务逻辑层，编排数据收集任务
+- 自动注册默认 collector（YahooCollector）
+- 提供统一的服务接口
+- 错误处理和日志记录
+
+**单例模式**:
+- `get_data_collector_service()`: 全局唯一服务实例
+- 适用于 FastAPI 依赖注入
+
+**测试结果**:
+```bash
+Service initialized successfully
+Available collectors: ['yahoo']
+```
+
+#### 4. **Pydantic 数据模型** ✅
+
+**文件**: `backend/app/models.py`
+
+**新增模型**:
+
+**DataCollectionRequest**:
+- 数据收集请求模型
+- 字段验证：collector_name, instruments, start_date, end_date, output_dir
+- 日期格式验证（YYYY-MM-DD）
+- 至少需要一个股票代码
+
+**DataCollectionResponse**:
+- 数据收集响应模型
+- 包含成功状态、收集结果、错误信息
+- API 友好的格式
+
+**CollectorInfo**:
+- Collector 元数据模型
+- 包含名称、支持字段、字段覆盖率、配置键
+
+**CollectorsInfoResponse**:
+- 所有 collector 信息的汇总
+- 用于 API 发现
+
+**设计优势**:
+- 自动验证：FastAPI 自动验证请求数据
+- 类型安全：编译时类型检查
+- 自动文档：Swagger UI 自动生成文档
+- 清晰的 API 契约
+
+#### 5. **技术架构**
+
+**分层架构**:
+```
+API Layer (FastAPI routes)
+    ↓
+Service Layer (DataCollectorService)
+    ↓
+Data Layer (YahooCollector, TushareCollector)
+    ↓
+External APIs (yfinance, tushare, akshare)
+```
+
+**数据流**:
+```
+1. API 接收请求 → DataCollectionRequest 验证
+2. DataCollectorService 选择 collector
+3. YahooCollector 获取数据（yfinance）
+4. 转换为标准格式（10个字段）
+5. 保存 CSV 文件
+6. 调用 dump_bin.py 转换为 .bin
+7. 返回 DataCollectionResponse
+```
+
+**设计模式**:
+- **Singleton Pattern**: DataCollectorService 全局唯一
+- **Registry Pattern**: CollectorRegistry 管理 collector
+- **Strategy Pattern**: 不同 collector 实现相同接口
+- **Facade Pattern**: Service 简化复杂操作
+
+#### 6. **文件结构**
+
+```
+backend/app/
+├── services/
+│   ├── data_collector_service.py      # Service 层（新增）
+│   │   ├── CollectorRegistry          # Collector 注册表
+│   │   ├── DataCollectorService       # 业务逻辑服务
+│   │   └── get_data_collector_service # 单例函数
+│   └── data_sources/
+│       ├── base_collector.py          # 数据层基类
+│       │   ├── QuantBotFieldConfig    # 字段配置
+│       │   └── BaseCollector          # 抽象基类
+│       └── yahoo_collector.py         # Yahoo 实现
+│           └── YahooCollector         # Yahoo Finance collector
+├── models.py                          # Pydantic 模型（更新）
+│   ├── DataCollectionRequest          # 请求模型
+│   ├── DataCollectionResponse         # 响应模型
+│   ├── CollectorInfo                  # Collector 信息
+│   └── CollectorsInfoResponse         # Collectors 汇总
+└── tests/
+    └── services/
+        └── data_sources/
+            └── test_yahoo_collector.py # 测试（6个全部通过）
+```
+
+#### 7. **关键决策和经验**
+
+**架构重构**:
+- 将 `CollectorRegistry` 从数据层移到服务层
+- 原因：Registry 负责管理和编排，属于业务逻辑
+- 符合单一职责原则和分层架构
+
+**Qlib 集成**:
+- 使用 subprocess 调用 dump_bin.py（Qlib 原生脚本）
+- 不重新发明轮子，充分利用 Qlib 现有机制
+- 数据格式完全符合 Qlib 要求
+
+**字段处理**:
+- 定义 10 个标准字段（core + extended）
+- Yahoo Finance 只支持 7 个，其余填充 NaN
+- 确保所有 collector 输出一致
+
+**测试策略**:
+- 单元测试：验证基础功能
+- 集成测试：验证真实数据获取
+- 使用 pytest.mark.integration 标记
+
+**下一步行动**:
+
+1. 创建数据更新 API 路由（`backend/app/api/routes/data_collection.py`）
+2. 在 `api/main.py` 中注册路由
+3. 通过 Swagger UI 测试 API
+4. 编写 API 集成测试
+5. 实现 TushareCollector（可选）
+6. 实现 Alpha158Handler
