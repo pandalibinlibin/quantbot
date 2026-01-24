@@ -10,6 +10,7 @@ from app.api.routes import (
     private,
     users,
     utils,
+    data_collection,
 )
 from app.core.config import settings
 
@@ -22,6 +23,7 @@ api_router.include_router(models.router)
 api_router.include_router(model_trainings.router)
 api_router.include_router(backtests.router)
 api_router.include_router(strategies.router)
+api_router.include_router(data_collection.router)
 
 
 if settings.ENVIRONMENT == "local":

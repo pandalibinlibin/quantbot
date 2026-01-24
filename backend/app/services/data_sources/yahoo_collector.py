@@ -9,7 +9,7 @@ Educational Notes:
 - Data quality is generally good for US and major international markets
 """
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from pathlib import Path
 import logging
 import pandas as pd
@@ -66,7 +66,7 @@ class YahooCollector(BaseCollector):
         instruments: List[str],
         start_date: str,
         end_date: str,
-        output_dir: Path,
+        output_dir: Optional[Path] = None,
         **kwargs,
     ) -> Dict[str, Any]:
         """
@@ -93,6 +93,12 @@ class YahooCollector(BaseCollector):
             f"Starting Yahoo Finance data collection for {len(instruments)} instruments "
             f"from {start_date} to {end_date}"
         )
+
+        # Handle output_dir
+        if output_dir is None:
+            output_dir = Path.home() / ".qlib" / "stock_data"
+        else:
+            output_dir = Path(output_dir)
 
         # Create directories
         csv_dir = output_dir / "csv"
@@ -152,15 +158,12 @@ class YahooCollector(BaseCollector):
         # Check if we have any successful data
         if not successful_instruments:
             return {
-                "success": False,
-                "message": "Failed to collect data for all instruments",
-                "instruments_count": 0,
-                "successful_instruments": [],
-                "failed_instruments": failed_instruments,
-                "date_range": [start_date, end_date],
-                "fields": STANDARD_FIELDS,
+                "collector": "yahoo",
+                "total_instruments": len(instruments),
+                "successful_count": 0,
                 "csv_dir": str(csv_dir),
                 "qlib_dir": str(qlib_dir),
+                "errors": errors,
             }
 
         # Convert CSV to .bin format
@@ -173,21 +176,12 @@ class YahooCollector(BaseCollector):
 
         # Prepare final result
         result = {
-            "success": conversion_result["success"],
-            "message": (
-                f"Successfully collected data for {len(successful_instruments)} instruments"
-                if conversion_result["success"]
-                else f"Data collection succeeded but .bin conversion failed"
-            ),
-            "instruments_count": len(successful_instruments),
-            "successful_instruments": successful_instruments,
-            "failed_instruments": failed_instruments,
-            "date_range": [start_date, end_date],
-            "fields": STANDARD_FIELDS,
+            "collector": "yahoo",
+            "total_instruments": len(instruments),
+            "successful_count": len(successful_instruments),
             "csv_dir": str(csv_dir),
             "qlib_dir": str(qlib_dir),
             "errors": errors,
-            "conversion_result": conversion_result,
         }
 
         self.logger.info(

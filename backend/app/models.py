@@ -618,23 +618,21 @@ class DataCollectionRequest(SQLModel):
     """
 
     collector_name: str = Field(
-        description="Name of the data collector (e.g., 'yahoo')", examples=["yahoo"]
+        description="Name of the data collector (e.g., 'yahoo')"
     )
     instruments: list[str] = Field(
         description="List of instrument codes to collect",
-        examples=[["AAPL", "MSFT", "GOOGL"]],
         min_length=1,
     )
     start_date: str = Field(
         description="Start date in YYYY-MM-DD format",
-        examples=["2024-01-01"],
-        pattern=r"^\d{4}-\d{2}-\d{2}$",
+        regex=r"^\d{4}-\d{2}-\d{2}$",
     )
     end_date: str = Field(
         description="End date in YYYY-MM-DD format",
-        examples=["2024-12-31"],
-        pattern=r"^\d{4}-\d{2}-\d{2}$",
+        regex=r"^\d{4}-\d{2}-\d{2}$",
     )
+
     output_dir: str | None = Field(
         default=None,
         description="Optional output directory (default: ~/.qlib/stock_data)",

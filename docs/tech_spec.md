@@ -2137,9 +2137,204 @@ backend/app/
 
 **下一步行动**:
 
-1. 创建数据更新 API 路由（`backend/app/api/routes/data_collection.py`）
-2. 在 `api/main.py` 中注册路由
-3. 通过 Swagger UI 测试 API
+1. ✅ 创建数据更新 API 路由（`backend/app/api/routes/data_collection.py`）
+2. ✅ 在 `api/main.py` 中注册路由
+3. ✅ 通过 Swagger UI 测试 API
 4. 编写 API 集成测试
 5. 实现 TushareCollector（可选）
 6. 实现 Alpha158Handler
+
+---
+
+### 2026年1月23日 - 数据收集 API 实现完成
+
+**实现目标**: 创建 FastAPI 数据收集 API，通过 Swagger UI 测试验证功能。
+
+**已完成的工作**:
+
+#### 1. **数据收集 API 路由** ✅
+
+**文件**: `backend/app/api/routes/data_collection.py`
+
+**实现的 3 个端点**:
+
+**1. POST /api/v1/data-collection/collect**
+- 功能：执行数据收集任务
+- 认证：需要 CurrentUser
+- 请求体：DataCollectionRequest
+- 响应：DataCollectionResponse
+- 错误处理：400 (无效参数), 500 (服务器错误)
+
+**2. GET /api/v1/data-collection/collectors**
+- 功能：获取所有 collector 信息
+- 认证：需要 CurrentUser
+- 响应：CollectorsInfoResponse
+- 用途：API 发现，前端展示可用数据源
+
+**3. GET /api/v1/data-collection/collectors/{collector_name}**
+- 功能：获取单个 collector 详细信息
+- 认证：需要 CurrentUser
+- 路径参数：collector_name
+- 响应：CollectorInfo
+- 错误处理：404 (collector 不存在)
+
+**设计特点**:
+- RESTful API 设计
+- 使用 FastAPI 依赖注入
+- Pydantic 模型自动验证
+- 完整的错误处理和日志记录
+
+#### 2. **Pydantic 模型修正** ✅
+
+**文件**: `backend/app/models.py`
+
+**Pydantic v1 兼容性修复**:
+- 移除 `examples` 参数（v2 特性）
+- 将 `pattern` 改为 `regex`（v1 语法）
+- 确保所有字段定义符合 v1 规范
+
+**模型列表**:
+- `DataCollectionRequest`: 请求验证
+- `DataCollectionResponse`: 响应格式
+- `CollectorInfo`: Collector 元数据
+- `CollectorsInfoResponse`: Collectors 汇总
+
+#### 3. **Bug 修复过程** ✅
+
+**Bug 1: YahooCollector 类型声明错误**
+- 问题：`output_dir: Path` 不允许 None
+- 修复：`output_dir: Optional[Path] = None`
+- 添加：output_dir 为 None 时使用默认路径
+
+**Bug 2: DataCollectorService 错误响应字段名不匹配**
+- 问题：使用 `instruments_requested`, `instruments_collected`
+- 修复：改为 `total_instruments`, `successful_count`
+- 原因：与 Pydantic 模型字段名不一致
+
+**Bug 3: DataCollectorService 缩进错误**
+- 问题：`return` 语句在 `except` 块外
+- 修复：将 `return` 缩进到 `except` 块内
+- 影响：导致逻辑错误
+
+**Bug 4: YahooCollector 缺少 Optional 导入**
+- 问题：使用 `Optional[Path]` 但未导入
+- 修复：添加 `Optional` 到 typing 导入
+
+**Bug 5: YahooCollector 返回字段名不匹配**
+- 问题：返回 `instruments_count`, `successful_instruments`
+- 修复：改为 `total_instruments`, `successful_count`
+- 原因：与 DataCollectionResponse 模型不一致
+
+#### 4. **API 测试结果** ✅
+
+**测试环境**:
+- 通过 Swagger UI 测试
+- 使用 admin@example.com 账户认证
+- Backend 运行在 Docker 容器中
+
+**测试 1: GET /api/v1/data-collection/collectors**
+- 状态码：200 OK
+- 结果：返回 1 个 collector (yahoo)
+- 字段覆盖率：70% (7/10 字段)
+- 缺失字段：vwap, amount, turnover
+
+**测试 2: GET /api/v1/data-collection/collectors/yahoo**
+- 状态码：200 OK
+- 结果：返回 yahoo collector 详细信息
+- 包含：支持字段、字段覆盖率、配置键
+
+**测试 3: POST /api/v1/data-collection/collect**
+- 状态码：200 OK
+- 测试数据：AAPL, 2024-01-03 至 2024-01-05
+- 结果：成功获取 1 个股票数据
+- CSV 文件：保存到 `/root/.qlib/stock_data/csv/AAPL.csv`
+- .bin 文件：转换到 `/root/.qlib/stock_data/qlib_data`
+
+**测试注意事项**:
+- 2024-01-02 是假期，Yahoo Finance 无数据
+- 使用 2024-01-03 至 2024-01-05 测试成功
+- 数据获取需要 5-15 秒
+
+#### 5. **技术要点**
+
+**FastAPI 特性**:
+- 自动生成 OpenAPI 文档（Swagger UI）
+- 自动请求验证（Pydantic）
+- 依赖注入系统（Depends）
+- 类型提示支持
+
+**RESTful 设计**:
+- POST：创建/触发任务
+- GET：查询信息
+- 清晰的 URL 结构
+- 标准的 HTTP 状态码
+
+**错误处理**:
+- 400：无效参数
+- 404：资源不存在
+- 500：服务器错误
+- 详细的错误信息
+
+**安全性**:
+- 所有端点需要认证（CurrentUser）
+- 使用 JWT token
+- 基于 FastAPI Full Stack Template 的安全机制
+
+#### 6. **数据流完整验证**
+
+```
+1. 用户在 Swagger UI 发起请求
+   ↓
+2. FastAPI 验证 JWT token (CurrentUser)
+   ↓
+3. Pydantic 验证请求数据 (DataCollectionRequest)
+   ↓
+4. API 路由调用 DataCollectorService
+   ↓
+5. DataCollectorService 选择 YahooCollector
+   ↓
+6. YahooCollector 调用 yfinance 获取数据
+   ↓
+7. 转换为标准格式（10个字段）
+   ↓
+8. 保存 CSV 文件
+   ↓
+9. 调用 dump_bin.py 转换为 .bin
+   ↓
+10. 返回 DataCollectionResponse
+   ↓
+11. Swagger UI 显示结果
+```
+
+**验证结果**: ✅ 完整数据流正常工作
+
+#### 7. **经验总结**
+
+**Pydantic 版本兼容性**:
+- FastAPI Full Stack Template 使用 Pydantic v1
+- v1 和 v2 的 Field() 参数不同
+- 必须使用 `regex` 而不是 `pattern`
+- 不支持 `examples` 参数
+
+**字段命名一致性**:
+- Pydantic 模型、Service 层、Collector 层必须使用相同字段名
+- 不一致会导致 ResponseValidationError
+- 建议先定义模型，再实现逻辑
+
+**类型声明准确性**:
+- Optional 类型必须正确导入
+- 类型声明影响运行时行为
+- None 值处理需要显式声明
+
+**测试数据选择**:
+- 避免使用假期日期
+- Yahoo Finance 在非交易日无数据
+- 建议使用最近的工作日
+
+**下一步行动**:
+
+1. 编写 API 集成测试（pytest）
+2. 实现 TushareCollector（可选）
+3. 实现 AkshareCollector（可选）
+4. 实现 Alpha158Handler
+5. 创建数据管理前端页面

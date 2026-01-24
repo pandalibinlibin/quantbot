@@ -272,8 +272,8 @@ class DataCollectorService:
                 "success": False,
                 "collector": collector_name,
                 "error": str(e),
-                "instruments_requested": len(instruments),
-                "instruments_collected": 0,
+                "total_instruments": len(instruments),
+                "successful_count": 0,
             }
 
     def get_collectors_info(self) -> Dict[str, Any]:
