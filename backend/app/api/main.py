@@ -11,6 +11,7 @@ from app.api.routes import (
     users,
     utils,
     data_collection,
+    factor_handlers,
 )
 from app.core.config import settings
 
@@ -24,7 +25,11 @@ api_router.include_router(model_trainings.router)
 api_router.include_router(backtests.router)
 api_router.include_router(strategies.router)
 api_router.include_router(data_collection.router)
-
+api_router.include_router(
+    factor_handlers.router,
+    prefix="/factor-handlers",
+    tags=["factor-handlers"],
+)
 
 if settings.ENVIRONMENT == "local":
     api_router.include_router(private.router)

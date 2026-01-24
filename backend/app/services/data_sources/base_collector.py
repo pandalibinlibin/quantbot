@@ -289,6 +289,9 @@ class BaseCollector(ABC):
             qlib_dir.mkdir(parents=True, exist_ok=True)
 
             # Construct dump_bin.py command
+            # IMPORTANT: Use filename-based symbol extraction to ensure consistency
+            # This forces dump_bin.py to derive instrument codes from CSV filenames
+            # which are already normalized to lowercase by our collectors
             cmd = [
                 "python",
                 str(self.DUMP_BIN_SCRIPT),
@@ -305,6 +308,8 @@ class BaseCollector(ABC):
                 "date",
                 "--file_suffix",
                 ".csv",
+                # Remove symbol field to force filename-based extraction
+                # This ensures dump_bin.py derives instrument codes from CSV filenames only
             ]
 
             self.logger.info(f"Executing: {' '.join(cmd)}")
@@ -371,5 +376,3 @@ class BaseCollector(ABC):
             "field_coverage": coverage,
             "config_keys": list(self.config.keys()),
         }
-
-

@@ -633,11 +633,6 @@ class DataCollectionRequest(SQLModel):
         regex=r"^\d{4}-\d{2}-\d{2}$",
     )
 
-    output_dir: str | None = Field(
-        default=None,
-        description="Optional output directory (default: ~/.qlib/stock_data)",
-    )
-
 
 class DataCollectionResponse(SQLModel):
     """
@@ -699,3 +694,140 @@ class CollectorsInfoResponse(SQLModel):
     collectors: dict[str, CollectorInfo] = Field(
         description="Dictionary of collector information"
     )
+
+
+# Factor Calculation Models
+class FactorCalculationRequest(SQLModel):
+    """
+    Request model for factor calculation task.
+
+    Educational Notes:
+    - Pydantic model for factor calculation request validation
+    - Supports multiple factor handlers (alpha158, alpha191, etc.)
+    - All fields are validated automatically by FastAPI
+    """
+
+    handler_name: str = Field(
+        description="Name of the factor handler (e.g., 'alpha158')"
+    )
+    instruments: list[str] = Field(
+        description="List of instrument codes to calculate factors for",
+        min_length=1,
+    )
+    start_date: str = Field(
+        description="Start date in YYYY-MM-DD format",
+        regex=r"^\d{4}-\d{2}-\d{2}$",
+    )
+    end_date: str = Field(
+        description="End date in YYYY-MM-DD format",
+        regex=r"^\d{4}-\d{2}-\d{2}$",
+    )
+
+
+class FactorCalculationResponse(SQLModel):
+    """
+    Response model for factor calculation task.
+
+    Educational Notes:
+    - Provides detailed information about calculation result
+    - Includes success status, timing, and caching information
+    - API-friendly format for frontend consumption
+    """
+
+    success: bool = Field(description="Whether the calculation was successful")
+    factor_handler: str = Field(description="Name of the factor handler used")
+    instruments_count: int = Field(description="Number of instruments processed")
+    features_count: int = Field(description="Number of features calculated")
+    calculation_time: float = Field(description="Time taken for calculation in seconds")
+    cached: bool = Field(description="Whether result was retrieved from cache")
+    error: str | None = Field(
+        default=None, description="Error message if calculation failed"
+    )
+
+
+class FactorHandlerInfo(SQLModel):
+    """
+    Information about a factor handler.
+
+    Educational Notes:
+    - Metadata about factor handler capabilities
+    - Includes feature count and description
+    - Helps users understand available factors
+    """
+
+    name: str = Field(description="Handler name")
+    description: str = Field(description="Handler description")
+    features_count: int = Field(
+        description="Number of features provided by this handler"
+    )
+
+
+class FactorHandlersInfoResponse(SQLModel):
+    """
+    Response model for factor handlers information.
+
+    Educational Notes:
+    - Provides overview of all available factor handlers
+    - Useful for API discovery
+    - Frontend can use this to build UI
+    """
+
+    total_handlers: int = Field(description="Total number of registered handlers")
+    handlers: list[FactorHandlerInfo] = Field(description="List of handler information")
+
+
+class FactorDataFetchRequest(SQLModel):
+    """
+    Request model for fetching actual factor data.
+
+    Educational Notes:
+    - Returns actual calculated factor values as evidence
+    - Allows specifying which features to retrieve
+    - Useful for verification and debugging
+    """
+
+    handler_name: str = Field(description="Name of the factor handler")
+    instruments: list[str] = Field(description="List of instrument codes")
+    start_date: str = Field(description="Start date (YYYY-MM-DD)")
+    end_date: str = Field(description="End date (YYYY-MM-DD)")
+    features: list[str] | None = Field(
+        default=None,
+        description="Specific features to fetch (if None, fetch first 5 features)",
+    )
+
+
+class FactorDataFetchResponse(SQLModel):
+    """
+    Response model for factor data fetch.
+
+    Educational Notes:
+    - Contains actual calculated factor values
+    - Provides evidence of real computation
+    - Includes metadata for verification
+    """
+
+    success: bool = Field(description="Whether the fetch was successful")
+    factor_handler: str = Field(description="Name of the factor handler used")
+    instruments: list[str] = Field(description="List of instruments")
+    date_range: tuple[str, str] = Field(description="Date range (start, end)")
+    features: list[str] = Field(description="List of feature names")
+    data_shape: tuple[int, int] = Field(description="Shape of data (rows, columns)")
+    sample_data: dict[str, list[float]] = Field(
+        description="Sample data (first 5 rows) for each feature"
+    )
+    error: str | None = Field(default=None, description="Error message if fetch failed")
+
+
+class FeatureInfo(SQLModel):
+    """
+    Information about a single feature.
+
+    Educational Notes:
+    - Metadata about individual factor features
+    - Includes name, description, and category
+    - Helps users understand what each feature represents
+    """
+
+    name: str = Field(description="Feature name")
+    description: str = Field(description="Feature description")
+    category: str = Field(description="Feature category (e.g., '价格形态', '技术指标')")

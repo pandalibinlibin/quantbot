@@ -72,7 +72,6 @@ def collect_data(
             instruments=request.instruments,
             start_date=request.start_date,
             end_date=request.end_date,
-            output_dir=request.output_dir,
         )
         return result
     except ValueError as e:

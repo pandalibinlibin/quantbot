@@ -66,7 +66,6 @@ class YahooCollector(BaseCollector):
         instruments: List[str],
         start_date: str,
         end_date: str,
-        output_dir: Optional[Path] = None,
         **kwargs,
     ) -> Dict[str, Any]:
         """
@@ -76,7 +75,6 @@ class YahooCollector(BaseCollector):
             instruments: List of ticker symbols (e.g., ['AAPL', 'MSFT'])
             start_date: Start date in YYYY-MM-DD format
             end_date: End date in YYYY-MM-DD format
-            output_dir: Directory to store CSV and .bin files
             **kwargs: Additional parameters:
                 - interval: Data interval ('1d', '1wk', '1mo'), default '1d'
                 - auto_adjust: Whether to use auto-adjusted prices, default False
@@ -94,15 +92,13 @@ class YahooCollector(BaseCollector):
             f"from {start_date} to {end_date}"
         )
 
-        # Handle output_dir
-        if output_dir is None:
-            output_dir = Path.home() / ".qlib" / "stock_data"
-        else:
-            output_dir = Path(output_dir)
+        # Import settings to get QLIB_REGION
+        from app.core.config import settings
 
-        # Create directories
-        csv_dir = output_dir / "csv"
-        qlib_dir = output_dir / "qlib_data"
+        # Use fixed paths to avoid configuration errors
+        region_data = f"{settings.QLIB_REGION}_data"
+        csv_dir = Path.home() / ".qlib" / "stock_data" / "csv"
+        qlib_dir = Path.home() / ".qlib" / "qlib_data" / region_data
         csv_dir.mkdir(parents=True, exist_ok=True)
 
         # Get optional parameters
@@ -141,7 +137,15 @@ class YahooCollector(BaseCollector):
                 # Ensure all standard fields exist
                 df = self._ensure_all_fields(df)
 
-                # Save as CSV
+                # 标准化日期格式，移除时区信息确保CSV格式一致
+                if df.index.tz is not None:
+                    df.index = df.index.tz_localize(None)
+
+                # 确保日期格式为标准格式
+                df.index.name = "date"
+
+                # Save as CSV using original instrument format
+                # Keep user's original input format for consistency across all components
                 csv_file = csv_dir / f"{instrument}.csv"
                 df.to_csv(csv_file, index=True)
 
