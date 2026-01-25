@@ -323,6 +323,40 @@ class BaseCollector(ABC):
 
             if success:
                 self.logger.info("Successfully converted CSV to .bin format")
+
+                # Normalize instruments file to lowercase for consistency
+                # This ensures instruments file matches CSV filenames and bin directories
+                instruments_dir = qlib_dir / "instruments"
+                if instruments_dir.exists():
+                    for instruments_file in instruments_dir.glob("*.txt"):
+                        try:
+                            # Read original content
+                            with open(instruments_file, "r", encoding="utf-8") as f:
+                                lines = f.readlines()
+
+                            # Convert instrument codes to lowercase
+                            normalized_lines = []
+                            for line in lines:
+                                line = line.strip()
+                                if line:
+                                    # Split by tab or whitespace
+                                    parts = line.split()
+                                    if parts:
+                                        # Convert first column (instrument code) to lowercase
+                                        parts[0] = parts[0].lower()
+                                        normalized_lines.append("\t".join(parts))
+
+                            # Write back normalized content
+                            with open(instruments_file, "w", encoding="utf-8") as f:
+                                f.write("\n".join(normalized_lines) + "\n")
+
+                            self.logger.info(
+                                f"Normalized instruments file to lowercase: {instruments_file.name}"
+                            )
+                        except Exception as e:
+                            self.logger.warning(
+                                f"Failed to normalize instruments file {instruments_file.name}: {e}"
+                            )
             else:
                 self.logger.error(f"Failed to convert CSV to .bin: {result.stderr}")
 

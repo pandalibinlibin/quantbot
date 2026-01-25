@@ -144,14 +144,15 @@ class YahooCollector(BaseCollector):
                 # 确保日期格式为标准格式
                 df.index.name = "date"
 
-                # Save as CSV using original instrument format
-                # Keep user's original input format for consistency across all components
-                csv_file = csv_dir / f"{instrument}.csv"
+                # Normalize instrument code to lowercase for consistency
+                # This ensures CSV filename, bin directory, and instruments file all use lowercase
+                normalized_instrument = instrument.lower()
+                csv_file = csv_dir / f"{normalized_instrument}.csv"
                 df.to_csv(csv_file, index=True)
 
-                successful_instruments.append(instrument)
+                successful_instruments.append(normalized_instrument)
                 self.logger.info(
-                    f"Successfully saved {len(df)} rows for {instrument} to {csv_file}"
+                    f"Successfully saved {len(df)} rows for {instrument} (normalized to {normalized_instrument}) to {csv_file}"
                 )
             except Exception as e:
                 error_msg = f"Error collecting data for {instrument}: {str(e)}"

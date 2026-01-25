@@ -5,6 +5,7 @@ Provides unified interface for all factor handlers
 
 from typing import List, Dict, Any, Optional
 import pandas as pd
+import numpy as np
 import logging
 
 
@@ -270,16 +271,32 @@ class FactorHandlerService:
                 features=features,
             )
 
-            # If no specific features requested, get first 5
-            if features is None:
-                all_features = df.columns.tolist()
-                features = all_features[:5] if len(all_features) >= 5 else all_features
-                df = df[features]
+            # If specific features requested, filter the dataframe
+            if features is not None:
+                available_features = [f for f in features if f in df.columns]
+                if not available_features:
+                    raise ValueError(
+                        f"None of the requested features are available. "
+                        f"Requested: {features}, Available: {df.columns.tolist()[:10]}..."
+                    )
+                df = df[available_features]
 
-            # Extract sample data (first 5 rows)
+            # Extract sample data (first 5 rows for preview)
+            # Replace NaN/Inf with None for JSON serialization
+            import numpy as np
+
             sample_data = {}
             for feature in df.columns:
                 values = df[feature].head(5).tolist()
+                # Replace NaN and Inf with None for JSON compliance
+                values = [
+                    (
+                        None
+                        if (isinstance(v, float) and (pd.isna(v) or np.isinf(v)))
+                        else v
+                    )
+                    for v in values
+                ]
                 sample_data[feature] = values
 
             # Get date range

@@ -133,16 +133,10 @@ class Alpha158Handler(BaseFactorHandler):
                 f"features_sample={features.columns.tolist()[:5]}"
             )
 
-            # More accurate cache detection: check if Qlib cache directory exists
-            # and contains relevant cache files for this calculation
-            import os
-
-            cache_dir = os.path.expanduser("~/.qlib/cache")
-            cached = (
-                os.path.exists(cache_dir) and len(os.listdir(cache_dir)) > 0
-                if os.path.exists(cache_dir)
-                else False
-            )
+            # Detect cache usage based on calculation time
+            # With Redis cache: first calculation > 0.3s, cached < 0.3s
+            # This is a heuristic since Redis cache is in-memory
+            cached = calculation_time < 0.3
 
             self.logger.info(
                 f"Alpha158 calculation completed in {calculation_time:.2f}s "

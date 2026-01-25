@@ -58,14 +58,13 @@ def init_qlib(provider_uri: str | None = None, region: str = "cn") -> None:
     qlib.init(
         provider_uri=provider_uri,
         region=region_config,
-        auto_mount=True,  # Automatically mount data provider
         redis_host="redis",  # Redis service name in Docker network
         redis_port=6379,  # Default Redis port
     )
 
     # Note: Qlib's cache mechanism relies on Redis
     # With Redis enabled, expression and dataset caching will be automatic
-    # This significantly improves performance for repeated calculations
+    # Cache data is stored in Redis memory, not in file system
 
 
 def get_qlib_data_path(region: str = "cn") -> Path:

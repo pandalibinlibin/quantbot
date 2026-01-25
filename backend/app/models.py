@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import List
 
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
@@ -812,8 +813,8 @@ class FactorDataFetchResponse(SQLModel):
     date_range: tuple[str, str] = Field(description="Date range (start, end)")
     features: list[str] = Field(description="List of feature names")
     data_shape: tuple[int, int] = Field(description="Shape of data (rows, columns)")
-    sample_data: dict[str, list[float]] = Field(
-        description="Sample data (first 5 rows) for each feature"
+    sample_data: dict[str, list[float | None]] = Field(
+        description="Sample data (first 5 rows) for each feature. None values represent NaN or Inf."
     )
     error: str | None = Field(default=None, description="Error message if fetch failed")
 
@@ -831,3 +832,32 @@ class FeatureInfo(SQLModel):
     name: str = Field(description="Feature name")
     description: str = Field(description="Feature description")
     category: str = Field(description="Feature category (e.g., '价格形态', '技术指标')")
+
+
+# Model Handler Models
+class ModelHandlerInfo(SQLModel):
+    """
+    Information about a model handler.
+
+    Educational Notes:
+    - Metadata about model handler capabilities
+    - Describes the model type and purpose
+    - Helps users understand available models
+    """
+
+    name: str = Field(description="Handler name")
+    description: str = Field(description="Handler description")
+
+
+class ModelHandlersInfoResponse(SQLModel):
+    """
+    Response model for model handlers information.
+
+    Educational Notes:
+    - Provides overview of all available model handlers
+    - Useful for API discovery
+    - Frontend can use this to build UI
+    """
+
+    total_handlers: int = Field(description="Total number of registered handlers")
+    handlers: List[ModelHandlerInfo] = Field(description="List of handler information")

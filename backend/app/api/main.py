@@ -12,6 +12,7 @@ from app.api.routes import (
     utils,
     data_collection,
     factor_handlers,
+    model_handlers,
 )
 from app.core.config import settings
 
@@ -29,6 +30,12 @@ api_router.include_router(
     factor_handlers.router,
     prefix="/factor-handlers",
     tags=["factor-handlers"],
+)
+
+api_router.include_router(
+    model_handlers.router,
+    prefix="/model-handlers",
+    tags=["model-handlers"]
 )
 
 if settings.ENVIRONMENT == "local":
