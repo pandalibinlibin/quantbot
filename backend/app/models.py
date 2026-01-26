@@ -348,22 +348,29 @@ class ModelTrainingBase(SQLModel):
     model_id: uuid.UUID = Field(
         foreign_key="mlmodel.id", description="Model definition to use for training"
     )
-    factor_ids: str = Field(
-        default="[]",
-        description="JSON array of factors IDs to use (e.g., ['uuid1', 'uuid2'])",
+    factor_handler: str = Field(
+        default="alpha158",
+        max_length=100,
+        description="Factor handler name (e.g., 'alpha158', 'alpha360', or 'custom:set_name')",
     )
-    # Training/validation time split
-    train_start_time: str = Field(
-        max_length=50, description="Training start date (e.g., 2008-01-01)"
+    # Training/validation time split - Auto split mode
+    data_start_time: str = Field(
+        max_length=50, description="Overall data start date (e.g., 2008-01-01)"
     )
-    train_end_time: str = Field(
-        max_length=50, description="Training end date (e.g., 2014-12-31)"
+    data_end_time: str = Field(
+        max_length=50, description="Overall data end date (e.g., 2020-12-31)"
     )
-    valid_start_time: str = Field(
-        max_length=50, description="Validation start date (e.g., 2015-01-01)"
+    train_ratio: float = Field(
+        default=0.7,
+        ge=0.0,
+        le=1.0,
+        description="Training data ratio (e.g., 0.7 for 70%). Default is 0.7",
     )
-    valid_end_time: str = Field(
-        max_length=50, description="Validation end date (e.g., 2016-12-31)"
+    valid_ratio: float = Field(
+        default=0.3,
+        ge=0.0,
+        le=1.0,
+        description="Validation data ratio (e.g., 0.3 for 30%). Default is 0.3",
     )
 
     # Training configuration

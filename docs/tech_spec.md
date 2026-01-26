@@ -916,6 +916,56 @@ _最后更新时间: 2026年1月14日_
 
     - 配置代理支持（HTTP_PROXY, HTTPS_PROXY）解决容器网络访问问题
 
+### 2026年1月26日
+
+- **Qlib Label Issue 调试和解决**:
+
+  - **问题发现**: 模型训练中遇到"L2损失异常为0"的问题，经调查发现是"Train dataset missing label column"错误
+  
+  - **根本原因分析**:
+    1. `dataset.prepare()`默认使用`data_key=DK_I`（推理数据），不包含labels
+    2. `col_set="__all"`参数格式错误，应使用`col_set=["feature", "label"]`列表格式
+    3. Alpha158 handler配置过于复杂，自定义processors与内置配置冲突
+    4. pandas Series格式化错误导致日志输出失败
+  
+  - **解决方案实施**:
+    1. **简化Alpha158配置**: 移除所有自定义`infer_processors`、`learn_processors`和`label`参数，使用Qlib默认配置
+    2. **修正dataset.prepare()调用**: 
+       - 使用`data_key=DataHandlerLP.DK_L`获取学习数据（包含labels）
+       - 使用`col_set=["feature", "label"]`明确指定列集合
+    3. **修复格式化错误**: 添加pandas值类型转换（`int(len())`, `float(mean())`等）
+    4. **添加调试代码**: 检查handler原始数据和DatasetH处理后的数据质量
+  
+  - **解决结果**:
+    - ✅ 成功加载labels（Train: 505条, Valid: 221条）
+    - ✅ 训练流程正常完成，无代码错误
+    - ✅ 系统功能完全正常运行
+    - ⚠️ 发现新问题：所有labels都是NaN，需要进一步调试数据质量问题
+  
+  - **关键代码修改**:
+    ```python
+    # Alpha158使用默认配置
+    return handler_class(
+        instruments=instruments,
+        start_time=start_time,
+        end_time=end_time,
+        fit_start_time=fit_start_time,
+        fit_end_time=fit_end_time,
+    )
+    
+    # 正确的dataset.prepare()调用
+    df_train, df_valid = dataset.prepare(
+        ["train", "valid"],
+        col_set=["feature", "label"],
+        data_key=DataHandlerLP.DK_L,
+    )
+    ```
+  
+  - **当前状态**: 
+    - 代码层面问题已完全解决
+    - 正在调试数据质量问题（所有labels为NaN）
+    - 已添加详细调试代码分析Alpha158 label计算过程
+
 ### 2026年1月25日
 
 - **因子工程模块核心功能完成**:

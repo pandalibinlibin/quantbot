@@ -62,10 +62,23 @@ class Alpha158Handler(BaseFactorHandler):
             self._qlib_initialized = True
             self.logger.info(f"Qlib initialized successfully for region: {self.region}")
         except Exception as e:
-            self.logger.warning(
-                f"Qlib initialization warning (may already be initialized): {e}"
-            )
-            self._qlib_initialized = True
+            # Check if Qlib is actually initialized despite the error
+            try:
+                from qlib.data.data import ProviderManager
+
+                if ProviderManager.get_default_provider() is not None:
+                    # Qlib is initialized, just had a warning
+                    self._qlib_initialized = True
+                    self.logger.warning(
+                        f"Qlib initialization warning (but provider is available): {e}"
+                    )
+                    return
+            except Exception:
+                pass
+
+            # Qlib is NOT initialized, raise the error
+            self.logger.error(f"Failed to initialize Qlib: {e}")
+            raise RuntimeError(f"Qlib initialization failed: {e}") from e
 
     def calculate(
         self, instruments: List[str], start_date: str, end_date: str, **kwargs
@@ -90,6 +103,9 @@ class Alpha158Handler(BaseFactorHandler):
             Qlib's directory structure (dump_bin.py converts to lowercase).
         """
         start_time = time.time()
+
+        # Ensure Qlib is initialized before calculation
+        self._initialize_qlib()
 
         try:
             # Normalize instrument codes to lowercase for Qlib compatibility

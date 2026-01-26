@@ -35,55 +35,103 @@ class LightGBMHandler:
 
     def train(
         self,
-        instruments: List[str],
-        start_date: str,
-        end_date: str,
-        train_start: str,
-        train_end: str,
-        valid_start: str,
-        valid_end: str,
-        test_start: str,
-        test_end: str,
+        dataset,  # Qlib DatasetH object
+        model_params: Dict[str, Any] = None,
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Train LightGBM model using Qlib.
 
         Educational Notes:
-        - Uses Qlib's LGBModel (not reimplementing)
-        - Dataset is created by Alpha158 handler
-        - Qlib handles all data loading and training
+        - Accepts pre-prepared Qlib DatasetH object
+        - Dataset should contain features (from any factor handler) and labels
+        - This design separates factor calculation from model training
+        - Follows the Single Responsibility Principle
 
         Args:
-            instruments: List of instrument codes (e.g., ['000001.SZ'])
-            start_date: Overall data start date
-            end_date: Overall data end date
-            train_start: Training set start date
-            train_end: Training set end date
-            valid_start: Validation set start date
-            valid_end: Validation set end date
-            test_start: Test set start date
-            test_end: Test set end date
+            dataset: Qlib DatasetH object with train/valid/test segments
+            model_params: Optional model parameters to override defaults
+            **kwargs: Additional training parameters
 
         Returns:
             Dictionary with training results
+
+        Example:
+            # Step 1: Calculate factors (done separately)
+            factor_data = alpha158_handler.fetch(...)
+
+            # Step 2: Create dataset
+            dataset = DatasetH(handler, segments={...})
+
+            # Step 3: Train model
+            result = lightgbm_handler.train(dataset)
         """
         try:
-            self.logger.info(
-                f"Training LightGBM model for {len(instruments)} instruments"
-            )
+            import time
+            from qlib.contrib.model.gbdt import LGBModel
 
-            # TODO: Implement training logic using Qlib
-            # Will be implemented in next step
+            self.logger.info("Training LightGBM model with provided dataset")
+
+            start_time = time.time()
+
+            # Step 1: Configure LightGBM parameters (Qlib's recommended defaults)
+            default_params = {
+                "loss": "mse",
+                "colsample_bytree": 0.8879,
+                "learning_rate": 0.0421,
+                "subsample": 0.8789,
+                "lambda_l1": 205.6999,
+                "lambda_l2": 580.9768,
+                "max_depth": 8,
+                "num_leaves": 210,
+                "num_threads": 20,
+            }
+
+            # Override with user-provided parameters
+            if model_params:
+                default_params.update(model_params)
+
+            self.logger.info(f"Creating LightGBM model with params: {default_params}")
+
+            # Step 2: Create and train model using Qlib's LGBModel
+            model = LGBModel(**default_params)
+
+            self.logger.info("Training model with Qlib's LGBModel.fit()...")
+            model.fit(dataset, **kwargs)
+
+            # Step 3: Store trained model
+            self.model = model
+
+            training_time = time.time() - start_time
+
+            # Step 4: Extract training metrics
+            train_metrics = {}
+            if hasattr(model, "model") and hasattr(model.model, "best_score"):
+                train_metrics = model.model.best_score
+
+            self.logger.info(
+                f"Model training completed in {training_time:.2f}s. "
+                f"Metrics: {train_metrics}"
+            )
 
             return {
                 "success": True,
                 "model_name": self.name,
-                "message": "Training method placeholder - to be implemented",
+                "training_time": training_time,
+                "metrics": train_metrics,
+                "model_params": default_params,
+                "message": "Model trained successfully using Qlib's LGBModel",
             }
-
         except Exception as e:
             self.logger.error(f"Model training failed: {e}", exc_info=True)
-            return {"success": False, "model_name": self.name, "error": str(e)}
+            return {
+                "success": False,
+                "model_name": self.name,
+                "error": str(e),
+                "training_time": (
+                    time.time() - start_time if "start_time" in locals() else 0
+                ),
+            }
 
     def predict(
         self,
