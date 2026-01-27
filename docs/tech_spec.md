@@ -86,6 +86,52 @@ QuantBot 是一个基于 **Microsoft Qlib** 和 **FastAPI Full Stack Template** 
 3. ✅ **易于扩展**: 通过插件机制扩展各层组件
 4. ✅ **符合定位**: 真正的"Qlib 前端"，而不是"Qlib 替代品"
 
+### 插件化架构设计
+
+**核心理念**：Workflow 执行器保持稳定，通过配置文件插拔不同组件
+
+```
+配置文件 (YAML/Dict)
+    ↓
+Workflow 执行器 (通用，基本不变)
+    ↓
+├─ Data Handler (可插拔组件)
+├─ Model (可插拔组件)
+└─ Strategy (可插拔组件)
+```
+
+**设计优势**：
+
+- **高度解耦**：Workflow 不关心具体用什么数据源、因子、模型
+- **易于扩展**：新增组件不需要修改 Workflow 代码，只需实现标准接口
+- **配置驱动**：同一个 Workflow 可以运行不同的策略，通过配置文件切换
+- **可复用性强**：组件可以在不同 Workflow 中复用
+
+**扩展点**：
+
+1. **Data Collector** (数据采集器)
+
+   - 继承 `BaseCollector`
+   - 实现 `collect_data()` 方法
+   - 数据格式统一为 Qlib 格式
+
+2. **Factor Handler** (因子引擎)
+
+   - 继承 `DataHandlerLP`
+   - 定义因子表达式（使用 Qlib 表达式语言）
+   - 配置 Processor（归一化、去极值等）
+
+3. **Model** (模型)
+
+   - 继承 `ModelFT` 或 `Model`
+   - 实现 `fit()` 和 `predict()` 方法
+   - 支持 MLflow 跟踪
+
+4. **Strategy** (策略)
+   - 继承 `BaseStrategy` 或 `WeightStrategyBase`
+   - 实现 `generate_trade_decision()` 方法
+   - 支持回测和实盘
+
 ---
 
 ## 🛠️ 技术栈
@@ -309,42 +355,248 @@ TEMPLATES = {
 
 ## 🚀 开发计划
 
-### Phase 1: 核心 Workflow 执行器 (1周)
+### Phase 1: 核心 Workflow 执行器 ✅ 已完成
 
 **目标**: 实现基础的 Workflow 执行能力
 
 **任务**:
 
 - [x] 研究 Qlib workflow 文档和示例
-- [ ] 实现 `QlibWorkflowService`
-  - 初始化 Qlib
-  - 执行 workflow 配置
-  - 返回训练结果和指标
-- [ ] 使用 Qlib 内置组件验证全流程
-  - Alpha158 因子
-  - LGBModel 模型
-  - 完整的训练和评估
+- [x] 实现 `QlibWorkflowService`
+  - [x] 初始化 Qlib
+  - [x] 执行训练 workflow 配置
+  - [x] 返回训练结果和指标
+- [x] 使用 Qlib 内置组件验证全流程
+  - [x] Alpha158 因子
+  - [x] LGBModel 模型
+  - [x] 完整的训练和评估
+- [x] 下载 Qlib 数据
+  - [x] 获取官方数据下载脚本
+  - [x] 下载中国市场数据（3877 只股票）
+- [x] 修复并测试完整工作流
+  - [x] 修复数据传递 Bug
+  - [x] 测试通过（25.4 秒完成训练）
 
-**验证标准**:
+**验证结果**: ✅ 测试通过
 
 ```python
-# 能够成功执行以下配置
+# 成功执行的配置
 config = {
     "task": {
         "model": {"class": "LGBModel", ...},
         "dataset": {
             "kwargs": {
                 "handler": {"class": "Alpha158", ...},
-                "segments": {...}
+                "segments": {
+                    "train": ("2019-01-01", "2020-06-30"),
+                    "valid": ("2020-07-01", "2020-09-30"),
+                    "test": ("2020-10-01", "2020-12-31")
+                }
             }
         }
     }
 }
-result = workflow_service.execute_workflow(config)
-assert "metrics" in result
+result = workflow_service.execute_training_workflow(config)
+# 返回: {"status": "success", "predictions_count": 0, "model_saved": True}
 ```
 
-### Phase 2: 配置生成器 (1周)
+---
+
+### Phase 2: API 和回测工作流 (当前阶段)
+
+**目标**: 暴露训练 API 并实现回测工作流
+
+#### 2.1 训练 API (1-2 天)
+
+**任务**:
+
+- [ ] 创建 API 路由 `POST /api/v1/workflows/training`
+  - [ ] 定义请求/响应模型（Pydantic）
+  - [ ] 集成 `QlibWorkflowService.execute_training_workflow()`
+  - [ ] 添加异常处理和日志
+- [ ] 通过 Swagger UI 测试 API
+  - [ ] 测试成功场景
+  - [ ] 测试错误处理
+  - [ ] 验证响应格式
+
+**验证标准**:
+
+- API 能够接收配置并返回训练结果
+- Swagger UI 文档完整且可用
+- 错误处理友好
+
+#### 2.2 回测工作流 (3-5 天)
+
+**任务**:
+
+- [ ] 研究 Qlib 回测系统
+  - [ ] 阅读 Qlib 回测文档
+  - [ ] 理解 Strategy 和 Backtest 接口
+  - [ ] 学习 TopkDropoutStrategy 示例
+- [ ] 实现 `execute_backtest_workflow()`
+  - [ ] 加载训练好的模型
+  - [ ] 生成预测信号
+  - [ ] 执行策略回测
+  - [ ] 计算性能指标（收益、夏普比率、最大回撤等）
+- [ ] 创建回测 API `POST /api/v1/workflows/backtest`
+- [ ] 测试验证
+
+**验证标准**:
+
+- 能够加载模型并生成预测
+- 回测结果包含完整的性能指标
+- API 正常工作
+
+---
+
+### Phase 3: 推理和模拟盘工作流 (1-2 周)
+
+#### 3.1 推理工作流
+
+**目标**: 使用训练好的模型生成实时预测
+
+**任务**:
+
+- [ ] 实现 `execute_inference_workflow()`
+  - [ ] 加载最新模型
+  - [ ] 获取最新数据
+  - [ ] 生成预测信号
+  - [ ] 返回交易建议
+- [ ] 创建推理 API `POST /api/v1/workflows/inference`
+- [ ] 支持批量预测和单次预测
+
+#### 3.2 模拟盘工作流
+
+**目标**: 实时模拟交易
+
+**任务**:
+
+- [ ] 实现 `execute_paper_trading_workflow()`
+  - [ ] 实时获取市场数据
+  - [ ] 生成交易信号
+  - [ ] 模拟执行交易
+  - [ ] 跟踪持仓和收益
+- [ ] 创建模拟盘 API
+- [ ] 实现持仓管理和风控
+
+---
+
+### Phase 4: 扩展组件库 (持续进行)
+
+**目标**: 扩展数据源、因子、模型、策略
+
+#### 4.1 数据源扩展
+
+**优先级**: 高
+
+**任务**:
+
+- [ ] 实现 `TushareCollector`（中国 A 股专业数据）
+  - [ ] 支持日线、分钟线数据
+  - [ ] 支持基本面数据
+  - [ ] 支持财务数据
+- [ ] 实现 `AkshareCollector`（开源金融数据）
+  - [ ] 支持多市场数据
+  - [ ] 支持宏观经济数据
+- [ ] 实现 `LocalCSVCollector`（本地 CSV 文件）
+  - [ ] 支持自定义格式
+  - [ ] 数据验证和清洗
+
+**扩展点**: 继承 `BaseCollector`，实现 `collect_data()` 方法
+
+#### 4.2 因子引擎扩展
+
+**优先级**: 中
+
+**任务**:
+
+- [ ] 实现自定义技术指标因子
+  - [ ] MACD、RSI、布林带等
+  - [ ] 动量因子、波动率因子
+- [ ] 实现基本面因子
+  - [ ] PE、PB、ROE 等
+  - [ ] 财务指标因子
+- [ ] 实现情绪因子
+  - [ ] 新闻情绪
+  - [ ] 社交媒体情绪
+
+**扩展点**: 继承 `DataHandlerLP`，定义因子表达式
+
+#### 4.3 模型扩展
+
+**优先级**: 中
+
+**任务**:
+
+- [ ] 集成 XGBoost 模型
+- [ ] 集成 CatBoost 模型
+- [ ] 实现深度学习模型
+  - [ ] LSTM
+  - [ ] Transformer
+  - [ ] GRU
+- [ ] 实现集成学习模型
+
+**扩展点**: 继承 `ModelFT` 或 `Model`，实现 `fit()` 和 `predict()`
+
+#### 4.4 策略扩展
+
+**优先级**: 低（先完成回测工作流）
+
+**任务**:
+
+- [ ] 实现多因子选股策略
+- [ ] 实现行业轮动策略
+- [ ] 实现对冲策略
+- [ ] 实现自适应策略
+
+**扩展点**: 继承 `BaseStrategy`，实现 `generate_trade_decision()`
+
+---
+
+### Phase 5: 前端开发 (2-3 周)
+
+**目标**: 实现 Web 界面
+
+**任务**:
+
+- [ ] 训练配置界面
+- [ ] 回测配置界面
+- [ ] 结果展示界面
+- [ ] 性能分析图表
+- [ ] 模型管理界面
+
+---
+
+### Phase 6: 优化和部署 (1-2 周)
+
+**目标**: 性能优化和生产部署
+
+**任务**:
+
+- [ ] 性能优化
+  - [ ] 缓存优化
+  - [ ] 并行计算
+  - [ ] 数据库查询优化
+- [ ] 生产部署
+  - [ ] Docker 镜像优化
+  - [ ] 监控和日志
+  - [ ] 备份和恢复
+
+---
+
+## 📋 当前工作重点
+
+**Phase 2.1: 创建训练 API** (选项 A)
+
+1. 创建 API 路由暴露训练工作流
+2. 通过 Swagger UI 测试 API
+3. 验证端到端流程
+
+**下一步**: 实现回测工作流
+
+---
+
+### Phase 2: 配置生成器 (暂缓)
 
 **目标**: 将用户输入转换为 Qlib 配置
 
@@ -562,11 +814,13 @@ assert "metrics" in result
 **✅ 已完成的工作**:
 
 1. **下载 Qlib 官方数据下载脚本**
+
    - ✅ 从 Qlib GitHub 仓库下载 `scripts/get_data.py`
    - ✅ 保存到 `backend/scripts/get_data.py`（可提交到版本控制）
    - ✅ 使用 curl 在 Docker 容器中下载成功
 
 2. **下载 Qlib 中国市场数据**
+
    - ✅ 使用官方脚本下载数据：`python scripts/get_data.py qlib_data --target_dir /app/qlib_data --region cn`
    - ✅ 数据大小：188MB（压缩包）
    - ✅ 数据内容：3877 只股票的日线数据（OHLCV + 因子）
@@ -574,18 +828,21 @@ assert "metrics" in result
    - ✅ 下载耗时：约 1 分钟
 
 3. **修复 `qlib_workflow_service.py` 的 Bug**
-   
+
    **Bug 1**: `_create_and_train_model` 方法传递错误参数
+
    - ❌ 问题：传递 DataFrame 给 `model.fit()`，但 LGBModel 期望 Dataset 对象
    - ✅ 修复：直接传递 `dataset` 对象，让模型内部处理数据准备
    - ✅ 简化代码：删除手动调用 `dataset.prepare()` 的代码
-   
+
    **Bug 2**: `_record_results` 方法传递错误参数
+
    - ❌ 问题：传递 DataFrame 给 `model.predict()`，但期望 Dataset 对象
    - ✅ 修复：直接传递 `dataset` 对象
    - ✅ 简化代码：删除手动准备测试数据的代码
-   
+
    **Bug 3**: MLflow API 调用错误
+
    - ❌ 问题：使用 `R.save_object()`，但正确的 API 是 `R.save_objects()`（复数）
    - ✅ 修复：改为 `R.save_objects(model=model)`
 
@@ -601,16 +858,19 @@ assert "metrics" in result
 **🎓 关键知识点**:
 
 1. **Qlib 模型的数据接口设计**：
+
    - `model.fit(dataset)` - 模型内部会调用 `dataset.prepare()` 获取训练/验证数据
    - `model.predict(dataset)` - 模型内部会调用 `dataset.prepare()` 获取测试数据
    - **不要手动准备数据**：让模型自己处理，避免参数传递错误
 
 2. **Qlib 数据下载的正确方法**：
+
    - 使用官方脚本：`scripts/get_data.py`
    - 脚本是轻量级包装器，调用 `qlib.tests.data.GetData` 类
    - 支持参数：`--target_dir`、`--region`、`--interval`
 
 3. **Dataset Segments 的灵活性**：
+
    - 可以只配置 `train` + `test`（简化版）
    - 可以配置 `train` + `valid` + `test`（标准版，推荐）
    - 可以使用自定义名称
@@ -629,10 +889,12 @@ assert "metrics" in result
 遇到的错误和解决方案：
 
 1. **AttributeError: 'DataFrame' object has no attribute 'segments'**
+
    - 原因：传递 DataFrame 而不是 Dataset 对象
    - 解决：直接传递 dataset 对象
 
 2. **AttributeError: 'list' object has no attribute 'prepare'**
+
    - 原因：`dataset.prepare()` 返回的是 list/DataFrame，不能再调用 prepare
    - 解决：不要手动准备数据，让模型自己处理
 
