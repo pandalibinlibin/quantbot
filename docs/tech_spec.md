@@ -557,6 +557,80 @@ assert "metrics" in result
 
 ## 📅 变更日志
 
+### 2026-01-27 凌晨 - Phase 1 工作流服务完成
+
+**✅ 已完成的工作**:
+
+1. **完善 `backend/app/services/qlib_workflow_service.py`**
+
+   - ✅ 添加 `_execute_workflow_steps()` 方法：协调三个主要步骤的执行
+   - ✅ 添加 `_create_dataset()` 方法：使用 `init_instance_by_config` 创建数据集
+   - ✅ 添加 `_create_and_train_model()` 方法：创建模型、准备训练数据、训练模型
+   - ✅ 添加 `_record_results()` 方法：在测试集上评估、保存模型到 MLflow、返回指标
+   - ✅ 重命名主方法：从 `execute_workflow` 改为 `execute_training_workflow`（更明确的语义）
+
+2. **创建测试文件 `backend/tests/services/test_qlib_workflow_service.py`**
+
+   - ✅ 使用 Qlib 内置组件（Alpha158 + LGBModel）
+   - ✅ 配置简化的训练工作流（2020年数据，减少测试时间）
+   - ✅ 完整的测试流程：执行训练、验证结果、打印计时信息
+   - ✅ 异常处理和错误报告
+
+3. **代码清理**
+   - ✅ 删除旧的 `backend/tests/services/data_sources/` 目录
+
+**🎓 知识讲解**:
+
+在今天的开发过程中，详细讲解了以下概念：
+
+1. **Qlib 配置的层次结构**：
+
+   - 全局数据源配置（在 `qlib.init()` 中）
+   - Handler 配置（数据加载和因子计算）
+   - Dataset 配置（数据分割）
+
+2. **训练 vs 推理工作流的区别**：
+
+   - 训练工作流：创建数据集 → 训练模型 → 记录结果
+   - 推理工作流：加载模型 → 生成预测（待实现）
+
+3. **Data Collector 的执行时机**：
+
+   - 独立于 Workflow 运行
+   - 定时任务（推荐）或手动触发
+   - 数据收集和模型训练解耦
+
+4. **Qlib 的数据流程**：
+   ```
+   qlib.init() 设置全局数据源
+   ↓
+   Handler 从数据源读取并计算因子
+   ↓
+   Dataset 分割数据（train/valid/test）
+   ↓
+   Model 训练和评估
+   ```
+
+**📊 当前状态**:
+
+Phase 1 核心服务已全部完成：
+
+- ✅ `qlib_config.py` - 配置管理
+- ✅ `timer.py` - 耗时监控
+- ✅ `qlib_init_service.py` - Qlib 初始化
+- ✅ `qlib_workflow_service.py` - 训练工作流执行（完整实现）
+- ✅ `test_qlib_workflow_service.py` - 测试脚本
+
+**📝 下一步工作**:
+
+1. 在 Docker 容器中运行测试验证功能
+2. 根据测试结果修复可能的问题
+3. 创建 API 路由暴露训练工作流服务
+4. 通过 Swagger UI 测试 API
+5. 实现推理工作流（`execute_inference_workflow`）
+
+---
+
 ### 2026-01-26 晚 - Phase 1 核心服务完成
 
 **✅ 已完成的文件**:
