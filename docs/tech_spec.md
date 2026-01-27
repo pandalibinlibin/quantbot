@@ -215,37 +215,220 @@ with R.start(experiment_name=f"exp_{task_id}"):
 
 ---
 
+## 🎯 关键技术决策
+
+### 数据对齐策略
+
+**问题**: 如何处理数据时间范围对齐？
+
+**决策**: 完全依赖 Qlib 的自动对齐机制
+
+- Handler 层只需指定整体数据范围（`start_time`, `end_time`）
+- Dataset 层通过 `segments` 自动切分训练/验证/测试集
+- Qlib 内部自动处理：
+  - 交易日对齐
+  - 因子计算所需的历史数据
+  - 标签计算的未来数据
+  - 缺失值和边界情况
+
+**优势**: 避免手动管理数据对齐导致的 NaN 和错误
+
+### 用户和数据管理
+
+**决策**: 单用户系统 + 共享数据目录
+
+```python
+QLIB_DATA_DIR = "/app/qlib_data"      # 所有用户共享
+QLIB_MLRUNS_DIR = "/app/mlruns"      # 所有实验记录共享
+```
+
+**原因**: 简化系统复杂度，专注核心功能
+
+### 性能优化策略
+
+**决策**: 使用 Qlib 所有内置加速机制
+
+启用的加速功能：
+
+- **ExpressionCache**: 因子表达式缓存
+- **DatasetCache**: 数据集缓存
+- **Redis Cache**: 分布式缓存（使用 Docker Compose 中的 Redis）
+- **多进程并行**: 数据加载和因子计算
+
+```python
+qlib.init(
+    provider_uri=QLIB_DATA_DIR,
+    region=REG_CN,
+    redis_host="redis",
+    redis_port=6379,
+    expression_cache=True,
+    dataset_cache=True
+)
+```
+
+### 扩展点实现顺序
+
+**决策**: 数据源 → 因子引擎 → 模型 → 策略
+
+**原因**:
+
+1. 数据源：先能获取数据
+2. 因子引擎：基于数据计算因子
+3. 模型：基于因子训练模型
+4. 策略：基于模型预测生成交易决策
+
+每个阶段都可以独立测试验证。
+
+### 配置界面设计
+
+**决策**: 完整配置 + 预设模板
+
+**预设模板示例**:
+
+```python
+TEMPLATES = {
+    "lightgbm_alpha158": {
+        "name": "LightGBM + Alpha158",
+        "description": "默认配置，适合快速开始",
+        "config": {...}
+    },
+    "linear_alpha360": {
+        "name": "线性模型 + Alpha360",
+        "description": "更多因子，适合大规模数据",
+        "config": {...}
+    }
+}
+```
+
+**优势**:
+
+- 新手可以快速开始（使用模板）
+- 高级用户可以精细调整（完整配置）
+
+---
+
 ## 🚀 开发计划
 
-### Phase 1: 研究和设计 (1-2天)
+### Phase 1: 核心 Workflow 执行器 (1周)
 
-- [ ] 深入研究 Qlib workflow 文档和示例
-- [ ] 设计 Workflow 配置生成器接口
-- [ ] 设计 API 端点结构
-- [ ] 设计配置验证规则
+**目标**: 实现基础的 Workflow 执行能力
 
-### Phase 2: 核心实现 (3-5天)
+**任务**:
 
-- [ ] 实现 Workflow 配置生成器
-- [ ] 实现 Workflow 执行器
-- [ ] 实现结果存储服务
-- [ ] 实现 API 端点
-- [ ] 编写单元测试
+- [x] 研究 Qlib workflow 文档和示例
+- [ ] 实现 `QlibWorkflowService`
+  - 初始化 Qlib
+  - 执行 workflow 配置
+  - 返回训练结果和指标
+- [ ] 使用 Qlib 内置组件验证全流程
+  - Alpha158 因子
+  - LGBModel 模型
+  - 完整的训练和评估
 
-### Phase 3: 扩展点实现 (2-3天)
+**验证标准**:
 
-- [ ] 设计插件注册机制
-- [ ] 实现自定义因子引擎注册
-- [ ] 实现自定义模型注册
-- [ ] 实现自定义策略注册
-- [ ] 编写扩展示例
+```python
+# 能够成功执行以下配置
+config = {
+    "task": {
+        "model": {"class": "LGBModel", ...},
+        "dataset": {
+            "kwargs": {
+                "handler": {"class": "Alpha158", ...},
+                "segments": {...}
+            }
+        }
+    }
+}
+result = workflow_service.execute_workflow(config)
+assert "metrics" in result
+```
 
-### Phase 4: 测试和优化 (2-3天)
+### Phase 2: 配置生成器 (1周)
 
-- [ ] 端到端测试
-- [ ] 性能测试和优化
-- [ ] 文档完善
-- [ ] 前端适配
+**目标**: 将用户输入转换为 Qlib 配置
+
+**任务**:
+
+- [ ] 实现 `ConfigGeneratorService`
+  - 模型配置生成
+  - 数据集配置生成
+  - 配置验证
+- [ ] 实现配置模板管理
+  - 预设模板定义
+  - 模板加载和应用
+- [ ] 实现配置持久化
+  - 保存用户配置
+  - 配置版本管理
+
+### Phase 3: 数据源扩展 (1周)
+
+**目标**: 支持自定义数据源
+
+**任务**:
+
+- [ ] 实现 `CustomDataLoader` 基类
+- [ ] 集成 Yahoo Finance
+- [ ] 集成 tushare
+- [ ] 集成 akshare
+- [ ] 实现数据源注册机制
+
+### Phase 4: 因子引擎扩展 (1周)
+
+**目标**: 支持自定义因子
+
+**任务**:
+
+- [ ] 实现 `CustomFactorHandler` 基类
+- [ ] 提供因子表达式编辑器
+- [ ] 实现因子注册机制
+- [ ] 提供常用因子模板
+
+### Phase 5: 模型扩展 (1周)
+
+**目标**: 支持自定义模型
+
+**任务**:
+
+- [ ] 实现 `CustomModel` 基类
+- [ ] 集成常用模型（PyTorch/TensorFlow）
+- [ ] 实现模型注册机制
+- [ ] 提供模型模板
+
+### Phase 6: 策略扩展 (1周)
+
+**目标**: 支持自定义策略
+
+**任务**:
+
+- [ ] 实现 `CustomStrategy` 基类
+- [ ] 提供策略模板
+- [ ] 实现策略注册机制
+- [ ] 集成回测功能
+
+### Phase 7: API 端点 (1周)
+
+**目标**: 提供完整的 REST API
+
+**任务**:
+
+- [ ] 实现 workflow 管理 API
+- [ ] 实现配置管理 API
+- [ ] 实现扩展点管理 API
+- [ ] 实现结果查询 API
+- [ ] 编写 API 文档
+
+### Phase 8: 前端集成 (2周)
+
+**目标**: 提供用户友好的界面
+
+**任务**:
+
+- [ ] 配置向导界面
+- [ ] 模板选择界面
+- [ ] 训练监控界面
+- [ ] 结果分析界面
+- [ ] 扩展点管理界面
 
 ---
 
@@ -282,7 +465,7 @@ with R.start(experiment_name=f"exp_{task_id}"):
 
 ## 📅 变更日志
 
-### 2026-01-26 - 架构重构
+### 2026-01-26 - 架构重构与方案确定
 
 **重大变更**: 从手动实现改为完全基于 Qlib Workflow
 
@@ -300,6 +483,20 @@ with R.start(experiment_name=f"exp_{task_id}"):
 
 **原因**:
 
-- 手动实现过于复杂且容易出错
+- 手动实现过于复杂且容易出错（特别是数据对齐问题）
 - Qlib Workflow 是官方验证的标准方式
 - 符合项目"为 Qlib 加前端"的定位
+
+**关键技术决策**:
+
+1. **数据对齐**: 完全依赖 Qlib 自动对齐机制，避免手动管理
+2. **用户管理**: 单用户系统 + 共享数据目录，简化复杂度
+3. **性能优化**: 使用 Qlib 所有内置加速机制（Redis Cache、Expression Cache 等）
+4. **扩展顺序**: 数据源 → 因子引擎 → 模型 → 策略
+5. **配置界面**: 完整配置 + 预设模板，兼顾易用性和灵活性
+
+**下一步**:
+
+- Phase 1: 实现核心 Workflow 执行器
+- 使用 Qlib 内置组件（Alpha158 + LGBModel）验证全流程
+- 确保数据对齐问题得到彻底解决
