@@ -86,8 +86,8 @@ class QlibInitService:
                     },
                     redis_host=self.settings.QLIB_REDIS_HOST,
                     redis_port=self.settings.QLIB_REDIS_PORT,
-                    expression_cache=self.settings.QLIB_EXPRESSION_CACHE,
-                    dataset_cache=self.settings.QLIB_DATASET_CACHE,
+                    expression_cache=None,
+                    dataset_cache=None,
                     logging_level=self.settings.QLIB_LOGGING_LEVEL,
                 )
 

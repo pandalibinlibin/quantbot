@@ -27,7 +27,7 @@ def test_execute_training_workflow():
                         "class": "Alpha158",
                         "module_path": "qlib.contrib.data.handler",
                         "kwargs": {
-                            "start_time": "2020-01-01",
+                            "start_time": "2019-01-01",
                             "end_time": "2020-12-31",
                             "fit_start_time": "2020-01-01",
                             "fit_end_time": "2020-06-30",

@@ -557,6 +557,111 @@ assert "metrics" in result
 
 ## 📅 变更日志
 
+### 2026-01-27 上午 - Phase 1 训练工作流测试通过 ✅
+
+**✅ 已完成的工作**:
+
+1. **下载 Qlib 官方数据下载脚本**
+   - ✅ 从 Qlib GitHub 仓库下载 `scripts/get_data.py`
+   - ✅ 保存到 `backend/scripts/get_data.py`（可提交到版本控制）
+   - ✅ 使用 curl 在 Docker 容器中下载成功
+
+2. **下载 Qlib 中国市场数据**
+   - ✅ 使用官方脚本下载数据：`python scripts/get_data.py qlib_data --target_dir /app/qlib_data --region cn`
+   - ✅ 数据大小：188MB（压缩包）
+   - ✅ 数据内容：3877 只股票的日线数据（OHLCV + 因子）
+   - ✅ 数据结构：`calendars/`、`features/`、`instruments/`
+   - ✅ 下载耗时：约 1 分钟
+
+3. **修复 `qlib_workflow_service.py` 的 Bug**
+   
+   **Bug 1**: `_create_and_train_model` 方法传递错误参数
+   - ❌ 问题：传递 DataFrame 给 `model.fit()`，但 LGBModel 期望 Dataset 对象
+   - ✅ 修复：直接传递 `dataset` 对象，让模型内部处理数据准备
+   - ✅ 简化代码：删除手动调用 `dataset.prepare()` 的代码
+   
+   **Bug 2**: `_record_results` 方法传递错误参数
+   - ❌ 问题：传递 DataFrame 给 `model.predict()`，但期望 Dataset 对象
+   - ✅ 修复：直接传递 `dataset` 对象
+   - ✅ 简化代码：删除手动准备测试数据的代码
+   
+   **Bug 3**: MLflow API 调用错误
+   - ❌ 问题：使用 `R.save_object()`，但正确的 API 是 `R.save_objects()`（复数）
+   - ✅ 修复：改为 `R.save_objects(model=model)`
+
+4. **成功运行完整测试**
+   - ✅ 测试脚本：`backend/tests/services/test_qlib_workflow_service.py`
+   - ✅ 测试结果：**全部通过** ✅
+   - ✅ 性能数据：
+     - 数据集准备：22.0 秒（Alpha158 因子计算）
+     - 模型训练：3.3 秒（LGBModel，使用早停）
+     - 结果记录：0.05 秒
+     - 总耗时：25.4 秒
+
+**🎓 关键知识点**:
+
+1. **Qlib 模型的数据接口设计**：
+   - `model.fit(dataset)` - 模型内部会调用 `dataset.prepare()` 获取训练/验证数据
+   - `model.predict(dataset)` - 模型内部会调用 `dataset.prepare()` 获取测试数据
+   - **不要手动准备数据**：让模型自己处理，避免参数传递错误
+
+2. **Qlib 数据下载的正确方法**：
+   - 使用官方脚本：`scripts/get_data.py`
+   - 脚本是轻量级包装器，调用 `qlib.tests.data.GetData` 类
+   - 支持参数：`--target_dir`、`--region`、`--interval`
+
+3. **Dataset Segments 的灵活性**：
+   - 可以只配置 `train` + `test`（简化版）
+   - 可以配置 `train` + `valid` + `test`（标准版，推荐）
+   - 可以使用自定义名称
+   - LGBModel 必需 `train`，可选 `valid`（用于早停）
+
+4. **Qlib 数据结构**：
+   ```
+   qlib_data/
+   ├── calendars/        # 交易日历
+   ├── features/         # 股票特征数据（按股票代码组织）
+   └── instruments/      # 股票列表和元数据
+   ```
+
+**🐛 调试过程总结**:
+
+遇到的错误和解决方案：
+
+1. **AttributeError: 'DataFrame' object has no attribute 'segments'**
+   - 原因：传递 DataFrame 而不是 Dataset 对象
+   - 解决：直接传递 dataset 对象
+
+2. **AttributeError: 'list' object has no attribute 'prepare'**
+   - 原因：`dataset.prepare()` 返回的是 list/DataFrame，不能再调用 prepare
+   - 解决：不要手动准备数据，让模型自己处理
+
+3. **AttributeError: 'QlibRecorder' object has no attribute 'save_object'**
+   - 原因：API 名称错误
+   - 解决：使用 `save_objects()`（复数形式）
+
+**📊 当前状态**:
+
+Phase 1 核心服务已全部完成并测试通过：
+
+- ✅ `qlib_config.py` - 配置管理
+- ✅ `timer.py` - 耗时监控
+- ✅ `qlib_init_service.py` - Qlib 初始化（已修复缓存配置）
+- ✅ `qlib_workflow_service.py` - 训练工作流执行（已修复所有 Bug）
+- ✅ `test_qlib_workflow_service.py` - 测试脚本（测试通过 ✅）
+- ✅ `scripts/get_data.py` - Qlib 数据下载脚本
+- ✅ Qlib 数据已下载并可用
+
+**📝 下一步工作**:
+
+1. ✅ ~~在 Docker 容器中运行测试验证功能~~ - 已完成
+2. ✅ ~~根据测试结果修复可能的问题~~ - 已完成
+3. 创建 API 路由暴露训练工作流服务
+4. 通过 Swagger UI 测试 API
+5. 实现推理工作流（`execute_inference_workflow`）
+
+---
+
 ### 2026-01-27 凌晨 - Phase 1 工作流服务完成
 
 **✅ 已完成的工作**:
@@ -610,24 +715,6 @@ assert "metrics" in result
    ↓
    Model 训练和评估
    ```
-
-**📊 当前状态**:
-
-Phase 1 核心服务已全部完成：
-
-- ✅ `qlib_config.py` - 配置管理
-- ✅ `timer.py` - 耗时监控
-- ✅ `qlib_init_service.py` - Qlib 初始化
-- ✅ `qlib_workflow_service.py` - 训练工作流执行（完整实现）
-- ✅ `test_qlib_workflow_service.py` - 测试脚本
-
-**📝 下一步工作**:
-
-1. 在 Docker 容器中运行测试验证功能
-2. 根据测试结果修复可能的问题
-3. 创建 API 路由暴露训练工作流服务
-4. 通过 Swagger UI 测试 API
-5. 实现推理工作流（`execute_inference_workflow`）
 
 ---
 

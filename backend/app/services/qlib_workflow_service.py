@@ -147,8 +147,7 @@ class QlibWorkflowService:
 
         This method:
         1. Creates a model instance using init_instance_by_config
-        2. Prepare training and validation data from dataset
-        3. Trains the model using the fit() method
+        2. Trains the model using the fit() method (model will handle data preparation internally)
 
         Args:
             model_config: Model configuration dictionary
@@ -160,19 +159,8 @@ class QlibWorkflowService:
         self.logger.info("Creating model from configuration...")
         model = init_instance_by_config(model_config)
 
-        self.logger.info("Preparing training and validation data...")
-        # prepare data for training
-        # use DK_L (learning data) which includes both features and labels
-        from qlib.data.dataset.handler import DataHandlerLP
-
-        df_train, df_valid = dataset.prepare(
-            ["train", "valid"],
-            col_set=["feature", "label"],
-            data_key=DataHandlerLP.DK_L,
-        )
-
         self.logger.info("Training model...")
-        model.fit(df_train, df_valid)
+        model.fit(dataset)
 
         self.logger.info("Model training completed")
         return model
@@ -193,15 +181,8 @@ class QlibWorkflowService:
         Returns:
             Dictionary containing evaluation metrics
         """
-        from qlib.data.dataset.handler import DataHandlerLP
-
-        self.logger.info("Preparing test data for evaluation...")
-        df_test = dataset.prepare(
-            ["test"], col_set=["feature", "label"], data_key=DataHandlerLP.DK_L
-        )
-
-        self.logger.info("Evaluating model on test set...")
-        predictions = model.predict(df_test)
+        self.logger.info("Generating predictions on test set...")
+        predictions = model.predict(dataset)
 
         # Save model to MLflow
         self.logger.info("Saving model to MLflow...")
@@ -217,7 +198,6 @@ class QlibWorkflowService:
         }
 
         self.logger.info("Results recorded successfully")
-
         return results
 
 
