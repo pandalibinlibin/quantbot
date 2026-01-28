@@ -84,7 +84,7 @@ services:
       - ./backend/htmlcov:/app/htmlcov
       - ./backend/app:/app/app
       - ./backend/tests:/app/tests
-      - qlib-data:/root/.qlib
+      - qlib-data:/app/qlib_data
       - ./scripts:/app/scripts:cached
     environment:
       SMTP_HOST: "mailcatcher"

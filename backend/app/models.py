@@ -868,3 +868,181 @@ class ModelHandlersInfoResponse(SQLModel):
 
     total_handlers: int = Field(description="Total number of registered handlers")
     handlers: List[ModelHandlerInfo] = Field(description="List of handler information")
+
+
+# ===================================================================
+# Training Workflow Models - Based on Qlib Configuration Structure
+# ===================================================================
+class QlibComponentConfig(SQLModel):
+    """
+    Base configuration for Qlib components following init_instance_by_config pattern.
+
+    Educational Notes:
+    - Qlib uses declarative configuration with class + module_path + kwargs
+    - This pattern allows dynamic instantiation by any Qlib component
+    - Follows the same structure as Qlib YAML configuration files
+    """
+
+    class_name: str = Field(
+        description="Class name of the Qlib component (e.g., 'LGBModel', 'Alpha158')",
+    )
+
+    module_path: str = Field(
+        description="Python module path where the class is located (e.g., 'qlib.contrib.model.gbdt')"
+    )
+
+    kwargs: dict = Field(
+        default_factory=dict,
+        description="Keyword arguments passed to the component's __init__ method",
+    )
+
+
+class ModelConfig(QlibComponentConfig):
+    """
+    Configuration for Qlib Model (e.g., LGBModel).
+
+    Educational Notes:
+    - Model defines the machine learning algorithm for prediction
+    - LGBModel is LightGBM implementation optimized for financial data
+    - Model kwargs include hyperparameters like learning_rate, num_leaves
+    - Inherits all fields from QlibComponentConfig (class, module_path, kwargs)
+    """
+
+    pass  # Inherits all fields from QlibComponentConfig
+
+
+class DataHandlerConfig(QlibComponentConfig):
+    """
+    Configuration for Qlib Data Handler (e.g., Alpha158)
+
+    Educational Notes:
+    - Data Handler processes raw data into features for model training
+    - Alpha158 is Qlib's built-in 158 alpha factors
+    - Inherits class_name, module_path, kwargs from QlibComponentConfig
+    - Handler kwargs include time ranges and instrument selection
+    """
+
+    pass  # Inherits all fields from QlibComponentConfig
+
+
+class DatasetSegments(SQLModel):
+    """
+    Time-based segments for train/validation/test splits.
+
+    Educational Notes:
+    - Qlib uses time-based splitting for financial data
+    - Each segment is a tuple of (start_date, end_date)
+    - Ensures no look-ahead bias in model training
+    """
+
+    train: tuple[str, str] = Field(
+        description="Training period as (start_date, end_date) tuple"
+    )
+
+    valid: tuple[str, str] = Field(
+        description="Validation period as (start_date, end_date) tuple"
+    )
+
+    test: tuple[str, str] = Field(
+        description="Test period as (start_date, end_date) tuple"
+    )
+
+
+class DatasetKwargs(SQLModel):
+    """
+    Dataset kwargs containing handler and segments.
+
+    Educational Notes:
+    - Dataset kwargs combine data processing (handler) and time splitting (segments)
+    - Handler defines how raw data becomes features
+    - Segments define how data is split for training/validation/testing
+    """
+
+    handler: DataHandlerConfig = Field(
+        description="Data handler configuration for feature processing"
+    )
+
+    segments: DatasetSegments = Field(
+        description="Time-based data segments for train/valid/test splits"
+    )
+
+
+class DatasetConfig(SQLModel):
+    """
+    Configuration for Qlib Dataset (e.g., DatasetH).
+
+    Educational Notes:
+    - Dataset handles data preprocessing and train/valid/test splitting
+    - DatasetH is Qlib's hierarchical dataset for time series data
+    # Contains handler config and segment definitions
+    """
+
+    class_name: str = Field(description="Dataset class name (e.g., 'DatasetH')")
+
+    module_path: str = Field(
+        description="Module path for dataset (e.g., 'qlib.data.dataset')"
+    )
+
+    kwargs: DatasetKwargs = Field(
+        description="Dataset configuration including handler and segments"
+    )
+
+
+class TaskConfig(SQLModel):
+    """
+    Qlib Task configuration containing model and dataset.
+
+    Educational Notes:
+    - Task is the core unit of execution in Qlib workflows
+    - Combines model, dataset, and optional record configurations
+    - Maps directly to Qlib's task section in YAML configs
+    """
+
+    model: ModelConfig = Field(description="Model configuration for training")
+    dataset: DatasetConfig = Field(
+        description="Dataset configuration for data processing"
+    )
+
+
+class TrainingWorkflowRequest(SQLModel):
+    """
+    Request model for training workflow API.
+
+    Educational Notes:
+    - Follows Qlib's workflow configuration structure exactly
+    # Allows users to specify complete training pipeline
+    - Experiment name helps organize and track different runs
+    """
+
+    experiment_name: str = Field(
+        default="default_experiment",
+        description="Name for the training experiment (used in MLflow tracking)",
+        min_length=1,
+        max_length=100,
+    )
+    task: TaskConfig = Field(
+        description="Task configuration containing model and dataset settings"
+    )
+
+
+class TrainingWorkflowResponse(SQLModel):
+    """
+    Response model for training workflow API.
+
+    Educational Notes:
+    - Provides comprehensive feedback on training execution
+    - Predictions count indicates model's output on test set
+    - Model saved status confirms persistence for future use
+    """
+
+    status: str = Field(description="Execution status ('success' or 'error')")
+    predictions_count: int = Field(
+        description="Number of predictions generated on test set"
+    )
+    model_saved: bool = Field(
+        description="Whether the trained model was successfully saved"
+    )
+    experiment_name: str = Field(description="Name of the experiment that was executed")
+    error_message: str | None = Field(
+        default=None, description="Error message if status is 'error'"
+    )
