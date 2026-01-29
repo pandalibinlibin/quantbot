@@ -1207,13 +1207,89 @@ Response: {
 - ✅ SQLModel: 数据模型定义
 - ✅ Docker: 容器化开发环境
 
+---
+
+## 🎨 训练工作流 UI 优化 (2026-01-29)
+
+### 实现的功能
+
+**1. 后端配置管理系统**
+
+创建了智能配置管理系统，自动填充 Qlib 组件配置：
+
+- **QlibComponentRegistry** (`backend/app/services/qlib_component_registry.py`)
+  - 维护 Model、Handler、Dataset 的 class → module_path 映射
+  - 支持 10 种模型：LGBModel, XGBModel, CatBoostModel, LinearModel, MLPModel, GRUModel, LSTMModel, GATs, ALSTM, TransformerModel
+  - 支持 4 种 Handler：Alpha158, Alpha101, Alpha360, DataHandlerLP
+  - 支持 2 种 Dataset：DatasetH, TSDatasetH
+  - 自动填充 `module_path` 字段，前端无需提供
+
+- **模型超参数配置文件** (`backend/app/config/model_hyperparameters.py`)
+  - 为每个模型定义默认超参数
+  - 包含详细的参数说明和教育性注释
+  - 用户可通过编辑配置文件调整超参数，无需修改代码
+  - 后端自动读取并填充到训练请求中
+
+**2. 前端用户配置界面**
+
+- **Instruments 配置**：CSI 300, CSI 500, CSI 800, All Stocks
+- **Frequency 配置**：Daily, Weekly, Monthly
+- **简化的 API 请求**：前端只需发送 `class_name`，后端自动填充 `module_path` 和默认超参数
+
+**3. 用户体验优化**
+
+- **按钮 Loading 状态**：
+  - 点击 "Start Training" 后按钮变为 "Training..."
+  - 显示旋转加载图标
+  - 按钮禁用防止重复提交
+
+- **训练进度提示**：
+  - 实时显示训练阶段："Preparing request..." → "Initializing Qlib and preparing dataset..." → "Training completed!"
+  - 蓝色背景的进度提示框
+  - 训练失败时显示错误提示
+
+### 技术实现
+
+**后端修改**：
+- `backend/app/models.py`: 将 `module_path` 字段改为可选 (`str | None`)
+- `backend/app/api/routes/qlib_workflow.py`: 使用 registry 自动填充配置
+- 新增配置文件和 registry 服务
+
+**前端修改**：
+- `frontend/src/routes/_layout/training.tsx`: 
+  - 添加 `useState` 管理训练状态
+  - 添加 `instruments` 和 `freq` 表单字段
+  - 实现按钮 loading 状态和进度显示
+  - 简化 API 请求体，移除硬编码的 `module_path` 和超参数
+
+### 测试结果
+
+✅ **训练工作流完整测试通过**：
+- 数据加载：56.66 秒，成功加载 CSI300 数据
+- 特征处理：DropnaLabel + CSZScoreNorm
+- 模型训练：LightGBM，early stopping 在第 3 轮
+- 验证集 L2 损失：0.996521
+- 生成预测：18,900 个预测结果
+- 模型保存到 MLflow：成功
+- HTTP 响应：200 OK
+
+### 架构优势
+
+1. **配置驱动**：用户通过配置文件调整超参数，无需修改代码
+2. **前端简化**：前端只需关注业务逻辑，技术细节由后端处理
+3. **易于扩展**：添加新模型只需在 registry 和配置文件中注册
+4. **用户友好**：清晰的进度反馈和加载状态
+
+---
+
 **📝 下一步工作**:
 
-**Phase 2: 前端开发**
+**Phase 2: 前端功能扩展**
 
-1. 创建 React 组件调用训练工作流 API
-2. 设计用户友好的配置界面
+1. ✅ ~~创建 React 组件调用训练工作流 API~~
+2. ✅ ~~设计用户友好的配置界面~~
 3. 实现训练结果的可视化展示
+4. 添加训练历史记录查询
 
 **Phase 3: API 功能扩展**
 
@@ -1224,5 +1300,5 @@ Response: {
 **Phase 4: 系统优化**
 
 1. 添加任务队列支持长时间训练
-2. 实现训练进度追踪
-3. 优化前端用户体验
+2. 实现实时训练进度追踪（WebSocket）
+3. 添加超参数在线编辑功能（高级用户）

@@ -9,6 +9,106 @@ export type Body_login_login_access_token = {
     client_secret?: (string | null);
 };
 
+/**
+ * Configuration for Qlib Data Handler (e.g., Alpha158)
+ *
+ * Educational Notes:
+ * - Data Handler processes raw data into features for model training
+ * - Alpha158 is Qlib's built-in 158 alpha factors
+ * - Inherits class_name, module_path, kwargs from QlibComponentConfig
+ * - Handler kwargs include time ranges and instrument selection
+ */
+export type DataHandlerConfig = {
+    /**
+     * Class name of the Qlib component (e.g., 'LGBModel', 'Alpha158')
+     */
+    class_name: string;
+    /**
+     * Python module path where the class is located (e.g., 'qlib.contrib.model.gbdt'). If not provided, will be automatically filled by backend based on class_name.
+     */
+    module_path?: (string | null);
+    /**
+     * Keyword arguments passed to the component's __init__ method
+     */
+    kwargs?: {
+        [key: string]: unknown;
+    };
+};
+
+/**
+ * Configuration for Qlib Dataset (e.g., DatasetH).
+ *
+ * Educational Notes:
+ * - Dataset handles data preprocessing and train/valid/test splitting
+ * - DatasetH is Qlib's hierarchical dataset for time series data
+ * # Contains handler config and segment definitions
+ */
+export type DatasetConfig = {
+    /**
+     * Dataset class name (e.g., 'DatasetH')
+     */
+    class_name: string;
+    /**
+     * Module path for dataset (e.g., 'qlib.data.dataset'). If not provided, will be automatically filled by backend based on class_name.
+     */
+    module_path?: (string | null);
+    /**
+     * Dataset configuration including handler and segments
+     */
+    kwargs: DatasetKwargs;
+};
+
+/**
+ * Dataset kwargs containing handler and segments.
+ *
+ * Educational Notes:
+ * - Dataset kwargs combine data processing (handler) and time splitting (segments)
+ * - Handler defines how raw data becomes features
+ * - Segments define how data is split for training/validation/testing
+ */
+export type DatasetKwargs = {
+    /**
+     * Data handler configuration for feature processing
+     */
+    handler: DataHandlerConfig;
+    /**
+     * Time-based data segments for train/valid/test splits
+     */
+    segments: DatasetSegments;
+};
+
+/**
+ * Time-based segments for train/validation/test splits.
+ *
+ * Educational Notes:
+ * - Qlib uses time-based splitting for financial data
+ * - Each segment is a tuple of (start_date, end_date)
+ * - Ensures no look-ahead bias in model training
+ */
+export type DatasetSegments = {
+    /**
+     * Training period as (start_date, end_date) tuple
+     */
+    train: [
+        string,
+        string
+    ];
+    /**
+     * Validation period as (start_date, end_date) tuple
+     */
+    valid: [
+        string,
+        string
+    ];
+    /**
+     * Test period as (start_date, end_date) tuple
+     */
+    test: [
+        string,
+        string
+    ];
+};
+
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
 };
@@ -39,6 +139,32 @@ export type Message = {
     message: string;
 };
 
+/**
+ * Configuration for Qlib Model (e.g., LGBModel).
+ *
+ * Educational Notes:
+ * - Model defines the machine learning algorithm for prediction
+ * - LGBModel is LightGBM implementation optimized for financial data
+ * - Model kwargs include hyperparameters like learning_rate, num_leaves
+ * - Inherits all fields from QlibComponentConfig (class, module_path, kwargs)
+ */
+export type ModelConfig = {
+    /**
+     * Class name of the Qlib component (e.g., 'LGBModel', 'Alpha158')
+     */
+    class_name: string;
+    /**
+     * Python module path where the class is located (e.g., 'qlib.contrib.model.gbdt'). If not provided, will be automatically filled by backend based on class_name.
+     */
+    module_path?: (string | null);
+    /**
+     * Keyword arguments passed to the component's __init__ method
+     */
+    kwargs?: {
+        [key: string]: unknown;
+    };
+};
+
 export type NewPassword = {
     token: string;
     new_password: string;
@@ -51,9 +177,78 @@ export type PrivateUserCreate = {
     is_verified?: boolean;
 };
 
+/**
+ * Qlib Task configuration containing model and dataset.
+ *
+ * Educational Notes:
+ * - Task is the core unit of execution in Qlib workflows
+ * - Combines model, dataset, and optional record configurations
+ * - Maps directly to Qlib's task section in YAML configs
+ */
+export type TaskConfig = {
+    /**
+     * Model configuration for training
+     */
+    model: ModelConfig;
+    /**
+     * Dataset configuration for data processing
+     */
+    dataset: DatasetConfig;
+};
+
 export type Token = {
     access_token: string;
     token_type?: string;
+};
+
+/**
+ * Request model for training workflow API.
+ *
+ * Educational Notes:
+ * - Follows Qlib's workflow configuration structure exactly
+ * # Allows users to specify complete training pipeline
+ * - Experiment name helps organize and track different runs
+ */
+export type TrainingWorkflowRequest = {
+    /**
+     * Name for the training experiment (used in MLflow tracking)
+     */
+    experiment_name?: string;
+    /**
+     * Task configuration containing model and dataset settings
+     */
+    task: TaskConfig;
+};
+
+/**
+ * Response model for training workflow API.
+ *
+ * Educational Notes:
+ * - Provides comprehensive feedback on training execution
+ * - Predictions count indicates model's output on test set
+ * - Model saved status confirms persistence for future use
+ */
+export type TrainingWorkflowResponse = {
+    /**
+     * Execution status ('success' or 'error')
+     */
+    status: string;
+    /**
+     * Number of predictions generated on test set
+     */
+    predictions_count: number;
+    /**
+     * Whether the trained model was successfully saved
+     */
+    model_saved: boolean;
+    /**
+     * Name of the experiment that was executed
+     */
+    experiment_name: string;
+    /**
+     * Error message if status is 'error'
+     */
+    error_message?: (string | null);
 };
 
 export type UpdatePassword = {
@@ -170,6 +365,14 @@ export type PrivateCreateUserData = {
 };
 
 export type PrivateCreateUserResponse = (UserPublic);
+
+export type QlibWorkflowsHealthCheckResponse = (unknown);
+
+export type QlibWorkflowsExecuteTrainingWorkflowData = {
+    requestBody: TrainingWorkflowRequest;
+};
+
+export type QlibWorkflowsExecuteTrainingWorkflowResponse = (TrainingWorkflowResponse);
 
 export type UsersReadUsersData = {
     limit?: number;

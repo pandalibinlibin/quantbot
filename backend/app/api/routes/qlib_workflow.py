@@ -9,6 +9,7 @@ Educational Notes:
 
 from fastapi import APIRouter
 from app.models import TrainingWorkflowRequest, TrainingWorkflowResponse
+from app.services.qlib_component_registry import qlib_component_registry
 
 # Create router with prefix and tags
 router = APIRouter(prefix="/qlib", tags=["Qlib Workflows"])
@@ -76,21 +77,24 @@ async def execute_training_workflow(
 
 
 def _convert_request_to_config(request: TrainingWorkflowRequest) -> dict:
-    """Convert TrainingWorkflowRequest to Qlib configuration dictionary."""
-    return {
+    """
+    Convert TrainingWorkflowRequest to Qlib configuration dictionary.
+
+    Automatically fills in module_path fields using QlibComponentRegistry
+    if they are not provided by the frontend.
+    """
+    # Build basic config structure
+    config = {
         "task": {
             "model": {
                 "class": request.task.model.class_name,
-                "module_path": request.task.model.module_path,
                 "kwargs": request.task.model.kwargs,
             },
             "dataset": {
                 "class": request.task.dataset.class_name,
-                "module_path": request.task.dataset.module_path,
                 "kwargs": {
                     "handler": {
                         "class": request.task.dataset.kwargs.handler.class_name,
-                        "module_path": request.task.dataset.kwargs.handler.module_path,
                         "kwargs": request.task.dataset.kwargs.handler.kwargs,
                     },
                     "segments": {
@@ -102,3 +106,8 @@ def _convert_request_to_config(request: TrainingWorkflowRequest) -> dict:
             },
         }
     }
+
+    # Use registry to automatically fill in module_path fields
+    config = qlib_component_registry.enrich_config_with_module_paths(config)
+
+    return config

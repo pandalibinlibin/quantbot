@@ -887,8 +887,9 @@ class QlibComponentConfig(SQLModel):
         description="Class name of the Qlib component (e.g., 'LGBModel', 'Alpha158')",
     )
 
-    module_path: str = Field(
-        description="Python module path where the class is located (e.g., 'qlib.contrib.model.gbdt')"
+    module_path: str | None = Field(
+        default=None,
+        description="Python module path where the class is located (e.g., 'qlib.contrib.model.gbdt'). If not provided, will be automatically filled by backend based on class_name.",
     )
 
     kwargs: dict = Field(
@@ -979,8 +980,9 @@ class DatasetConfig(SQLModel):
 
     class_name: str = Field(description="Dataset class name (e.g., 'DatasetH')")
 
-    module_path: str = Field(
-        description="Module path for dataset (e.g., 'qlib.data.dataset')"
+    module_path: str | None = Field(
+        default=None,
+        description="Module path for dataset (e.g., 'qlib.data.dataset'). If not provided, will be automatically filled by backend based on class_name.",
     )
 
     kwargs: DatasetKwargs = Field(

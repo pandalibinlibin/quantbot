@@ -55,6 +55,160 @@ export const Body_login_login_access_tokenSchema = {
     title: 'Body_login-login_access_token'
 } as const;
 
+export const DataHandlerConfigSchema = {
+    properties: {
+        class_name: {
+            type: 'string',
+            title: 'Class Name',
+            description: "Class name of the Qlib component (e.g., 'LGBModel', 'Alpha158')"
+        },
+        module_path: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Module Path',
+            description: "Python module path where the class is located (e.g., 'qlib.contrib.model.gbdt'). If not provided, will be automatically filled by backend based on class_name."
+        },
+        kwargs: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Kwargs',
+            description: "Keyword arguments passed to the component's __init__ method"
+        }
+    },
+    type: 'object',
+    required: ['class_name'],
+    title: 'DataHandlerConfig',
+    description: `Configuration for Qlib Data Handler (e.g., Alpha158)
+
+Educational Notes:
+- Data Handler processes raw data into features for model training
+- Alpha158 is Qlib's built-in 158 alpha factors
+- Inherits class_name, module_path, kwargs from QlibComponentConfig
+- Handler kwargs include time ranges and instrument selection`
+} as const;
+
+export const DatasetConfigSchema = {
+    properties: {
+        class_name: {
+            type: 'string',
+            title: 'Class Name',
+            description: "Dataset class name (e.g., 'DatasetH')"
+        },
+        module_path: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Module Path',
+            description: "Module path for dataset (e.g., 'qlib.data.dataset'). If not provided, will be automatically filled by backend based on class_name."
+        },
+        kwargs: {
+            '$ref': '#/components/schemas/DatasetKwargs',
+            description: 'Dataset configuration including handler and segments'
+        }
+    },
+    type: 'object',
+    required: ['class_name', 'kwargs'],
+    title: 'DatasetConfig',
+    description: `Configuration for Qlib Dataset (e.g., DatasetH).
+
+Educational Notes:
+- Dataset handles data preprocessing and train/valid/test splitting
+- DatasetH is Qlib's hierarchical dataset for time series data
+# Contains handler config and segment definitions`
+} as const;
+
+export const DatasetKwargsSchema = {
+    properties: {
+        handler: {
+            '$ref': '#/components/schemas/DataHandlerConfig',
+            description: 'Data handler configuration for feature processing'
+        },
+        segments: {
+            '$ref': '#/components/schemas/DatasetSegments',
+            description: 'Time-based data segments for train/valid/test splits'
+        }
+    },
+    type: 'object',
+    required: ['handler', 'segments'],
+    title: 'DatasetKwargs',
+    description: `Dataset kwargs containing handler and segments.
+
+Educational Notes:
+- Dataset kwargs combine data processing (handler) and time splitting (segments)
+- Handler defines how raw data becomes features
+- Segments define how data is split for training/validation/testing`
+} as const;
+
+export const DatasetSegmentsSchema = {
+    properties: {
+        train: {
+            prefixItems: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'string'
+                }
+            ],
+            type: 'array',
+            maxItems: 2,
+            minItems: 2,
+            title: 'Train',
+            description: 'Training period as (start_date, end_date) tuple'
+        },
+        valid: {
+            prefixItems: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'string'
+                }
+            ],
+            type: 'array',
+            maxItems: 2,
+            minItems: 2,
+            title: 'Valid',
+            description: 'Validation period as (start_date, end_date) tuple'
+        },
+        test: {
+            prefixItems: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'string'
+                }
+            ],
+            type: 'array',
+            maxItems: 2,
+            minItems: 2,
+            title: 'Test',
+            description: 'Test period as (start_date, end_date) tuple'
+        }
+    },
+    type: 'object',
+    required: ['train', 'valid', 'test'],
+    title: 'DatasetSegments',
+    description: `Time-based segments for train/validation/test splits.
+
+Educational Notes:
+- Qlib uses time-based splitting for financial data
+- Each segment is a tuple of (start_date, end_date)
+- Ensures no look-ahead bias in model training`
+} as const;
+
 export const HTTPValidationErrorSchema = {
     properties: {
         detail: {
@@ -194,6 +348,44 @@ export const MessageSchema = {
     title: 'Message'
 } as const;
 
+export const ModelConfigSchema = {
+    properties: {
+        class_name: {
+            type: 'string',
+            title: 'Class Name',
+            description: "Class name of the Qlib component (e.g., 'LGBModel', 'Alpha158')"
+        },
+        module_path: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Module Path',
+            description: "Python module path where the class is located (e.g., 'qlib.contrib.model.gbdt'). If not provided, will be automatically filled by backend based on class_name."
+        },
+        kwargs: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Kwargs',
+            description: "Keyword arguments passed to the component's __init__ method"
+        }
+    },
+    type: 'object',
+    required: ['class_name'],
+    title: 'ModelConfig',
+    description: `Configuration for Qlib Model (e.g., LGBModel).
+
+Educational Notes:
+- Model defines the machine learning algorithm for prediction
+- LGBModel is LightGBM implementation optimized for financial data
+- Model kwargs include hyperparameters like learning_rate, num_leaves
+- Inherits all fields from QlibComponentConfig (class, module_path, kwargs)`
+} as const;
+
 export const NewPasswordSchema = {
     properties: {
         token: {
@@ -237,6 +429,28 @@ export const PrivateUserCreateSchema = {
     title: 'PrivateUserCreate'
 } as const;
 
+export const TaskConfigSchema = {
+    properties: {
+        model: {
+            '$ref': '#/components/schemas/ModelConfig',
+            description: 'Model configuration for training'
+        },
+        dataset: {
+            '$ref': '#/components/schemas/DatasetConfig',
+            description: 'Dataset configuration for data processing'
+        }
+    },
+    type: 'object',
+    required: ['model', 'dataset'],
+    title: 'TaskConfig',
+    description: `Qlib Task configuration containing model and dataset.
+
+Educational Notes:
+- Task is the core unit of execution in Qlib workflows
+- Combines model, dataset, and optional record configurations
+- Maps directly to Qlib's task section in YAML configs`
+} as const;
+
 export const TokenSchema = {
     properties: {
         access_token: {
@@ -252,6 +466,78 @@ export const TokenSchema = {
     type: 'object',
     required: ['access_token'],
     title: 'Token'
+} as const;
+
+export const TrainingWorkflowRequestSchema = {
+    properties: {
+        experiment_name: {
+            type: 'string',
+            maxLength: 100,
+            minLength: 1,
+            title: 'Experiment Name',
+            description: 'Name for the training experiment (used in MLflow tracking)',
+            default: 'default_experiment'
+        },
+        task: {
+            '$ref': '#/components/schemas/TaskConfig',
+            description: 'Task configuration containing model and dataset settings'
+        }
+    },
+    type: 'object',
+    required: ['task'],
+    title: 'TrainingWorkflowRequest',
+    description: `Request model for training workflow API.
+
+Educational Notes:
+- Follows Qlib's workflow configuration structure exactly
+# Allows users to specify complete training pipeline
+- Experiment name helps organize and track different runs`
+} as const;
+
+export const TrainingWorkflowResponseSchema = {
+    properties: {
+        status: {
+            type: 'string',
+            title: 'Status',
+            description: "Execution status ('success' or 'error')"
+        },
+        predictions_count: {
+            type: 'integer',
+            title: 'Predictions Count',
+            description: 'Number of predictions generated on test set'
+        },
+        model_saved: {
+            type: 'boolean',
+            title: 'Model Saved',
+            description: 'Whether the trained model was successfully saved'
+        },
+        experiment_name: {
+            type: 'string',
+            title: 'Experiment Name',
+            description: 'Name of the experiment that was executed'
+        },
+        error_message: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error Message',
+            description: "Error message if status is 'error'"
+        }
+    },
+    type: 'object',
+    required: ['status', 'predictions_count', 'model_saved', 'experiment_name'],
+    title: 'TrainingWorkflowResponse',
+    description: `Response model for training workflow API.
+
+Educational Notes:
+- Provides comprehensive feedback on training execution
+- Predictions count indicates model's output on test set
+- Model saved status confirms persistence for future use`
 } as const;
 
 export const UpdatePasswordSchema = {
