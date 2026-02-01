@@ -1031,10 +1031,45 @@ Phase 1 核心服务已全部完成并测试通过：
 - 用户能够理解每一行代码的含义
 - 知识积累扎实，为后续开发打下良好基础
 
-**📝 下一步工作**:
+**📝 当前优先任务**：
 
-1. 继续完成数据源管理页面的前端集成
-2. 按照开发计划推进后续功能
+1. **开发Yahoo Finance实时数据收集脚本** (最高优先级)
+
+   - 目标：创建 `backend/scripts/get_data_yahoo_realtime.py`
+   - 方法：使用yfinance SDK获取实时数据（延迟15-20分钟）
+   - 输出：CSV格式，兼容现有dump_bin.py转换流程
+   - 重要性：为后续回测、模拟盘等workflow提供实时数据支持
+   - 符合Qlib标准：CSV → dump_bin.py → Qlib二进制格式
+
+2. 继续完成数据源管理页面的前端集成
+3. 按照开发计划推进后续功能
+
+**🎯 Yahoo Collector开发计划**:
+
+**阶段1：研究和设计**
+
+- [ ] 深入研究Qlib文档中的Collector基类接口
+- [ ] 分析yfinance库的API和数据格式
+- [ ] 设计符合Qlib标准的collector架构
+
+**阶段2：实现核心功能**
+
+- [ ] 创建标准目录结构：`scripts/data_collector/yahoo/`
+- [ ] 实现YahooFinanceCollector类，继承Qlib Collector基类
+- [ ] 支持股票池选择：CSI300、CSI500、All Stocks
+- [ ] 实现增量更新机制（--trading_date参数）
+
+**阶段3：集成和测试**
+
+- [ ] 更新data_utils.py调用新的collector
+- [ ] 通过Docker环境测试collector功能
+- [ ] 验证输出的Qlib数据格式正确性
+
+**阶段4：部署和优化**
+
+- [ ] 配置crontab定时任务支持
+- [ ] 性能优化和错误处理
+- [ ] 文档和使用说明
 
 ---
 
@@ -1092,20 +1127,97 @@ Phase 1 核心服务已全部完成并测试通过：
   "data_range_end": "2020-09-25",
   "data_size_mb": 271.33
 }
+
+经过讨论，确定采用**简化设计方案**：
+
+- **用户只需选择**：数据源类型 + 股票池
+- **系统自动处理**：获取该数据源支持的完整时间范围
+- **显示结果**：实际时间范围、股票数量、数据大小、时效性提示
+
+**界面组成**：
+
+1. 数据源选择：Yahoo Finance / AKShare / Tushare
+2. 股票池选择：CSI300 / CSI500 / All Stocks
+3. 操作按钮：下载数据、清空数据
+4. 状态显示：当前数据源信息、时间范围、股票数量、数据大小
+
+**用户体验流程**：
+
 ```
 
-**🔄 实时数据更新需求已规划**:
+选择数据源和股票池 → 点击下载 → 系统自动获取完整数据 → 显示实际结果
 
-已在tech_spec.md中完整记录Phase 7实时数据更新需求，包括：
+````
 
-- AKShare集成方案（解决Yahoo数据滞后问题）
-- 增量更新机制（每日自动更新）
-- 数据源抽象层设计
-- 4个子阶段的详细开发计划
+这种设计避免了用户手动配置时间范围的复杂性，符合"获取完整历史数据"的核心需求。
 
-**📝 当前状态**:
+**📋 Collector脚本扩展计划（修订版）**:
 
-数据源管理后端API已全面完成并验证，下一步开始前端集成工作。
+**⚠️ 重要发现**：经过深入研究Qlib文档，发现我们当前的方法不完全符合Qlib标准做法。
+
+**Qlib标准做法**：
+- 官方提供 `scripts/data_collector/` 目录下的标准collector
+- 使用 `qlib.workflow.task.collect.Collector` 基类
+- 直接输出Qlib格式，无需CSV中转和dump_bin转换
+
+**修订后的扩展方案**：
+
+### 方案A：继承Qlib Collector基类（推荐）
+```python
+from qlib.workflow.task.collect import Collector
+
+class YFinanceCollector(Collector):
+    def collect(self, **kwargs):
+        # 直接输出Qlib二进制格式
+        # 支持增量更新和时间范围参数
+        pass
+````
+
+### 方案B：标准collector目录结构
+
+```
+backend/scripts/data_collector/
+├── yfinance/
+│   ├── collector.py  # 主收集器，模仿官方yahoo collector
+│   └── README.md
+├── tushare/
+│   ├── collector.py
+│   └── README.md
+└── akshare/
+    ├── collector.py
+    └── README.md
+```
+
+**架构优势**：
+
+- 符合Qlib官方标准和最佳实践
+- 直接输出Qlib格式，性能更高
+- 支持官方的增量更新机制
+- 可集成到Qlib的任务管理系统
+- 便于使用crontab等标准调度工具
+
+**实现计划**：
+
+1. 研究 `qlib.workflow.task.collect.Collector` 基类接口
+2. 参考官方 `scripts/data_collector/yahoo/collector.py` 实现
+3. 创建标准的collector目录结构
+4. 实现直接输出Qlib二进制格式的数据收集器
+
+**🔄 重要更新**：经过与用户确认，当前架构完全符合Qlib标准！
+
+**✅ 确认的标准做法**：
+
+```
+数据源 → get_data.py脚本 → CSV格式 → dump_bin.py → Qlib二进制格式
+```
+
+**数据源扩展的正确方式**：
+
+1. **Yahoo Finance实时**：开发 `get_data_yahoo_realtime.py`，使用yfinance SDK获取实时数据
+2. **Tushare**：开发 `get_data_tushare.py`，集成Tushare Pro API
+3. **AKShare**：开发 `get_data_akshare.py`，使用AKShare开源库
+
+**统一转换流程**：所有数据源脚本输出CSV格式，然后统一使用 `scripts/qlib/dump_bin.py` 转换为Qlib格式。
 
 ---
 
@@ -1126,15 +1238,17 @@ Phase 1 核心服务已全部完成并测试通过：
 #### 1. 数据源切换流程
 
 ```
+
 用户选择新数据源 (如 CSI300)
-    ↓
+↓
 清空现有数据 (qlib_data + csv_data)
-    ↓
+↓
 下载完整历史数据 (从数据源支持的最早日期到最新日期)
-    ↓
+↓
 转换为 Qlib 格式
-    ↓
+↓
 启用每日自动更新
+
 ```
 
 #### 2. 实时数据更新策略
