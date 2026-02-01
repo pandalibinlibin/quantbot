@@ -56,6 +56,11 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = ""
     POSTGRES_DB: str = ""
 
+    # Data paths configuration
+    QLIB_DATA_PATH: str = "/app/qlib_data"
+    CSV_DATA_PATH: str = "/app/csv_data"
+    DEFAULT_CSV_FILE_NAME: str = "csv_data_cn.zip"
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:

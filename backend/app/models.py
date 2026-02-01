@@ -1048,3 +1048,110 @@ class TrainingWorkflowResponse(SQLModel):
     error_message: str | None = Field(
         default=None, description="Error message if status is 'error'"
     )
+
+
+# ============================================================================
+# Data source Management Models
+# ============================================================================
+class DataSourceStatus(SQLModel):
+    """
+    Data source status information.
+
+    Educational Notes:
+    - This model represents the current state of the data
+    - Used to display information to users
+    - Not stored in database, just for API response
+    """
+
+    source_name: str = Field(description="Current data source name")
+    data_exists: bool = Field(description="Whether data exists in qlib_data directory")
+    data_range_start: str | None = Field(
+        default=None, description="Start date of available data"
+    )
+    data_range_end: str | None = Field(
+        default=None, description="End date of available data"
+    )
+    instruments: list[str] | None = Field(
+        default=None, description="List of stock codes (first 10 if more than 10)"
+    )
+    instruments_count: int | None = Field(default=None, description="Number of stocks")
+    stock_pool: str | None = Field(
+        default=None, description="Stock pool name (e.g., 'csi300', 'csi500', 'all')"
+    )
+    features: list[str] | None = Field(
+        default=None,
+        description="List of available features (e.g., ['open', 'close', 'high', 'low', 'volume'])",
+    )
+    data_size_mb: float | None = Field(
+        default=None, description="Total data size in MB"
+    )
+    last_updated: str | None = Field(default=None, description="Last update timestamp")
+
+
+class DownloadDataRequest(SQLModel):
+    """
+    Request model for downloading data.
+
+    Educational Notes:
+    - This defines what parameters users need to provide
+    - Validation is automatic through Pydantic
+    """
+
+    source: str = Field(
+        default="yahoo",
+        description="Data source name (currently only 'yahoo' supported)",
+    )
+    instruments: str = Field(
+        default="csi300",
+        description="Stock pool to download (e.g., 'csi300', 'csi500')",
+    )
+    start_date: str = Field(description="Start date in YYYY-MM-DD format")
+    end_date: str = Field(description="End date in YYYY-MM-DD format")
+    region: str = Field(default="cn", description="Market region ('cn' or 'us')")
+
+
+class DownloadTaskResponse(SQLModel):
+    """
+    Response model for download task creation.
+
+    Educational Notes:
+    - Returned immediately when user starts download
+    - Contains task_id for tracking progress
+    """
+
+    task_id: str = Field(description="Unique task identifier")
+    status: str = Field(description="Initial status: 'started'")
+    message: str = Field(description="Human-readable message")
+
+
+class DownloadTaskStatus(SQLModel):
+    """
+    Download task status information.
+
+    Educational Notes:
+    - Used for progress tracking
+    - Frontend polls this endpoint to update progress bar
+    """
+
+    task_id: str = Field(description="Task identifier")
+    status: str = Field(
+        description="Task status: 'downloading', 'converting', 'completed', 'failed'"
+    )
+    progress: int = Field(description="Progress percentage (0-100)")
+    message: str = Field(description="Current operation message")
+    error: str | None = Field(default=None, description="Error message if failed")
+
+
+class ClearDataResponse(SQLModel):
+    """
+    Response model for data clearing operation.
+
+    Educational Notes:
+    - Simple response to confirm operation
+    """
+
+    success: bool = Field(description="Whether operation succeeded")
+    message: str = Field(description="Result message")
+    cleared_size_mb: float | None = Field(
+        default=None, description="Size of cleared data in MB"
+    )

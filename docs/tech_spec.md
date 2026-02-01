@@ -1033,12 +1033,247 @@ Phase 1 核心服务已全部完成并测试通过：
 
 **📝 下一步工作**:
 
-1. 添加 `qlib_workflow_service.py` 的辅助方法：
+1. 继续完成数据源管理页面的前端集成
+2. 按照开发计划推进后续功能
 
-   - `_execute_workflow_steps()` - 执行工作流步骤
-   - `_create_dataset()` - 创建数据集
-   - `_create_and_train_model()` - 创建并训练模型
-   - `_record_results()` - 记录结果
+---
+
+### 2026-02-01 上午 - 数据源管理API完成并验证 ✅
+
+**✅ 已完成的工作**:
+
+1. **成功验证数据源管理API功能**
+
+   - ✅ 通过Swagger UI测试下载API：`POST /api/v1/data-source/download`
+   - ✅ 验证状态检测API：`GET /api/v1/data-source/status`
+   - ✅ 确认完整数据集下载：3875只股票，271.33MB数据
+   - ✅ 验证数据时间范围：1999-11-10 到 2020-09-25（20年历史数据）
+   - ✅ 确认股票池识别：正确识别为"yahoo_cn_full"
+
+2. **数据一致性验证成功**
+
+   - ✅ 确认文件命名格式：`SH600000`, `SZ000001`等标准Qlib格式
+   - ✅ 验证目录结构：`features/`, `instruments/`, `calendars/`
+   - ✅ 确认现有代码兼容性：无需修改现有逻辑
+
+3. **实时数据更新需求规划**
+   - ✅ 在tech_spec.md中详细记录Phase 7实时数据更新需求
+   - ✅ 制定AKShare集成计划解决Yahoo数据滞后问题
+   - ✅ 设计增量更新和自动调度机制
+   - ✅ 规划复用现有API的扩展方案
+
+**🎯 关键成就**:
+
+从85只股票升级到3875只股票（45倍增长），数据源管理API全面验证通过：
+
+- **API端点**: 3个REST API（状态、清理、下载）全部测试通过
+- **数据规模**: 从85只股票扩展到3875只股票
+- **数据质量**: 20年完整历史数据，7个标准技术指标
+- **兼容性**: 保持文件命名一致性，现有代码无需修改
+- **可扩展性**: 为实时数据更新奠定基础
+
+**📊 测试结果总结**:
+
+```json
+// 下载API响应
+{
+  "task_id": "93124f48-1dd2-4456-97a8-d8cdc55208c4",
+  "status": "completed",
+  "message": "Successfully completed full data refresh"
+}
+
+// 状态API响应
+{
+  "source_name": "yahoo",
+  "data_exists": true,
+  "instruments_count": 3875,
+  "stock_pool": "yahoo_cn_full",
+  "data_range_start": "1999-11-10",
+  "data_range_end": "2020-09-25",
+  "data_size_mb": 271.33
+}
+```
+
+**🔄 实时数据更新需求已规划**:
+
+已在tech_spec.md中完整记录Phase 7实时数据更新需求，包括：
+
+- AKShare集成方案（解决Yahoo数据滞后问题）
+- 增量更新机制（每日自动更新）
+- 数据源抽象层设计
+- 4个子阶段的详细开发计划
+
+**📝 当前状态**:
+
+数据源管理后端API已全面完成并验证，下一步开始前端集成工作。
+
+---
+
+## 🔄 实时数据更新需求 (Phase 7)
+
+### 需求概述
+
+**目标**: 实现数据源切换后的自动实时数据更新机制
+
+**核心需求**:
+
+- 用户切换数据源后，系统自动清空旧数据
+- 下载新数据源的完整历史数据（尽可能获取到最新数据）
+- 建立每日自动更新机制，保持数据时效性
+
+### 详细需求分析
+
+#### 1. 数据源切换流程
+
+```
+用户选择新数据源 (如 CSI300)
+    ↓
+清空现有数据 (qlib_data + csv_data)
+    ↓
+下载完整历史数据 (从数据源支持的最早日期到最新日期)
+    ↓
+转换为 Qlib 格式
+    ↓
+启用每日自动更新
+```
+
+#### 2. 实时数据更新策略
+
+**数据源优先级**:
+
+1. **AKShare** (推荐) - 免费、开源、实时更新
+2. **Tushare** - 专业数据、有免费额度
+3. **Yahoo Finance** (当前) - 数据滞后，仅到2020年
+
+**更新频率**:
+
+- **每日更新**: 交易日收盘后自动更新
+- **增量更新**: 只下载缺失的日期数据
+- **全量刷新**: 用户手动触发或定期执行
+
+#### 3. 技术实现方案
+
+**3.1 数据源抽象层**
+
+```python
+class BaseDataSource:
+    def get_latest_date(self) -> str
+    def download_data(self, start_date: str, end_date: str) -> bool
+    def supports_realtime(self) -> bool
+    def get_supported_instruments(self) -> List[str]
+```
+
+**3.2 增量更新机制**
+
+```python
+class IncrementalUpdater:
+    def check_missing_dates(self) -> List[str]
+    def update_missing_data(self, missing_dates: List[str]) -> bool
+    def validate_data_integrity(self) -> bool
+```
+
+**3.3 调度系统**
+
+```python
+# 使用 APScheduler 或 Celery
+@scheduler.scheduled_job('cron', hour=18, minute=0)  # 每日18:00
+def daily_data_update():
+    updater = IncrementalUpdater()
+    updater.update_missing_data()
+```
+
+### 开发计划
+
+#### Phase 7.1: AKShare 集成 (1-2周)
+
+- [ ] 安装和配置 AKShare 库
+- [ ] 实现 AKShare 数据收集器
+- [ ] 支持 A股、港股实时数据获取
+- [ ] 数据格式标准化和验证
+
+#### Phase 7.2: 增量更新机制 (1周)
+
+- [ ] 实现数据完整性检查
+- [ ] 实现增量数据下载
+- [ ] 数据冲突检测和处理
+- [ ] 更新日志和监控
+
+#### Phase 7.3: 自动调度系统 (1周)
+
+- [ ] 集成 APScheduler 或 Celery
+- [ ] 实现每日自动更新任务
+- [ ] 错误处理和重试机制
+- [ ] 更新状态通知
+
+#### Phase 7.4: 数据源管理界面 (1周)
+
+- [ ] 数据源选择和配置界面
+- [ ] 更新状态监控界面
+- [ ] 手动触发更新功能
+- [ ] 数据质量报告
+
+### 复用现有功能
+
+**可复用的API端点**:
+
+- `GET /api/v1/data-source/status` - 检查数据状态
+- `DELETE /api/v1/data-source/clear` - 清空数据
+- `POST /api/v1/data-source/download` - 下载数据
+
+**扩展方向**:
+
+- 添加 `source` 参数支持多数据源 (akshare, tushare)
+- 添加 `update_mode` 参数 (full, incremental)
+- 添加调度配置接口
+
+### 预期效果
+
+**用户体验**:
+
+- 一键切换数据源，自动处理数据更新
+- 数据始终保持最新，支持实时回测和训练
+- 透明的更新状态，用户了解数据时效性
+
+**系统稳定性**:
+
+- 增量更新减少网络和存储压力
+- 错误恢复机制保证数据完整性
+- 监控和日志便于问题排查
+
+**数据质量**:
+
+- 支持多数据源交叉验证
+- 自动数据质量检查
+- 历史数据和实时数据无缝衔接
+
+### 风险和挑战
+
+**技术风险**:
+
+- 不同数据源的数据格式差异
+- 网络不稳定导致的下载失败
+- 大量历史数据的存储和处理
+
+**解决方案**:
+
+- 统一的数据格式转换层
+- 重试机制和断点续传
+- 数据压缩和分片存储
+
+**数据风险**:
+
+- 数据源服务不稳定
+- 数据质量问题
+- 实时性要求vs数据准确性
+
+**解决方案**:
+
+- 多数据源备份机制
+- 数据验证和清洗流程
+- 可配置的更新策略
+  - `_create_dataset()` - 创建数据集
+  - `_create_and_train_model()` - 创建并训练模型
+  - `_record_results()` - 记录结果
 
 2. 编写测试脚本：
 
@@ -1218,6 +1453,7 @@ Response: {
 创建了智能配置管理系统，自动填充 Qlib 组件配置：
 
 - **QlibComponentRegistry** (`backend/app/services/qlib_component_registry.py`)
+
   - 维护 Model、Handler、Dataset 的 class → module_path 映射
   - 支持 10 种模型：LGBModel, XGBModel, CatBoostModel, LinearModel, MLPModel, GRUModel, LSTMModel, GATs, ALSTM, TransformerModel
   - 支持 4 种 Handler：Alpha158, Alpha101, Alpha360, DataHandlerLP
@@ -1239,6 +1475,7 @@ Response: {
 **3. 用户体验优化**
 
 - **按钮 Loading 状态**：
+
   - 点击 "Start Training" 后按钮变为 "Training..."
   - 显示旋转加载图标
   - 按钮禁用防止重复提交
@@ -1251,12 +1488,14 @@ Response: {
 ### 技术实现
 
 **后端修改**：
+
 - `backend/app/models.py`: 将 `module_path` 字段改为可选 (`str | None`)
 - `backend/app/api/routes/qlib_workflow.py`: 使用 registry 自动填充配置
 - 新增配置文件和 registry 服务
 
 **前端修改**：
-- `frontend/src/routes/_layout/training.tsx`: 
+
+- `frontend/src/routes/_layout/training.tsx`:
   - 添加 `useState` 管理训练状态
   - 添加 `instruments` 和 `freq` 表单字段
   - 实现按钮 loading 状态和进度显示
@@ -1265,6 +1504,7 @@ Response: {
 ### 测试结果
 
 ✅ **训练工作流完整测试通过**：
+
 - 数据加载：56.66 秒，成功加载 CSI300 数据
 - 特征处理：DropnaLabel + CSZScoreNorm
 - 模型训练：LightGBM，early stopping 在第 3 轮
@@ -1302,3 +1542,183 @@ Response: {
 1. 添加任务队列支持长时间训练
 2. 实现实时训练进度追踪（WebSocket）
 3. 添加超参数在线编辑功能（高级用户）
+
+---
+
+# 🗂️ 数据源管理系统开发记录 (2026-01-29)
+
+## 📋 开发目标
+
+实现数据源管理功能，允许用户从前端页面选择数据源并下载数据。基于用户需求分析，确定了以下关键设计决策：
+
+### 关键设计决策
+
+**1. 数据源切换策略**
+
+- **问题**：当切换数据源时（如从Yahoo Finance切换到Tushare），是否需要清空现有数据？
+- **分析**：由于每个实例只针对一个市场（cn或us），且同一市场的不同数据源（如Tushare、AkShare、Yahoo Finance CN）可能存在数据格式和质量差异
+- **决策**：采用清空策略 - 切换数据源时清空现有数据，确保数据一致性
+
+**2. 标准化数据收集流程**
+
+- **设计理念**：基于Qlib官方机制，不重新造轮子
+- **标准流程**：`Collector脚本 → CSV数据 → dump_bin.py → .bin格式`
+- **优势**：
+  - 完全遵循Qlib官方工具链
+  - 为未来数据源扩展提供标准化方式
+  - CSV格式便于调试和数据验证
+
+**3. 数据收集器架构**
+
+- **核心工具**：使用`backend/scripts/get_data.py`（基于`qlib.tests.data.GetData`）
+- **调用方式**：`python scripts/get_data.py download_data --file_name csv_data_cn.zip --target_dir ~/.qlib/csv_data/cn_data`
+- **扩展性**：每个数据源有专门的函数（如`download_yahoo_csv_data`），而非通用函数
+
+## 🏗️ 技术实现
+
+### Phase 1: 基础模型和工具函数
+
+**1. Pydantic模型设计** ✅
+
+- `DataSourceStatus`: 数据源状态信息
+- `DownloadDataRequest`: 下载请求参数
+- `DownloadTaskResponse`: 任务创建响应
+- `DownloadTaskStatus`: 任务状态追踪
+- `ClearDataResponse`: 数据清空响应
+
+**2. 数据工具函数**
+
+- `clear_qlib_data()`: 安全清空qlib_data目录
+- `execute_yahoo_data_collector()`: 调用Yahoo collector下载CSV数据
+
+**3. 配置系统设计**
+
+- **路径配置集中化**：在`backend/app/core/config.py`中统一管理所有数据路径
+- **配置项**：
+  - `QLIB_DATA_PATH = "/app/qlib_data"`: Qlib数据存储路径
+  - `CSV_DATA_PATH = "/app/csv_data"`: CSV数据临时存储路径
+  - `DEFAULT_CSV_FILE_NAME = "csv_data_cn.zip"`: 默认数据文件名
+- **分层架构**：
+  - `*_impl`函数：处理具体业务逻辑，接受参数
+  - 公共函数：使用配置系统，确保路径一致性
+- **优势**：
+  - 避免数据清空和创建时路径不一致问题
+  - 集中管理，便于维护和环境适配
+  - 为未来多数据源扩展提供标准模式
+
+### Phase 2: 数据收集器实现
+
+**优化后的标准化流程设计**：
+
+```python
+# Step 1: 清空旧数据（确保数据一致性）
+clear_qlib_data()              # 清空现有qlib_data
+
+# Step 2: 下载CSV数据（特定数据源）
+execute_yahoo_data_collector()    # Yahoo Finance
+execute_tushare_data_collector()  # Tushare (未来实现)
+execute_akshare_data_collector()  # AkShare (未来实现)
+
+# Step 3: 转换为Qlib格式（通用）
+convert_csv_to_qlib_format()   # 调用dump_bin.py
+```
+
+**流程优势**：
+
+- **数据一致性**：先清空避免新旧数据混合
+- **错误处理**：下载失败时保持环境干净
+- **存储优化**：避免同时存储多份数据
+- **调试友好**：每步状态明确，便于排查问题
+
+**当前进展**：
+
+### 已完成功能
+
+- ✅ Yahoo数据收集器已完成
+- ✅ 配置系统已完成
+- ✅ CSV到Qlib格式转换功能已完成
+- ✅ 数据源状态查询API已完成
+- ✅ 股票池智能识别功能已完成
+- ✅ 完整的21年历史数据解析已完成
+
+### 当前开发阶段：数据源管理API扩展
+
+#### 第一阶段成果总结 (已完成)
+
+我们成功实现了数据源管理API的第一个完整功能：
+
+**✅ 完整的技术架构**
+
+1. **Service层** - 完整的业务逻辑实现
+2. **API层** - 简洁的RESTful端点
+3. **路由注册** - 集成到主应用
+4. **错误处理** - 统一的异常处理
+5. **数据解析** - 正确的Qlib数据结构分析
+6. **分层架构** - 清晰的职责分离
+7. **智能功能** - 自动股票池识别
+8. **完整数据** - 21年历史数据范围
+
+**✅ API端点完全可用**
+
+- **URL**: `GET /api/v1/data-source/status`
+- **响应**: 完整的数据源状态信息
+- **性能**: 快速响应，无错误
+- **智能化**: 自动识别股票池类型
+- **数据完整**: 21年历史数据覆盖
+
+#### 第二阶段开发计划：扩展数据管理功能
+
+基于Qlib官方文档研究，我们将按照以下顺序实现：
+
+**🔄 当前任务：添加清空数据API端点**
+
+- 基于Qlib的标准数据管理实践
+- 使用现有的`clear_qlib_data`服务函数
+- 遵循RESTful API设计原则
+
+**⏳ 下一步任务：**
+
+1. 添加下载数据API端点
+2. 在前端中集成数据源管理功能
+
+#### Qlib数据管理最佳实践研究
+
+根据Qlib官方文档，标准的数据管理流程包括：
+
+1. **数据初始化**: `qlib.init(provider_uri="path/to/data")`
+2. **数据获取**: 使用`scripts/get_data.py`下载数据
+3. **数据转换**: 将CSV转换为Qlib .bin格式
+4. **数据访问**: 通过`qlib.data.D`接口访问数据
+
+我们的实现完全遵循这些最佳实践，确保与Qlib生态系统的完全兼容。
+
+## 下一步工作
+
+### 立即任务
+
+1. 完成`download_yahoo_csv_data()`函数实现
+2. 实现`convert_csv_to_qlib_format()`函数
+3. 创建数据源管理API路由
+4. 通过Swagger UI测试API功能
+
+### 后续阶段
+
+1. 实现前端数据源管理界面
+2. 添加进度追踪和用户反馈
+3. 扩展支持Tushare和AkShare数据源
+4. 实现数据状态监控和报告
+
+## 📚 技术要点
+
+**教育性说明**：
+
+- **Service Layer Pattern**: 将业务逻辑从API路由中分离
+- **Command Pattern**: 使用subprocess调用外部脚本
+- **Strategy Pattern**: 不同数据源使用不同的收集策略
+- **Pipeline Pattern**: 标准化的数据处理流水线
+
+**安全考虑**：
+
+- 路径验证防止误删重要目录
+- 错误处理和异常捕获
+- 进程执行的安全性检查
