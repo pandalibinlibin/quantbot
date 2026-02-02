@@ -85,14 +85,14 @@ services:
       - ./backend/app:/app/app
       - ./backend/tests:/app/tests
       - qlib-data:/app/qlib_data
-      - ./scripts:/app/scripts:cached
+      - ./backend/scripts:/app/scripts:cached
     environment:
       SMTP_HOST: "mailcatcher"
       SMTP_PORT: "1025"
       SMTP_TLS: "false"
       EMAILS_FROM_EMAIL: "noreply@example.com"
-      HTTP_PROXY: "http://192.168.0.107:7890"
-      HTTPS_PROXY: "http://192.168.0.107:7890"
+      HTTP_PROXY: "http://192.168.110.152:7890"
+      HTTPS_PROXY: "http://192.168.110.152:7890"
       NO_PROXY: "localhost,127.0.0.1,db,mailcatcher"
 
   mailcatcher:
