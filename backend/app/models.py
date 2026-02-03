@@ -1101,13 +1101,12 @@ class DownloadDataRequest(SQLModel):
         default="yahoo",
         description="Data source name (currently only 'yahoo' supported)",
     )
-    instruments: str = Field(
+    stock_pool: str = Field(
         default="csi300",
         description="Stock pool to download (e.g., 'csi300', 'csi500')",
     )
     start_date: str = Field(description="Start date in YYYY-MM-DD format")
     end_date: str = Field(description="End date in YYYY-MM-DD format")
-    region: str = Field(default="cn", description="Market region ('cn' or 'us')")
 
 
 class DownloadTaskResponse(SQLModel):

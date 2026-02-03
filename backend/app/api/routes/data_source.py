@@ -105,13 +105,12 @@ def download_data_source_endpoint(request: DownloadDataRequest):
 
         # Step 2: Download CSV data based on source
         if request.source.lower() == "yahoo":
-            download_success, download_message = execute_yahoo_data_collector_impl(
-                target_dir=f"{settings.CSV_DATA_PATH}/cn_data",
-                file_name=settings.DEFAULT_CSV_FILE_NAME,
-                instruments=request.instruments,
+            download_success, download_message = execute_yahoo_data_collector(
+                stock_pool=request.stock_pool,
                 start_date=request.start_date,
                 end_date=request.end_date,
-                region=request.region,
+                incremental=False,
+                period=None,
             )
         elif request.source.lower() == "tushare":
             # Future implementation

@@ -101,27 +101,29 @@ def clear_qlib_data_impl(
 
 def execute_yahoo_data_collector_impl(
     target_dir: str = "/app/csv_data/cn_data",
-    file_name: str = "csv_data_cn.zip",
-    instruments: str = "csi300",
+    stock_pool: str = "csi300",
     start_date: str = "2020-01-01",
     end_date: str = "2023-12-31",
+    incremental: bool = False,
+    period: str = None,
     region: str = "cn",
 ) -> Tuple[bool, str]:
     """
-    Execute Yahoo data collector using get_data.py script with correct parameters for full dataset.
+    Execute Yahoo data collector using get_data_yahoo_realtime.py script with enhanced parameters.
 
     Educational Notes:
-    - Uses get_data.py script with the correct file name for full dataset
-    - The key is using "qlib_data_cn_1d_latest.zip" instead of default file name
-    - This downloads the complete dataset with thousands of stocks
-    - Supports CSI300, CSI500, and full market data
+    - Uses the new get_data_yahoo_realtime.py script with flexible parameters
+    - Supports stock pool selection (csi300, csi500) via dynamic API
+    - Supports incremental updates to avoid re-downloading existing data
+    - Compatible with existing API interface while providing enhanced functionality
 
     Args:
         target_dir: Directory to store downloaded CSV data
-        file_name: Name of the data file to download (use "qlib_data_cn_1d_latest.zip" for full dataset)
-        instruments: Stock pool (csi300, csi500, or all)
-        start_date: Start date (for future use)
-        end_date: End date (for future use)
+        stock_pool: Stock pool selection (csi300, csi500, or all)
+        start_date: Start date for data collection (YYYY-MM-DD format)
+        end_date: End date for data collection (YYYY-MM-DD format)
+        incremental: Whether to perform incremental update (append new data only)
+        period: Time period (1y, 6m, 3m) - optional, conflicts with start_date/end_date
         region: Market region (cn supported)
 
     Returns:
@@ -134,25 +136,28 @@ def execute_yahoo_data_collector_impl(
         target_path = Path(target_dir)
         target_path.mkdir(parents=True, exist_ok=True)
 
-        # Use the correct file name for full dataset
-        # If user requests full dataset or if file_name is default, use the full dataset file name
-        if file_name == "csv_data_cn.zip" or instruments in [
-            "all",
-            "full",
-            "yahoo_cn_full",
-        ]:
-            file_name = "qlib_data_cn_1d_latest.zip"
-
-        # Command to execute Yahoo data collector via get_data.py
+        # Command to execute Yahoo data collector via get_data_yahoo_realtime.py
         cmd = [
             "python",
-            "/app/scripts/get_data.py",
+            "/app/scripts/get_data_yahoo_realtime.py",
             "download_data",
-            "--file_name",
-            file_name,
+            "--stock_pool",
+            stock_pool,
+            "--start_date",
+            start_date,
+            "--end_date",
+            end_date,
             "--target_dir",
             target_dir,
         ]
+
+        # Add period parameter if specified (conflicts with start_date/end_date)
+        if period:
+            cmd.extend(["--period", period])
+
+        # Add incremental flag if required
+        if incremental:
+            cmd.append("--incremental")
 
         # Execute the collector command
         result = subprocess.run(cmd, capture_output=True, text=True, cwd="/app")
@@ -160,7 +165,7 @@ def execute_yahoo_data_collector_impl(
         if result.returncode == 0:
             return (
                 True,
-                f"Yahoo data collector executed successfully: {file_name} → {target_dir}",
+                f"Yahoo data collector executed successfully: {stock_pool} stocks ({start_date} to {end_date}) → {target_dir}",
             )
         else:
             return False, f"Yahoo data collector failed: {result.stderr}"
@@ -176,10 +181,20 @@ def clear_qlib_data() -> Tuple[bool, str, float]:
     )
 
 
-def execute_yahoo_data_collector() -> Tuple[bool, str]:
+def execute_yahoo_data_collector(
+    stock_pool: str = "csi300",
+    start_date: str = "2020-01-01",
+    end_date: str = "2023-12-31",
+    incremental: bool = False,
+    period: str = None,
+) -> Tuple[bool, str]:
     return execute_yahoo_data_collector_impl(
         target_dir=f"{settings.CSV_DATA_PATH}/cn_data",
-        file_name=settings.DEFAULT_CSV_FILE_NAME,
+        stock_pool=stock_pool,
+        start_date=start_date,
+        end_date=end_date,
+        incremental=incremental,
+        period=period,
     )
 
 
@@ -189,75 +204,79 @@ def convert_csv_to_qlib_format_impl(
     freq: str = "day",
 ) -> Tuple[bool, str]:
     """
-    Convert data to Qlib .bin format - now handles pre-formatted full dataset.
-
-    Educational Notes:
-    - The full dataset is already in Qlib binary format, so we copy it directly
-    - No CSV conversion needed for the complete dataset
-    - Maintains compatibility with the API interface
-    - Copies features, instruments, and calendars directories
+    Convert CSV data to Qlib .bin format using Qlib's dump_bin utility.
 
     Args:
-        csv_dir: Directory containing the full dataset (misnamed for compatibility)
+        csv_dir: Directory containing CSV files
         qlib_dir: Target directory for Qlib .bin data
-        freq: Data frequency ('day' or other supported frequencies)
+        freq: Data frequency ('day')
 
     Returns:
         Tuple of (success, message)
     """
-    import shutil
+    import subprocess
 
     try:
-        # Ensure directories exist
+        # Ensure directory exist
         source_path = Path(csv_dir)
         qlib_path = Path(qlib_dir)
 
         if not source_path.exists():
             return False, f"Source directory does not exist: {csv_dir}"
 
-        # Ensure qlib directory exists
-        qlib_path.mkdir(parents=True, exist_ok=True)
+        # Count CSV files
+        csv_files = list(source_path.glob("*.csv"))
+        if not csv_files:
+            return False, f"No CSV file found in {csv_dir}"
 
-        # Copy the full dataset structure to qlib_data directory
-        # The source directory now contains the full dataset in Qlib format
+        # Clear qlib directory contents (don't delete the directory itself due to Docker mount)
+        if qlib_path.exists():
+            import shutil
+            import glob
 
-        # Copy features directory
-        features_source = source_path / "features"
-        if features_source.exists():
-            features_target = qlib_path / "features"
-            if features_target.exists():
-                shutil.rmtree(features_target)
-            shutil.copytree(features_source, features_target)
+            # Remove all contents in the directory
+            for item in glob.glob(str(qlib_path / "*")):
+                if os.path.isdir(item):
+                    shutil.rmtree(item)
+                else:
+                    os.remove(item)
+        else:
+            qlib_path.mkdir(parents=True, exist_ok=True)
 
-        # Copy instruments directory
-        instruments_source = source_path / "instruments"
-        if instruments_source.exists():
-            instruments_target = qlib_path / "instruments"
-            if instruments_target.exists():
-                shutil.rmtree(instruments_target)
-            shutil.copytree(instruments_source, instruments_target)
+        # Use local dump_bin script to convert CSV to binary format
+        cmd = [
+            "python",
+            "/app/scripts/dump_bin.py",
+            "dump_all",
+            "--data_path",
+            str(source_path),
+            "--qlib_dir",
+            str(qlib_path),
+            "--freq",
+            freq,
+            "--date_field_name",
+            "date",
+        ]
 
-        # Copy calendars directory
-        calendars_source = source_path / "calendars"
-        if calendars_source.exists():
-            calendars_target = qlib_path / "calendars"
-            if calendars_target.exists():
-                shutil.rmtree(calendars_target)
-            shutil.copytree(calendars_source, calendars_target)
+        # Execute the conversion
+        result = subprocess.run(cmd, capture_output=True, text=True, cwd="/app")
 
-        # Count stocks for verification
-        stock_count = 0
-        if features_target.exists():
-            stock_dirs = [d for d in features_target.iterdir() if d.is_dir()]
-            stock_count = len(stock_dirs)
+        if result.returncode == 0:
+            # Count converted stocks
+            features_dir = qlib_path / "features"
+            stock_count = 0
+            if features_dir.exists():
+                stock_dirs = [d for d in features_dir.iterdir() if d.is_dir()]
+                stock_count = len(stock_dirs)
 
-        return (
-            True,
-            f"Successfully copied full dataset to Qlib format: {stock_count} stocks from {csv_dir} → {qlib_dir}",
-        )
-
+            return (
+                True,
+                f"Successfully converted {len(csv_files)} CSV files to Qlib format: {stock_count} stocks",
+            )
+        else:
+            return False, f"Qlib conversion failed: {result.stderr}"
     except Exception as e:
-        return False, f"Error copying full dataset to Qlib format: {str(e)}"
+        return False, f"Error converting CSV to Qlib format: {str(e)}"
 
 
 def convert_csv_to_qlib_format() -> Tuple[bool, str]:

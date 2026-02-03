@@ -7,15 +7,18 @@ Compatible with get_data.py interface while adding extended functionality.
 
 Usage:
     # Basic usage (compatible with get_data.py)
-    python get_data_yahoo_realtime.py download_data --file_name data.zip --target_dir /app/csv_data/cn_data
+    python get_data_yahoo_realtime.py download_data --target_dir /app/csv_data/cn_data
+    # Same to python get_data_yahoo_realtime.py download_data --stock_pool csi300 --period 1y --target_dir /app/csv_data/cn_data
 
     # Extended usage (new functionality)
-    python get_data_yahoo_realtime.py download_data --file_name data.zip --stock_pool csi300 --period 1y --target_dir /app/csv_data/cn_data
-    python get_data_yahoo_realtime.py download_data --file_name data.zip --stock_pool csi500 --start_date 2023-01-01 --target_dir /app/csv_data/cn_data
-    python get_data_yahoo_realtime.py download_data --file_name data.zip --stock_pool csi300 --incremental --target_dir /app/csv_data/cn_data
+    python get_data_yahoo_realtime.py download_data --stock_pool csi300 --period 1y --target_dir /app/csv_data/cn_data
+    python get_data_yahoo_realtime.py download_data --stock_pool csi500 --start_date 2023-01-01 --target_dir /app/csv_data/cn_data
+    python get_data_yahoo_realtime.py download_data --stock_pool csi300 --incremental --target_dir /app/csv_data/cn_data
+    python get_data_yahoo_realtime.py download_data --stock_pool csi300 --start_date 2023-01-01 --end_date 2023-12-31 --target_dir /app/csv_data/cn_data
 
-    # Field extension (future functionality)
-    python get_data_yahoo_realtime.py download_data --file_name data.zip --stock_pool csi300 --fields open,high,low,close,volume,adj_close --target_dir /app/csv_data/cn_data
+    # Configuration-driven field collection (fields defined in config file)
+    # Fields are automatically loaded from backend/app/core/data_fields.yaml
+
 """
 import argparse
 from functools import total_ordering
@@ -26,6 +29,12 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 import pandas as pd
 import yfinance as yf
+
+# Import configuration utilities
+import sys
+
+sys.path.append("/app")
+from app.core.data_config import get_required_fields
 
 # Configure logging
 logging.basicConfig(
@@ -102,24 +111,22 @@ class YahooDataCollector:
     """
 
     def __init__(self):
-        self.supported_fields = [
-            "open",
-            "high",
-            "low",
-            "close",
-            "volume",  # Standard OHLCV
-            "adj_close",
-            "dividends",
-            "splits",  # Extended fields
-        ]
-        self.default_fields = ["open", "high", "low", "close", "volume"]
+        # Load complete configuration for yahoo_finance
+        from app.core.data_config import load_data_fields_config
+
+        full_config = load_data_fields_config()
+        self.config = full_config["data_sources"]["yahoo_finance"]
+
+        # Load required fields from configuration
+        self.required_fields = self.config.get("fields", [])
+        logger.info(
+            f"Loaded required fields from configuration: {self.required_fields}"
+        )
 
     def download_data(
         self,
-        file_name: Optional[str] = None,
         target_dir: str = "./csv_data",
         stock_pool: str = "csi300",
-        fields: str = "open,high,low,close,volume",
         period: Optional[str] = None,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
@@ -129,10 +136,8 @@ class YahooDataCollector:
         Download stock data with get_data.py compatible interface.
 
         Args:
-            file_name: Output file name (for compatibility, not used in CSV mode)
             target_dir: Target directory for CSV files
             stock_pool: Stock pool name (csi300, csi500)
-            fields: Comma-separated field names
             period: Time period (1y, 6m, 3m, etc.)
             start_date: Start date (YYYY-MM-DD)
             end_date: End date (YYYY-MM-DD)
@@ -142,7 +147,7 @@ class YahooDataCollector:
             bool: True if successful, False otherwise
         """
         logger.info(f"Starting Yahoo Finance data collection")
-        logger.info(f"Stock pool: {stock_pool}, Fields: {fields}")
+        logger.info(f"Stock pool: {stock_pool}")
         logger.info(f"Target directory: {target_dir}")
 
         try:
@@ -154,9 +159,9 @@ class YahooDataCollector:
             pool = StockPool(stock_pool)
             symbols = pool.get_symbols()
 
-            # Parse fields
-            field_list = [f.strip() for f in fields.split(",")]
-            self._validate_fields(field_list)
+            # Use configured fields
+            field_list = self.required_fields
+            logger.info(f"Using configured fields: {field_list}")
 
             # Determine date range
             start_dt, end_dt = self._parse_date_range(period, start_date, end_date)
@@ -199,14 +204,6 @@ class YahooDataCollector:
         except Exception as e:
             logger.error(f"Data collection failed: {e}")
             return False
-
-    def _validate_fields(self, fields: List[str]):
-        """Validate requested fields are supported."""
-        invalid_fields = [f for f in fields if f not in self.supported_fields]
-        if invalid_fields:
-            raise ValueError(
-                f"Unsupported fields: {invalid_fields}. Supported: {self.supported_fields}"
-            )
 
     def _parse_date_range(
         self, period: Optional[str], start_date: Optional[str], end_date: Optional[str]
@@ -275,23 +272,37 @@ class YahooDataCollector:
             # Reset index to get date as column
             hist = hist.reset_index()
 
-            # Rename columns to match Qlib format
-            column_mapping = {
+            # Use configuration-driven field mapping
+            yahoo_to_qlib_mapping = {
                 "Date": "date",
-                "Open": "open",
-                "High": "high",
-                "Low": "low",
-                "Close": "close",
-                "Volume": "volume",
-                "Adj Close": "adj_close",
-                "Dividends": "dividends",
-                "Stock Splits": "splits",
+                "Open": self.config.get("qlib_mapping", {}).get("open", "open"),
+                "High": self.config.get("qlib_mapping", {}).get("high", "high"),
+                "Low": self.config.get("qlib_mapping", {}).get("low", "low"),
+                "Close": self.config.get("qlib_mapping", {}).get("close", "close"),
+                "Volume": self.config.get("qlib_mapping", {}).get("volume", "volume"),
             }
 
-            hist = hist.rename(columns=column_mapping)
+            hist = hist.rename(columns=yahoo_to_qlib_mapping)
+
+            # Calculate VWAP (Volume Weighted Average Price)
+            if (
+                "volume" in hist.columns
+                and "high" in hist.columns
+                and "low" in hist.columns
+                and "close" in hist.columns
+            ):
+                # VWAP = (High + Low + Close) / 3 for daily data
+                # This is a simplified VWAP calculation suitable for daily OHLCV data
+                hist["vwap"] = (hist["high"] + hist["low"] + hist["close"]) / 3
+            else:
+                # Fallback: use close price if other fields are missing
+                hist["vwap"] = hist.get("close", 0)
 
             # Select only requested fields
+            # Debug: Print available columns and requested fields
+
             available_fields = ["date"] + [f for f in fields if f in hist.columns]
+
             hist = hist[available_fields]
 
             # Format date
@@ -340,12 +351,6 @@ def main():
         choices=["csi300", "csi500"],
         help="Stock pool selection",
     )
-    download_parser.add_argument(
-        "--fields",
-        type=str,
-        default="open,high,low,close,volume",
-        help="Comma-separated field names",
-    )
     download_parser.add_argument("--period", type=str, help="Time period (1y, 6m, 3m)")
     download_parser.add_argument(
         "--start_date", type=str, help="Start date (YYYY-MM-DD)"
@@ -360,10 +365,8 @@ def main():
     if args.command == "download_data":
         collector = YahooDataCollector()
         success = collector.download_data(
-            file_name=args.file_name,
             target_dir=args.target_dir,
             stock_pool=args.stock_pool,
-            fields=args.fields,
             period=args.period,
             start_date=args.start_date,
             end_date=args.end_date,
