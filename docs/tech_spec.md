@@ -2542,3 +2542,232 @@ python get_data_yahoo_realtime.py --stock_pool csi300 --fields open,high,low,clo
 - Tushare数据源集成
 - AKShare数据源集成
 - 本地CSV文件导入功能
+
+---
+
+## 🧮 第二阶段：因子工程模块设计方案 (2026-02-03)
+
+### ✅ Qlib因子系统架构研究完成
+
+**研究成果**:
+
+- ✅ **Qlib Data Handler扩展约定** - 深入理解继承和接口要求
+- ✅ **Alpha158实现模式分析** - 掌握标准因子引擎实现方法
+- ✅ **工作流集成机制** - 理解QlibComponentRegistry注册和配置系统
+- ✅ **表达式系统原理** - 掌握Qlib因子表达式语法和计算机制
+
+### 🏗️ 自定义因子引擎架构设计
+
+#### 🎯 设计目标
+
+**核心需求**:
+
+- 用户可通过前端界面使用Qlib表达式语法动态添加因子
+- 完全符合Qlib Data Handler扩展约定
+- 与现有workflow系统无缝集成
+- 支持因子验证、管理和性能分析
+
+**技术约束**:
+
+- 必须继承Qlib标准Data Handler基类
+- 遵循Qlib表达式系统规范
+- 兼容现有QlibComponentRegistry架构
+- 支持MLflow实验跟踪和缓存机制
+
+#### 🔧 核心组件设计
+
+**1. CustomFactorHandler (自定义因子引擎核心)**
+
+```python
+# 位置: backend/app/services/custom_factor_handler.py
+class CustomFactorHandler(DataHandlerLP):
+    """
+    自定义因子引擎 - 符合Qlib扩展约定
+
+    功能特性:
+    - 继承DataHandlerLP支持可学习处理器
+    - 动态加载用户自定义因子表达式
+    - 兼容Alpha158因子库
+    - 支持因子缓存和批量计算优化
+    """
+
+    def __init__(self,
+                 start_time, end_time, fit_start_time, fit_end_time,
+                 instruments,
+                 custom_factors=None,      # 用户自定义因子列表
+                 include_alpha158=True,    # 是否包含Alpha158因子
+                 factor_cache=True,        # 因子计算缓存
+                 **kwargs):
+        # 实现符合Qlib约定的初始化逻辑
+```
+
+**2. FactorExpressionManager (因子表达式管理器)**
+
+```python
+# 位置: backend/app/services/factor_expression_manager.py
+class FactorExpressionManager:
+    """
+    因子表达式管理系统
+
+    核心功能:
+    - Qlib表达式语法验证和解析
+    - 用户自定义因子CRUD操作
+    - 因子版本管理和回滚
+    - 表达式性能分析和优化建议
+    """
+
+    def validate_expression(self, expression: str) -> ValidationResult
+    def parse_expression(self, expression: str) -> ParsedFactor
+    def save_factor(self, factor: CustomFactor) -> str
+    def get_factor_list(self, user_id: str) -> List[CustomFactor]
+```
+
+**3. 因子管理API端点**
+
+```python
+# 位置: backend/app/api/routes/factor_management.py
+# RESTful API设计:
+# POST   /api/v1/factors              - 创建新因子
+# GET    /api/v1/factors              - 获取因子列表
+# GET    /api/v1/factors/{factor_id}  - 获取特定因子
+# PUT    /api/v1/factors/{factor_id}  - 更新因子
+# DELETE /api/v1/factors/{factor_id}  - 删除因子
+# POST   /api/v1/factors/validate     - 验证因子表达式
+# POST   /api/v1/factors/test         - 测试因子计算
+```
+
+**4. QlibComponentRegistry集成**
+
+```python
+# 扩展现有注册表:
+HANDLER_REGISTRY = {
+    "Alpha158": "qlib.contrib.data.handler",
+    "Alpha101": "qlib.contrib.data.handler",
+    "Alpha360": "qlib.contrib.data.handler",
+    "CustomFactorHandler": "app.services.custom_factor_handler",  # 新增
+    "DataHandlerLP": "qlib.contrib.data.handler",
+}
+```
+
+#### 📊 数据模型设计
+
+**CustomFactor (自定义因子模型)**
+
+```python
+class CustomFactor(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    name: str = Field(max_length=100, description="因子名称")
+    expression: str = Field(description="Qlib表达式")
+    description: Optional[str] = Field(description="因子描述")
+    category: str = Field(description="因子分类")
+    created_by: str = Field(description="创建用户")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    is_active: bool = Field(default=True)
+    validation_status: str = Field(description="验证状态")
+```
+
+#### 🔄 工作流集成方案
+
+**Workflow配置示例**:
+
+```yaml
+task:
+  dataset:
+    class: DatasetH
+    module_path: qlib.data.dataset
+    kwargs:
+      handler:
+        class: CustomFactorHandler # 使用自定义因子引擎
+        module_path: app.services.custom_factor_handler
+        kwargs:
+          start_time: "2020-01-01"
+          end_time: "2023-12-31"
+          fit_start_time: "2020-01-01"
+          fit_end_time: "2022-12-31"
+          instruments: "csi300"
+          custom_factors: # 用户自定义因子
+            - name: "custom_rsi"
+              expression: "RSI($close, 14)"
+            - name: "custom_macd"
+              expression: "EMA($close, 12) - EMA($close, 26)"
+          include_alpha158: true # 同时包含Alpha158
+```
+
+### 🚀 实施计划
+
+#### 第一步: CustomFactorHandler基础框架 (1-2天)
+
+- **目标**: 创建符合Qlib约定的基础Data Handler类
+- **任务**:
+  - 继承DataHandlerLP并实现必需接口
+  - 支持基础的因子表达式解析
+  - 实现与Alpha158的兼容性
+  - 添加基础的错误处理和日志
+
+#### 第二步: 因子表达式管理系统 (2-3天)
+
+- **目标**: 实现完整的因子管理后端逻辑
+- **任务**:
+  - 开发FactorExpressionManager类
+  - 实现Qlib表达式语法验证
+  - 创建因子数据库模型和CRUD操作
+  - 添加因子版本管理功能
+
+#### 第三步: API端点开发 (1-2天)
+
+- **目标**: 提供RESTful API接口
+- **任务**:
+  - 实现因子管理API端点
+  - 添加请求验证和错误处理
+  - 集成到FastAPI应用
+  - 编写API文档和测试
+
+#### 第四步: 系统集成 (1天)
+
+- **目标**: 集成到现有Qlib工作流系统
+- **任务**:
+  - 注册到QlibComponentRegistry
+  - 测试workflow配置兼容性
+  - 验证与现有系统的集成
+
+#### 第五步: 前端界面开发 (3-4天)
+
+- **目标**: 创建用户友好的因子管理界面
+- **任务**:
+  - 因子列表和详情页面
+  - 因子表达式编辑器
+  - 实时语法验证
+  - 因子测试和预览功能
+
+#### 第六步: 测试和优化 (2-3天)
+
+- **目标**: 确保系统稳定性和性能
+- **任务**:
+  - 端到端功能测试
+  - 性能基准测试
+  - 错误处理完善
+  - 文档更新
+
+### 🎯 预期成果
+
+**功能交付**:
+
+- ✅ 完整的自定义因子引擎系统
+- ✅ 用户友好的因子管理界面
+- ✅ 与Qlib工作流的无缝集成
+- ✅ 因子表达式验证和测试工具
+
+**技术价值**:
+
+- 扩展了Qlib的因子工程能力
+- 提供了标准化的因子管理解决方案
+- 为后续Alpha158集成和因子分析奠定基础
+- 展示了Qlib扩展开发的最佳实践
+
+**用户价值**:
+
+- 量化研究员可以快速创建和测试新因子
+- 支持因子的版本管理和团队协作
+- 降低了因子开发的技术门槛
+- 提高了因子研发的效率和质量
