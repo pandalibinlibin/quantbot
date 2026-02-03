@@ -3,7 +3,74 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, QlibWorkflowsHealthCheckResponse, QlibWorkflowsExecuteTrainingWorkflowData, QlibWorkflowsExecuteTrainingWorkflowResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { DataSourceGetDataSourceStatusEndpointResponse, DataSourceClearDataSourceEndpointResponse, DataSourceDownloadDataSourceEndpointData, DataSourceDownloadDataSourceEndpointResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, QlibWorkflowsHealthCheckResponse, QlibWorkflowsExecuteTrainingWorkflowData, QlibWorkflowsExecuteTrainingWorkflowResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+
+export class DataSourceService {
+    /**
+     * Get Data Source Status Endpoint
+     * Get current data source status.
+     *
+     * Educational Notes:
+     * - Simple API endpoint following clean architecture
+     * - Delegates business logic to service layer
+     * - Convert dict response to Pydantic model
+     * @returns DataSourceStatus Successful Response
+     * @throws ApiError
+     */
+    public static getDataSourceStatusEndpoint(): CancelablePromise<DataSourceGetDataSourceStatusEndpointResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/data-source/status'
+        });
+    }
+    
+    /**
+     * Clear Data Source Endpoint
+     * Clear all data in both qlib_data and csv_data directories.
+     *
+     * Educational Notes:
+     * - Use DELETE method following RESTful conventions for resource deletion
+     * - Clears both final data (.bin) and intermediate data (CSV) for complete reset
+     * - Calls service layer for business logic separation
+     * - Returns detailed information about the clearing operation
+     * - Implements proper error handling with user-friendly messages
+     * @returns ClearDataResponse Successful Response
+     * @throws ApiError
+     */
+    public static clearDataSourceEndpoint(): CancelablePromise<DataSourceClearDataSourceEndpointResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/data-source/clear'
+        });
+    }
+    
+    /**
+     * Download Data Source Endpoint
+     * Download data from specified source with complete refresh.
+     *
+     * Educational Notes:
+     * - Uses POST method for creating a new download task
+     * - Follows the optimized data flow: clear → download → convert
+     * - Returns immediately with task_id for tracking
+     * - Ensures data consistency by clearing before download
+     * - Implements comprehensive error handling
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns DownloadTaskResponse Successful Response
+     * @throws ApiError
+     */
+    public static downloadDataSourceEndpoint(data: DataSourceDownloadDataSourceEndpointData): CancelablePromise<DataSourceDownloadDataSourceEndpointResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/data-source/download',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
 
 export class ItemsService {
     /**

@@ -1107,6 +1107,10 @@ class DownloadDataRequest(SQLModel):
     )
     start_date: str = Field(description="Start date in YYYY-MM-DD format")
     end_date: str = Field(description="End date in YYYY-MM-DD format")
+    incremental: bool = Field(
+        default=False,
+        description="Whether to perform incremental update (append new data only)",
+    )
 
 
 class DownloadTaskResponse(SQLModel):

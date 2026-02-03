@@ -55,6 +55,40 @@ export const Body_login_login_access_tokenSchema = {
     title: 'Body_login-login_access_token'
 } as const;
 
+export const ClearDataResponseSchema = {
+    properties: {
+        success: {
+            type: 'boolean',
+            title: 'Success',
+            description: 'Whether operation succeeded'
+        },
+        message: {
+            type: 'string',
+            title: 'Message',
+            description: 'Result message'
+        },
+        cleared_size_mb: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Cleared Size Mb',
+            description: 'Size of cleared data in MB'
+        }
+    },
+    type: 'object',
+    required: ['success', 'message'],
+    title: 'ClearDataResponse',
+    description: `Response model for data clearing operation.
+
+Educational Notes:
+- Simple response to confirm operation`
+} as const;
+
 export const DataHandlerConfigSchema = {
     properties: {
         class_name: {
@@ -91,6 +125,132 @@ Educational Notes:
 - Alpha158 is Qlib's built-in 158 alpha factors
 - Inherits class_name, module_path, kwargs from QlibComponentConfig
 - Handler kwargs include time ranges and instrument selection`
+} as const;
+
+export const DataSourceStatusSchema = {
+    properties: {
+        source_name: {
+            type: 'string',
+            title: 'Source Name',
+            description: 'Current data source name'
+        },
+        data_exists: {
+            type: 'boolean',
+            title: 'Data Exists',
+            description: 'Whether data exists in qlib_data directory'
+        },
+        data_range_start: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Data Range Start',
+            description: 'Start date of available data'
+        },
+        data_range_end: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Data Range End',
+            description: 'End date of available data'
+        },
+        instruments: {
+            anyOf: [
+                {
+                    items: {
+                        type: 'string'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Instruments',
+            description: 'List of stock codes (first 10 if more than 10)'
+        },
+        instruments_count: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Instruments Count',
+            description: 'Number of stocks'
+        },
+        stock_pool: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Stock Pool',
+            description: "Stock pool name (e.g., 'csi300', 'csi500', 'all')"
+        },
+        features: {
+            anyOf: [
+                {
+                    items: {
+                        type: 'string'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Features',
+            description: "List of available features (e.g., ['open', 'close', 'high', 'low', 'volume'])"
+        },
+        data_size_mb: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Data Size Mb',
+            description: 'Total data size in MB'
+        },
+        last_updated: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Last Updated',
+            description: 'Last update timestamp'
+        }
+    },
+    type: 'object',
+    required: ['source_name', 'data_exists'],
+    title: 'DataSourceStatus',
+    description: `Data source status information.
+
+Educational Notes:
+- This model represents the current state of the data
+- Used to display information to users
+- Not stored in database, just for API response`
 } as const;
 
 export const DatasetConfigSchema = {
@@ -207,6 +367,75 @@ Educational Notes:
 - Qlib uses time-based splitting for financial data
 - Each segment is a tuple of (start_date, end_date)
 - Ensures no look-ahead bias in model training`
+} as const;
+
+export const DownloadDataRequestSchema = {
+    properties: {
+        source: {
+            type: 'string',
+            title: 'Source',
+            description: "Data source name (currently only 'yahoo' supported)",
+            default: 'yahoo'
+        },
+        stock_pool: {
+            type: 'string',
+            title: 'Stock Pool',
+            description: "Stock pool to download (e.g., 'csi300', 'csi500')",
+            default: 'csi300'
+        },
+        start_date: {
+            type: 'string',
+            title: 'Start Date',
+            description: 'Start date in YYYY-MM-DD format'
+        },
+        end_date: {
+            type: 'string',
+            title: 'End Date',
+            description: 'End date in YYYY-MM-DD format'
+        },
+        incremental: {
+            type: 'boolean',
+            title: 'Incremental',
+            description: 'Whether to perform incremental update (append new data only)',
+            default: false
+        }
+    },
+    type: 'object',
+    required: ['start_date', 'end_date'],
+    title: 'DownloadDataRequest',
+    description: `Request model for downloading data.
+
+Educational Notes:
+- This defines what parameters users need to provide
+- Validation is automatic through Pydantic`
+} as const;
+
+export const DownloadTaskResponseSchema = {
+    properties: {
+        task_id: {
+            type: 'string',
+            title: 'Task Id',
+            description: 'Unique task identifier'
+        },
+        status: {
+            type: 'string',
+            title: 'Status',
+            description: "Initial status: 'started'"
+        },
+        message: {
+            type: 'string',
+            title: 'Message',
+            description: 'Human-readable message'
+        }
+    },
+    type: 'object',
+    required: ['task_id', 'status', 'message'],
+    title: 'DownloadTaskResponse',
+    description: `Response model for download task creation.
+
+Educational Notes:
+- Returned immediately when user starts download
+- Contains task_id for tracking progress`
 } as const;
 
 export const HTTPValidationErrorSchema = {

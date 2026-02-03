@@ -109,7 +109,7 @@ def download_data_source_endpoint(request: DownloadDataRequest):
                 stock_pool=request.stock_pool,
                 start_date=request.start_date,
                 end_date=request.end_date,
-                incremental=False,
+                incremental=request.incremental,
                 period=None,
             )
         elif request.source.lower() == "tushare":

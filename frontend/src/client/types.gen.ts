@@ -10,6 +10,27 @@ export type Body_login_login_access_token = {
 };
 
 /**
+ * Response model for data clearing operation.
+ *
+ * Educational Notes:
+ * - Simple response to confirm operation
+ */
+export type ClearDataResponse = {
+    /**
+     * Whether operation succeeded
+     */
+    success: boolean;
+    /**
+     * Result message
+     */
+    message: string;
+    /**
+     * Size of cleared data in MB
+     */
+    cleared_size_mb?: (number | null);
+};
+
+/**
  * Configuration for Qlib Data Handler (e.g., Alpha158)
  *
  * Educational Notes:
@@ -107,6 +128,109 @@ export type DatasetSegments = {
         string,
         string
     ];
+};
+
+/**
+ * Data source status information.
+ *
+ * Educational Notes:
+ * - This model represents the current state of the data
+ * - Used to display information to users
+ * - Not stored in database, just for API response
+ */
+export type DataSourceStatus = {
+    /**
+     * Current data source name
+     */
+    source_name: string;
+    /**
+     * Whether data exists in qlib_data directory
+     */
+    data_exists: boolean;
+    /**
+     * Start date of available data
+     */
+    data_range_start?: (string | null);
+    /**
+     * End date of available data
+     */
+    data_range_end?: (string | null);
+    /**
+     * List of stock codes (first 10 if more than 10)
+     */
+    instruments?: (Array<(string)> | null);
+    /**
+     * Number of stocks
+     */
+    instruments_count?: (number | null);
+    /**
+     * Stock pool name (e.g., 'csi300', 'csi500', 'all')
+     */
+    stock_pool?: (string | null);
+    /**
+     * List of available features (e.g., ['open', 'close', 'high', 'low', 'volume'])
+     */
+    features?: (Array<(string)> | null);
+    /**
+     * Total data size in MB
+     */
+    data_size_mb?: (number | null);
+    /**
+     * Last update timestamp
+     */
+    last_updated?: (string | null);
+};
+
+/**
+ * Request model for downloading data.
+ *
+ * Educational Notes:
+ * - This defines what parameters users need to provide
+ * - Validation is automatic through Pydantic
+ */
+export type DownloadDataRequest = {
+    /**
+     * Data source name (currently only 'yahoo' supported)
+     */
+    source?: string;
+    /**
+     * Stock pool to download (e.g., 'csi300', 'csi500')
+     */
+    stock_pool?: string;
+    /**
+     * Start date in YYYY-MM-DD format
+     */
+    start_date: string;
+    /**
+     * End date in YYYY-MM-DD format
+     */
+    end_date: string;
+    /**
+     * Whether to perform incremental update (append new data only)
+     */
+    incremental?: boolean;
+};
+
+/**
+ * Response model for download task creation.
+ *
+ * Educational Notes:
+ * - Returned immediately when user starts download
+ * - Contains task_id for tracking progress
+ */
+export type DownloadTaskResponse = {
+    /**
+     * Unique task identifier
+     */
+    task_id: string;
+    /**
+     * Initial status: 'started'
+     */
+    status: string;
+    /**
+     * Human-readable message
+     */
+    message: string;
 };
 
 export type HTTPValidationError = {
@@ -301,6 +425,16 @@ export type ValidationError = {
     msg: string;
     type: string;
 };
+
+export type DataSourceGetDataSourceStatusEndpointResponse = (DataSourceStatus);
+
+export type DataSourceClearDataSourceEndpointResponse = (ClearDataResponse);
+
+export type DataSourceDownloadDataSourceEndpointData = {
+    requestBody: DownloadDataRequest;
+};
+
+export type DataSourceDownloadDataSourceEndpointResponse = (DownloadTaskResponse);
 
 export type ItemsReadItemsData = {
     limit?: number;

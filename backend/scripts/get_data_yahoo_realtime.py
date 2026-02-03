@@ -262,8 +262,11 @@ class YahooDataCollector:
         """Download data for a single symbol."""
         try:
             ticker = yf.Ticker(symbol)
+            # yfinance uses [start, end) interval, so add 1 day to end_date to include the last day
+            adjusted_end_dt = end_dt + timedelta(days=1)
             hist = ticker.history(
-                start=start_dt.strftime("%Y-%m-%d"), end=end_dt.strftime("%Y-%m-%d")
+                start=start_dt.strftime("%Y-%m-%d"),
+                end=adjusted_end_dt.strftime("%Y-%m-%d"),
             )
 
             if hist.empty:
