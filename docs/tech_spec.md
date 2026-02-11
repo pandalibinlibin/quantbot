@@ -2771,3 +2771,241 @@ task:
 - 支持因子的版本管理和团队协作
 - 降低了因子开发的技术门槛
 - 提高了因子研发的效率和质量
+
+---
+
+## 📊 因子表达式验证系统设计 (2026-02-11更新)
+
+### 🔍 研究发现和重大决策
+
+#### Qlib表达式处理机制深度研究
+
+**研究时间**: 2026-02-11  
+**研究范围**: Qlib官方文档 `docs/qlib-html/index.html`
+
+**核心发现**:
+
+1. **Qlib表达式系统架构**:
+   - **D.features()方法**: Qlib处理表达式的核心接口
+   - **ExpressionOps类**: 负责表达式操作的基础类
+   - **Expression类**: 表达式的基础抽象类
+   - **ElemOperator类**: 元素级操作符
+
+2. **支持的表达式类型**:
+   ```python
+   # 基础字段
+   '$close', '$open', '$high', '$low', '$volume'
+   
+   # 时序操作符
+   'Ref($close, 1)'      # 获取前1期收盘价
+   'Ref($close, -2)'     # 获取后2期收盘价(用于标签)
+   
+   # 统计操作符
+   'Mean($close, 3)'     # 3期移动平均
+   'EMA($close, 12)'     # 12期指数移动平均
+   
+   # 横截面操作符
+   '$rank($close)'       # 收盘价排名
+   
+   # 算术操作符
+   '$high-$low'          # 价格差
+   '$close/$open'        # 价格比率
+   
+   # 复杂表达式示例
+   'MACD': '2 * ((EMA($close, 12) - EMA($close, 26))/$close - EMA((EMA($close, 12) - EMA($close, 26))/$close, 9))'
+   'Label': 'Ref($close, -2)/Ref($close, -1) - 1'
+   ```
+
+3. **表达式验证机制**:
+   - **关键发现**: Qlib本身**没有提供独立的表达式验证API**
+   - **验证时机**: 表达式验证发生在`D.features()`**执行时**
+   - **错误处理**: 语法错误时Qlib会抛出异常
+   - **缓存机制**: ExpressionCache可以缓存表达式计算结果
+
+#### 重大架构决策
+
+**决策1: 基于Qlib的验证策略**
+- **原则**: 遵循第3点规则"基于qlib，不要造轮子"
+- **方案**: 使用Qlib的`D.features()`方法进行"试运行"验证
+- **实现**: 通过最小数据集调用来检测表达式语法错误
+
+**决策2: 数据库模型复用**
+- **发现**: `backend/app/models.py`中已存在完整的Factor数据库模型
+- **包含字段**: name, expression, description, category, status, timestamps, created_by
+- **决策**: 复用现有模型，无需重新创建
+
+**决策3: CustomFactorHandler架构完善**
+- **状态**: 第一步(拼写错误修正)和第二步(数据库模型确认)已完成
+- **当前**: 进入第三步(表达式验证实现)
+
+### 🎯 表达式验证系统完整设计方案
+
+#### 核心设计思路
+
+**验证策略**: 
+1. 使用Qlib的D.features()方法进行表达式验证
+2. 通过最小数据集试运行来检测语法错误
+3. 捕获Qlib异常并转换为用户友好的错误提示
+4. 支持批量验证和结果缓存
+
+#### 系统架构
+
+```
+┌─────────────────────────────────────────────┐
+│     Factor Expression Validator             │
+│  - validate_expression()                    │
+│  - validate_expressions_batch()             │
+│  - get_supported_operators()                │
+│  - get_expression_examples()                │
+└─────────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────┐
+│         CustomFactorHandler                 │
+│  - Enhanced _validate_custom_factors()      │
+│  - Integration with expression validator    │
+│  - Database factor loading with validation  │
+└─────────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────┐
+│       Factor Management API                 │
+│  - POST /api/v1/factors/validate            │
+│  - POST /api/v1/factors (with validation)   │
+│  - CRUD operations for factors              │
+└─────────────────────────────────────────────┘
+                     ↓
+┌─────────────────────────────────────────────┐
+│      Frontend Factor Management             │
+│  - Expression editor with syntax highlight  │
+│  - Real-time validation feedback            │
+│  - Factor library and examples              │
+└─────────────────────────────────────────────┘
+```
+
+#### 详细实施计划
+
+**阶段1: 表达式验证服务基础框架 (1-2天)**
+- 文件: `backend/app/services/factor_expression_validator.py`
+- 核心功能:
+  ```python
+  class FactorExpressionValidator:
+      def validate_expression(self, expression: str) -> ValidationResult
+      def validate_expressions_batch(self, expressions: List[str]) -> List[ValidationResult]
+      def get_supported_operators(self) -> List[str]
+      def get_expression_examples(self) -> Dict[str, str]
+  ```
+
+**阶段2: 验证服务功能完善 (1天)**
+- 详细错误处理和用户友好提示
+- 表达式语法检查和建议
+- 性能优化和结果缓存
+
+**阶段3: CustomFactorHandler集成 (1天)**
+- 修改`_validate_custom_factors()`方法
+- 集成表达式验证逻辑
+- 增强错误信息和调试支持
+
+**阶段4: 因子管理API开发 (2天)**
+- 文件: `backend/app/api/routes/factor_management.py`
+- API端点:
+  - `POST /api/v1/factors/validate` - 表达式验证
+  - `POST /api/v1/factors` - 创建因子(含验证)
+  - `GET /api/v1/factors` - 获取因子列表
+  - `PUT /api/v1/factors/{id}` - 更新因子
+  - `DELETE /api/v1/factors/{id}` - 删除因子
+
+**阶段5: 前端界面开发 (3-4天)**
+- 因子管理页面设计
+- 表达式编辑器实现
+- 实时验证反馈
+- 因子库和示例展示
+
+### 🔧 技术实现细节
+
+#### 表达式验证核心逻辑
+
+```python
+def validate_expression(self, expression: str) -> ValidationResult:
+    """
+    使用Qlib的D.features()方法验证表达式语法
+    
+    Educational Notes:
+    - 通过最小数据集试运行来检测语法错误
+    - 捕获Qlib异常并转换为友好提示
+    - 支持常见错误的智能建议
+    """
+    try:
+        # 使用最小数据集进行试运行
+        test_instruments = ["SH600000"]  # 单只股票
+        test_fields = [expression]
+        
+        # 调用Qlib进行验证
+        D.features(
+            instruments=test_instruments,
+            fields=test_fields,
+            start_time='2020-01-01',
+            end_time='2020-01-02'  # 最小时间范围
+        )
+        
+        return ValidationResult.VALID
+        
+    except Exception as e:
+        # 解析Qlib异常并提供友好提示
+        return self._parse_qlib_error(str(e))
+```
+
+#### 错误处理和用户提示
+
+```python
+def _parse_qlib_error(self, error_msg: str) -> ValidationResult:
+    """
+    解析Qlib错误信息并提供用户友好的提示
+    
+    常见错误类型:
+    - 语法错误: 括号不匹配、操作符错误等
+    - 函数错误: 不支持的函数名、参数错误等
+    - 字段错误: 不存在的字段名等
+    """
+    if "syntax error" in error_msg.lower():
+        return ValidationResult(
+            status="invalid_syntax",
+            message="Expression syntax error",
+            suggestion="Check parentheses and operator usage"
+        )
+    # ... 更多错误类型处理
+```
+
+### 📈 当前开发状态
+
+**已完成**:
+- ✅ CustomFactorHandler拼写错误修正
+- ✅ 因子数据库模型确认(复用现有模型)
+- ✅ Qlib表达式处理机制深度研究
+- ✅ 表达式验证系统完整设计方案
+
+**进行中**:
+- 🔄 tech_spec.md文档更新(当前任务)
+
+**待开始**:
+- ⏳ 表达式验证服务基础框架实现
+- ⏳ 验证服务功能完善
+- ⏳ CustomFactorHandler集成
+- ⏳ 因子管理API开发
+- ⏳ 前端界面开发
+
+### 🎯 下一步行动计划
+
+**立即执行**:
+1. 完成tech_spec.md文档更新
+2. 开始实施阶段1: 创建表达式验证服务基础框架
+
+**预期时间线**:
+- 阶段1-3: 3-4天 (后端核心功能)
+- 阶段4: 2天 (API开发和测试)
+- 阶段5: 3-4天 (前端界面)
+- 总计: 8-10天完成完整的因子表达式验证系统
+
+**成功标准**:
+- 用户可以通过前端界面创建和验证因子表达式
+- 系统提供实时的语法检查和错误提示
+- 因子可以成功集成到Qlib工作流中
+- 通过Swagger UI完成所有API测试
