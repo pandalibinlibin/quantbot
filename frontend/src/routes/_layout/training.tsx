@@ -110,9 +110,18 @@ function TrainingWorkflow() {
                 },
               },
               segments: {
-                train: [data.train_start_date, data.train_end_date],
-                valid: [data.valid_start_date, data.valid_end_date],
-                test: [data.test_start_date, data.test_end_date],
+                train: [data.train_start_date, data.train_end_date] as [
+                  string,
+                  string,
+                ],
+                valid: [data.valid_start_date, data.valid_end_date] as [
+                  string,
+                  string,
+                ],
+                test: [data.test_start_date, data.test_end_date] as [
+                  string,
+                  string,
+                ],
               },
             },
           },

@@ -807,6 +807,670 @@ result = workflow_service.execute_training_workflow(config)
 
 ---
 
+## 🔄 数据源模块重新设计 (2026-02-14)
+
+### 📊 现状分析
+
+通过深入研究Qlib源码和文档，发现我们当前的数据源实现存在以下问题：
+
+**当前实现问题**：
+
+1. **架构不符合Qlib标准**：直接调用脚本，未使用Qlib BaseCollector架构
+2. **扩展性限制**：每个新数据源需要新脚本和API端点，代码重复
+3. **缺少标准化接口**：没有统一的Collector接口，难以插件化扩展
+4. **错误处理不完善**：缺少Qlib标准的重试、并发控制、数据验证机制
+
+### 🎯 新架构设计
+
+基于Qlib官方BaseCollector标准，重新设计数据源模块：
+
+#### 目录结构
+
+```
+backend/app/services/data_collectors/
+├── __init__.py                 # 模块初始化和导出
+├── base.py                     # BaseDataCollector (继承Qlib BaseCollector)
+├── exceptions.py               # 数据收集异常定义
+├── registry.py                 # 收集器注册机制 (工厂模式)
+├── yahoo_collector.py          # Yahoo数据收集器
+├── tushare_collector.py        # Tushare数据收集器 (未来)
+├── akshare_collector.py        # AKShare数据收集器 (未来)
+└── csv_collector.py            # 本地CSV收集器 (未来)
+```
+
+#### 核心设计原则
+
+1. **标准化接口**：所有收集器继承BaseDataCollector，实现统一接口
+2. **插件化架构**：通过注册机制自动发现和管理收集器
+3. **配置驱动**：通过配置文件定义数据源参数和字段映射
+4. **Qlib兼容**：完全符合Qlib BaseCollector标准，利用其并发、重试、验证机制
+
+#### 架构优势
+
+- ✅ **符合Qlib标准**：使用官方BaseCollector架构
+- ✅ **高度可扩展**：新数据源只需实现标准接口并注册
+- ✅ **统一错误处理**：利用Qlib的重试和错误恢复机制
+- ✅ **高性能**：支持并发收集和数据验证
+- ✅ **API兼容**：保持现有前端和API接口不变
+
+### 🚀 实施计划
+
+#### 阶段1：基础架构 (1-2天)
+
+1. **更新tech_spec.md**：记录新设计方案 ✅
+2. **清理旧代码**：删除不需要的脚本和实现
+3. **创建目录结构**：建立新的data_collectors模块
+4. **实现基础框架**：
+   - `exceptions.py` - 异常定义
+   - `base.py` - BaseDataCollector基类
+   - `registry.py` - 注册机制
+
+#### 阶段2：Yahoo收集器重构 (2-3天)
+
+1. **实现YahooCollector**：基于Qlib BaseCollector标准
+2. **集成注册机制**：自动注册和发现
+3. **重构data_utils.py**：使用新的收集器架构
+4. **保持API兼容**：确保现有API正常工作
+
+#### 阶段3：测试和验证 (1天)
+
+1. **功能测试**：验证数据收集功能正常
+2. **性能测试**：对比新旧实现的性能
+3. **API测试**：确保前端集成无问题
+
+#### 阶段4：扩展数据源 (未来)
+
+1. **Tushare收集器**：中国A股专业数据
+2. **AKShare收集器**：开源金融数据
+3. **CSV收集器**：本地文件导入
+
+### 📋 技术实现细节
+
+#### BaseDataCollector设计
+
+```python
+class BaseDataCollector(BaseCollector):
+    """
+    Base class for all data collectors, inheriting from Qlib BaseCollector.
+
+    Provides standardized interface for data collection with:
+    - Concurrent processing
+    - Automatic retry mechanism
+    - Data validation
+    - Error handling
+    """
+
+    @abc.abstractmethod
+    def get_instrument_list(self) -> List[str]:
+        """Get list of instruments to collect"""
+
+    @abc.abstractmethod
+    def normalize_symbol(self, symbol: str) -> str:
+        """Normalize symbol format"""
+
+    @abc.abstractmethod
+    def get_data(self, symbol: str, interval: str,
+                start_datetime: pd.Timestamp,
+                end_datetime: pd.Timestamp) -> pd.DataFrame:
+        """Collect data for specific symbol and time range"""
+```
+
+#### 收集器注册机制
+
+```python
+class CollectorRegistry:
+    """Factory pattern for data collector management"""
+
+    _collectors = {}
+
+    @classmethod
+    def register(cls, name: str, collector_class: Type[BaseDataCollector]):
+        """Register a data collector"""
+
+    @classmethod
+    def get_collector(cls, name: str, **kwargs) -> BaseDataCollector:
+        """Get collector instance by name"""
+
+    @classmethod
+    def list_collectors(cls) -> List[str]:
+        """List all registered collectors"""
+```
+
+#### 服务层接口重构
+
+```python
+class DataCollectorService:
+    """Unified service layer for data collection"""
+
+    def collect_data(self, source: str, **params) -> CollectionResult:
+        """Collect data using specified source"""
+
+    def get_available_sources(self) -> List[DataSourceInfo]:
+        """Get list of available data sources"""
+
+    def validate_source_params(self, source: str, params: dict) -> ValidationResult:
+        """Validate parameters for specific data source"""
+```
+
+### 🔄 迁移策略
+
+1. **保持API兼容**：现有的`/api/v1/data/`端点保持不变
+2. **渐进式迁移**：先实现Yahoo收集器，验证后再扩展其他数据源
+3. **配置驱动**：通过配置文件管理数据源参数，无需修改代码
+4. **向后兼容**：保留旧的data_utils.py接口，内部使用新架构
+
+---
+
+## 🔍 Qlib BaseCollector深度架构分析 (2026-02-14)
+
+### 📋 关键发现
+
+通过深入研究Qlib源码 `qlib-source/scripts/data_collector/base.py` 和 `yahoo/collector.py`，发现我们当前的数据源实现**完全偏离了Qlib标准架构**。
+
+### 🏗️ Qlib BaseCollector标准架构
+
+#### **核心设计模式**：
+
+1. **抽象基类模式**：`BaseCollector`定义标准接口
+2. **模板方法模式**：`collector_data()`定义完整收集流程
+3. **并发处理**：使用`joblib.Parallel`进行高效并发收集
+4. **错误重试机制**：`max_collector_count`参数控制重试次数
+5. **数据验证**：`check_data_length`验证数据完整性
+6. **缓存机制**：`mini_symbol_map`缓存小数据集
+
+#### **必须实现的抽象方法**：
+
+```python
+@abc.abstractmethod
+def get_instrument_list(self) -> List[str]:
+    """获取股票代码列表"""
+
+@abc.abstractmethod
+def normalize_symbol(self, symbol: str) -> str:
+    """标准化股票代码格式"""
+
+@abc.abstractmethod
+def get_data(self, symbol: str, interval: str,
+            start_datetime: pd.Timestamp,
+            end_datetime: pd.Timestamp) -> pd.DataFrame:
+    """获取单个股票的数据"""
+```
+
+#### **标准化数据流程**：
+
+1. **数据收集**：`BaseCollector.collector_data()`
+2. **数据标准化**：`BaseNormalize.normalize()`
+3. **数据转换**：`dump_bin.py` 转换为Qlib二进制格式
+
+### 🚨 当前实现的问题
+
+我们的 `backend/app/services/data_utils.py` 实现存在严重问题：
+
+1. **完全绕过Qlib架构**：直接调用外部脚本，未使用BaseCollector
+2. **缺少标准化流程**：没有数据验证、重试、并发控制机制
+3. **不符合扩展约定**：无法利用Qlib的生态系统和最佳实践
+4. **维护困难**：每个数据源需要独立的脚本和API端点
+
+### 🎯 正确的重新设计方案
+
+基于Qlib BaseCollector标准，重新设计数据源架构：
+
+#### **新架构核心原则**：
+
+1. **完全基于Qlib BaseCollector**：继承并实现标准接口
+2. **利用Qlib内置机制**：并发、重试、验证、缓存
+3. **保持API兼容性**：现有前端和API接口不变
+4. **插件化扩展**：新数据源只需实现标准接口
+
+#### **实现策略**：
+
+```python
+# 基于Qlib BaseCollector的标准实现
+class YahooDataCollector(BaseCollector):
+    """Yahoo Finance data collector following Qlib standards"""
+
+    def get_instrument_list(self) -> List[str]:
+        # 实现股票列表获取逻辑
+
+    def normalize_symbol(self, symbol: str) -> str:
+        # 实现符号标准化逻辑
+
+    def get_data(self, symbol: str, interval: str,
+                start_datetime: pd.Timestamp,
+                end_datetime: pd.Timestamp) -> pd.DataFrame:
+        # 实现数据获取逻辑，使用yahooquery
+```
+
+#### **服务层重构**：
+
+```python
+class DataCollectorService:
+    """统一的数据收集服务层"""
+
+    def collect_data(self, source: str, **params) -> CollectionResult:
+        # 使用对应的BaseCollector实现
+        collector = self._get_collector(source, **params)
+        collector.collector_data()  # 使用Qlib标准流程
+
+    def _get_collector(self, source: str, **params) -> BaseCollector:
+        # 工厂模式获取收集器实例
+```
+
+### 📊 架构对比
+
+| 方面     | 当前实现       | Qlib标准实现        |
+| -------- | -------------- | ------------------- |
+| 基础架构 | 独立脚本调用   | BaseCollector继承   |
+| 并发处理 | 无             | joblib.Parallel     |
+| 错误重试 | 无             | max_collector_count |
+| 数据验证 | 无             | check_data_length   |
+| 扩展性   | 每个源需新脚本 | 实现标准接口即可    |
+| 维护性   | 高耦合         | 标准化、低耦合      |
+
+### 🚀 实施计划更新
+
+#### **阶段1：基础架构重构 (2-3天)**
+
+1. ✅ **深入研究Qlib源码**：完成BaseCollector架构分析
+2. **创建BaseDataCollector**：继承Qlib BaseCollector
+3. **实现YahooDataCollector**：基于Qlib标准的Yahoo收集器
+4. **重构DataCollectorService**：使用新的收集器架构
+
+#### **阶段2：集成和测试 (1-2天)**
+
+1. **重构data_utils.py**：内部使用新架构，保持API兼容
+2. **API测试**：确保现有端点正常工作
+3. **性能对比**：验证新架构的性能优势
+
+#### **阶段3：扩展和优化 (未来)**
+
+1. **Tushare收集器**：基于相同架构
+2. **AKShare收集器**：基于相同架构
+3. **本地CSV收集器**：基于相同架构
+
+### 💡 关键技术洞察
+
+1. **Qlib生态系统**：完全基于BaseCollector构建，我们必须遵循
+2. **标准化流程**：collect → normalize → dump_bin → qlib_data
+3. **并发优化**：Qlib内置了最佳的并发处理机制
+4. **错误处理**：成熟的重试和错误恢复机制
+5. **数据质量**：内置的数据长度检查和验证机制
+
+## 🔄 数据收集器架构重新设计 (2026-02-14 21:46)
+
+### 📋 架构问题识别
+
+经过深入分析，发现初始设计存在两个关键问题：
+
+#### **问题1：绕过Qlib二进制格式机制**
+
+- **问题**：直接返回DataFrame，未利用Qlib的核心性能优化
+- **影响**：失去压缩、缓存、加速等关键优势
+- **Qlib标准流程**：`BaseCollector.collector_data()` → `BaseNormalize.normalize()` → `dump_bin.py` → 二进制存储
+
+#### **问题2：缺少字段元数据支持**
+
+- **问题**：无法为前端提供数据源支持的字段信息
+- **影响**：前端无法动态显示可用字段，用户体验下降
+- **需求**：前端需要知道每个数据源支持哪些字段（OHLCV、技术指标等）
+
+### 🎯 重新设计的核心原则
+
+#### **1. 完全遵循Qlib标准流程**
+
+```python
+# 正确的Qlib数据流程
+BaseCollector.collector_data()  # 主要收集入口
+├── get_instrument_list()       # 获取股票列表
+├── normalize_symbol()          # 标准化股票代码
+├── get_data()                 # 获取单个股票数据
+└── 自动转换为二进制格式        # Qlib内部处理
+```
+
+#### **2. 集成字段元数据系统**
+
+```python
+# 新增的元数据支持方法
+get_supported_fields()         # 返回支持的字段列表
+get_field_metadata()          # 返回字段详细信息
+get_data_schema()             # 返回完整数据模式
+```
+
+#### **3. 保持API兼容性**
+
+- 现有前端和API接口保持不变
+- 内部使用新的Qlib标准架构
+- 通过服务层进行适配
+
+### 🏗️ 新架构设计
+
+#### **BaseDataCollector核心功能**
+
+1. **Qlib集成**：
+
+   - 继承`qlib.data.data.BaseCollector`
+   - 实现必需的抽象方法
+   - 利用Qlib内置的并发、重试、验证机制
+
+2. **字段元数据管理**：
+
+   - `get_supported_fields()`: 返回字段列表和类型信息
+   - `get_field_descriptions()`: 返回字段描述和单位
+   - `get_data_schema()`: 返回完整的数据模式定义
+
+3. **性能优化**：
+
+   - 使用Qlib二进制格式存储
+   - 利用Qlib缓存机制
+   - 支持并发数据收集
+
+4. **前端集成**：
+   - 提供字段元数据API
+   - 支持动态字段选择
+   - 保持现有UI功能
+
+#### **数据流程优化**
+
+```
+前端请求 → API层 → 服务层 → BaseDataCollector
+                              ↓
+                         Qlib标准流程
+                              ↓
+                        二进制格式存储 ← Qlib缓存系统
+                              ↓
+                         快速数据访问
+```
+
+### 📊 架构对比更新
+
+| 方面       | 初始设计          | 重新设计       |
+| ---------- | ----------------- | -------------- |
+| Qlib集成   | 部分遵循          | 完全遵循标准   |
+| 数据存储   | DataFrame直接返回 | Qlib二进制格式 |
+| 性能优化   | 无缓存机制        | Qlib缓存+压缩  |
+| 字段元数据 | 不支持            | 完整支持       |
+| 前端集成   | 基础功能          | 动态字段显示   |
+| 扩展性     | 中等              | 高度可扩展     |
+
+### 🚀 实施计划更新
+
+#### **阶段1：核心架构重构 (当前)**
+
+1. ✅ **创建基础文件结构**：`__init__.py`, `exceptions.py`
+2. 🔄 **重新设计BaseDataCollector**：集成Qlib标准和字段元数据
+3. **创建字段元数据系统**：支持前端动态显示
+4. **实现YahooDataCollector**：基于新架构的具体实现
+
+#### **阶段2：服务层适配 (1-2天)**
+
+1. **重构DataCollectorService**：适配新的BaseCollector架构
+2. **保持API兼容性**：确保现有端点正常工作
+3. **添加字段元数据API**：为前端提供字段信息
+
+#### **阶段3：前端集成优化 (1-2天)**
+
+1. **集成字段元数据显示**：动态显示可用字段
+2. **优化用户体验**：基于字段类型提供不同的UI组件
+3. **性能测试**：验证Qlib二进制格式的性能优势
+
+### 💡 技术洞察更新
+
+1. **Qlib二进制格式的重要性**：
+
+   - 数据压缩率可达90%以上
+   - 访问速度提升10-100倍
+   - 内置缓存机制避免重复计算
+
+2. **字段元数据的价值**：
+
+   - 提升用户体验和系统可用性
+   - 支持动态UI生成
+   - 便于数据源扩展和维护
+
+3. **架构设计的平衡**：
+   - 完全遵循Qlib标准确保性能
+   - 保持API兼容性确保稳定性
+   - 增强元数据支持提升体验
+
+## 🔍 Qlib二进制转换机制澄清 (2026-02-14 21:55)
+
+### 📋 关键问题澄清
+
+经过深入分析，澄清了Qlib二进制转换的真实机制：
+
+#### **问题**：`get_data()` 返回DataFrame是否正确？
+
+**答案**：✅ **完全正确！这是Qlib的标准接口**
+
+#### **Qlib标准数据处理流程**：
+
+```python
+# 正确的Qlib数据处理链
+1. BaseCollector.collector_data()     # 主入口，调用下面的方法
+   ├── get_instrument_list()          # 获取股票列表
+   ├── get_data() → DataFrame         # 返回DataFrame（标准接口）
+   └── 内部处理：
+       ├── BaseNormalize.normalize()  # 数据标准化
+       └── dump_bin.py               # 转换为二进制格式
+
+2. 数据使用时：
+   DataLoader.load() → 从二进制文件读取 → 高速访问
+```
+
+### 🎯 架构职责分工
+
+#### **BaseCollector的职责**（我们负责）
+
+- `get_instrument_list()`: 返回股票列表
+- `normalize_symbol()`: 标准化股票代码
+- `get_data()`: **返回DataFrame**（这是标准接口）
+- `collector_data()`: 主收集流程（继承自Qlib）
+
+#### **Qlib系统的职责**（自动处理）
+
+- 数据标准化：`BaseNormalize.normalize()`
+- 二进制转换：`dump_bin.py`
+- 缓存管理：自动缓存机制
+- 高速访问：`DataLoader`从二进制文件读取
+
+### 📊 完整使用流程示例
+
+```python
+# 1. 数据收集阶段（我们的BaseDataCollector）
+collector = YahooDataCollector()
+collector.collector_data()  # 调用get_data()，返回DataFrame
+
+# 2. 数据处理阶段（Qlib自动处理）
+# 通过Qlib命令行工具或脚本完成：
+# python scripts/dump_bin.py --source yahoo --target qlib_data/
+
+# 3. 数据使用阶段（享受性能优化）
+import qlib
+qlib.init(provider_uri="qlib_data")  # 使用二进制数据
+data = D.features(["AAPL"], ["$close", "$volume"])  # 高速访问
+```
+
+### 💡 关键洞察
+
+1. **DataFrame接口是正确的**：
+
+   - `get_data()` 返回DataFrame是Qlib标准
+   - 二进制转换由Qlib其他组件处理
+   - 我们不需要手动实现二进制转换
+
+2. **性能优化的实现位置**：
+
+   - **数据收集**：我们返回DataFrame（标准接口）
+   - **数据存储**：Qlib自动转换为二进制格式
+   - **数据使用**：Qlib从二进制文件高速读取
+
+3. **架构设计验证**：
+   - 我们的BaseDataCollector设计是正确的
+   - 字段元数据系统设计是有价值的
+   - 完全符合Qlib的标准架构
+
+## 📚 DataSource模块完整理解总结 (2026-02-14 22:21)
+
+### 🎯 核心架构理解
+
+#### **Qlib数据处理的三阶段流程**
+
+```
+阶段1: 数据收集 (BaseCollector)
+├── get_instrument_list() → 获取股票列表
+├── normalize_symbol() → 标准化股票代码
+├── get_data() → 返回DataFrame (这是正确的标准接口)
+└── collector_data() → 主入口，保存DataFrame为CSV
+
+阶段2: 数据标准化 (BaseNormalize)
+├── 需要为每个数据源单独开发
+├── 处理数据格式差异和股票代码转换
+└── 输出标准化的CSV文件
+
+阶段3: 二进制转换 (dump_bin)
+├── 通用函数，可以复用
+├── 将标准化CSV转换为Qlib二进制格式
+└── 实现90%+压缩率和10-100x性能提升
+```
+
+#### **关键设计原则确认**
+
+1. **✅ DataFrame接口正确**：`get_data()`返回DataFrame是Qlib标准，不需要手动转换二进制
+2. **✅ 三阶段分离**：`collector_data()`只负责第一阶段，后续需要手动触发
+3. **✅ 组件复用性**：每个数据源需要Collector+Normalize，dump_bin通用复用
+4. **✅ 字段元数据**：支持前端动态显示，提升用户体验
+
+### 🏗️ 架构组件职责分工
+
+#### **BaseDataCollector (我们负责开发)**
+
+- **职责**：数据收集和基础验证
+- **输出**：DataFrame格式的OHLCV数据
+- **复用性**：每个数据源需要单独实现
+- **关键方法**：
+  - `get_instrument_list()`: 返回股票列表
+  - `normalize_symbol()`: 标准化股票代码
+  - `get_data()`: 获取DataFrame数据
+  - `get_supported_fields()`: 字段元数据支持
+
+#### **BaseNormalize (需要为每个数据源开发)**
+
+- **职责**：数据格式标准化
+- **输入**：原始CSV文件
+- **输出**：标准化的CSV文件
+- **复用性**：每个数据源需要单独实现
+- **原因**：不同数据源的格式、字段名、日期格式、股票代码都不同
+
+#### **dump_bin (Qlib提供，完全复用)**
+
+- **职责**：二进制格式转换
+- **输入**：标准化的CSV文件
+- **输出**：Qlib二进制格式
+- **复用性**：通用函数，所有数据源共享
+- **性能**：90%+压缩，10-100x访问速度提升
+
+### 📊 数据源扩展模式
+
+#### **标准扩展模式**
+
+```python
+# 每个新数据源需要的组件
+DataSource = {
+    "Collector": "XxxDataCollector",    # 继承BaseDataCollector (必须开发)
+    "Normalize": "XxxNormalize",        # 继承BaseNormalize (必须开发)
+    "DumpBin": "dump_bin"               # Qlib通用函数 (直接复用)
+}
+```
+
+#### **开发工作量评估**
+
+| 组件          | 开发需求      | 复用性      | 难度  | 时间估算 |
+| ------------- | ------------- | ----------- | ----- | -------- |
+| BaseCollector | ✅ 每个数据源 | ❌ 不可复用 | 🔴 高 | 2-3天    |
+| BaseNormalize | ✅ 每个数据源 | ❌ 不可复用 | 🟡 中 | 1-2天    |
+| dump_bin      | ❌ 不需要     | ✅ 完全复用 | 🟢 无 | 0天      |
+
+### 🔄 完整数据流程示例
+
+#### **方式1：分步执行（推荐用于开发调试）**
+
+```python
+# 步骤1：数据收集
+collector = YahooDataCollector(save_dir="./raw_data")
+collector.collector_data()  # DataFrame → CSV
+
+# 步骤2：数据标准化（手动调用）
+normalizer = YahooNormalize(
+    source_dir="./raw_data",
+    target_dir="./normalized_data"
+)
+normalizer.normalize()  # CSV → 标准化CSV
+
+# 步骤3：二进制转换（手动调用）
+dump_bin(
+    csv_path="./normalized_data",
+    qlib_dir="./qlib_data/bin"
+)  # 标准化CSV → 二进制
+```
+
+#### **方式2：一体化流程（推荐用于生产）**
+
+```python
+def complete_data_pipeline(data_source: str):
+    """完整的数据处理管道"""
+    # 动态选择数据源
+    collector_class = get_collector_class(data_source)
+    normalize_class = get_normalize_class(data_source)
+
+    # 执行三阶段流程
+    collector = collector_class(save_dir=f"./raw_{data_source}")
+    collector.collector_data()
+
+    normalizer = normalize_class(
+        source_dir=f"./raw_{data_source}",
+        target_dir=f"./normalized_{data_source}"
+    )
+    normalizer.normalize()
+
+    dump_bin(
+        csv_path=f"./normalized_{data_source}",
+        qlib_dir="./qlib_data/bin"
+    )
+```
+
+### 💡 关键技术洞察
+
+1. **性能优化的实现位置**：
+
+   - 数据收集：我们返回DataFrame（标准接口）
+   - 数据存储：Qlib自动转换为二进制格式
+   - 数据使用：Qlib从二进制文件高速读取
+
+2. **字段元数据的价值**：
+
+   - 前端动态显示可用字段
+   - 支持不同数据源的字段差异
+   - 提升用户体验和系统可用性
+
+3. **架构设计的平衡**：
+   - 完全遵循Qlib标准确保性能
+   - 保持API兼容性确保稳定性
+   - 增强元数据支持提升体验
+   - 分阶段设计提供灵活性和错误恢复能力
+
+### 🚀 下一步实施计划
+
+1. **✅ 基础架构**：BaseDataCollector, exceptions, **init**.py
+2. **🔄 当前任务**：重新实现base.py文件内容
+3. **📋 后续计划**：
+   - 实现YahooDataCollector
+   - 实现YahooNormalize
+   - 集成到现有API系统
+   - 前端字段元数据显示
+   - 扩展其他数据源（Tushare, AKShare等）
+
+---
+
 ## 📅 变更日志
 
 ### 2026-02-03 凌晨 - Yahoo Finance 数据收集器完整实现 ✅
@@ -2786,31 +3450,33 @@ task:
 **核心发现**:
 
 1. **Qlib表达式系统架构**:
+
    - **D.features()方法**: Qlib处理表达式的核心接口
    - **ExpressionOps类**: 负责表达式操作的基础类
    - **Expression类**: 表达式的基础抽象类
    - **ElemOperator类**: 元素级操作符
 
 2. **支持的表达式类型**:
+
    ```python
    # 基础字段
    '$close', '$open', '$high', '$low', '$volume'
-   
+
    # 时序操作符
    'Ref($close, 1)'      # 获取前1期收盘价
    'Ref($close, -2)'     # 获取后2期收盘价(用于标签)
-   
+
    # 统计操作符
    'Mean($close, 3)'     # 3期移动平均
    'EMA($close, 12)'     # 12期指数移动平均
-   
+
    # 横截面操作符
    '$rank($close)'       # 收盘价排名
-   
+
    # 算术操作符
    '$high-$low'          # 价格差
    '$close/$open'        # 价格比率
-   
+
    # 复杂表达式示例
    'MACD': '2 * ((EMA($close, 12) - EMA($close, 26))/$close - EMA((EMA($close, 12) - EMA($close, 26))/$close, 9))'
    'Label': 'Ref($close, -2)/Ref($close, -1) - 1'
@@ -2825,16 +3491,19 @@ task:
 #### 重大架构决策
 
 **决策1: 基于Qlib的验证策略**
+
 - **原则**: 遵循第3点规则"基于qlib，不要造轮子"
 - **方案**: 使用Qlib的`D.features()`方法进行"试运行"验证
 - **实现**: 通过最小数据集调用来检测表达式语法错误
 
 **决策2: 数据库模型复用**
+
 - **发现**: `backend/app/models.py`中已存在完整的Factor数据库模型
 - **包含字段**: name, expression, description, category, status, timestamps, created_by
 - **决策**: 复用现有模型，无需重新创建
 
 **决策3: CustomFactorHandler架构完善**
+
 - **状态**: 第一步(拼写错误修正)和第二步(数据库模型确认)已完成
 - **当前**: 进入第三步(表达式验证实现)
 
@@ -2842,7 +3511,8 @@ task:
 
 #### 核心设计思路
 
-**验证策略**: 
+**验证策略**:
+
 1. 使用Qlib的D.features()方法进行表达式验证
 2. 通过最小数据集试运行来检测语法错误
 3. 捕获Qlib异常并转换为用户友好的错误提示
@@ -2884,6 +3554,7 @@ task:
 #### 详细实施计划
 
 **阶段1: 表达式验证服务基础框架 (1-2天)**
+
 - 文件: `backend/app/services/factor_expression_validator.py`
 - 核心功能:
   ```python
@@ -2895,16 +3566,19 @@ task:
   ```
 
 **阶段2: 验证服务功能完善 (1天)**
+
 - 详细错误处理和用户友好提示
 - 表达式语法检查和建议
 - 性能优化和结果缓存
 
 **阶段3: CustomFactorHandler集成 (1天)**
+
 - 修改`_validate_custom_factors()`方法
 - 集成表达式验证逻辑
 - 增强错误信息和调试支持
 
 **阶段4: 因子管理API开发 (2天)**
+
 - 文件: `backend/app/api/routes/factor_management.py`
 - API端点:
   - `POST /api/v1/factors/validate` - 表达式验证
@@ -2914,6 +3588,7 @@ task:
   - `DELETE /api/v1/factors/{id}` - 删除因子
 
 **阶段5: 前端界面开发 (3-4天)**
+
 - 因子管理页面设计
 - 表达式编辑器实现
 - 实时验证反馈
@@ -2927,7 +3602,7 @@ task:
 def validate_expression(self, expression: str) -> ValidationResult:
     """
     使用Qlib的D.features()方法验证表达式语法
-    
+
     Educational Notes:
     - 通过最小数据集试运行来检测语法错误
     - 捕获Qlib异常并转换为友好提示
@@ -2937,7 +3612,7 @@ def validate_expression(self, expression: str) -> ValidationResult:
         # 使用最小数据集进行试运行
         test_instruments = ["SH600000"]  # 单只股票
         test_fields = [expression]
-        
+
         # 调用Qlib进行验证
         D.features(
             instruments=test_instruments,
@@ -2945,9 +3620,9 @@ def validate_expression(self, expression: str) -> ValidationResult:
             start_time='2020-01-01',
             end_time='2020-01-02'  # 最小时间范围
         )
-        
+
         return ValidationResult.VALID
-        
+
     except Exception as e:
         # 解析Qlib异常并提供友好提示
         return self._parse_qlib_error(str(e))
@@ -2959,7 +3634,7 @@ def validate_expression(self, expression: str) -> ValidationResult:
 def _parse_qlib_error(self, error_msg: str) -> ValidationResult:
     """
     解析Qlib错误信息并提供用户友好的提示
-    
+
     常见错误类型:
     - 语法错误: 括号不匹配、操作符错误等
     - 函数错误: 不支持的函数名、参数错误等
@@ -2977,15 +3652,18 @@ def _parse_qlib_error(self, error_msg: str) -> ValidationResult:
 ### 📈 当前开发状态
 
 **已完成**:
+
 - ✅ CustomFactorHandler拼写错误修正
 - ✅ 因子数据库模型确认(复用现有模型)
 - ✅ Qlib表达式处理机制深度研究
 - ✅ 表达式验证系统完整设计方案
 
 **进行中**:
+
 - 🔄 tech_spec.md文档更新(当前任务)
 
 **待开始**:
+
 - ⏳ 表达式验证服务基础框架实现
 - ⏳ 验证服务功能完善
 - ⏳ CustomFactorHandler集成
@@ -2995,16 +3673,19 @@ def _parse_qlib_error(self, error_msg: str) -> ValidationResult:
 ### 🎯 下一步行动计划
 
 **立即执行**:
+
 1. 完成tech_spec.md文档更新
 2. 开始实施阶段1: 创建表达式验证服务基础框架
 
 **预期时间线**:
+
 - 阶段1-3: 3-4天 (后端核心功能)
 - 阶段4: 2天 (API开发和测试)
 - 阶段5: 3-4天 (前端界面)
 - 总计: 8-10天完成完整的因子表达式验证系统
 
 **成功标准**:
+
 - 用户可以通过前端界面创建和验证因子表达式
 - 系统提供实时的语法检查和错误提示
 - 因子可以成功集成到Qlib工作流中
