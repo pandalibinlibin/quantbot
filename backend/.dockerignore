@@ -6,3 +6,6 @@ app.egg-info
 .coverage
 htmlcov
 .venv
+
+# Qlib source code (research only, not for Docker)
+../qlib-source

@@ -961,6 +961,114 @@ class DataCollectorService:
 
 ---
 
+## 🐛 pkg_resources 错误解决方案 (2026-02-16)
+
+### 问题描述
+
+在Docker backend容器启动时遇到 `ModuleNotFoundError: No module named 'pkg_resources'` 错误，导致FastAPI服务无法正常启动。
+
+### 根本原因分析
+
+1. **缺少setuptools依赖**：`pkg_resources` 是 `setuptools` 包的一部分，但在 `pyproject.toml` 中没有显式声明
+2. **依赖版本漂移**：关键依赖包（`pyqlib`、`mlflow`）没有锁定版本范围，可能导致兼容性问题
+3. **git submodule冲突**：之前添加的 `qlib-source` git submodule 可能导致路径冲突和依赖解析问题
+
+### 解决方案
+
+#### 1. 添加setuptools显式依赖
+
+在 `backend/pyproject.toml` 中添加：
+
+```toml
+dependencies = [
+    # ... 其他依赖
+    "setuptools>=68.0,<70.0",  # 提供pkg_resources模块
+]
+```
+
+#### 2. 锁定关键依赖版本
+
+```toml
+dependencies = [
+    "pyqlib>=0.9.0,<0.10.0",   # 锁定pyqlib版本范围
+    "mlflow>=2.0.0,<3.0.0",    # 锁定mlflow版本范围
+    "setuptools>=68.0,<70.0",  # 锁定setuptools版本范围
+    # ... 其他依赖
+]
+```
+
+#### 3. 移除qlib-source git submodule
+
+```bash
+# 完全移除git submodule
+git submodule deinit -f qlib-source
+git rm qlib-source
+del .gitmodules
+```
+
+#### 4. 配置.gitignore和.dockerignore
+
+为了支持研究用途的qlib源代码，但不影响Docker构建：
+
+**.gitignore**:
+```
+# Qlib source code for research purposes only
+qlib-source/
+```
+
+**backend/.dockerignore**:
+```
+# Qlib source code (research only, not for Docker)
+../qlib-source
+```
+
+#### 5. 修改Dockerfile构建策略
+
+移除 `--frozen` 参数，让Docker自动生成 `uv.lock`：
+
+```dockerfile
+# 修改前
+RUN uv sync --frozen
+
+# 修改后  
+RUN uv sync
+```
+
+### 实施步骤
+
+1. ✅ **删除现有uv.lock文件**
+2. ✅ **修改pyproject.toml添加setuptools依赖**
+3. ✅ **锁定关键依赖版本**
+4. ✅ **移除qlib-source git submodule**
+5. ✅ **配置.gitignore和.dockerignore**
+6. ✅ **重新构建backend镜像**
+7. ✅ **验证服务正常启动**
+
+### 验证结果
+
+- ✅ Backend容器成功启动，状态为 "healthy"
+- ✅ FastAPI服务运行在 http://0.0.0.0:8000
+- ✅ 健康检查端点正常响应
+- ✅ 没有pkg_resources相关错误
+- ✅ 所有服务正常运行
+
+### 经验教训
+
+1. **显式声明依赖**：即使是Python标准库的一部分，也应该在依赖中显式声明
+2. **版本锁定重要性**：关键依赖应该锁定版本范围，避免意外的版本漂移
+3. **Docker构建隔离**：确保研究用代码不会意外影响生产环境的Docker构建
+4. **git submodule管理**：谨慎使用git submodule，可能导致意外的路径冲突
+
+### 后续计划
+
+现在backend服务已经稳定运行，可以继续：
+
+1. 在根目录创建qlib-source目录用于研究Alpha158等因子实现
+2. 恢复和运行测试脚本验证Yahoo Finance数据功能
+3. 继续开发数据收集和因子工程功能
+
+---
+
 ## 🔍 Qlib BaseCollector深度架构分析 (2026-02-14)
 
 ### 📋 关键发现
