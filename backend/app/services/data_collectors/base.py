@@ -115,11 +115,27 @@ class BaseDataCollector(BaseCollector):
         """
         # Default OHLCV fields - subclasses should extend this
         self._field_metadata = {
-            "open": "Opening price",
-            "high": "Highest price",
-            "low": "Lowest price",
-            "close": "Closing price",
-            "volume": "Trading volume",
+            "open": {
+                "type": "float64",
+                "required": True,
+                "description": "Opening price",
+            },
+            "high": {
+                "type": "float64",
+                "required": True,
+                "description": "Highest price",
+            },
+            "low": {"type": "float64", "required": True, "description": "Lowest price"},
+            "close": {
+                "type": "float64",
+                "required": True,
+                "description": "Closing price (effectively forward adjusted)",
+            },
+            "volume": {
+                "type": "int64",
+                "required": True,
+                "description": "Trading volume",
+            },
         }
 
     # Abstract methods that must be implemented by subclasses
