@@ -4482,3 +4482,67 @@ def _parse_qlib_error(self, error_msg: str) -> ValidationResult:
 - 系统提供实时的语法检查和错误提示
 - 因子可以成功集成到Qlib工作流中
 - 通过Swagger UI完成所有API测试
+
+---
+
+## 🔄 Pipeline集成到现有API (2026-02-16)
+
+### 📊 当前状态
+- ✅ Pipeline三个阶段已完成实现
+- ✅ DataPipelineService主服务已完成
+- ✅ 模块导出已完成
+- 🔄 准备集成到现有API端点
+
+### 🎯 集成方案
+
+#### 现有API流程分析
+现有 `download_data_source_endpoint` 使用三步流程：
+1. `clear_qlib_data()` - 清理现有数据
+2. `execute_yahoo_data_collector()` - 下载CSV数据  
+3. `convert_csv_to_qlib_format()` - 转换为Qlib格式
+
+#### Pipeline集成策略
+- **保持API接口不变**：继续使用 `DownloadDataRequest` 和 `DownloadTaskResponse`
+- **替换内部实现**：用 `execute_data_pipeline(request)` 替换三步流程
+- **向后兼容**：前端无需任何修改
+
+#### 集成优势
+1. **统一数据流**：collect → normalize → dump 一体化
+2. **更好的错误处理**：每个阶段独立验证和错误报告
+3. **工作空间管理**：自动创建和清理临时文件
+4. **扩展性**：易于添加新数据源支持
+
+### 🚀 实施计划
+1. 修改 `data_source.py` 导入pipeline模块
+2. 替换 `download_data_source_endpoint` 的实现
+3. 在Swagger中测试新的pipeline
+4. 在前端页面中测试完整流程
+
+### 📋 注意事项
+- 遵循规则12：不引用qlib-source代码，只使用pyqlib暴露的接口
+- 保持现有API契约不变
+- 确保错误处理和日志记录完整
+
+### 🔧 技术实现细节
+
+#### Pipeline模块结构
+```
+backend/app/services/data_collectors/pipeline/
+├── __init__.py          # ✅ 模块导出
+├── service.py           # ✅ DataPipelineService主服务
+└── stages.py            # ✅ 三个阶段实现
+```
+
+#### 核心组件
+- **CollectStage**: 数据收集（支持Yahoo数据源）
+- **NormalizeStage**: 数据标准化（使用UniversalNormalize）  
+- **DumpStage**: 数据转储（转换为Qlib .bin格式）
+- **DataPipelineService**: 主服务编排器
+- **execute_data_pipeline**: API集成便利函数
+
+#### 数据流程
+```
+DownloadDataRequest → execute_data_pipeline() → 
+CollectStage → NormalizeStage → DumpStage → 
+DownloadTaskResponse
+```

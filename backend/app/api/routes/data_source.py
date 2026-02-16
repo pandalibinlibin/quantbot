@@ -9,6 +9,7 @@ Educational Notes:
 """
 
 from fastapi import APIRouter, HTTPException
+import logging
 import os
 from datetime import datetime
 from pathlib import Path
@@ -26,6 +27,9 @@ from app.services.data_utils import (
     convert_csv_to_qlib_format,
     get_data_source_status,
 )
+from app.services.data_collectors.pipeline import execute_data_pipeline
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -79,92 +83,37 @@ def clear_data_source_endpoint():
 @router.post("/download", response_model=DownloadTaskResponse)
 def download_data_source_endpoint(request: DownloadDataRequest):
     """
-    Download data from specified source with complete refresh.
+    Download data from specified source using the new pipeline.
 
     Educational Notes:
-    - Uses POST method for creating a new download task
-    - Follows the optimized data flow: clear → download → convert
-    - Returns immediately with task_id for tracking
-    - Ensures data consistency by clearing before download
-    - Implements comprehensive error handling
+    - Uses the new unified pipeline: collect → normalize → dump
+    - Maintains API compatibility with existing frontend
+    - Provides better error handling and progress tracking
+    - Automatically manages workspace and cleanup
     """
     try:
-        # Generate unique task ID
-        import uuid
-
-        task_id = str(uuid.uuid4())
-
-        # Step 1: Clear existing data for consistency
-        clear_success, clear_message, cleared_mb = clear_qlib_data()
-        if not clear_success:
-            return DownloadTaskResponse(
-                task_id=task_id,
-                status="failed",
-                message=f"Failed to clear existing data: {clear_message}",
-            )
-
-        # Step 2: Download CSV data based on source
-        if request.source.lower() == "yahoo":
-            download_success, download_message = execute_yahoo_data_collector(
-                stock_pool=request.stock_pool,
-                start_date=request.start_date,
-                end_date=request.end_date,
-                incremental=request.incremental,
-                period=None,
-            )
-        elif request.source.lower() == "tushare":
-            # Future implementation
-            return DownloadTaskResponse(
-                task_id=task_id,
-                status="failed",
-                message="Tushare data source not yet implemented",
-            )
-        elif request.source.lower() == "akshare":
-            # Future implementation
-            return DownloadTaskResponse(
-                task_id=task_id,
-                status="failed",
-                message="AkShare data source not yet implemented",
-            )
-        else:
-            return DownloadTaskResponse(
-                task_id=task_id,
-                status="failed",
-                message=f"Unsupported data source: {request.source}",
-            )
-
-        # Check download result
-        if not download_success:
-            return DownloadTaskResponse(
-                task_id=task_id,
-                status="failed",
-                message=f"Download failed: {download_message}",
-            )
-
-        # Step 3: Convert to Qlib format
-        convert_success, convert_message = convert_csv_to_qlib_format()
-        if not convert_success:
-            return DownloadTaskResponse(
-                task_id=task_id,
-                status="partial",
-                message=f"Downloaded CSV but conversion failed: {convert_message}",
-            )
-
-        # All steps successful
-        return DownloadTaskResponse(
-            task_id=task_id,
-            status="completed",
-            message=f"Successfully completed full data refresh: cleared {cleared_mb} MB, downloaded and converted new data",
+        logger.info(
+            f"Starting data download via pipeline: source={request.source}, symbols={len(request.stock_pool)}"
         )
 
+        # Execute the complete pipeline
+        response = execute_data_pipeline(request)
+
+        logger.info(
+            f"Pipeline execution completed: task_id={response.task_id}, status={response.status}"
+        )
+        return response
+
     except Exception as e:
-        # Generate task ID even for errors
+        # Generate task ID for error tracking
         import uuid
 
         task_id = str(uuid.uuid4())
+
+        logger.error(f"Pipeline execution failed: {str(e)}", exc_info=True)
 
         return DownloadTaskResponse(
             task_id=task_id,
             status="error",
-            message=f"Error during data refresh: {str(e)}",
+            message=f"Pipeline execution failed: {str(e)}",
         )

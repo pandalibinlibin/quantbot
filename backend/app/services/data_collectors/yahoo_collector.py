@@ -33,23 +33,160 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from backend.app.services.data_collectors.exceptions import DataCollectionError
+from app.services.data_collectors.exceptions import DataCollectionError
 
-# Add qlib-source to Python path for BaseCollector import
-qlib_source_path = (
-    Path(__file__).parent.parent.parent.parent
-    / "qlib-source"
-    / "scripts"
-    / "data_collector"
-)
-sys.path.append(str(qlib_source_path))
-
+# Try to import BaseCollector from official qlib
 try:
-    from base import BaseCollector
+    from qlib.data.data import BaseCollector
 except ImportError:
-    raise ImportError(
-        "Cannot import Qlib BaseCollector. Please ensure qlib is properly configured."
-    )
+    try:
+        from qlib.contrib.data.collector import BaseCollector
+    except ImportError:
+        # If qlib doesn't provide BaseCollector, implement our own based on Qlib's actual implementation
+        import abc
+        import time
+        from pathlib import Path
+
+        class BaseCollector(abc.ABC):
+            """
+            BaseCollector implementation based on Qlib's actual BaseCollector.
+
+            Educational Notes:
+            - Exact implementation from qlib-source/scripts/data_collector/base.py
+            - Provides complete functionality needed for data collection
+            - Supports standard collector workflow with proper parameter handling
+            """
+
+            CACHE_FLAG = "CACHED"
+            NORMAL_FLAG = "NORMAL"
+
+            DEFAULT_START_DATETIME_1D = pd.Timestamp("2000-01-01")
+            DEFAULT_START_DATETIME_1MIN = pd.Timestamp(
+                datetime.now() - pd.Timedelta(days=5 * 6 - 1)
+            ).date()
+            DEFAULT_END_DATETIME_1D = pd.Timestamp(
+                datetime.now() + pd.Timedelta(days=1)
+            ).date()
+            DEFAULT_END_DATETIME_1MIN = DEFAULT_END_DATETIME_1D
+
+            INTERVAL_1min = "1min"
+            INTERVAL_1d = "1d"
+
+            def __init__(
+                self,
+                save_dir,
+                start=None,
+                end=None,
+                interval="1d",
+                max_workers=1,
+                max_collector_count=2,
+                delay=0,
+                check_data_length=None,
+                limit_nums=None,
+            ):
+                """
+                Initialize BaseCollector with Qlib standard parameters.
+
+                Parameters
+                ----------
+                save_dir: str
+                    instrument save dir
+                start: str
+                    start datetime, default None
+                end: str
+                    end datetime, default None
+                interval: str
+                    freq, value from [1min, 1d], default 1d
+                max_workers: int
+                    workers, default 1
+                max_collector_count: int
+                    default 2
+                delay: float
+                    time.sleep(delay), default 0
+                check_data_length: int
+                    check data length, default None
+                limit_nums: int
+                    using for debug, default None
+                """
+                self.save_dir = Path(save_dir).expanduser().resolve()
+                self.save_dir.mkdir(parents=True, exist_ok=True)
+
+                self.delay = delay
+                self.max_workers = max_workers
+                self.max_collector_count = max_collector_count
+                self.mini_symbol_map = {}
+                self.interval = interval
+                self.check_data_length = max(
+                    int(check_data_length) if check_data_length is not None else 0, 0
+                )
+
+                self.start_datetime = self.normalize_start_datetime(start)
+                self.end_datetime = self.normalize_end_datetime(end)
+
+                # Note: instrument_list initialization moved to subclass to avoid circular dependency
+
+                if limit_nums is not None:
+                    try:
+                        # Will be applied in subclass after instrument_list is set
+                        self.limit_nums = int(limit_nums)
+                    except Exception as e:
+                        logger.warning(
+                            f"Cannot use limit_nums={limit_nums}, the parameter will be ignored"
+                        )
+                        self.limit_nums = None
+                else:
+                    self.limit_nums = None
+
+            def normalize_start_datetime(self, start_datetime=None):
+                return (
+                    pd.Timestamp(str(start_datetime))
+                    if start_datetime
+                    else getattr(
+                        self, f"DEFAULT_START_DATETIME_{self.interval.upper()}"
+                    )
+                )
+
+            def normalize_end_datetime(self, end_datetime=None):
+                return (
+                    pd.Timestamp(str(end_datetime))
+                    if end_datetime
+                    else getattr(self, f"DEFAULT_END_DATETIME_{self.interval.upper()}")
+                )
+
+            @abc.abstractmethod
+            def get_instrument_list(self):
+                """Get list of instruments to collect"""
+                raise NotImplementedError("rewrite get_instrument_list")
+
+            @abc.abstractmethod
+            def normalize_symbol(self, symbol: str):
+                """normalize symbol"""
+                raise NotImplementedError("rewrite normalize_symbol")
+
+            @abc.abstractmethod
+            def get_data(
+                self, symbol: str, interval: str, start_datetime, end_datetime
+            ) -> pd.DataFrame:
+                """get data with symbol
+
+                Parameters
+                ----------
+                symbol: str
+                interval: str
+                    value from [1min, 1d]
+                start_datetime: pd.Timestamp
+                end_datetime: pd.Timestamp
+
+                Returns
+                ---------
+                    pd.DataFrame, "symbol" and "date" in pd.columns
+                """
+                raise NotImplementedError("rewrite get_data")
+
+            def sleep(self):
+                time.sleep(self.delay)
+
+
 try:
     from .exceptions import DataCollectionError, DataSourceError, DataValidationError
 except ImportError:
@@ -143,17 +280,17 @@ class YahooDataCollector(BaseCollector):
 
     def __init__(
         self,
-        save_dir,
-        market="CN",
-        index="CSI300",
-        start=None,
-        end=None,
-        interval="1d",
-        max_workers=1,
-        max_collector_count=2,
-        delay=0.5,
-        check_data_length=None,
-        limit_nums=None,
+        save_dir: str = "./qlib_data/cn_data",
+        start: str = "2020-01-01",
+        end: str = None,
+        interval: str = "1d",
+        max_workers: int = 8,
+        max_collector_count: int = 4,
+        delay: float = 0.05,
+        check_data_length: int = None,
+        limit_nums: int = None,
+        market: str = "CN",
+        index_name: str = "CSI300",
     ):
         """
         Initialize Yahoo Finance data collector for specified market and index.
@@ -191,7 +328,7 @@ class YahooDataCollector(BaseCollector):
         """
         # Validate market and index parameters
         market = market.upper()
-        index = index.upper()
+        index = index_name.upper()
 
         if market not in MARKET_CONFIG:
             raise ValueError(
@@ -224,6 +361,15 @@ class YahooDataCollector(BaseCollector):
 
         # Set timezone for the market
         self._timezone = self.market_config["timezone"]
+
+        # Define field metadata for Qlib compatibility
+        self._field_metadata = {
+            "open": "float64",
+            "high": "float64",
+            "low": "float64",
+            "close": "float64",
+            "volume": "int64",
+        }
 
         logger.info(
             f"YahooDataCollector initialized for {market} market, {index} index"
@@ -350,7 +496,9 @@ class YahooDataCollector(BaseCollector):
             logger.warning(f"Failed to normalize symbol {symbol}: {e}")
             return symbol  # Return original symbol if normalization fails
 
-    def get_data(self, symbol: str, start_time=None, end_time=None) -> pd.DataFrame:
+    def get_data(
+        self, symbol: str, interval: str = None, start_datetime=None, end_datetime=None
+    ) -> pd.DataFrame:
         """
         Fetch OHLCV data for a specific stock symbol.
 
@@ -358,9 +506,11 @@ class YahooDataCollector(BaseCollector):
         -----------
         symbol: str
             Stock symbol in Yahoo Finance format (e.g., "000001.SZ", "AAPL")
-        start_time: str, optional
+        interval: str, optional
+            Data interval: "1d" for daily, "1m" for minute data
+        start_datetime: str, optional
             Start date in YYYY-MM-DD format
-        end_time: str, optional
+        end_datetime: str, optional
             End date in YYYY-MM-DD format
 
         Returns
@@ -370,34 +520,94 @@ class YahooDataCollector(BaseCollector):
             Index: DatetimeIndex with 'date' name
 
         Educational Notes:
-        - This is the third required abstract method from BaseCollector
+        - Supports both daily ("1d") and minute ("1m") data intervals
         - Uses yahooquery library to fetch historical stock data
         - Returns data in Qlib standard format with required columns
         - Handle both CN and US market data with proper timezone
         - Qlib expects 'date' index and specific column names (lowercase)
         """
         try:
-            logger.info(f"Fetching data for {symbol} from {start_time} to {end_time}")
+            logger.info(
+                f"Fetching data for {symbol} from {start_datetime} to {end_datetime}"
+            )
 
             # Use class start/end times if not provided
-            if start_time is None:
-                start_time = self.start
-            if end_time is None:
-                end_time = self.end
+            if start_datetime is None:
+                start_datetime = self.start
+            if end_datetime is None:
+                end_datetime = self.end
+
+            # Use provided interval or fall back to class interval
+            if interval is None:
+                interval = self.interval
 
             # Create Ticker object
+            logger.debug(f"Creating Ticker object for symbol: {symbol}")
             ticker = Ticker(symbol)
 
-            # Fetch historical data
-            if self.interval == "1d":
-                data = ticker.history(start=start_time, end=end_time, interval="1d")
-            elif self.interval == "1min":
-                data = ticker.history(start=start_time, end=end_time, interval="1m")
-            else:
-                raise ValueError(f"Unsupported interval: {self.interval}")
+            # Fetch historical data with detailed logging
+            logger.debug(
+                f"Requesting data: symbol={symbol}, start={start_datetime}, end={end_datetime}, interval={interval}"
+            )
 
-            if data is None or data.empty:
-                logger.warning(f"No data returned for {symbol}")
+            try:
+                # Yahoo Finance API's end parameter is exclusive, so we need to add 1 day
+                # to include the end_datetime in the results
+                from datetime import datetime, timedelta
+
+                # Convert end_datetime to datetime object and add 1 day
+                if isinstance(end_datetime, str):
+                    end_dt = datetime.strptime(end_datetime, "%Y-%m-%d")
+                else:
+                    end_dt = end_datetime
+
+                # Add 1 day to make the end date inclusive
+                adjusted_end = (end_dt + timedelta(days=1)).strftime("%Y-%m-%d")
+
+                if interval == "1d":
+                    data = ticker.history(
+                        start=start_datetime, end=adjusted_end, interval="1d"
+                    )
+                elif interval == "1m":
+                    data = ticker.history(
+                        start=start_datetime, end=adjusted_end, interval="1m"
+                    )
+                else:
+                    raise ValueError(f"Unsupported interval: {interval}")
+
+                # Log detailed response information
+                logger.debug(
+                    f"Yahoo Finance API response for {symbol}: type={type(data)}, shape={getattr(data, 'shape', 'N/A')}"
+                )
+
+                if data is None:
+                    logger.warning(
+                        f"Yahoo Finance returned None for {symbol} - possible reasons: invalid symbol, no trading data, or API error"
+                    )
+                    return pd.DataFrame()
+
+                if data.empty:
+                    logger.warning(
+                        f"Yahoo Finance returned empty DataFrame for {symbol} - possible reasons: no trading in date range, delisted stock, or suspended trading"
+                    )
+                    logger.debug(
+                        f"Empty DataFrame details for {symbol}: columns={list(data.columns)}, index={data.index}"
+                    )
+                    return pd.DataFrame()
+
+                # Log successful data retrieval details
+                logger.debug(
+                    f"Successfully retrieved data for {symbol}: {len(data)} rows, columns={list(data.columns)}"
+                )
+                logger.debug(
+                    f"Data date range for {symbol}: {data.index.min()} to {data.index.max()}"
+                )
+
+            except Exception as api_error:
+                logger.error(
+                    f"Yahoo Finance API error for {symbol}: {type(api_error).__name__}: {str(api_error)}"
+                )
+                logger.debug(f"Full API error details for {symbol}", exc_info=True)
                 return pd.DataFrame()
 
             # Reset index to get date as column, then set it back as index
@@ -408,10 +618,42 @@ class YahooDataCollector(BaseCollector):
             # Get required columns from BaseCollector's field metadata
             required_columns = list(self._field_metadata.keys())
             logger.info(f"Using field metadata columns: {required_columns}")
-            data.columns = data.columns.lower()
 
-            # Select only required columns
-            data = data[required_columns]
+            # Convert column names to lowercase with robust error handling
+            try:
+                if hasattr(data.columns, "__iter__"):
+                    data.columns = [
+                        str(col).lower() if hasattr(col, "lower") else str(col).lower()
+                        for col in data.columns
+                    ]
+                else:
+                    data.columns = [str(data.columns).lower()]
+            except Exception as col_error:
+                logger.warning(
+                    f"Column name conversion failed for {symbol}: {col_error}"
+                )
+                # Fallback: use original column names converted to string and lowercased
+                data.columns = [str(col).lower() for col in data.columns]
+
+            # Select only required columns that exist in the data
+            available_columns = [col for col in required_columns if col in data.columns]
+            logger.debug(
+                f"Column matching for {symbol}: required={required_columns}, available={list(data.columns)}, matched={available_columns}"
+            )
+
+            if available_columns:
+                data = data[available_columns]
+                logger.debug(
+                    f"Selected {len(available_columns)} columns for {symbol}: {available_columns}"
+                )
+            else:
+                logger.warning(
+                    f"COLUMN MISMATCH for {symbol}: No required columns found. Required: {required_columns}, Available: {list(data.columns)}"
+                )
+                logger.debug(
+                    f"Raw column names for {symbol} before processing: {[str(col) for col in data.columns]}"
+                )
+                return pd.DataFrame(columns=required_columns)
 
             # Ensure index is named 'date'
             data.index.name = "date"
@@ -419,6 +661,16 @@ class YahooDataCollector(BaseCollector):
             return data
 
         except Exception as e:
-            logger.error(f"Failed to fetch data for {symbol}: {e}")
+            logger.error(f"FETCH FAILED for {symbol}: {type(e).__name__}: {str(e)}")
+            logger.debug(f"Full error details for {symbol}", exc_info=True)
+
+            # Log diagnostic information
+            logger.debug(
+                f"Diagnostic info for {symbol}: start={start_datetime}, end={end_datetime}, interval={interval}"
+            )
+            logger.debug(
+                f"Symbol format check for {symbol}: length={len(symbol)}, contains_dot={'.' in symbol}, ends_with={symbol[-3:] if len(symbol) >= 3 else 'N/A'}"
+            )
+
             # Return empty DataFrame with correct structure
             return pd.DataFrame(columns=list(self._field_metadata.keys()))

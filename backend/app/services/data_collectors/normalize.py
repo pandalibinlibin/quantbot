@@ -94,6 +94,7 @@ class UniversalNormalize(BaseNormalize):
     - Processes standard OHLCV fields: open, high, low, close, volume
     - Uses source_type for data source specific logic when needed
     - Implements complete data normalization pipeline from Qlib
+    - Uses calendar caching to avoid repeated API calls for the same market
     """
 
     # Standard OHLCV fields - matches BaseDataCollector._field_metadata
@@ -107,7 +108,10 @@ class UniversalNormalize(BaseNormalize):
     DAILY_ANOMALY_THRESHOLD = (89, 111)  # 89x to 111x change detection
     MINUTE_ANOMALY_THRESHOLD = (5, 20)  # 5x to 20x change detection for minute data
 
-    def __init__(self, source_type: str = "yahoo", **kwargs):
+    # Class-level calendar cache to avoid repeated API calls
+    _calendar_cache = {}
+
+    def __init__(self, source_type: str = "yahoo", market: str = "US", **kwargs):
         """
         Initialize UniversalNormalize.
 
@@ -115,15 +119,20 @@ class UniversalNormalize(BaseNormalize):
         ----------
         source_type: str
             Data source identifier for branch logic ("yahoo", "tushare", etc.)
+        market: str
+            Market identifier for trading calendar ("CN", "US")
         **kwargs: dict
             Additional parameters passed to BaseNormalize
         """
         self.source_type = source_type
+        self.market = market
 
         # Call parent constructor with required parameters
         super().__init__(**kwargs)
 
-        logger.info(f"Initialized UniversalNormalize for source: {source_type}")
+        logger.info(
+            f"Initialized UniversalNormalize for source: {source_type}, market: {market}"
+        )
 
     @staticmethod
     def calc_change(df: pd.DataFrame, last_close: float) -> pd.Series:
@@ -161,36 +170,147 @@ class UniversalNormalize(BaseNormalize):
 
     def _get_calendar_list(self) -> Iterable[pd.Timestamp]:
         """
-        Get benchmark calendar for data alignment.
+        Get benchmark calendar for data alignment with caching.
 
         Educational Notes:
-        - Based on YahooNormalize implementation from Qlib
-        - For daily data: uses D.calendar(freq="day")
-        - For minute data: generates minute calendar from daily calendar
+        - Uses class-level cache to avoid repeated API calls for same market
+        - Directly uses Yahoo Finance API for reliable trading calendar
+        - Falls back to pandas business days if Yahoo Finance fails
+        - Supports both CN and US market calendars
         - Market-specific trading hours handled in generate_1min_from_daily
 
         Returns
         -------
         Iterable[pd.Timestamp]
-            Trading calendar timestamps for data alignment
+            Calendar timestamps for data alignment with trading days
+        """
+        # Check cache first to avoid repeated API calls
+        cache_key = f"{self.source_type}_{self.market}"
+
+        if cache_key in UniversalNormalize._calendar_cache:
+            logger.debug(f"Using cached trading calendar for {self.market} market")
+            return UniversalNormalize._calendar_cache[cache_key]
+
+        # Get calendar and cache it
+        calendar = self._get_pandas_trading_calendar()
+        UniversalNormalize._calendar_cache[cache_key] = calendar
+
+        logger.info(
+            f"Cached trading calendar for {self.market} market ({len(calendar)} trading days)"
+        )
+        return calendar
+
+    def _get_pandas_trading_calendar(self) -> Iterable[pd.Timestamp]:
+        """
+        Get trading calendar using Yahoo Finance API and pandas fallback.
+
+        Educational Notes:
+        - First tries Yahoo Finance API for real market trading days
+        - Falls back to pandas business day calendar if Yahoo fails
+        - Provides real trading days for data alignment
+        - More accurate than empty calendar fallback
+
+        Returns
+        -------
+        Iterable[pd.Timestamp]
+            Real trading calendar timestamps
         """
         try:
-            # Import Qlib's data module
-            from qlib.data import D
+            # Try Yahoo Finance API first for real trading calendar
+            yahoo_calendar = self._get_yahoo_trading_calendar(market=self.market)
+            if yahoo_calendar is not None and len(yahoo_calendar) > 0:
+                return yahoo_calendar
 
-            # Get daily calendar as base
-            daily_calendar = D.calendar(freq="day")
+        except Exception as e:
+            logger.warning(f"Failed to get Yahoo Finance trading calendar: {e}")
+
+        try:
+            import pandas as pd
+            from datetime import datetime, timedelta
+
+            # Fallback to pandas business days
+            start_date = datetime(2000, 1, 1)
+            end_date = datetime.now() + timedelta(days=365)
+
+            # Generate business days (excludes weekends)
+            business_days = pd.bdate_range(start=start_date, end=end_date, freq="B")
+
+            logger.info(
+                f"Generated pandas trading calendar with {len(business_days)} business days from {start_date.date()} to {end_date.date()}"
+            )
+
+            return business_days
+
+        except Exception as e:
+            logger.error(f"Failed to generate pandas trading calendar: {e}")
+            logger.warning("Using empty calendar as final fallback")
+            return []
+
+    def _get_yahoo_trading_calendar(self, market: str = "US") -> Iterable[pd.Timestamp]:
+        """
+        Get real trading calendar from Yahoo Finance API.
+
+        Educational Notes:
+        - Uses Yahoo Finance to get actual trading days
+        - Automatically excludes weekends and holidays
+        - Market-specific (CN/US) trading calendars using representative indices
+        - More accurate than business day approximation
+
+        Parameters
+        ----------
+        market: str
+            Market identifier: "CN" or "US"
+
+        Returns
+        -------
+        Iterable[pd.Timestamp]
+            Yahoo Finance trading calendar timestamps
+        """
+        try:
+            from yahooquery import Ticker
+            import pandas as pd
+            from datetime import datetime, timedelta
+
+            # Use market-specific representative indices for trading calendar
+            if market == "CN":
+                representative_symbol = "000001.SS"  # SSE Composite Index
+            else:
+                representative_symbol = "SPY"  # S&P 500 ETF for US market
+
+            # Create date range for calendar
+            start_date = datetime(2020, 1, 1)  # Reasonable range for calendar
+            end_date = datetime.now() + timedelta(days=30)
 
             logger.debug(
-                f"Retrieved daily calendar with {len(daily_calendar)} trading days for source: {self.source_type}"
+                f"Getting {market} trading calendar using {representative_symbol}"
             )
-            return daily_calendar
+
+            # Get historical data to extract trading dates
+            ticker = Ticker(representative_symbol)
+            data = ticker.history(start=start_date, end=end_date, interval="1d")
+
+            if data is not None and not data.empty:
+                # Extract trading dates from the index
+                trading_dates = (
+                    data.index.get_level_values("date")
+                    if isinstance(data.index, pd.MultiIndex)
+                    else data.index
+                )
+                trading_dates = pd.to_datetime(trading_dates).unique()
+                trading_dates = sorted(trading_dates)
+
+                logger.info(
+                    f"Retrieved {market} Yahoo Finance trading calendar with {len(trading_dates)} trading days from {trading_dates[0].date()} to {trading_dates[-1].date()}"
+                )
+
+                return trading_dates
 
         except Exception as e:
             logger.warning(
-                f"Failed to get calendar from Qlib: {e}, using empty calendar"
+                f"Failed to get {market} Yahoo Finance trading calendar: {e}"
             )
-            return []
+
+        return None
 
     def detect_market_from_symbol(self, symbol: str) -> str:
         """

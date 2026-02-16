@@ -388,19 +388,31 @@ def get_data_source_status_impl() -> dict:
                     )
                     instruments_count = len(instruments_data)
 
-                    # Determine stock pool based on count and dataset characteristics
+                    # Try to read stock_pool from metadata file first
                     stock_pool = None
-                    if instruments_count <= 120:
-                        stock_pool = "csi100"
-                    elif instruments_count <= 350:
-                        stock_pool = "csi300"
-                    elif instruments_count <= 600:
-                        stock_pool = "csi500"
-                    elif instruments_count > 1000:
-                        # Full dataset with thousands of stocks
-                        stock_pool = "yahoo_cn_full"
-                    else:
-                        stock_pool = "all"
+                    try:
+                        import json
+
+                        metadata_file = qlib_data_path / "metadata.json"
+                        if metadata_file.exists():
+                            with open(metadata_file, "r") as f:
+                                metadata = json.load(f)
+                                stock_pool = metadata.get("stock_pool")
+                    except Exception:
+                        pass
+
+                    # Fallback to inference if metadata not available
+                    if not stock_pool:
+                        if instruments_count <= 120:
+                            stock_pool = "csi100"
+                        elif instruments_count <= 350:
+                            stock_pool = "csi300"
+                        elif instruments_count <= 600:
+                            stock_pool = "csi500"
+                        elif instruments_count > 1000:
+                            stock_pool = "yahoo_cn_full"
+                        else:
+                            stock_pool = "all"
         except Exception:
             pass
 

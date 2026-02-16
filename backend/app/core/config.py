@@ -96,7 +96,9 @@ class Settings(BaseSettings):
         return bool(self.SMTP_HOST and self.EMAILS_FROM_EMAIL)
 
     # Qlib Configuration
-    QLIB_REGION: Literal["cn", "us"] = "cn"  # Currently only support CN market
+    QLIB_REGION: Literal["cn", "us"] = (
+        "cn"  # Default region for Qlib initialization (supports both CN and US markets)
+    )
 
     EMAIL_TEST_USER: EmailStr = "test@example.com"
     FIRST_SUPERUSER: EmailStr

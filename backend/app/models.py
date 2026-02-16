@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
@@ -1111,6 +1111,10 @@ class DownloadDataRequest(SQLModel):
         default=False,
         description="Whether to perform incremental update (append new data only)",
     )
+    interval: Optional[str] = Field(
+        default="1d",
+        description="Data interval: '1d' for daily data, '1m' for minute data",
+    )
 
 
 class DownloadTaskResponse(SQLModel):
@@ -1158,3 +1162,58 @@ class ClearDataResponse(SQLModel):
     cleared_size_mb: float | None = Field(
         default=None, description="Size of cleared data in MB"
     )
+
+
+"""
+Simplified pipeline models that work with existing API.
+
+Educational Notes:
+- Reuses existing DownloadDataRequest and DownloadTaskResponse
+- Adds minimal pipeline-specific models for internal use
+- Maintains compatibility with current frontend
+"""
+
+from enum import Enum
+from pathlib import Path
+from pydantic import BaseModel
+from typing import Optional
+
+
+class PipelineStage(str, Enum):
+    """Internal pipeline stages"""
+
+    COLLECT = "collect"
+    NORMALIZE = "normalize"
+    DUMP = "dump"
+
+
+class PipelineWorkspace(BaseModel):
+    """Internal workspace configuration"""
+
+    base_dir: Path
+    temp_csv_dir: Path
+    normalized_dir: Path
+    qlib_data_dir: Path
+
+    def create_directories(self):
+        """Create workspace directories"""
+        for dir_path in [self.temp_csv_dir, self.normalized_dir, self.qlib_data_dir]:
+            dir_path.mkdir(parents=True, exist_ok=True)
+
+    def cleanup_temp(self):
+        """Clean temporary directories"""
+        import shutil
+
+        if self.temp_csv_dir.exists():
+            shutil.rmtree(self.temp_csv_dir)
+        if self.normalized_dir.exists():
+            shutil.rmtree(self.normalized_dir)
+
+
+class PipelineStageResult(BaseModel):
+    """Result of a single pipeline stage"""
+
+    stage: PipelineStage
+    success: bool
+    message: str
+    error: Optional[str] = None
