@@ -7,3 +7,6 @@ node_modules/
 
 # Qlib source code for research purposes only
 qlib-source/
+
+# Temporary scripts and test results - exclude from git
+temp_scripts/
