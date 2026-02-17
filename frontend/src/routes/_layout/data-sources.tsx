@@ -46,6 +46,7 @@ function DataSourcesPage() {
   const [stockPool, setStockPool] = useState<string>("csi300");
   const [startDate, setStartDate] = useState<string>("2024-01-01");
   const [endDate, setEndDate] = useState<string>("2024-01-31");
+  const [interval, setInterval] = useState<string>("1d");
 
   // Query for data source status
   const { data: status, isLoading: statusLoading } = useQuery({
@@ -71,30 +72,42 @@ function DataSourcesPage() {
     },
   });
 
+  // Separate mutation for incremental updates
+  const incrementalUpdateMutation = useMutation({
+    mutationFn: (request: DownloadDataRequest) =>
+      DataSourceService.downloadDataSourceEndpoint({ requestBody: request }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dataSourceStatus"] });
+    },
+  });
+
   // Handler functions
   const handleDownload = () => {
     const request: DownloadDataRequest = {
-      source,
       stock_pool: stockPool,
       start_date: startDate,
       end_date: endDate,
+      interval: interval,
     };
     downloadDataMutation.mutate(request);
   };
 
   const handleIncremental = () => {
     // For incremental update, use current data source and stock pool from status
-    // but automatically update to latest date (today)
-    const today = new Date().toISOString().split("T")[0];
+    // but automatically update to latest available trading date
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const targetDate = yesterday.toISOString().split("T")[0];
 
     const request: DownloadDataRequest = {
-      source: status?.source_name || source,
       stock_pool: status?.stock_pool || stockPool,
       start_date: status?.data_range_end || startDate, // Start from last available date
-      end_date: today, // Update to today
+      end_date: targetDate, // Update to yesterday (more likely to have data)
       incremental: true,
+      interval: interval,
     };
-    downloadDataMutation.mutate(request);
+    incrementalUpdateMutation.mutate(request);
   };
 
   const handleClear = () => {
@@ -189,13 +202,13 @@ function DataSourcesPage() {
                       onClick={handleIncremental}
                       variant="default"
                       size="sm"
-                      disabled={!status || downloadDataMutation.isPending}
+                      disabled={!status || incrementalUpdateMutation.isPending}
                       className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 disabled:text-gray-500"
                     >
                       <RefreshCw
-                        className={`h-4 w-4 ${downloadDataMutation.isPending ? "animate-spin" : ""}`}
+                        className={`h-4 w-4 ${incrementalUpdateMutation.isPending ? "animate-spin" : ""}`}
                       />
-                      {downloadDataMutation.isPending
+                      {incrementalUpdateMutation.isPending
                         ? "Updating..."
                         : "Incremental Update"}
                     </Button>
@@ -233,24 +246,7 @@ function DataSourcesPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="source">Data Source</Label>
-                  <Select value={source} onValueChange={setSource}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="yahoo">Yahoo Finance</SelectItem>
-                      <SelectItem value="tushare" disabled>
-                        Tushare (Coming Soon)
-                      </SelectItem>
-                      <SelectItem value="akshare" disabled>
-                        AKShare (Coming Soon)
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="stockPool">Stock Pool</Label>
                   <Select value={stockPool} onValueChange={setStockPool}>
@@ -260,8 +256,29 @@ function DataSourcesPage() {
                     <SelectContent>
                       <SelectItem value="csi300">CSI 300</SelectItem>
                       <SelectItem value="csi500">CSI 500</SelectItem>
+                      <SelectItem value="sp500">S&P 500</SelectItem>
+                      <SelectItem value="nasdaq100">NASDAQ 100</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div>
+                  <Label htmlFor="interval">Data Interval</Label>
+                  <Select value={interval} onValueChange={setInterval}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1d">Daily (1d)</SelectItem>
+                      <SelectItem value="1m">Minute (1m)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Data Source</Label>
+                  <p className="text-lg font-semibold text-muted-foreground">
+                    Yahoo Finance
+                  </p>
+                  <p className="text-xs text-muted-foreground">(Configured)</p>
                 </div>
               </div>
 
@@ -286,6 +303,19 @@ function DataSourcesPage() {
                 </div>
               </div>
 
+              {/* Minute Data Warning */}
+              {interval === "1m" && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Minute Data Limitations:</strong> Yahoo Finance only
+                    provides minute-level data for the last 30 days. Please
+                    ensure your date range is within the last 30 days for minute
+                    data collection.
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <Separator className="my-4" />
               <Button
                 onClick={handleDownload}
@@ -303,17 +333,22 @@ function DataSourcesPage() {
           </Card>
 
           {/* Status Messages */}
-          {(downloadDataMutation.isError || clearDataMutation.isError) && (
+          {(downloadDataMutation.isError ||
+            incrementalUpdateMutation.isError ||
+            clearDataMutation.isError) && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 {downloadDataMutation.error?.message ||
+                  incrementalUpdateMutation.error?.message ||
                   clearDataMutation.error?.message}
               </AlertDescription>
             </Alert>
           )}
 
-          {(downloadDataMutation.isSuccess || clearDataMutation.isSuccess) && (
+          {(downloadDataMutation.isSuccess ||
+            incrementalUpdateMutation.isSuccess ||
+            clearDataMutation.isSuccess) && (
             <Alert>
               <AlertDescription>
                 Operation completed successfully!

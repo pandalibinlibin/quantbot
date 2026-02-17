@@ -46,14 +46,13 @@ export class DataSourceService {
     
     /**
      * Download Data Source Endpoint
-     * Download data from specified source with complete refresh.
+     * Download data from specified source using the new pipeline.
      *
      * Educational Notes:
-     * - Uses POST method for creating a new download task
-     * - Follows the optimized data flow: clear → download → convert
-     * - Returns immediately with task_id for tracking
-     * - Ensures data consistency by clearing before download
-     * - Implements comprehensive error handling
+     * - Uses the new unified pipeline: collect → normalize → dump
+     * - Maintains API compatibility with existing frontend
+     * - Provides better error handling and progress tracking
+     * - Automatically manages workspace and cleanup
      * @param data The data for the request.
      * @param data.requestBody
      * @returns DownloadTaskResponse Successful Response

@@ -6,7 +6,7 @@ export const Body_login_login_access_tokenSchema = {
             anyOf: [
                 {
                     type: 'string',
-                    pattern: 'password'
+                    pattern: '^password$'
                 },
                 {
                     type: 'null'
@@ -20,6 +20,7 @@ export const Body_login_login_access_tokenSchema = {
         },
         password: {
             type: 'string',
+            format: 'password',
             title: 'Password'
         },
         scope: {
@@ -47,6 +48,7 @@ export const Body_login_login_access_tokenSchema = {
                     type: 'null'
                 }
             ],
+            format: 'password',
             title: 'Client Secret'
         }
     },
@@ -371,12 +373,6 @@ Educational Notes:
 
 export const DownloadDataRequestSchema = {
     properties: {
-        source: {
-            type: 'string',
-            title: 'Source',
-            description: "Data source name (currently only 'yahoo' supported)",
-            default: 'yahoo'
-        },
         stock_pool: {
             type: 'string',
             title: 'Stock Pool',
@@ -398,6 +394,19 @@ export const DownloadDataRequestSchema = {
             title: 'Incremental',
             description: 'Whether to perform incremental update (append new data only)',
             default: false
+        },
+        interval: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Interval',
+            description: "Data interval: '1d' for daily data, '1m' for minute data",
+            default: '1d'
         }
     },
     type: 'object',
@@ -407,7 +416,8 @@ export const DownloadDataRequestSchema = {
 
 Educational Notes:
 - This defines what parameters users need to provide
-- Validation is automatic through Pydantic`
+- Validation is automatic through Pydantic
+- Data source is now controlled by configuration, not user input`
 } as const;
 
 export const DownloadTaskResponseSchema = {

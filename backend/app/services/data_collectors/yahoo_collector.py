@@ -655,8 +655,16 @@ class YahooDataCollector(BaseCollector):
                 )
                 return pd.DataFrame(columns=required_columns)
 
-            # Ensure index is named 'date'
+            # Ensure index is named 'date' and remove timezone info for Qlib compatibility
             data.index.name = "date"
+
+            # Remove timezone information to ensure compatibility with Qlib dump_bin.py
+            if hasattr(data.index, "tz") and data.index.tz is not None:
+                data.index = data.index.tz_localize(None)
+                logger.debug(
+                    f"Removed timezone info from {symbol} data index for Qlib compatibility"
+                )
+
             logger.info(f"Successfully fetched {len(data)} records for {symbol}")
             return data
 

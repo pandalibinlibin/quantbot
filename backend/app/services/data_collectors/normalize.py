@@ -393,25 +393,67 @@ class UniversalNormalize(BaseNormalize):
             am_start_time = pd.Timestamp(f"{trading_day.date()} {am_start}")
             am_end_time = pd.Timestamp(f"{trading_day.date()} {am_end}")
 
+            # Ensure timezone-naive timestamps
+            am_start_time = (
+                am_start_time.tz_localize(None)
+                if am_start_time.tz is not None
+                else am_start_time
+            )
+            am_end_time = (
+                am_end_time.tz_localize(None)
+                if am_end_time.tz is not None
+                else am_end_time
+            )
+
             if pm_start and pm_end:
                 # Markets with lunch break (like CN)
                 am_minutes = pd.date_range(am_start_time, am_end_time, freq="1min")[
                     :-1
                 ]  # Exclude end
+                # Ensure timezone-naive minutes
+                am_minutes = (
+                    am_minutes.tz_localize(None)
+                    if am_minutes.tz is not None
+                    else am_minutes
+                )
                 minute_calendar.extend(am_minutes.tolist())
 
                 # Generate PM session minutes
                 pm_start_time = pd.Timestamp(f"{trading_day.date()} {pm_start}")
                 pm_end_time = pd.Timestamp(f"{trading_day.date()} {pm_end}")
+                # Ensure timezone-naive timestamps
+                pm_start_time = (
+                    pm_start_time.tz_localize(None)
+                    if pm_start_time.tz is not None
+                    else pm_start_time
+                )
+                pm_end_time = (
+                    pm_end_time.tz_localize(None)
+                    if pm_end_time.tz is not None
+                    else pm_end_time
+                )
+
                 pm_minutes = pd.date_range(pm_start_time, pm_end_time, freq="1min")[
                     :-1
                 ]  # Exclude end
+                # Ensure timezone-naive minutes
+                pm_minutes = (
+                    pm_minutes.tz_localize(None)
+                    if pm_minutes.tz is not None
+                    else pm_minutes
+                )
                 minute_calendar.extend(pm_minutes.tolist())
             else:
                 # Continuous trading markets (like US)
                 day_minutes = pd.date_range(am_start_time, am_end_time, freq="1min")[
                     :-1
                 ]  # Exclude end
+                # Ensure timezone-naive minutes
+                day_minutes = (
+                    day_minutes.tz_localize(None)
+                    if day_minutes.tz is not None
+                    else day_minutes
+                )
                 minute_calendar.extend(day_minutes.tolist())
 
         logger.debug(
@@ -472,16 +514,30 @@ class UniversalNormalize(BaseNormalize):
 
         # Calendar alignment if provided
         if calendar_list is not None and len(calendar_list) > 0:
-            df = df.reindex(
-                pd.DataFrame(index=calendar_list)
-                .loc[
-                    pd.Timestamp(df.index.min())
-                    .date() : pd.Timestamp(df.index.max())
-                    .date()
-                    + pd.Timedelta(hours=23, minutes=59)
-                ]
-                .index
+            # Detect if data is minute-level by checking if any timestamp has non-zero time
+            has_time = any(
+                ts.hour != 0 or ts.minute != 0 or ts.second != 0
+                for ts in df.index
+                if pd.notna(ts)
             )
+
+            if has_time:
+                # For minute-level data, skip calendar alignment to preserve time granularity
+                logger.debug(
+                    f"Skipping calendar alignment for minute-level data with {len(df)} rows"
+                )
+            else:
+                # For daily data, apply calendar alignment as before
+                df = df.reindex(
+                    pd.DataFrame(index=calendar_list)
+                    .loc[
+                        pd.Timestamp(df.index.min())
+                        .date() : pd.Timestamp(df.index.max())
+                        .date()
+                        + pd.Timedelta(hours=23, minutes=59)
+                    ]
+                    .index
+                )
 
         # Sort by time index
         df.sort_index(inplace=True)
@@ -527,6 +583,67 @@ class UniversalNormalize(BaseNormalize):
         df.index.names = [date_field_name]
         return df.reset_index()
 
+    def _clean_anomalous_timestamps(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Clean anomalous timestamps that are outside expected date ranges.
+
+        Educational Notes:
+        - Filters out timestamps that are clearly anomalous (e.g., future dates, weekend data)
+        - Handles both daily and minute-level data
+        - Prevents Qlib calendar generation issues caused by bad timestamps
+        - Logs filtering actions for debugging
+
+        Parameters
+        ----------
+        df: pd.DataFrame
+            Input DataFrame with date column
+
+        Returns
+        -------
+        pd.DataFrame
+            Cleaned DataFrame with anomalous timestamps removed
+        """
+        if df.empty or self._date_field_name not in df.columns:
+            return df
+
+        original_count = len(df)
+
+        # Convert date column to datetime if it's not already
+        df = df.copy()
+        df[self._date_field_name] = pd.to_datetime(df[self._date_field_name])
+
+        # Get date range from the data
+        min_date = df[self._date_field_name].min()
+        max_date = df[self._date_field_name].max()
+
+        # For minute-level data, check if we have data spanning multiple days
+        # If so, filter out dates that are clearly anomalous
+        if min_date.date() != max_date.date():
+            # Calculate the main date range (should be consecutive or very close)
+            date_counts = df[self._date_field_name].dt.date.value_counts().sort_index()
+
+            # Find the primary date range (consecutive dates with substantial data)
+            primary_dates = []
+            for date, count in date_counts.items():
+                # Keep dates that have substantial data (more than 10 records)
+                # This filters out anomalous single timestamps
+                if count > 10:
+                    primary_dates.append(date)
+
+            if primary_dates:
+                # Filter to keep only primary dates
+                primary_date_set = set(primary_dates)
+                df = df[df[self._date_field_name].dt.date.isin(primary_date_set)]
+
+                filtered_count = original_count - len(df)
+                if filtered_count > 0:
+                    logger.warning(
+                        f"Filtered out {filtered_count} anomalous timestamps. "
+                        f"Kept dates: {sorted(primary_dates)}"
+                    )
+
+        return df
+
     def normalize(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Main normalize method - implements BaseNormalize abstract method.
@@ -549,6 +666,12 @@ class UniversalNormalize(BaseNormalize):
         """
         if df.empty:
             logger.warning("Empty DataFrame provided to normalize method")
+            return df
+
+        # Clean anomalous timestamps that are outside expected date ranges
+        df = self._clean_anomalous_timestamps(df)
+        if df.empty:
+            logger.warning("All data filtered out due to anomalous timestamps")
             return df
 
         # Get symbol for market detection

@@ -1095,12 +1095,9 @@ class DownloadDataRequest(SQLModel):
     Educational Notes:
     - This defines what parameters users need to provide
     - Validation is automatic through Pydantic
+    - Data source is now controlled by configuration, not user input
     """
 
-    source: str = Field(
-        default="yahoo",
-        description="Data source name (currently only 'yahoo' supported)",
-    )
     stock_pool: str = Field(
         default="csi300",
         description="Stock pool to download (e.g., 'csi300', 'csi500')",

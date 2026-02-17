@@ -92,8 +92,11 @@ def download_data_source_endpoint(request: DownloadDataRequest):
     - Automatically manages workspace and cleanup
     """
     try:
+        from app.services.data_source_manager import data_source_manager
+
+        current_source = data_source_manager.get_current_source()
         logger.info(
-            f"Starting data download via pipeline: source={request.source}, symbols={len(request.stock_pool)}"
+            f"Starting data download via pipeline: source={current_source}, symbols={len(request.stock_pool)}"
         )
 
         # Execute the complete pipeline

@@ -187,12 +187,9 @@ export type DataSourceStatus = {
  * Educational Notes:
  * - This defines what parameters users need to provide
  * - Validation is automatic through Pydantic
+ * - Data source is now controlled by configuration, not user input
  */
 export type DownloadDataRequest = {
-    /**
-     * Data source name (currently only 'yahoo' supported)
-     */
-    source?: string;
     /**
      * Stock pool to download (e.g., 'csi300', 'csi500')
      */
@@ -209,6 +206,10 @@ export type DownloadDataRequest = {
      * Whether to perform incremental update (append new data only)
      */
     incremental?: boolean;
+    /**
+     * Data interval: '1d' for daily data, '1m' for minute data
+     */
+    interval?: (string | null);
 };
 
 /**

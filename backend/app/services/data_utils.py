@@ -12,6 +12,7 @@ import shutil
 from pathlib import Path
 from typing import Tuple
 from app.core.config import settings
+from app.services.data_source_manager import data_source_manager
 
 
 def clear_qlib_data_impl(
@@ -302,17 +303,21 @@ def get_data_source_status_impl() -> dict:
 
     qlib_data_path = Path(settings.QLIB_DATA_PATH)
 
+    # Get current data source from configuration
+    current_source = data_source_manager.get_current_source()
+
     # Check if qlib_data directory exists
     if not qlib_data_path.exists():
         return {
-            "source_name": "unknown",
+            "source_name": current_source,
             "data_exists": False,
             "date_range_start": None,
             "date_range_end": None,
             "instruments": None,
             "instruments_count": None,
+            "stock_pool": None,
             "features": None,
-            "data_size_mb": None,
+            "data_size_mb": 0,
             "last_updated": None,
         }
 
@@ -355,15 +360,28 @@ def get_data_source_status_impl() -> dict:
     features = None
 
     if data_exists:
-        # Parse calendar for date range
+        # Parse calendar for date range - check for different frequency files
         try:
-            calendar_file = calendars_dir / "day.txt"
-            if calendar_file.exists():
-                with open(calendar_file, "r", encoding="utf-8") as f:
-                    dates = [line.strip() for line in f if line.strip()]
-                if dates:
-                    date_start = dates[0]
-                    date_end = dates[-1]
+            # Try different calendar file types in order of preference
+            calendar_files = ["1min.txt", "day.txt"]
+            for calendar_filename in calendar_files:
+                calendar_file = calendars_dir / calendar_filename
+                if calendar_file.exists():
+                    with open(calendar_file, "r", encoding="utf-8") as f:
+                        dates = [line.strip() for line in f if line.strip()]
+                    if dates:
+                        # For minute data, extract just the date part
+                        if calendar_filename == "1min.txt":
+                            date_start = dates[0].split()[
+                                0
+                            ]  # Extract date from "2026-02-10 09:30:00"
+                            date_end = dates[-1].split()[
+                                0
+                            ]  # Extract date from "2026-02-10 14:59:00"
+                        else:
+                            date_start = dates[0]
+                            date_end = dates[-1]
+                        break
         except Exception:
             pass
 
@@ -422,13 +440,20 @@ def get_data_source_status_impl() -> dict:
             if symbol_dirs:
                 first_symbol_dir = symbol_dirs[0]
                 feature_files = list(first_symbol_dir.glob("*.bin"))
-                features = [f.stem for f in feature_files]
+                features = []
+                for f in feature_files:
+                    # Remove .day suffix if present (for minute data compatibility)
+                    feature_name = f.stem
+                    if feature_name.endswith(".day"):
+                        feature_name = feature_name[:-4]  # Remove '.day'
+                    features.append(feature_name)
+                features = list(set(features))  # Remove duplicates
                 features.sort()
                 features = features[:20] if len(features) > 20 else features
         except Exception:
             pass
     return {
-        "source_name": "yahoo" if data_exists else "unknown",
+        "source_name": current_source,
         "data_exists": data_exists,
         "data_range_start": date_start,
         "data_range_end": date_end,

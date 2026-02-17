@@ -95,6 +95,9 @@ class Settings(BaseSettings):
     def emails_enabled(self) -> bool:
         return bool(self.SMTP_HOST and self.EMAILS_FROM_EMAIL)
 
+    # Data Source Configuration
+    DATA_SOURCE: Literal["yahoo", "tushare", "akshare"] = "yahoo"  # Primary data source
+    
     # Qlib Configuration
     QLIB_REGION: Literal["cn", "us"] = (
         "cn"  # Default region for Qlib initialization (supports both CN and US markets)

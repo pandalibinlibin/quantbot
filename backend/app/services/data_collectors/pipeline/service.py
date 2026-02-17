@@ -18,6 +18,58 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 
 from app.core.config import settings
+
+
+def _filter_anomalous_timestamps(
+    df: pd.DataFrame, expected_start: str, expected_end: str
+) -> pd.DataFrame:
+    """
+    Filter out anomalous timestamps that are outside the expected date range.
+
+    This function addresses Yahoo Finance API issues where it sometimes returns
+    data outside the requested date range, causing incorrect Qlib calendar generation.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        DataFrame with DatetimeIndex containing the data
+    expected_start : str
+        Expected start date in YYYY-MM-DD format
+    expected_end : str
+        Expected end date in YYYY-MM-DD format
+
+    Returns
+    -------
+    pd.DataFrame
+        Filtered DataFrame with only data within expected date range
+    """
+    if df.empty:
+        return df
+
+    original_count = len(df)
+
+    # Convert expected dates to datetime
+    start_date = pd.to_datetime(expected_start).date()
+    end_date = pd.to_datetime(expected_end).date()
+
+    # Ensure index is datetime
+    if not isinstance(df.index, pd.DatetimeIndex):
+        df.index = pd.to_datetime(df.index)
+
+    # Filter by date range - keep only data within expected range
+    df_filtered = df[(df.index.date >= start_date) & (df.index.date <= end_date)]
+
+    filtered_count = original_count - len(df_filtered)
+    if filtered_count > 0:
+        logger.warning(
+            f"Filtered out {filtered_count} anomalous timestamps outside range "
+            f"{expected_start} to {expected_end}. Kept {len(df_filtered)} records."
+        )
+
+    return df_filtered
+
+
+from app.services.data_source_manager import data_source_manager
 from app.models import DownloadDataRequest, DownloadTaskResponse
 
 logger = logging.getLogger(__name__)
@@ -30,9 +82,17 @@ def execute_data_pipeline(request: DownloadDataRequest) -> DownloadTaskResponse:
     task_id = str(uuid.uuid4())
 
     try:
+        current_source = data_source_manager.get_current_source()
         logger.info(
-            f"Starting pipeline execution: task_id={task_id}, source={request.source}, stock_pool={request.stock_pool}, incremental={request.incremental}"
+            f"Starting pipeline execution: task_id={task_id}, source={current_source}, stock_pool={request.stock_pool}, incremental={request.incremental}"
         )
+
+        # Step 0: Check data source configuration and handle changes
+        source_changed = data_source_manager.check_and_handle_source_change()
+        if source_changed:
+            logger.info("Data source changed, existing data was cleaned up")
+            # Force full refresh if source changed
+            request.incremental = False
 
         # Step 1: Handle incremental vs full refresh
         if not request.incremental:
@@ -66,7 +126,8 @@ def execute_data_pipeline(request: DownloadDataRequest) -> DownloadTaskResponse:
             logger.info(f"Incremental update: downloading missing ranges: {ranges_str}")
 
         # Step 2: Execute data collection for all missing ranges
-        if request.source.lower() == "yahoo":
+        current_source = data_source_manager.get_current_source()
+        if current_source.lower() == "yahoo":
             success, message = _execute_yahoo_pipeline(
                 stock_pool=request.stock_pool,
                 download_ranges=download_ranges,
@@ -92,7 +153,7 @@ def execute_data_pipeline(request: DownloadDataRequest) -> DownloadTaskResponse:
             return DownloadTaskResponse(
                 task_id=task_id,
                 status="failed",
-                message=f"Unsupported data source: {request.source}",
+                message=f"Unsupported data source: {current_source}",
             )
 
     except Exception as e:
@@ -273,12 +334,30 @@ def _execute_yahoo_pipeline(
                     )
 
                     if df is not None and not df.empty:
+                        # Filter out anomalous timestamps before saving to CSV
+                        df = _filter_anomalous_timestamps(df, range_start, range_end)
+
+                        if df.empty:
+                            logger.warning(
+                                f"All data filtered out for {instrument} due to anomalous timestamps"
+                            )
+                            return instrument, False, 0
+
                         csv_file = csv_dir / f"{instrument}.csv"
 
                         if incremental and csv_file.exists():
                             # Merge with existing data
                             existing_df = pd.read_csv(
                                 csv_file, index_col=0, parse_dates=True
+                            )
+
+                            # Debug logging for incremental update
+                            logger.info(f"Incremental update for {instrument}:")
+                            logger.info(
+                                f"  New data shape: {df.shape}, dates: {df.index.min()} to {df.index.max()}"
+                            )
+                            logger.info(
+                                f"  Existing data shape: {existing_df.shape}, dates: {existing_df.index.min()} to {existing_df.index.max()}"
                             )
 
                             # Ensure both DataFrames have the same index type
@@ -293,6 +372,10 @@ def _execute_yahoo_pipeline(
                                 ~combined_df.index.duplicated(keep="last")
                             ]
                             combined_df = combined_df.sort_index()
+
+                            logger.info(
+                                f"  Combined data shape: {combined_df.shape}, dates: {combined_df.index.min()} to {combined_df.index.max()}"
+                            )
                             combined_df.to_csv(csv_file, index=True)
                         else:
                             # Save new data or overwrite
@@ -462,8 +545,14 @@ def _execute_yahoo_pipeline(
             else Path(settings.CSV_DATA_PATH) / "us_data"
         )
 
+        # Determine Qlib frequency based on interval parameter
+        qlib_freq = "1min" if interval == "1m" else "day"
+        logger.info(
+            f"Converting to Qlib format with frequency: {qlib_freq} (interval: {interval})"
+        )
+
         convert_success, convert_message = convert_csv_to_qlib_format_impl(
-            csv_dir=str(csv_dir), qlib_dir=settings.QLIB_DATA_PATH, freq="day"
+            csv_dir=str(csv_dir), qlib_dir=settings.QLIB_DATA_PATH, freq=qlib_freq
         )
         if not convert_success:
             return False, f"Qlib format conversion failed: {convert_message}"
