@@ -4300,25 +4300,6 @@ python get_data_yahoo_realtime.py --stock_pool csi300 --fields open,high,low,clo
 
 **3. 技术债务控制**:
 
-- 基于Qlib标准工作流，不重复造轮子
-- 完善的错误处理和日志记录
-- 代码结构清晰，便于维护
-
-### 🚀 下一阶段准备
-
-**第二阶段：因子工程模块** (预计2-3周):
-
-- Alpha158因子库集成
-- 自定义因子表达式编辑器
-- 因子计算和评估工具
-- 因子性能分析界面
-
-**数据源扩展** (并行开发):
-
-- Tushare数据源集成
-- AKShare数据源集成
-- 本地CSV文件导入功能
-
 ---
 
 ## 🧮 第二阶段：因子工程模块设计方案 (2026-02-03)
@@ -4524,6 +4505,350 @@ task:
   - 性能基准测试
   - 错误处理完善
   - 文档更新
+
+---
+
+## 🧮 因子工程模块完整方案 (Pipeline集成版) - 2026-02-17
+
+### 📋 方案概述
+
+基于用户最终确认的Pipeline集成架构，实现一个完全兼容Qlib Workflow的高性能因子引擎系统。
+
+#### 🎯 核心目标
+
+- **Pipeline直接集成**: 因子计算作为FactorStage直接集成到数据Pipeline中
+- **极简逻辑**: 全量数据→全量计算，增量数据→增量计算，无复杂状态检测
+- **数据库驱动**: 因子定义存储在数据库，通过前端界面管理，无用户权限区分
+- **预存储机制**: 因子数据存储为bin文件，训练时高速读取
+- **Qlib加速**: 多进程并行计算，性能提升3-5倍
+- **完整功能**: IC分析、数据下载、依赖分析等全套工具
+
+### 🏗️ 系统架构设计
+
+#### Pipeline集成架构
+
+```
+数据Pipeline流程 (简化版):
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   CollectStage  │ -> │ NormalizeStage  │ -> │   DumpStage     │ -> │  FactorStage    │
+│   数据收集       │    │   数据标准化     │    │  转换bin格式     │    │  因子计算        │
+└─────────────────┘    └─────────────────┘    └─────────────────┘    └─────────────────┘
+                                                                              │
+                                                                              ▼
+                                                                    ┌─────────────────┐
+                                                                    │  bin文件存储     │
+                                                                    │ /features/      │
+                                                                    └─────────────────┘
+```
+
+#### 核心组件架构
+
+```
+前端管理界面:
+├── 因子CRUD管理 (Factor Management)
+├── Pipeline监控 (Pipeline Monitor)
+├── 数据下载功能 (Data Download)
+├── 依赖字段显示 (Dependency Analysis)
+├── IC分析图表 (IC Analysis)
+└── Alpha158开关 (Alpha158 Toggle)
+
+Pipeline集成层:
+├── FactorStage (核心Pipeline阶段)
+├── 全量/增量自动检测 (Auto Detection)
+├── Qlib加速计算 (Qlib Acceleration)
+└── bin文件存储 (Binary Storage)
+
+后端服务层:
+├── CustomFactorHandler (Qlib兼容Handler)
+├── AcceleratedFactorEngine (高性能计算引擎)
+├── FactorAnalysisEngine (IC分析引擎)
+├── DataDownloadService (数据导出服务)
+├── FactorDependencyAnalyzer (依赖分析器)
+└── ExpressionValidator (表达式验证器)
+
+数据存储层:
+├── 因子数据库 (Factor, FactorAnalysis)
+├── bin文件存储 (/app/qlib_data/features/)
+└── 原始数据存储 (/app/qlib_data/)
+```
+
+### 📊 数据库模型设计
+
+#### 简化的Factor模型 (移除用户权限和分类)
+
+```python
+class Factor(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    name: str = Field(max_length=100, description="Factor name")
+    expression: str = Field(description="Factor expression in Qlib format")
+    description: str | None = Field(default=None, max_length=500)
+    status: FactorStatus = Field(default=FactorStatus.ACTIVE)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    # IC分析字段
+    last_ic_value: float | None = Field(default=None, description="Latest IC value")
+    last_ic_date: datetime | None = Field(default=None, description="Latest IC calculation date")
+    avg_ic_value: float | None = Field(default=None, description="Average IC value")
+    ic_ir_ratio: float | None = Field(default=None, description="IC Information Ratio")
+
+    # 计算状态字段
+    last_computed_at: datetime | None = Field(default=None, description="Last computation time")
+    computation_status: str | None = Field(default=None, description="pending/computing/completed/failed")
+    data_points_count: int | None = Field(default=None, description="Number of data points computed")
+
+    # 移除字段: created_by, category, creator (简化设计)
+```
+
+#### 因子分析结果模型
+
+```python
+class FactorAnalysis(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    factor_id: uuid.UUID = Field(foreign_key="factor.id")
+    analysis_date: datetime = Field(default_factory=datetime.utcnow)
+
+    # IC分析结果
+    ic_value: float | None = Field(default=None)
+    ic_pvalue: float | None = Field(default=None)
+    rank_ic_value: float | None = Field(default=None)
+
+    # 相关性分析结果
+    correlation_matrix: dict | None = Field(default=None, description="JSON format")
+
+    # 统计指标
+    mean_value: float | None = Field(default=None)
+    std_value: float | None = Field(default=None)
+    sharpe_ratio: float | None = Field(default=None)
+
+class FactorDependency(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    factor_id: uuid.UUID = Field(foreign_key="factor.id")
+    field_name: str = Field(description="Required data field like $close, $volume")
+    field_type: str = Field(description="price/volume/technical")
+    is_available: bool = Field(description="Whether field is available in current data")
+    description: str | None = Field(default=None)
+```
+
+### 🔧 核心组件实现规划
+
+#### 1. FactorStage (Pipeline集成核心)
+
+**文件位置**: `backend/app/services/pipeline/factor_stage.py`
+**核心功能**:
+
+- 继承Pipeline基类，作为数据Pipeline的一个阶段
+- 从workspace自动获取数据更新类型（全量/增量）
+- 简化逻辑：根据数据类型选择计算模式
+- 集成Qlib加速机制，支持多进程并行计算
+- 自动存储因子数据为bin文件格式
+
+#### 2. CustomFactorHandler (Qlib兼容)
+
+**文件位置**: `backend/app/services/custom_factor_handler.py`
+**核心功能**:
+
+- 继承Qlib的DataHandlerLP类，完全兼容Qlib Workflow
+- 从数据库动态加载活跃因子定义
+- 支持Alpha158因子库的可选集成
+- 构建符合Qlib标准的feature配置
+- 优先使用预计算的bin文件，fallback到动态计算
+
+#### 3. AcceleratedFactorEngine (高性能计算)
+
+**文件位置**: `backend/app/services/accelerated_factor_engine.py`
+**核心功能**:
+
+- 基于Qlib的多进程加速机制
+- 支持全量和增量两种计算模式
+- 因子数据存储为Qlib标准bin格式
+- 集成Qlib的缓存和优化机制
+- 性能监控和计算状态跟踪
+
+#### 4. 分析和工具服务
+
+**FactorAnalysisEngine**: IC分析、相关性分析
+**DataDownloadService**: 因子数据和原始数据下载
+**FactorDependencyAnalyzer**: 依赖数据字段分析
+**ExpressionValidator**: Qlib表达式验证
+
+### 🌐 前端界面设计
+
+#### 因子管理页面 (`frontend/src/routes/_layout/factors.tsx`)
+
+- **因子列表**: 显示所有因子，支持CRUD操作
+- **表达式编辑器**: 实时语法验证的Qlib表达式编辑
+- **Alpha158开关**: 全局Alpha158因子库集成控制
+- **计算状态**: 显示因子计算进度和状态
+
+#### Pipeline监控页面 (`frontend/src/routes/_layout/pipeline-monitor.tsx`)
+
+- **Pipeline状态**: 各阶段执行进度和状态
+- **FactorStage监控**: 因子计算专项监控
+- **配置控制**: 因子计算开关、加速设置
+- **日志查看**: 实时Pipeline执行日志
+
+#### 数据分析页面 (`frontend/src/routes/_layout/factor-analysis.tsx`)
+
+- **IC分析图表**: 时序IC值、统计指标
+- **相关性热力图**: 因子间相关性矩阵
+- **依赖分析**: 显示因子依赖的数据字段
+- **数据下载**: 多格式因子数据导出
+
+### 🔌 API设计
+
+#### 因子管理API
+
+```python
+# 基础CRUD
+POST   /api/v1/factors                    # 创建因子
+GET    /api/v1/factors                    # 获取因子列表
+PUT    /api/v1/factors/{id}               # 更新因子
+DELETE /api/v1/factors/{id}               # 删除因子
+
+# 表达式验证
+POST   /api/v1/factors/validate           # 验证Qlib表达式
+POST   /api/v1/factors/{id}/dependencies  # 分析因子依赖
+
+# Alpha158管理
+GET    /api/v1/factors/alpha158/status    # Alpha158开关状态
+POST   /api/v1/factors/alpha158/toggle    # 切换Alpha158开关
+```
+
+#### Pipeline集成API
+
+```python
+# Pipeline监控
+GET    /api/v1/pipeline/status            # Pipeline整体状态
+GET    /api/v1/pipeline/factor-stage      # FactorStage专项状态
+POST   /api/v1/pipeline/factor-config     # 更新因子计算配置
+
+# 手动触发 (开发初期使用)
+POST   /api/v1/factors/compute            # 手动触发因子计算
+GET    /api/v1/factors/compute/status     # 查询计算状态
+```
+
+#### 数据分析API
+
+```python
+# IC分析
+POST   /api/v1/factors/analyze/ic         # 触发IC分析
+GET    /api/v1/factors/{id}/ic-results    # 获取IC分析结果
+
+# 数据下载
+POST   /api/v1/factors/download           # 下载因子数据
+POST   /api/v1/data/download              # 下载原始数据
+```
+
+### 🚀 实施计划 (3周)
+
+#### 第1周: Pipeline集成和核心引擎
+
+**Day 1-2: 研究Qlib源码**
+
+- 深入研究Alpha158实现 (`qlib-source/qlib/contrib/data/handler.py`)
+- 研究qrun命令实现 (`qlib-source/qlib/workflow/`)
+- 理解Pipeline和DataHandler集成机制
+
+**Day 3-4: FactorStage实现**
+
+- 实现Pipeline集成的FactorStage类
+- 集成数据更新类型自动检测
+- 实现全量/增量计算逻辑分发
+
+**Day 5-7: AcceleratedFactorEngine**
+
+- 实现基于Qlib加速的因子计算引擎
+- 支持bin文件存储和读取
+- 集成多进程并行计算
+
+#### 第2周: Handler和服务层
+
+**Day 8-10: CustomFactorHandler**
+
+- 重构现有CustomFactorHandler
+- 实现数据库驱动的因子加载
+- 集成Alpha158可选支持
+
+**Day 11-12: 分析和工具服务**
+
+- 实现FactorAnalysisEngine (IC分析)
+- 实现DataDownloadService (数据导出)
+- 实现FactorDependencyAnalyzer (依赖分析)
+
+**Day 13-14: API端点开发**
+
+- 创建因子管理API端点
+- 实现Pipeline监控API
+- 集成数据分析API
+
+#### 第3周: 前端和集成测试
+
+**Day 15-17: 前端界面开发**
+
+- 因子管理页面 (CRUD + Alpha158开关)
+- Pipeline监控页面 (状态 + 配置)
+- 数据分析页面 (IC图表 + 下载)
+
+**Day 18-19: 系统集成测试**
+
+- Pipeline端到端测试
+- Qlib Workflow兼容性测试
+- 性能基准测试
+
+**Day 20-21: 优化和文档**
+
+- 性能优化和错误处理完善
+- API文档和用户手册
+- 部署和配置指南
+
+### ✅ 验收标准
+
+#### 功能完整性
+
+- ✅ Pipeline自动因子计算 (全量/增量)
+- ✅ 因子CRUD管理 (数据库驱动，无用户权限)
+- ✅ Alpha158集成开关
+- ✅ 数据下载功能 (因子数据 + 原始数据)
+- ✅ IC分析工具 (时序分析 + 统计指标)
+- ✅ 依赖分析 (显示所需数据字段)
+- ✅ Pipeline监控 (状态 + 配置 + 日志)
+
+#### 性能要求
+
+- ✅ 因子计算速度提升3-5倍 (Qlib加速)
+- ✅ 训练速度提升10-100倍 (预存储bin文件)
+- ✅ 支持1000+因子管理
+- ✅ 增量计算效率优化
+
+#### 系统稳定性
+
+- ✅ Qlib Workflow完全兼容
+- ✅ Pipeline集成无缝运行
+- ✅ 错误处理和恢复机制
+- ✅ 数据一致性保证
+
+### 🎯 技术优势
+
+#### 1. 极简架构
+
+- **Pipeline直接集成**: 无需复杂的数据状态检测
+- **自动触发**: 跟随数据更新自动执行因子计算
+- **逻辑清晰**: 全量→全量，增量→增量，简单明了
+
+#### 2. 高性能设计
+
+- **Qlib原生加速**: 多进程并行，GPU支持
+- **预存储机制**: bin文件格式，训练时高速读取
+- **增量优化**: 只计算新增数据，避免重复计算
+
+#### 3. 用户友好
+
+- **数据库驱动**: 通过界面管理，无需修改配置文件
+- **简化权限**: 无用户权限区分，降低复杂度
+- **完整工具链**: 从因子开发到分析的全套工具
+
+---
 
 ### 🎯 预期成果
 
