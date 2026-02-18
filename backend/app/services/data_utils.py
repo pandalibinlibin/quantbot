@@ -349,9 +349,18 @@ def get_data_source_status_impl() -> dict:
     # Get current data source from configuration
     current_source = data_source_manager.get_current_source()
 
-    # Check if either qlib_data directory exists
-    day_exists = qlib_data_path.exists()
-    min_exists = qlib_data_path_1min.exists()
+    # Check if either qlib_data directory has complete data structure
+    # A directory is considered valid only if it has calendars, instruments, and features subdirectories
+    def has_complete_data_structure(path: Path) -> bool:
+        if not path.exists():
+            return False
+        calendars = path / "calendars"
+        instruments = path / "instruments"
+        features = path / "features"
+        return calendars.exists() and instruments.exists() and features.exists()
+
+    day_exists = has_complete_data_structure(qlib_data_path)
+    min_exists = has_complete_data_structure(qlib_data_path_1min)
 
     if not day_exists and not min_exists:
         return {
