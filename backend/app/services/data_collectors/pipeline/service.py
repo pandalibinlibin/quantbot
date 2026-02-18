@@ -126,6 +126,8 @@ def execute_data_pipeline(request: DownloadDataRequest) -> DownloadTaskResponse:
             logger.info(f"Incremental update: downloading missing ranges: {ranges_str}")
 
         # Step 2: Execute data collection for all missing ranges
+        success = False
+        message = ""
         current_source = data_source_manager.get_current_source()
         if current_source.lower() == "yahoo":
             success, message = _execute_yahoo_pipeline(
@@ -135,26 +137,90 @@ def execute_data_pipeline(request: DownloadDataRequest) -> DownloadTaskResponse:
                 interval=request.interval or "1d",  # 添加这行
             )
 
-            if not success:
-                return DownloadTaskResponse(
-                    task_id=task_id,
-                    status="failed",
-                    message=f"Pipeline execution failed: {message}",
-                )
-
-            mode_text = "incremental update" if request.incremental else "full refresh"
-            return DownloadTaskResponse(
-                task_id=task_id,
-                status="completed",
-                message=f"Successfully completed {mode_text}: {message}",
-            )
+            # Yahoo pipeline completed, continue to factor computation
 
         else:
+            success = False
+            message = f"Unsupported data source: {current_source}"
+
+        # Check if data collection failed
+        if not success:
             return DownloadTaskResponse(
                 task_id=task_id,
                 status="failed",
-                message=f"Unsupported data source: {current_source}",
+                message=f"Pipeline execution failed: {message}",
             )
+
+        # Step 3: Trigger factor computation after successful data collection
+        try:
+            logger.info("=== FACTOR COMPUTATION START ===")
+            logger.info(f"Request interval: {request.interval}")
+            logger.info(f"Request incremental: {request.incremental}")
+            logger.info(f"Request start_date: {request.start_date}")
+            logger.info(f"Request end_date: {request.end_date}")
+
+            from app.services.factor_pipeline import FactorPipeline, UpdateMode
+            from app.models import Factor, FactorStatus
+            from app.core.db import engine
+            from sqlmodel import Session, select
+
+            # Get active factors from database
+            with Session(engine) as session:
+                statement = select(Factor).where(Factor.status == FactorStatus.ACTIVE)
+                active_factors = session.exec(statement).all()
+                factor_names = [factor.name for factor in active_factors]
+
+            logger.info(f"Active factors found: {factor_names}")
+
+            if factor_names:
+                # Convert interval to factor engine frequency format
+                factor_freq = "1min" if request.interval == "1m" else "day"
+                logger.info(
+                    f"Factor frequency: {factor_freq} (from interval: {request.interval})"
+                )
+
+                # Initialize factor pipeline with correct frequency
+                factor_pipeline = FactorPipeline(freq=factor_freq, max_workers=4)
+                logger.info(f"FactorPipeline initialized with freq={factor_freq}")
+
+                # Determine update mode based on incremental flag
+                data_collector_mode = "incremental" if request.incremental else "full"
+
+                # Trigger factor computation
+                factor_result = factor_pipeline.sync_with_data_collector(
+                    factor_names=factor_names,
+                    data_collector_mode=data_collector_mode,
+                    start_time=request.start_date,
+                    end_time=request.end_date,
+                    parallel=True,
+                )
+
+                if factor_result.get("successful", 0) > 0:
+                    logger.info(
+                        f"Factor computation completed: {factor_result['successful']} successful, {factor_result.get('failed', 0)} failed"
+                    )
+                    # Update success message to include factor computation
+                    message = f"{message} + Factor computation: {factor_result['successful']} factors computed"
+                else:
+                    logger.warning(
+                        f"Factor computation failed: {factor_result.get('error', 'Unknown error')}"
+                    )
+                    message = f"{message} (Factor computation failed)"
+            else:
+                logger.info("No active factors found, skipping factor computation")
+
+        except Exception as factor_e:
+            logger.error(f"Factor computation failed: {factor_e}")
+            # Don't fail the entire pipeline if factor computation fails
+            message = f"{message} (Factor computation error: {str(factor_e)})"
+
+        # Step 4: Return final result
+        mode_text = "incremental update" if request.incremental else "full refresh"
+        return DownloadTaskResponse(
+            task_id=task_id,
+            status="completed",
+            message=f"Successfully completed {mode_text}: {message}",
+        )
 
     except Exception as e:
         error_msg = f"Pipeline execution failed: {str(e)}"
@@ -177,20 +243,20 @@ def _get_missing_date_ranges(
         List of (start_date, end_date) tuples for missing periods
     """
     try:
-        import qlib
-        from qlib import init
         from qlib.data import D
+        from app.services.qlib_init_service import get_qlib_init_service
 
-        # Initialize Qlib to check existing data
+        # Check if data directories exist
         qlib_data_path = Path(settings.QLIB_DATA_PATH)
-        if not qlib_data_path.exists():
+        qlib_data_path_1min = Path(settings.QLIB_DATA_PATH_1MIN)
+        if not qlib_data_path.exists() and not qlib_data_path_1min.exists():
             logger.info("No existing Qlib data found, will download full range")
             return [(requested_start, requested_end)]
 
         try:
-            # Determine region based on stock_pool
-            region = "cn" if stock_pool.lower() in ["csi300", "csi500"] else "us"
-            init(provider_uri=str(qlib_data_path), region=region)
+            # Initialize Qlib using centralized service (ensures single initialization)
+            qlib_service = get_qlib_init_service()
+            qlib_service.initialize()
 
             # Get trading calendar
             calendar = D.calendar(freq="day")
@@ -343,7 +409,9 @@ def _execute_yahoo_pipeline(
                             )
                             return instrument, False, 0
 
-                        csv_file = csv_dir / f"{instrument}.csv"
+                        # Use normalized instrument format for consistency with Qlib
+                        normalized_instrument = collector.normalize_symbol(instrument)
+                        csv_file = csv_dir / f"{normalized_instrument}.csv"
 
                         if incremental and csv_file.exists():
                             # Merge with existing data
@@ -467,21 +535,13 @@ def _execute_yahoo_pipeline(
         normalized_dir = csv_dir.parent / "normalized"
         normalized_dir.mkdir(parents=True, exist_ok=True)
 
-        # Initialize Qlib before normalization to get trading calendar
+        # Initialize Qlib using the centralized service (ensures single initialization)
         try:
-            import qlib
-            from qlib import init
+            from app.services.qlib_init_service import get_qlib_init_service
 
-            # Initialize Qlib with the target data directory
-            qlib_data_path = Path(settings.QLIB_DATA_PATH)
-            qlib_data_path.mkdir(parents=True, exist_ok=True)
-
-            # Determine region based on stock_pool
-            region = "cn" if stock_pool.lower() in ["csi300", "csi500"] else "us"
-            init(provider_uri=str(qlib_data_path), region=region)
-            logger.info(
-                f"Qlib initialized successfully for calendar access (region: {region})"
-            )
+            qlib_service = get_qlib_init_service()
+            qlib_service.initialize()
+            logger.info("Qlib initialized via centralized service for calendar access")
 
         except Exception as qlib_error:
             logger.warning(
@@ -551,8 +611,9 @@ def _execute_yahoo_pipeline(
             f"Converting to Qlib format with frequency: {qlib_freq} (interval: {interval})"
         )
 
+        # Let convert_csv_to_qlib_format_impl auto-select the correct directory based on frequency
         convert_success, convert_message = convert_csv_to_qlib_format_impl(
-            csv_dir=str(csv_dir), qlib_dir=settings.QLIB_DATA_PATH, freq=qlib_freq
+            csv_dir=str(csv_dir), freq=qlib_freq
         )
         if not convert_success:
             return False, f"Qlib format conversion failed: {convert_message}"
@@ -563,6 +624,7 @@ def _execute_yahoo_pipeline(
         try:
             import json
             from datetime import datetime
+            from app.services.data_utils import get_qlib_dir_for_freq
 
             metadata = {
                 "source": "yahoo",
@@ -575,12 +637,14 @@ def _execute_yahoo_pipeline(
                 "date_ranges": [(start, end) for start, end in download_ranges],
             }
 
-            metadata_file = Path(settings.QLIB_DATA_PATH) / "metadata.json"
+            # Save metadata to the correct directory based on frequency
+            qlib_data_dir = get_qlib_dir_for_freq(qlib_freq)
+            metadata_file = Path(qlib_data_dir) / "metadata.json"
             with open(metadata_file, "w") as f:
                 json.dump(metadata, f, indent=2)
 
             logger.info(
-                f"Saved metadata: stock_pool={stock_pool}, market={market_type}"
+                f"Saved metadata: stock_pool={stock_pool}, market={market_type}, dir={qlib_data_dir}"
             )
 
         except Exception as e:

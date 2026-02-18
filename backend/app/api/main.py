@@ -8,6 +8,7 @@ from app.api.routes import (
     utils,
     qlib_workflow,
     data_source,
+    factors,
 )
 from app.core.config import settings
 
@@ -20,6 +21,7 @@ api_router.include_router(qlib_workflow.router)
 api_router.include_router(
     data_source.router, prefix="/data-source", tags=["data-source"]
 )
+api_router.include_router(factors.router, prefix="/factors", tags=["factors"])
 
 if settings.ENVIRONMENT == "local":
     api_router.include_router(private.router)

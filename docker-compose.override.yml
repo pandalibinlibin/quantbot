@@ -85,6 +85,7 @@ services:
       - ./backend/app:/app/app
       - ./backend/tests:/app/tests
       - qlib-data:/app/qlib_data
+      - qlib-data-1min:/app/qlib_data_1min
       - ./backend/scripts:/app/scripts:cached
       - ./temp_scripts:/app/temp_scripts:cached
     environment:
@@ -155,6 +156,8 @@ networks:
 
 volumes:
   qlib-data:
+    driver: local
+  qlib-data-1min:
     driver: local
   redis-data:
     driver: local

@@ -226,6 +226,15 @@ class FactorStatus(str, Enum):
     INACTIVE = "inactive"
 
 
+class ComputationStatus(str, Enum):
+    """Enumeration of factor computation status"""
+
+    PENDING = "pending"
+    COMPUTING = "computing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
 # Shared properties for Factor
 class FactorBase(SQLModel):
     name: str = Field(max_length=100, description="Factor name")
@@ -233,9 +242,27 @@ class FactorBase(SQLModel):
     description: str | None = Field(
         default=None, max_length=500, description="Factor description"
     )
-    category: FactorCategory = Field(description="Factor category")
     status: FactorStatus = Field(
         default=FactorStatus.ACTIVE, description="Factor status"
+    )
+
+    # IC analysis fields
+    last_ic_value: float | None = Field(default=None, description="Latest IC value")
+    last_ic_date: datetime | None = Field(
+        default=None, description="Latest IC calculation date"
+    )
+    avg_ic_value: float | None = Field(default=None, description="Average IC value")
+    ic_ir_ratio: float | None = Field(default=None, description="IC Information Ratio")
+
+    # Computation status fields
+    last_computed_at: datetime | None = Field(
+        default=None, description="Last computation time"
+    )
+    computation_status: ComputationStatus | None = Field(
+        default=None, description="Factor computation status"
+    )
+    data_points_count: int | None = Field(
+        default=None, description="Number of data points computed"
     )
 
 
@@ -249,7 +276,6 @@ class FactorUpdate(SQLModel):
     name: str | None = Field(default=None, max_length=100)
     expression: str | None = Field(default=None)
     description: str | None = Field(default=None, max_length=500)
-    category: FactorCategory | None = Field(default=None)
     status: FactorStatus | None = Field(default=None)
 
 
@@ -269,6 +295,71 @@ class FactorPublic(FactorBase):
     created_at: datetime
     updated_at: datetime
     created_by: uuid.UUID
+
+
+# ==========================================================
+# Factor Analysis Module
+# ==========================================================
+
+
+class FactorAnalysis(SQLModel, table=True):
+    """Factor analysis results storage"""
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    factor_id: uuid.UUID = Field(
+        foreign_key="factor.id", description="Related factor ID"
+    )
+    analysis_date: datetime = Field(
+        default_factory=datetime.utcnow, description="Analysis execution date"
+    )
+
+    # IC analysis results
+    ic_value: float | None = Field(
+        default=None, description="Information Coefficient value"
+    )
+    ic_pvalue: float | None = Field(default=None, description="IC statistical p-value")
+    rank_ic_value: float | None = Field(default=None, description="Rank IC value")
+    rank_ic_pvalue: float | None = Field(default=None, description="Rank IC p-value")
+
+    # Correlation analysis results
+    correlation_matrix: str | None = Field(
+        default=None, description="Correlation matrix in JSON format"
+    )
+
+    # Statistical metrics
+    mean_value: float | None = Field(default=None, description="Factor mean value")
+    std_value: float | None = Field(
+        default=None, description="Factor standard deviation"
+    )
+    sharpe_ratio: float | None = Field(default=None, description="Factor Sharpe ratio")
+
+    # Metadata
+    analysis_period_start: datetime | None = Field(
+        default=None, description="Analysis period start date"
+    )
+    analysis_period_end: datetime | None = Field(
+        default=None, description="Analysis period end date"
+    )
+    sample_count: int | None = Field(
+        default=None, description="Number of samples analyzed"
+    )
+
+
+class FactorDependency(SQLModel, table=True):
+    """Factor data field dependencies"""
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    factor_id: uuid.UUID = Field(
+        foreign_key="factor.id", description="Related factor ID"
+    )
+    field_name: str = Field(
+        max_length=50, description="Required data field like $close, $volume"
+    )
+    is_available: bool = Field(description="Whether field is available in current data")
+    description: str | None = Field(
+        default=None, max_length=200, description="Field description"
+    )
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 # ==========================================================

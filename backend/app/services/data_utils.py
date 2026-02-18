@@ -16,19 +16,23 @@ from app.services.data_source_manager import data_source_manager
 
 
 def clear_qlib_data_impl(
-    qlib_data_path: str = "/app/qlib_data", csv_data_path: str = "/app/csv_data"
+    qlib_data_path: str = "/app/qlib_data",
+    qlib_data_path_1min: str = "/app/qlib_data_1min",
+    csv_data_path: str = "/app/csv_data",
 ) -> Tuple[bool, str, float]:
     """
-    Clear both qlib_data and csv_data directories for complete data source switching.
+    Clear all qlib_data directories (day and 1min) and csv_data for complete data source switching.
 
     Educational Notes:
-    - Clears both final data (.bin) and intermediate data (CSV)
+    - Clears both day-level and minute-level qlib data directories
+    - Clears intermediate CSV data
     - Ensures complete clean state when switching data sources
-    - Calculates total freed space from both directories
-    - Implements safety checks for both paths
+    - Calculates total freed space from all directories
+    - Implements safety checks for all paths
 
     Args:
-        qlib_data_path: Path to qlib data directory
+        qlib_data_path: Path to day-level qlib data directory
+        qlib_data_path_1min: Path to minute-level qlib data directory
         csv_data_path: Path to CSV data directory
 
     Returns:
@@ -38,61 +42,66 @@ def clear_qlib_data_impl(
     import shutil
     from pathlib import Path
 
+    def calculate_dir_size(dir_path: Path) -> float:
+        """Calculate directory size in bytes."""
+        size = 0.0
+        if dir_path.exists():
+            for dirpath, dirnames, filenames in os.walk(dir_path):
+                for filename in filenames:
+                    filepath = os.path.join(dirpath, filename)
+                    if os.path.exists(filepath):
+                        size += os.path.getsize(filepath)
+        return size
+
+    def clear_dir_contents(dir_path: Path) -> None:
+        """Clear directory contents without removing the directory itself."""
+        if dir_path.exists():
+            for item in dir_path.iterdir():
+                if item.is_dir():
+                    shutil.rmtree(item)
+                else:
+                    item.unlink()
+
     try:
         qlib_dir = Path(qlib_data_path)
+        qlib_dir_1min = Path(qlib_data_path_1min)
         csv_dir = Path(csv_data_path)
 
         # Calculate total size before clearing
-        total_size_mb = 0.0
-
-        # Calculate qlib_data size
-        if qlib_dir.exists():
-            for dirpath, dirnames, filenames in os.walk(qlib_dir):
-                for filename in filenames:
-                    filepath = os.path.join(dirpath, filename)
-                    if os.path.exists(filepath):
-                        total_size_mb += os.path.getsize(filepath)
-
-        # Calculate csv_data size
-        if csv_dir.exists():
-            for dirpath, dirnames, filenames in os.walk(csv_dir):
-                for filename in filenames:
-                    filepath = os.path.join(dirpath, filename)
-                    if os.path.exists(filepath):
-                        total_size_mb += os.path.getsize(filepath)
+        total_size_bytes = 0.0
+        total_size_bytes += calculate_dir_size(qlib_dir)
+        total_size_bytes += calculate_dir_size(qlib_dir_1min)
+        total_size_bytes += calculate_dir_size(csv_dir)
 
         # Convert to MB
-        total_size_mb = round(total_size_mb / (1024 * 1024), 2)
+        total_size_mb = round(total_size_bytes / (1024 * 1024), 2)
 
         # Safety checks
         if not qlib_data_path.endswith("qlib_data"):
             return False, "Invalid qlib_data path for safety", 0.0
 
+        if not qlib_data_path_1min.endswith("qlib_data_1min"):
+            return False, "Invalid qlib_data_1min path for safety", 0.0
+
         if not csv_data_path.endswith("csv_data"):
             return False, "Invalid csv_data path for safety", 0.0
 
-        # Clear qlib_data directory contents (not the directory itself due to Docker mount)
-        if qlib_dir.exists():
-            for item in qlib_dir.iterdir():
-                if item.is_dir():
-                    shutil.rmtree(item)
-                else:
-                    item.unlink()
+        # Clear qlib_data directory contents (day-level data)
+        clear_dir_contents(qlib_dir)
+
+        # Clear qlib_data_1min directory contents (minute-level data)
+        clear_dir_contents(qlib_dir_1min)
 
         # Clear csv_data directory contents
         if csv_dir.exists():
-            for item in csv_dir.iterdir():
-                if item.is_dir():
-                    shutil.rmtree(item)
-                else:
-                    item.unlink()
+            clear_dir_contents(csv_dir)
         else:
             # Create csv_data directory if it doesn't exist
             csv_dir.mkdir(parents=True, exist_ok=True)
 
         return (
             True,
-            f"Successfully cleared {total_size_mb} MB from both qlib_data and csv_data directories",
+            f"Successfully cleared {total_size_mb} MB from qlib_data, qlib_data_1min, and csv_data directories",
             total_size_mb,
         )
 
@@ -176,9 +185,11 @@ def execute_yahoo_data_collector_impl(
 
 
 def clear_qlib_data() -> Tuple[bool, str, float]:
-    """Clear both qlib_data and csv_data directories using configuration."""
+    """Clear all qlib_data directories (day and 1min) and csv_data using configuration."""
     return clear_qlib_data_impl(
-        qlib_data_path=settings.QLIB_DATA_PATH, csv_data_path=settings.CSV_DATA_PATH
+        qlib_data_path=settings.QLIB_DATA_PATH,
+        qlib_data_path_1min=settings.QLIB_DATA_PATH_1MIN,
+        csv_data_path=settings.CSV_DATA_PATH,
     )
 
 
@@ -199,18 +210,44 @@ def execute_yahoo_data_collector(
     )
 
 
+def get_qlib_dir_for_freq(freq: str) -> str:
+    """
+    Get the appropriate Qlib data directory based on frequency.
+
+    Educational Notes:
+    - Qlib recommends using separate directories for different frequencies
+    - Day-level data goes to QLIB_DATA_PATH
+    - Minute-level data goes to QLIB_DATA_PATH_1MIN
+
+    Args:
+        freq: Data frequency ('day' or '1min')
+
+    Returns:
+        Path to the appropriate Qlib data directory
+    """
+    if freq == "1min":
+        return settings.QLIB_DATA_PATH_1MIN
+    else:
+        return settings.QLIB_DATA_PATH
+
+
 def convert_csv_to_qlib_format_impl(
     csv_dir: str = "/app/csv_data/cn_data",
-    qlib_dir: str = "/app/qlib_data",
+    qlib_dir: str = None,
     freq: str = "day",
 ) -> Tuple[bool, str]:
     """
     Convert CSV data to Qlib .bin format using Qlib's dump_bin utility.
 
+    Educational Notes:
+    - Automatically selects the correct output directory based on frequency
+    - Day data goes to QLIB_DATA_PATH, minute data goes to QLIB_DATA_PATH_1MIN
+    - This follows Qlib's official recommendation for multi-frequency data
+
     Args:
         csv_dir: Directory containing CSV files
-        qlib_dir: Target directory for Qlib .bin data
-        freq: Data frequency ('day')
+        qlib_dir: Target directory for Qlib .bin data (auto-selected if None)
+        freq: Data frequency ('day' or '1min')
 
     Returns:
         Tuple of (success, message)
@@ -218,6 +255,10 @@ def convert_csv_to_qlib_format_impl(
     import subprocess
 
     try:
+        # Auto-select qlib_dir based on frequency if not specified
+        if qlib_dir is None:
+            qlib_dir = get_qlib_dir_for_freq(freq)
+
         # Ensure directory exist
         source_path = Path(csv_dir)
         qlib_path = Path(qlib_dir)
@@ -272,7 +313,7 @@ def convert_csv_to_qlib_format_impl(
 
             return (
                 True,
-                f"Successfully converted {len(csv_files)} CSV files to Qlib format: {stock_count} stocks",
+                f"Successfully converted {len(csv_files)} CSV files to Qlib format ({freq}): {stock_count} stocks → {qlib_path}",
             )
         else:
             return False, f"Qlib conversion failed: {result.stderr}"
@@ -298,16 +339,21 @@ def get_data_source_status_impl() -> dict:
     - Implements main business logic for data status analysis
     - Uses helper functions for specific parsing tasks
     - Returns dict that can be converted to DataSourceStatus model
+    - Checks both day-level and minute-level data directories
     """
     import pickle
 
     qlib_data_path = Path(settings.QLIB_DATA_PATH)
+    qlib_data_path_1min = Path(settings.QLIB_DATA_PATH_1MIN)
 
     # Get current data source from configuration
     current_source = data_source_manager.get_current_source()
 
-    # Check if qlib_data directory exists
-    if not qlib_data_path.exists():
+    # Check if either qlib_data directory exists
+    day_exists = qlib_data_path.exists()
+    min_exists = qlib_data_path_1min.exists()
+
+    if not day_exists and not min_exists:
         return {
             "source_name": current_source,
             "data_exists": False,
@@ -321,20 +367,28 @@ def get_data_source_status_impl() -> dict:
             "last_updated": None,
         }
 
-    # Calculate directory size
+    # Calculate directory size for both directories
     total_size = 0
-    for dirpath, dirnames, filenames in os.walk(qlib_data_path):
-        for filename in filenames:
-            filepath = os.path.join(dirpath, filename)
-            if os.path.exists(filepath):
-                total_size += os.path.getsize(filepath)
+    for data_path in [qlib_data_path, qlib_data_path_1min]:
+        if data_path.exists():
+            for dirpath, dirnames, filenames in os.walk(data_path):
+                for filename in filenames:
+                    filepath = os.path.join(dirpath, filename)
+                    if os.path.exists(filepath):
+                        total_size += os.path.getsize(filepath)
 
     data_size_mb = round(total_size / (1024 * 1024), 2) if total_size > 0 else 0
 
-    # Check for Qlib standard directories
-    calendars_dir = qlib_data_path / "calendars"
-    instruments_dir = qlib_data_path / "instruments"
-    features_dir = qlib_data_path / "features"
+    # Check for Qlib standard directories - prefer 1min data if available
+    # (since 1min data is more recent and has complete structure)
+    if min_exists:
+        calendars_dir = qlib_data_path_1min / "calendars"
+        instruments_dir = qlib_data_path_1min / "instruments"
+        features_dir = qlib_data_path_1min / "features"
+    else:
+        calendars_dir = qlib_data_path / "calendars"
+        instruments_dir = qlib_data_path / "instruments"
+        features_dir = qlib_data_path / "features"
 
     data_exists = all(
         [calendars_dir.exists(), instruments_dir.exists(), features_dir.exists()]
@@ -434,22 +488,35 @@ def get_data_source_status_impl() -> dict:
         except Exception:
             pass
 
-        # Parse features
+        # Parse features from both day and 1min directories
         try:
-            symbol_dirs = [d for d in features_dir.iterdir() if d.is_dir()]
-            if symbol_dirs:
-                first_symbol_dir = symbol_dirs[0]
-                feature_files = list(first_symbol_dir.glob("*.bin"))
-                features = []
-                for f in feature_files:
-                    # Remove .day suffix if present (for minute data compatibility)
-                    feature_name = f.stem
-                    if feature_name.endswith(".day"):
-                        feature_name = feature_name[:-4]  # Remove '.day'
-                    features.append(feature_name)
-                features = list(set(features))  # Remove duplicates
-                features.sort()
-                features = features[:20] if len(features) > 20 else features
+            features = []
+            features_dirs_to_check = []
+
+            # Add 1min features directory if exists
+            features_dir_1min = qlib_data_path_1min / "features"
+            if features_dir_1min.exists():
+                features_dirs_to_check.append(features_dir_1min)
+
+            # Add day features directory if exists
+            features_dir_day = qlib_data_path / "features"
+            if features_dir_day.exists():
+                features_dirs_to_check.append(features_dir_day)
+
+            for feat_dir in features_dirs_to_check:
+                symbol_dirs = [d for d in feat_dir.iterdir() if d.is_dir()]
+                if symbol_dirs:
+                    first_symbol_dir = symbol_dirs[0]
+                    feature_files = list(first_symbol_dir.glob("*.bin"))
+                    for f in feature_files:
+                        # Extract feature name with frequency suffix
+                        # e.g., "close.1min.bin" -> "close.1min", "close.day.bin" -> "close.day"
+                        feature_name = f.stem  # "close.1min" or "close.day"
+                        features.append(feature_name)
+
+            features = list(set(features))  # Remove duplicates
+            features.sort()
+            features = features[:20] if len(features) > 20 else features
         except Exception:
             pass
     return {

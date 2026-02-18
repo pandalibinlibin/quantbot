@@ -14,9 +14,13 @@ class QlibSettings(BaseSettings):
     These settings control how Qlib is initialized and used.
     """
 
-    # Qlib data directory
-    # This is where Qlib stores market data in binary format
+    # Qlib data directory for day-level data
+    # This is where Qlib stores daily market data in binary format
     QLIB_DATA_DIR: str = "/app/qlib_data"
+
+    # Qlib data directory for minute-level data
+    # Separate directory per Qlib official recommendation for multi-frequency data
+    QLIB_DATA_DIR_1MIN: str = "/app/qlib_data_1min"
 
     # Qlib region: "cn" for China market, "us" for US market
     QLIB_REGION: str = "cn"

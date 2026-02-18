@@ -42,232 +42,245 @@ class CustomFactorHandler(DataHandlerLP):
 
     def __init__(
         self,
-        start_time: str,
-        end_time: str,
-        fit_start_time: str,
-        fit_end_time: str,
-        instruments: Union[str, List[str]] = "csi300",
-        custom_factors: Optional[List[Dict[str, str]]] = None,
-        include_basic_factors: bool = True,
-        factor_db_service=None,  # Will be injected for database access
-        infer_processors: Optional[List] = None,
-        learn_processors: Optional[List] = None,
-        shared_processors: Optional[List] = None,
+        instruments="csi300",
+        start_time=None,
+        end_time=None,
+        freq="day",
+        infer_processors=[],
+        learn_processors=None,
+        fit_start_time=None,
+        fit_end_time=None,
+        process_type=None,
+        filter_pipe=None,
+        inst_processors=None,
+        enable_alpha158=False,  # Alpha158 integration switch
         **kwargs,
     ):
         """
-        Initialize Custom Factor Handler with database support
+        Initialize Custom Factor Handler following Alpha158 pattern
 
         Educational Notes:
-        - factor_db_service: Database service for loading global factors
-        - custom_factors: Direct factor input (for testing/fallback)
-        - Dependency injection pattern for better testability
-        - All factors are global (no user isolation needed)
+        - Follows Alpha158 implementation pattern exactly
+        - Uses QlibDataLoader for standard Qlib data loading
+        - Supports database-driven custom factors + Alpha158 integration
+        - Implements check_transform_proc for processor validation
 
         Args:
-            start_time: Start time for data range (e.g., "2020-01-01")
-            end_time: End time for data range (e.g., "2023-12-31")
-            fit_start_time: Start time for fitting processors
-            fit_end_time: End time for fitting processors
-            instruments: Stock instruments or universe name
-            custom_factors: Direct custom factor definitions (fallback)
-                Format: [{"name": "factor_name", "expression": "qlib_expression"}]
-            include_basic_factors: Whether to include basic price/volume factors
-            factor_db_service: Database service for factor management
+            instruments: Stock universe (e.g., "csi300", "csi500")
+            start_time: Start time for data range
+            end_time: End time for data range
+            freq: Data frequency ("day", "1min", etc.)
             infer_processors: Processors for inference phase
             learn_processors: Processors for learning phase
-            shared_processors: Processors shared between phases
+            fit_start_time: Start time for fitting processors
+            fit_end_time: End time for fitting processors
+            process_type: Processing type (inherited from DataHandlerLP)
+            filter_pipe: Data filtering pipeline
+            inst_processors: Instrument processors
+            enable_alpha158: Whether to include Alpha158 factors
             **kwargs: Additional arguments
         """
+        # Import check_transform_proc following Alpha158 pattern
+        from qlib.contrib.data.handler import check_transform_proc
 
-        # Store configuration
-        self.include_basic_factors = include_basic_factors
-        self.factor_db_service = factor_db_service
+        # Store Alpha158 integration flag
+        self.enable_alpha158 = enable_alpha158
 
-        # Load custom factors from database or use provided ones
-        self.custom_factors = self._load_custom_factors(custom_factors)
+        # Process processors following Alpha158 pattern
+        if learn_processors is None:
+            # Use default learn processors like Alpha158
+            learn_processors = [
+                {"class": "DropnaLabel"},
+                {"class": "CSZScoreNorm", "kwargs": {"fields_group": "label"}},
+            ]
 
-        # Validate custom factors
-        self._validate_custom_factors()
-
-        # Build factor field definitions (following Alpha158 pattern)
-        self._build_factor_fields()
-
-        logger.info(
-            f"CustomFactorHandler initialized with {len(self.get_feature_names())} factors"
+        infer_processors = check_transform_proc(
+            infer_processors, fit_start_time, fit_end_time
         )
-        logger.info(f"Custom factors: {len(self.custom_factors)}")
+        learn_processors = check_transform_proc(
+            learn_processors, fit_start_time, fit_end_time
+        )
 
-        # Initialize parent DataHandlerLP
+        # Create data_loader following Alpha158 pattern
+        data_loader = {
+            "class": "QlibDataLoader",
+            "kwargs": {
+                "config": {
+                    "feature": self.get_feature_config(),
+                    "label": kwargs.pop("label", self.get_label_config()),
+                },
+                "filter_pipe": filter_pipe,
+                "freq": freq,
+                "inst_processors": inst_processors,
+            },
+        }
+
+        # Initialize parent DataHandlerLP following Alpha158 pattern
         super().__init__(
+            instruments=instruments,
             start_time=start_time,
             end_time=end_time,
-            fit_start_time=fit_start_time,
-            fit_end_time=fit_end_time,
-            instruments=instruments,
-            infer_processors=infer_processors,
+            data_loader=data_loader,
             learn_processors=learn_processors,
-            shared_processors=shared_processors,
+            infer_processors=infer_processors,
+            process_type=process_type,
             **kwargs,
         )
 
-    def _load_custom_factors(
-        self, fallback_factors: Optional[List[Dict[str, str]]]
-    ) -> List[Dict[str, str]]:
+        logger.info(f"CustomFactorHandler initialized with Alpha158={enable_alpha158}")
+
+    def get_feature_config(self):
         """
-        Load custom factors from database or use fallback
+        Get feature configuration combining Alpha158 and custom factors
 
         Educational Notes:
-        - Database-first approach: Try to load from DB, fallback to direct input
-        - This pattern allows both programmatic and UI-driven factor management
-        - All factors are global (no user isolation)
-        - Future: Will integrate with FactorExpressionManager service
-
-        Args:
-            fallback_factors: Fallback factors if database loading fails
+        - Follows Alpha158DL.get_feature_config() pattern exactly
+        - Combines Alpha158 factors (if enabled) with database custom factors
+        - Returns list of Qlib expression strings
+        - Database factors are loaded from Factor table with status=ACTIVE
 
         Returns:
-            List of custom factor definitions
+            List of factor expression strings in Qlib format
         """
-        if self.factor_db_service:
+        logger.info("Building feature configuration...")
+
+        feature_expressions = []
+
+        # Add Alpha158 factors if enabled
+        if self.enable_alpha158:
+            logger.info("Loading Alpha158 factors...")
             try:
-                # TODO: Implement database loading in next steps
-                # factors = self.factor_db_service.get_all_factors()
-                logger.info("Database factor loading will be implemented in step 2")
-                return fallback_factors or []
+                # Import Alpha158DL to get standard Alpha158 factors
+                from qlib.contrib.data.loader import Alpha158DL
+
+                # Get Alpha158 standard configuration
+                alpha158_config = Alpha158DL.get_feature_config()
+                feature_expressions.extend(alpha158_config)
+
+                logger.info(f"Added {len(alpha158_config)} Alpha158 factors")
             except Exception as e:
-                logger.warning(f"Failed to load factors from database: {e}")
-                return fallback_factors or []
-        else:
-            logger.info("Using fallback factors (no database service)")
-            return fallback_factors or []
+                logger.error(f"Failed to load Alpha158 factors: {e}")
 
-    def _validate_custom_factors(self) -> None:
+        # Add custom factors from database
+        custom_factors = self._load_custom_factors_from_db()
+        if custom_factors:
+            custom_expressions = [factor["expression"] for factor in custom_factors]
+            feature_expressions.extend(custom_expressions)
+            logger.info(f"Added {len(custom_expressions)} custom factors from database")
+
+        logger.info(f"Total feature expressions: {len(feature_expressions)}")
+        return feature_expressions
+
+    def _load_custom_factors_from_db(self):
         """
-        Validate custom factor definitions
+        Load custom factors from database
 
         Educational Notes:
-        - Ensures each factor has required fields
-        - Validates factor names are unique
-        - Prevents conflicts with built-in factor names
-        - TODO: Add Qlib expression syntax validation in step 3
+        - Loads all active factors from Factor table
+        - Returns list of factor dictionaries with name and expression
+        - This will be enhanced with actual database integration later
+        - For now, returns empty list as placeholder
+
+        Returns:
+            List of factor dictionaries: [{"name": "factor_name", "expression": "qlib_expr"}]
         """
-        factor_names = set()
+        try:
+            # Import database dependencies
+            from sqlmodel import Session, select
+            from ..core.db import engine
+            from ..models import Factor, FactorStatus
 
-        # Reserved names for basic factors
-        reserved_names = {
-            "close",
-            "open",
-            "high",
-            "low",
-            "volume",
-            "intraday_return",
-            "volatility_proxy",
-            "volume_ratio",
-        }
+            logger.info("Loading custom factors from database...")
 
-        for i, factor in enumerate(self.custom_factors):
-            if not isinstance(factor, dict):
-                raise ValueError(f"Custom factor {i} must be a dictionary")
+            # Create database session
+            with Session(engine) as session:
+                # Query active factors from database
+                statement = select(Factor).where(Factor.status == FactorStatus.ACTIVE)
+                factors = session.exec(statement).all()
 
-            if "name" not in factor:
-                raise ValueError(f"Custom factor {i} missing 'name' field")
+                # Convert to factor dictionaries
+                factor_list = []
+                for factor in factors:
+                    factor_dict = {
+                        "name": factor.name,
+                        "expression": factor.expression,
+                        "description": factor.description,
+                        "id": str(factor.id),
+                    }
+                    factor_list.append(factor_dict)
 
-            if "expression" not in factor:
-                raise ValueError(f"Custom factor {i} missing 'expression' field")
+                logger.info(f"Loaded {len(factor_list)} active factors from database")
 
-            # Check for duplicate names
-            name = factor["name"]
-            if name in factor_names:
-                raise ValueError(f"Duplicate factor name: {name}")
+                # Log factor names for debugging
+                if factor_list:
+                    factor_names = [f["name"] for f in factor_list]
+                    logger.info(f"Factor names: {factor_names}")
 
-            # Check for reserved names
-            if name in reserved_names:
-                raise ValueError(f"Factor name '{name}' is reserved")
+                return factor_list
 
-            factor_names.add(name)
-            logger.debug(f"Validated custom factor: {name}")
+        except Exception as e:
+            logger.error(f"Failed to load custom factors from database: {e}")
+            logger.warning("Falling back to empty factor list")
+            return []
 
-    def _build_factor_fields(self) -> None:
+    def get_label_config(self):
         """
-        Build factor field definitions following Qlib conventions
+        Get label configuration for target prediction
 
         Educational Notes:
-        - Qlib DataHandlers define factors as expression lists
-        - Each factor is a string expression in Qlib syntax
-        - Features and labels are defined separately
-        - This follows the Alpha158 implementation pattern
+        - Follows Alpha158 standard label configuration
+        - Predicts next-day return: (close_t+1 / close_t) - 1
+        - Uses Ref($close, -1) to get next day's close price
+        - Standard format for supervised learning in quantitative finance
+
+        Returns:
+            List of label expression strings in Qlib format
         """
-        # Basic price and volume factors (similar to Alpha158 basics)
-        basic_factors = []
-        if self.include_basic_factors:
-            basic_factors = [
-                # Basic OHLCV data
-                "$close",
-                "$open",
-                "$high",
-                "$low",
-                "$volume",
-                # Simple derived factors
-                "$close/$open",  # Intraday return
-                "($high-$low)/$close",  # Volatility proxy
-                "$volume/Mean($volume, 20)",  # Volume ratio to 20-day average
-            ]
+        logger.info("Building label configuration...")
 
-        # Add custom factors
-        custom_expressions = [factor["expression"] for factor in self.custom_factors]
+        # Standard next-day return prediction label
+        # Ref($close, -1) gets tomorrow's close price
+        # Divide by today's close and subtract 1 to get return rate
+        label_expressions = ["Ref($close, -1)/$close - 1"]
 
-        # Combine all factors
-        self.feature_expressions = basic_factors + custom_expressions
-
-        # Standard label (following Alpha158 convention)
-        # Ref($close, -2)/Ref($close, -1) - 1 means T+1 to T+2 return
-        self.label_expressions = ["Ref($close, -2)/Ref($close, -1) - 1"]
-
-        logger.info(
-            f"Built {len(self.feature_expressions)} features and {len(self.label_expressions)} labels"
-        )
+        logger.info(f"Label configuration: {label_expressions}")
+        return label_expressions
 
     def get_feature_names(self) -> List[str]:
         """
-        Get feature names for the factors
+        Get feature column names
 
         Educational Notes:
-        - Maps factor expressions to human-readable names
-        - Used for column naming in output DataFrames
-        - Combines basic and custom factor names
+        - Returns list of feature names based on loaded factors
+        - Used by Qlib for data structure validation
+        - Generates names from factor expressions or uses factor names
 
         Returns:
-            List of feature names
+            List of feature column names
         """
-        names = []
-
-        # Basic factor names
-        if self.include_basic_factors:
-            names.extend(
-                [
-                    "close",
-                    "open",
-                    "high",
-                    "low",
-                    "volume",
-                    "intraday_return",
-                    "volatility_proxy",
-                    "volume_ratio",
-                ]
-            )
-
-        # Custom factor names
-        names.extend([factor["name"] for factor in self.custom_factors])
-
-        return names
+        try:
+            custom_factors = self._load_custom_factors_from_db()
+            if custom_factors:
+                # Use factor names as feature names
+                return [factor["name"] for factor in custom_factors]
+            else:
+                # Fallback to generic names if no factors
+                return ["feature_0"]
+        except Exception as e:
+            logger.error(f"Failed to get feature names: {e}")
+            return ["feature_0"]
 
     def get_label_names(self) -> List[str]:
         """
-        Get label names
+        Get label column names
+
+        Educational Notes:
+        - Returns list of label names for supervised learning
+        - Standard Qlib pattern for label identification
+        - Used for data structure validation
 
         Returns:
-            List of label names
+            List of label column names
         """
         return ["label"]
 
@@ -307,14 +320,14 @@ class CustomFactorHandler(DataHandlerLP):
             logger.info("Setting up CustomFactorHandler data...")
 
             # Get all expressions (features + labels)
-            all_expressions = self.feature_expressions + self.label_expressions
+            all_expressions = self.get_feature_config() + self.get_label_config()
 
             if not all_expressions:
                 logger.warning("No factors configured - using minimal setup")
                 all_expressions = ["$close", "Ref($close, -2)/Ref($close, -1) - 1"]
 
             logger.info(
-                f"Loading data with {len(self.feature_expressions)} features and {len(self.label_expressions)} labels"
+                f"Loading data with {len(self.get_feature_config())} features and {len(self.get_label_config())} labels"
             )
 
             # TODO: Implement actual data loading using Qlib's data interface

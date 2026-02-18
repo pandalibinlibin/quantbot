@@ -66,15 +66,24 @@ class QlibInitService:
                 # Map region string to Qlib constant
                 region = REG_CN if self.settings.QLIB_REGION == "cn" else REG_US
 
+                # Build provider_uri dict for multi-frequency support
+                # Qlib official recommendation: use separate directories for different frequencies
+                provider_uri = {
+                    "day": self.settings.QLIB_DATA_DIR,
+                    "1min": self.settings.QLIB_DATA_DIR_1MIN,
+                }
+
                 logger.info(
                     f"Initializing Qlib with region: {self.settings.QLIB_REGION}"
                 )
-                logger.info(f"Data directory: {self.settings.QLIB_DATA_DIR}")
+                logger.info(
+                    f"Data directories: day={self.settings.QLIB_DATA_DIR}, 1min={self.settings.QLIB_DATA_DIR_1MIN}"
+                )
                 logger.info(f"MLflow directory: {self.settings.QLIB_MLRUNS_DIR}")
 
-                # Initialize Qlib
+                # Initialize Qlib with multi-frequency provider_uri
                 qlib.init(
-                    provider_uri=self.settings.QLIB_DATA_DIR,
+                    provider_uri=provider_uri,
                     region=region,
                     exp_manager={
                         "class": "MLflowExpManager",
@@ -121,3 +130,13 @@ class QlibInitService:
 
 # Global instance (singleton)
 qlib_init_service = QlibInitService()
+
+
+def get_qlib_init_service() -> QlibInitService:
+    """
+    Get the singleton QlibInitService instance.
+
+    Returns:
+        QlibInitService: The singleton instance
+    """
+    return qlib_init_service

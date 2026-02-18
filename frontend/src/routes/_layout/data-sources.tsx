@@ -308,10 +308,36 @@ function DataSourcesPage() {
                 <Alert>
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    <strong>Minute Data Limitations:</strong> Yahoo Finance only
-                    provides minute-level data for the last 30 days. Please
-                    ensure your date range is within the last 30 days for minute
-                    data collection.
+                    <strong>Minute Data Info:</strong>
+                    <ul className="list-disc list-inside mt-1 space-y-1">
+                      <li>
+                        Yahoo Finance only provides minute-level data for the
+                        last 30 days
+                      </li>
+                      {stockPool === "sp500" || stockPool === "nasdaq100" ? (
+                        <>
+                          <li>
+                            <strong>Actual trading hours (US):</strong>{" "}
+                            {startDate} 09:30:00 to {endDate} 16:00:00 EST
+                          </li>
+                          <li>
+                            Data will be collected for US market trading hours
+                            (09:30-16:00 EST)
+                          </li>
+                        </>
+                      ) : (
+                        <>
+                          <li>
+                            <strong>Actual trading hours (CN):</strong>{" "}
+                            {startDate} 09:30:00 to {endDate} 15:00:00
+                          </li>
+                          <li>
+                            Data will be collected for A-share market trading
+                            hours (09:30-11:30, 13:00-15:00)
+                          </li>
+                        </>
+                      )}
+                    </ul>
                   </AlertDescription>
                 </Alert>
               )}
