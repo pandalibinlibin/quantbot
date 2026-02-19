@@ -226,6 +226,13 @@ class FactorStatus(str, Enum):
     INACTIVE = "inactive"
 
 
+class FactorType(str, Enum):
+    """Enumeration of factor types - distinguishes features from labels"""
+
+    FEATURE = "feature"  # Used as model input (X)
+    LABEL = "label"  # Used as prediction target (Y)
+
+
 class ComputationStatus(str, Enum):
     """Enumeration of factor computation status"""
 
@@ -241,6 +248,9 @@ class FactorBase(SQLModel):
     expression: str = Field(description="Factor expression in Qlib format")
     description: str | None = Field(
         default=None, max_length=500, description="Factor description"
+    )
+    factor_type: FactorType = Field(
+        default=FactorType.FEATURE, description="Factor type: feature (X) or label (Y)"
     )
     status: FactorStatus = Field(
         default=FactorStatus.ACTIVE, description="Factor status"
@@ -276,6 +286,7 @@ class FactorUpdate(SQLModel):
     name: str | None = Field(default=None, max_length=100)
     expression: str | None = Field(default=None)
     description: str | None = Field(default=None, max_length=500)
+    factor_type: FactorType | None = Field(default=None)
     status: FactorStatus | None = Field(default=None)
 
 

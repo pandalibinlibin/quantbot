@@ -430,7 +430,11 @@ class YahooDataCollector(BaseCollector):
             return symbols
         except requests.exceptions.RequestException as e:
             logger.error(f"Network error fetching {self.index} constituents: {e}")
-            raise DataSourceError(f"Failed to fetch {self.index} constituents: {e}")
+            raise DataSourceError(
+                source=f"yfiua.github.io/{self.index}",
+                operation="fetch_constituents",
+                original_error=e,
+            )
         except json.JSONDecodeError as e:
             logger.error(f"JSON parsing error for {self.index} data: {e}")
             raise DataValidationError(f"Invalid JSON response for {self.index}: {e}")

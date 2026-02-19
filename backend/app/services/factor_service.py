@@ -23,6 +23,7 @@ from ..models import (
     FactorCreate,
     FactorUpdate,
     FactorStatus,
+    FactorType,
     FactorAnalysis,
     FactorDependency,
 )
@@ -78,6 +79,23 @@ class FactorService:
                         f"Factor with name '{factor_data.name}' already exists"
                     )
 
+                # Check: only one ACTIVE label is allowed
+                if factor_data.factor_type == FactorType.LABEL:
+                    existing_active_label = session.exec(
+                        select(Factor).where(
+                            and_(
+                                Factor.factor_type == FactorType.LABEL,
+                                Factor.status == FactorStatus.ACTIVE,
+                            )
+                        )
+                    ).first()
+
+                    if existing_active_label:
+                        raise ValueError(
+                            f"Only one ACTIVE label is allowed. "
+                            f"Please deactivate '{existing_active_label.name}' first."
+                        )
+
                 # Get factor data and ensure status is set to ACTIVE
                 factor_dict = factor_data.model_dump()
                 factor_dict.update(
@@ -127,13 +145,18 @@ class FactorService:
             return None
 
     def get_factors(
-        self, status: Optional[FactorStatus] = None, limit: int = 100, offset: int = 0
+        self,
+        status: Optional[FactorStatus] = None,
+        factor_type: Optional[FactorType] = None,
+        limit: int = 100,
+        offset: int = 0,
     ) -> List[Factor]:
         """
         Get list of factors with optional filtering
 
         Args:
             status: Optional status filter
+            factor_type: Optional type filter (feature or label)
             limit: Maximum number of factors to return
             offset: Number of factors to skip
 
@@ -146,6 +169,9 @@ class FactorService:
 
                 if status:
                     statement = statement.where(Factor.status == status)
+
+                if factor_type:
+                    statement = statement.where(Factor.factor_type == factor_type)
 
                 statement = statement.offset(offset).limit(limit)
                 factors = session.exec(statement).all()

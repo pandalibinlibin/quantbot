@@ -50,7 +50,7 @@ class CustomFactorHandler(DataHandlerLP):
         learn_processors=None,
         fit_start_time=None,
         fit_end_time=None,
-        process_type=None,
+        process_type=DataHandlerLP.PTYPE_A,
         filter_pipe=None,
         inst_processors=None,
         enable_alpha158=False,  # Alpha158 integration switch
@@ -83,7 +83,12 @@ class CustomFactorHandler(DataHandlerLP):
         # Import check_transform_proc following Alpha158 pattern
         from qlib.contrib.data.handler import check_transform_proc
 
-        # Store Alpha158 integration flag
+        # Store configuration for later use (needed by config() method)
+        self.start_time = start_time
+        self.end_time = end_time
+        self.fit_start_time = fit_start_time
+        self.fit_end_time = fit_end_time
+        self.freq = freq
         self.enable_alpha158 = enable_alpha158
 
         # Process processors following Alpha158 pattern
@@ -131,13 +136,13 @@ class CustomFactorHandler(DataHandlerLP):
 
     def get_feature_config(self):
         """
-        Get feature configuration combining Alpha158 and custom factors
+        Get feature configuration combining Alpha158 and pre-computed custom factors
 
         Educational Notes:
         - Follows Alpha158DL.get_feature_config() pattern exactly
-        - Combines Alpha158 factors (if enabled) with database custom factors
-        - Returns list of Qlib expression strings
-        - Database factors are loaded from Factor table with status=ACTIVE
+        - Combines Alpha158 factors (if enabled) with pre-computed custom factors
+        - Pre-computed factors are loaded using $field_name format (direct bin file access)
+        - This avoids re-computing factors that are already stored as bin files
 
         Returns:
             List of factor expression strings in Qlib format
@@ -146,30 +151,75 @@ class CustomFactorHandler(DataHandlerLP):
 
         feature_expressions = []
 
-        # Add Alpha158 factors if enabled
+        # Add Alpha158 factors if enabled (these will be computed on-the-fly)
         if self.enable_alpha158:
             logger.info("Loading Alpha158 factors...")
             try:
-                # Import Alpha158DL to get standard Alpha158 factors
                 from qlib.contrib.data.loader import Alpha158DL
 
-                # Get Alpha158 standard configuration
                 alpha158_config = Alpha158DL.get_feature_config()
                 feature_expressions.extend(alpha158_config)
-
                 logger.info(f"Added {len(alpha158_config)} Alpha158 factors")
             except Exception as e:
                 logger.error(f"Failed to load Alpha158 factors: {e}")
 
-        # Add custom factors from database
-        custom_factors = self._load_custom_factors_from_db()
-        if custom_factors:
-            custom_expressions = [factor["expression"] for factor in custom_factors]
-            feature_expressions.extend(custom_expressions)
-            logger.info(f"Added {len(custom_expressions)} custom factors from database")
+        # Add pre-computed custom factors from bin files (using $field_name format)
+        precomputed_factors = self._load_precomputed_factors()
+        if precomputed_factors:
+            feature_expressions.extend(precomputed_factors)
+            logger.info(
+                f"Added {len(precomputed_factors)} pre-computed factors from bin files"
+            )
 
         logger.info(f"Total feature expressions: {len(feature_expressions)}")
         return feature_expressions
+
+    def _load_precomputed_factors(self, include_ohlcv: bool = True):
+        """
+        Load pre-computed factor names from bin files and return as $field_name format.
+
+        This method scans the features directory for bin files and returns them
+        as $field_name expressions for direct loading.
+
+        Args:
+            include_ohlcv: Whether to include OHLCV raw data fields
+
+        Returns:
+            List of $field_name expressions for features
+        """
+        try:
+            from .factor_storage import FactorStorage
+
+            # Create storage instance with same frequency
+            storage = FactorStorage(freq=self.freq if hasattr(self, "freq") else "day")
+
+            feature_expressions = []
+
+            # Add OHLCV raw data fields if requested
+            if include_ohlcv:
+                ohlcv_fields = ["$open", "$high", "$low", "$close", "$volume"]
+                feature_expressions.extend(ohlcv_fields)
+                logger.info(f"Added {len(ohlcv_fields)} OHLCV fields")
+
+            # Get list of stored factors (excludes OHLCV raw data)
+            stored_factors = storage.list_stored_factors()
+
+            # Convert to $field_name format and add to feature_expressions
+            for factor_name in stored_factors:
+                feature_expressions.append(f"${factor_name}")
+
+            logger.info(
+                f"Found {len(stored_factors)} pre-computed factors: {stored_factors}"
+            )
+            logger.info(f"Total feature expressions: {len(feature_expressions)}")
+            return feature_expressions
+
+        except Exception as e:
+            logger.error(f"Failed to load pre-computed factors: {e}")
+            # Fallback to OHLCV only
+            if include_ohlcv:
+                return ["$open", "$high", "$low", "$close", "$volume"]
+            return []
 
     def _load_custom_factors_from_db(self):
         """
@@ -228,23 +278,63 @@ class CustomFactorHandler(DataHandlerLP):
         Get label configuration for target prediction
 
         Educational Notes:
-        - Follows Alpha158 standard label configuration
-        - Predicts next-day return: (close_t+1 / close_t) - 1
-        - Uses Ref($close, -1) to get next day's close price
-        - Standard format for supervised learning in quantitative finance
+        - Loads pre-computed label from bin files (if available)
+        - Falls back to expression-based calculation if no pre-computed label
+        - Label is defined by user in database with factor_type='label'
+        - Only one ACTIVE label is allowed at a time
 
         Returns:
             List of label expression strings in Qlib format
         """
         logger.info("Building label configuration...")
 
-        # Standard next-day return prediction label
-        # Ref($close, -1) gets tomorrow's close price
-        # Divide by today's close and subtract 1 to get return rate
-        label_expressions = ["Ref($close, -1)/$close - 1"]
+        # Try to load pre-computed label from database/bin files
+        label_name = self._load_label_from_db()
 
-        logger.info(f"Label configuration: {label_expressions}")
+        if label_name:
+            # Use pre-computed label from bin file
+            label_expressions = [f"${label_name}"]
+            logger.info(f"Using pre-computed label: {label_expressions}")
+        else:
+            # Fallback to standard next-day return calculation
+            # Ref($close, -1) gets tomorrow's close price
+            label_expressions = ["Ref($close, -1)/$close - 1"]
+            logger.info(
+                f"No pre-computed label found, using default: {label_expressions}"
+            )
+
         return label_expressions
+
+    def _load_label_from_db(self):
+        """
+        Load the ACTIVE label name from database.
+
+        Returns:
+            Label name (str) if found, None otherwise
+        """
+        try:
+            from sqlmodel import Session, select
+            from ..core.db import engine
+            from ..models import Factor, FactorStatus, FactorType
+
+            with Session(engine) as session:
+                # Query the single ACTIVE label
+                statement = select(Factor).where(
+                    Factor.factor_type == FactorType.LABEL,
+                    Factor.status == FactorStatus.ACTIVE,
+                )
+                label = session.exec(statement).first()
+
+                if label:
+                    logger.info(f"Found ACTIVE label: {label.name}")
+                    return label.name
+                else:
+                    logger.info("No ACTIVE label found in database")
+                    return None
+
+        except Exception as e:
+            logger.error(f"Failed to load label from database: {e}")
+            return None
 
     def get_feature_names(self) -> List[str]:
         """
@@ -303,80 +393,35 @@ class CustomFactorHandler(DataHandlerLP):
         label_names = self.get_label_names()
         return feature_names + label_names
 
-    def setup_data(self, **kwargs) -> None:
+    def setup_data(self, init_type: str = DataHandlerLP.IT_FIT_SEQ, **kwargs) -> None:
         """
         Set up data for the handler
 
         This method is called by Qlib to prepare data.
-        Implements the required DataHandler interface.
+        Delegates to parent class DataHandlerLP.setup_data() which handles:
+        - Loading raw data via data_loader
+        - Running processors (fit and process)
+        - Setting up _learn and _infer DataFrames
 
         Educational Notes:
-        - Standard Qlib DataHandler interface method
-        - Loads and processes data using Qlib's data infrastructure
-        - Stores processed data in self._data for later access
-        - TODO: Will be enhanced with actual data loading logic
+        - MUST call parent class setup_data() to properly initialize _learn/_infer
+        - Parent class handles all the complexity of data processing pipeline
+        - Our customization is in get_feature_config() and get_label_config()
         """
-        try:
-            logger.info("Setting up CustomFactorHandler data...")
+        logger.info("Setting up CustomFactorHandler data...")
+        logger.info(
+            f"Loading data with {len(self.get_feature_config())} features and {len(self.get_label_config())} labels"
+        )
 
-            # Get all expressions (features + labels)
-            all_expressions = self.get_feature_config() + self.get_label_config()
+        # Call parent class setup_data - this is CRITICAL
+        # It loads data, runs processors, and sets up _learn/_infer attributes
+        super().setup_data(init_type=init_type, **kwargs)
 
-            if not all_expressions:
-                logger.warning("No factors configured - using minimal setup")
-                all_expressions = ["$close", "Ref($close, -2)/Ref($close, -1) - 1"]
+        logger.info("CustomFactorHandler data setup completed")
 
-            logger.info(
-                f"Loading data with {len(self.get_feature_config())} features and {len(self.get_label_config())} labels"
-            )
-
-            # TODO: Implement actual data loading using Qlib's data interface
-            # This will be completed after we have the database models
-            logger.info(
-                "Data loading implementation will be completed in subsequent steps"
-            )
-
-            # Placeholder: Create empty DataFrame with correct structure
-            columns = self.get_cols()
-            self._data = pd.DataFrame(columns=columns)
-
-            logger.info(f"Data setup completed: {self._data.shape}")
-
-        except Exception as e:
-            logger.error(f"Failed to setup data: {str(e)}")
-            raise
-
-    def fetch(self, col_set: str = "feature", **kwargs) -> pd.DataFrame:
-        """
-        Fetch processed data
-
-        Required by Qlib's DataHandler interface.
-        This method is called by Qlib to get the actual data.
-
-        Educational Notes:
-        - Standard Qlib DataHandler interface method
-        - col_set parameter: "feature", "label", or None (all)
-        - Returns processed DataFrame ready for ML models
-
-        Args:
-            col_set: Which columns to fetch ("feature", "label", or None for all)
-            **kwargs: Additional arguments
-
-        Returns:
-            Processed DataFrame with requested columns
-        """
-        if not hasattr(self, "_data") or self._data is None:
-            raise ValueError("Data not set up. Call setup_data() first.")
-
-        if col_set == "feature":
-            feature_names = self.get_feature_names()
-            return self._data[feature_names] if not self._data.empty else self._data
-        elif col_set == "label":
-            label_names = self.get_label_names()
-            return self._data[label_names] if not self._data.empty else self._data
-        else:
-            # Return all columns
-            return self._data
+    # Note: fetch() method is inherited from DataHandlerLP
+    # Do NOT override it - the parent class implementation handles all the complexity
+    # of data fetching with proper selector, level, col_set, and data_key parameters
 
     def config(self, **kwargs) -> Dict[str, Any]:
         """
@@ -402,9 +447,8 @@ class CustomFactorHandler(DataHandlerLP):
                 "fit_start_time": self.fit_start_time,
                 "fit_end_time": self.fit_end_time,
                 "instruments": self.instruments,
-                "custom_factors": self.custom_factors,
-                "include_basic_factors": self.include_basic_factors,
-                # Note: factor_db_service is not serialized (will be re-injected)
+                "freq": self.freq,
+                "enable_alpha158": self.enable_alpha158,
             },
         }
 

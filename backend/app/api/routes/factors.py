@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 import logging
 
-from ...models import Factor, FactorCreate, FactorUpdate, FactorStatus
+from ...models import Factor, FactorCreate, FactorUpdate, FactorStatus, FactorType
 from ...services.factor_service import FactorService
 from ...api.deps import get_current_user
 from ...models import User
@@ -100,6 +100,9 @@ async def get_factors(
     status_filter: Optional[FactorStatus] = Query(
         None, description="Filter by factor status"
     ),
+    factor_type: Optional[FactorType] = Query(
+        None, description="Filter by factor type (feature or label)"
+    ),
     limit: int = Query(
         100, ge=1, le=1000, description="Maximum number of factors to return"
     ),
@@ -115,9 +118,11 @@ async def get_factors(
     - Supports query parameters for filtering and pagination
     - Returns list of factors matching criteria
     - Requires user authentication
+    - Use factor_type=feature for features (X), factor_type=label for labels (Y)
 
     Args:
         status_filter: Optional status filter (ACTIVE/INACTIVE)
+        factor_type: Optional type filter (feature/label)
         limit: Maximum number of factors to return (1-1000)
         offset: Number of factors to skip for pagination
         current_user: Authenticated user
@@ -127,12 +132,12 @@ async def get_factors(
         List of Factor instances
     """
     logger.info(
-        f"Retrieving factors for user {current_user.id} with filters: status={status_filter}, limit={limit}, offset={offset}"
+        f"Retrieving factors for user {current_user.id} with filters: status={status_filter}, type={factor_type}, limit={limit}, offset={offset}"
     )
 
     try:
         factors = factor_service.get_factors(
-            status=status_filter, limit=limit, offset=offset
+            status=status_filter, factor_type=factor_type, limit=limit, offset=offset
         )
 
         logger.info(f"Retrieved {len(factors)} factors")

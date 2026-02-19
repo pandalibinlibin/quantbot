@@ -5948,3 +5948,377 @@ with open(calendar_file, "r") as f:
 
 5. **`backend/app/services/factor_storage.py`**
    - 移除复杂的合并逻辑，简化为直接覆盖
+
+---
+
+## 🚀 模型训练 Workflow 设计 (2026-02-19)
+
+### 📋 概述
+
+基于 Qlib 的 `qrun` 命令研究，设计并实现模型训练工作流。该工作流参考 `qrun` 的核心实现（`qlib/model/trainer.py` 的 `_exe_task` 函数），但集成到 Web 服务中，使用我们自己的因子引擎（`CustomFactorHandler`）。
+
+### 🎯 设计目标
+
+1. **使用我们的因子引擎** - `CustomFactorHandler` 作为 DataHandler
+2. **参考 qrun 实现** - 保持与 Qlib 标准工作流兼容
+3. **配置驱动** - 通过 YAML/JSON 配置文件定义训练任务
+4. **产出模型文件** - 训练好的模型保存到文件系统
+5. **为未来扩展做准备** - 模拟盘 Workflow、回测 Workflow
+
+### 🔍 qrun 核心机制分析
+
+#### qrun 的执行流程
+
+```
+qrun configuration.yaml
+    ↓
+1. qlib.init() - 初始化 Qlib
+2. task_train() - 执行训练任务
+    ↓
+_exe_task():
+    model = init_instance_by_config(task_config["model"])
+    dataset = init_instance_by_config(task_config["dataset"])
+    model.fit(dataset)
+    R.save_objects(model=model, dataset=dataset)
+    for record in records:
+        record.generate()  # SignalRecord, PortAnaRecord 等
+```
+
+#### qrun 配置文件结构
+
+```yaml
+qlib_init:
+  provider_uri: "~/.qlib/qlib_data/cn_data"
+  region: cn
+
+task:
+  model: { ... }
+  dataset: { ... }
+  record: [...]
+```
+
+### 📐 架构设计
+
+#### 数据频率与 provider_uri
+
+**重要**：日线数据和分钟数据使用不同的目录：
+
+| 数据频率      | provider_uri          | 说明         |
+| ------------- | --------------------- | ------------ |
+| 日线 (1d)     | `/app/qlib_data`      | 日线数据目录 |
+| 分钟线 (1min) | `/app/qlib_data_1min` | 分钟数据目录 |
+
+**解决方案**：在配置中通过 `freq` 参数自动选择正确的 `provider_uri`，而不是维护两套配置文件。
+
+```python
+def get_provider_uri(freq: str) -> str:
+    if freq == "1min":
+        return "/app/qlib_data_1min"
+    else:
+        return "/app/qlib_data"
+```
+
+#### 训练工作流架构
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Training Workflow                         │
+├─────────────────────────────────────────────────────────────┤
+│  1. 数据检查                                                 │
+│     - 检查 provider_uri 目录是否存在                         │
+│     - 检查 calendar、instruments、features 是否完整          │
+│     - 如果数据不存在，返回错误提示用户先下载数据              │
+├─────────────────────────────────────────────────────────────┤
+│  2. Qlib 初始化                                              │
+│     - 根据 freq 选择正确的 provider_uri                      │
+│     - 设置 region (cn/us)                                    │
+├─────────────────────────────────────────────────────────────┤
+│  3. Dataset 构建                                             │
+│     - 使用 CustomFactorHandler 加载因子                      │
+│     - 从数据库加载用户定义的因子表达式                        │
+│     - 可选：启用 Alpha158 因子                               │
+├─────────────────────────────────────────────────────────────┤
+│  4. 模型训练                                                 │
+│     - 初始化模型 (LGBModel, XGBoost, etc.)                   │
+│     - 执行 model.fit(dataset)                                │
+├─────────────────────────────────────────────────────────────┤
+│  5. 结果记录                                                 │
+│     - SignalRecord: 生成预测结果 (pred.pkl)                  │
+│     - PortAnaRecord: 回测分析 (可选)                         │
+├─────────────────────────────────────────────────────────────┤
+│  6. 模型保存                                                 │
+│     - 保存模型到文件系统 (/app/models/)                      │
+│     - 保存到 MLflow 实验追踪                                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 📝 配置文件格式
+
+#### 完整配置示例
+
+```yaml
+# training_config.yaml
+qlib_init:
+  provider_uri: "/app/qlib_data" # 自动根据 freq 调整
+  region: cn
+
+market: &market csi300
+benchmark: &benchmark SH000300
+
+data_handler_config: &data_handler_config
+  start_time: 2026-02-02
+  end_time: 2026-02-18
+  fit_start_time: 2026-02-02
+  fit_end_time: 2026-02-10
+  instruments: *market
+  freq: day
+  enable_alpha158: false # 是否包含 Alpha158 因子
+
+task:
+  model:
+    class: LGBModel
+    module_path: qlib.contrib.model.gbdt
+    kwargs:
+      loss: mse
+      colsample_bytree: 0.8879
+      learning_rate: 0.05
+      subsample: 0.8789
+      lambda_l1: 205.6999
+      lambda_l2: 580.9768
+      max_depth: 8
+      num_leaves: 210
+      num_threads: 4
+
+  dataset:
+    class: DatasetH
+    module_path: qlib.data.dataset
+    kwargs:
+      handler:
+        class: CustomFactorHandler
+        module_path: app.services.custom_factor_handler
+        kwargs: *data_handler_config
+      segments:
+        train: [2026-02-02, 2026-02-10]
+        valid: [2026-02-11, 2026-02-13]
+        test: [2026-02-14, 2026-02-18]
+
+  record:
+    - class: SignalRecord
+      module_path: qlib.workflow.record_temp
+      kwargs: {}
+    - class: PortAnaRecord
+      module_path: qlib.workflow.record_temp
+      kwargs:
+        config:
+          strategy:
+            class: TopkDropoutStrategy
+            module_path: qlib.contrib.strategy.strategy
+            kwargs:
+              topk: 50
+              n_drop: 5
+              signal: <PRED>
+          backtest:
+            start_time: 2026-02-14
+            end_time: 2026-02-18
+            account: 100000000
+            benchmark: *benchmark
+            exchange_kwargs:
+              limit_threshold: 0.095
+              deal_price: close
+              open_cost: 0.0005
+              close_cost: 0.0015
+              min_cost: 5
+```
+
+### 🔧 实现计划
+
+#### 阶段 1：增强 QlibWorkflowService
+
+**文件**: `backend/app/services/qlib_workflow_service.py`
+
+**修改内容**:
+
+1. 添加数据存在性检查方法
+2. 添加 Record 执行逻辑（参考 qrun 的 `_exe_task`）
+3. 添加模型保存到文件系统功能
+4. 支持从 YAML 配置文件加载
+
+```python
+class QlibWorkflowService:
+    def check_data_exists(self, freq: str = "day") -> Dict[str, Any]:
+        """检查数据是否存在"""
+        pass
+
+    def execute_training_workflow(self, config: Dict, experiment_name: str) -> Dict:
+        """执行训练工作流（增强版）"""
+        # 1. 检查数据
+        # 2. 初始化 Qlib
+        # 3. 构建 Dataset
+        # 4. 训练模型
+        # 5. 执行 Records
+        # 6. 保存模型
+        pass
+
+    def save_model_to_filesystem(self, model, model_name: str) -> str:
+        """保存模型到文件系统"""
+        pass
+```
+
+#### 阶段 2：创建训练 API
+
+**文件**: `backend/app/api/routes/training.py`
+
+**端点**:
+
+- `POST /api/v1/training/start` - 启动训练任务
+- `GET /api/v1/training/{task_id}/status` - 获取训练状态
+- `GET /api/v1/training/{task_id}/results` - 获取训练结果
+- `GET /api/v1/training/models` - 列出已训练的模型
+
+#### 阶段 3：创建前端训练页面
+
+**页面功能**:
+
+1. 训练配置表单（选择模型、参数、日期范围）
+2. 数据状态检查（显示是否有可用数据）
+3. 训练进度展示
+4. 结果分析页面（预测结果、回测指标）
+
+### 📊 产出物
+
+| 产出物   | 格式            | 存储位置                       | 说明               |
+| -------- | --------------- | ------------------------------ | ------------------ |
+| 训练模型 | `.pkl`          | `/app/models/{model_name}.pkl` | 可用于推理         |
+| 预测结果 | `pred.pkl`      | MLflow artifacts               | SignalRecord 生成  |
+| 标签数据 | `label.pkl`     | MLflow artifacts               | SignalRecord 生成  |
+| 回测报告 | `report.pkl`    | MLflow artifacts               | PortAnaRecord 生成 |
+| 持仓记录 | `positions.pkl` | MLflow artifacts               | PortAnaRecord 生成 |
+
+### 🔮 未来扩展
+
+本训练 Workflow 设计为可扩展架构，未来将支持：
+
+1. **模拟盘 Workflow** - 使用训练好的模型进行模拟交易
+2. **回测 Workflow** - 独立的回测分析功能
+3. **模型管理** - 模型版本控制、比较、部署
+
+### 📁 相关文件
+
+| 文件                                                   | 说明                    |
+| ------------------------------------------------------ | ----------------------- |
+| `backend/app/services/qlib_workflow_service.py`        | 训练工作流核心服务      |
+| `backend/app/services/custom_factor_handler.py`        | 自定义因子引擎          |
+| `backend/app/api/routes/training.py`                   | 训练 API 路由（待创建） |
+| `backend/app/api/routes/qlib_workflow.py`              | 现有 Qlib 工作流路由    |
+| `backend/tests/services/test_qlib_workflow_service.py` | 测试脚本                |
+
+---
+
+## ✅ 模型训练 Workflow 完成 (2026-02-19)
+
+### 📋 完成概述
+
+成功完成了基于 Qlib 的模型训练工作流，实现了从预计算的 bin 文件加载数据、训练 LightGBM 模型、保存模型和生成预测结果的完整流程。
+
+### 🎯 核心成就
+
+#### 1. CustomFactorHandler 完善 ✅
+
+**关键修复**：
+
+- 修复 `setup_data()` 方法，正确调用父类 `DataHandlerLP.setup_data()` 初始化 `_learn` 和 `_infer` 属性
+- 修复 `process_type` 默认值，使用 `DataHandlerLP.PTYPE_A`（与 Alpha158 一致）
+- 移除自定义 `fetch()` 方法，继承父类实现避免参数冲突
+- 修复 `config()` 方法，只引用实际存在的属性
+- 保存 `fit_start_time`、`fit_end_time` 等属性供序列化使用
+
+**数据加载验证**：
+
+```
+Found 4 pre-computed factors: ['hl_mid_price', 'daily_return', 'ma5', 'return_1d']
+Total feature expressions: 9
+Added 9 pre-computed factors from bin files
+Using pre-computed label: ['$return_1d']
+```
+
+#### 2. 训练配置文件 ✅
+
+**文件**: `backend/app/config/training_config.yaml`
+
+**关键配置**：
+
+- `market: all` - 使用 `instruments/all.txt` 文件
+- `freq: day` - 日线数据频率
+- `enable_alpha158: false` - 只使用预计算因子
+- 完整的 LGBModel 超参数配置
+- 训练/验证/测试集时间段划分
+
+#### 3. 训练结果验证 ✅
+
+**训练指标**：
+
+```
+[100]   train's l2: 0.80908     valid's l2: 0.86486
+```
+
+**输出结果**：
+
+```json
+{
+  "status": "success",
+  "model_path": "/app/models/LGBModel_20260219_083431.pkl",
+  "test_predictions_count": 481,
+  "model_saved": true,
+  "timings": {
+    "total": 5.505871534347534
+  }
+}
+```
+
+**预测样本**：
+
+```
+                          score
+datetime   instrument
+2026-02-09 SH600000   -0.011018
+           SH600010    0.178395
+           SH600011   -0.091300
+```
+
+### 🔧 关键技术点
+
+#### 数据从 bin 文件加载（非计算）
+
+**证据**：
+
+1. 使用 `$` 前缀表达式（如 `$open`, `$ma5`, `$return_1d`）表示直接从 bin 文件读取
+2. 日志显示 "Added 9 pre-computed factors from bin files"
+3. 没有计算表达式（如 `Ref($close, -1)/$close - 1`）
+
+#### DataHandlerLP 继承机制
+
+**关键理解**：
+
+- `DataHandlerLP.setup_data()` 负责调用 `fit()` 和 `process_data()`
+- 这些方法设置 `_learn` 和 `_infer` DataFrame
+- 子类必须调用 `super().setup_data()` 才能正确初始化
+
+### 📊 测试验证矩阵
+
+| 验证项              | 状态 | 说明                            |
+| ------------------- | ---- | ------------------------------- |
+| 数据从 bin 文件加载 | ✅   | 使用 `$` 前缀表达式             |
+| OHLCV 数据正确      | ✅   | 与 Yahoo Finance 一致           |
+| 因子数据正确        | ✅   | MA5、daily_return、hl_mid_price |
+| Label 数据正确      | ✅   | return_1d 计算正确              |
+| 模型训练成功        | ✅   | LightGBM 训练完成               |
+| 模型保存成功        | ✅   | 保存到 `/app/models/`           |
+| 预测结果合理        | ✅   | 481 个预测，分数范围正常        |
+
+### 📁 修改的文件
+
+| 文件                                            | 修改内容                                 |
+| ----------------------------------------------- | ---------------------------------------- |
+| `backend/app/services/custom_factor_handler.py` | 修复 setup_data、process_type、config 等 |
+| `backend/app/config/training_config.yaml`       | 更新 market、freq、segments 配置         |
+| `backend/app/services/qlib_workflow_service.py` | 移除错误的 provider_uri 参数             |
