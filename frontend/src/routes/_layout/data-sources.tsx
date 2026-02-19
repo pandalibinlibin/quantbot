@@ -180,7 +180,7 @@ function DataSourcesPage() {
                     <div className="col-span-2">
                       <Label className="text-sm font-medium">Features</Label>
                       <div className="flex flex-wrap gap-1 mt-1">
-                        {status.features?.map((feature) => (
+                        {status.features?.filter(f => !status.label || !f.startsWith(status.label)).map((feature) => (
                           <Badge
                             key={feature}
                             variant="secondary"
@@ -191,6 +191,23 @@ function DataSourcesPage() {
                         )) || (
                           <span className="text-sm text-muted-foreground">
                             No features available
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="col-span-2">
+                      <Label className="text-sm font-medium">Label (Prediction Target)</Label>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {status.label ? (
+                          <Badge
+                            variant="default"
+                            className="text-xs bg-amber-500 hover:bg-amber-600"
+                          >
+                            {status.label}
+                          </Badge>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">
+                            No label configured
                           </span>
                         )}
                       </div>

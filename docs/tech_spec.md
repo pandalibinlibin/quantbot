@@ -1,6 +1,6 @@
 # QuantBot 技术规格文档
 
-**版本**: 2.1 (增量更新修复版)  
+**版本**: 3.0 (核心功能完成版)  
 **最后更新**: 2026-02-19
 
 ---
@@ -6313,12 +6313,386 @@ datetime   instrument
 | Label 数据正确      | ✅   | return_1d 计算正确              |
 | 模型训练成功        | ✅   | LightGBM 训练完成               |
 | 模型保存成功        | ✅   | 保存到 `/app/models/`           |
-| 预测结果合理        | ✅   | 481 个预测，分数范围正常        |
 
-### 📁 修改的文件
+### 修改的文件
 
 | 文件                                            | 修改内容                                 |
 | ----------------------------------------------- | ---------------------------------------- |
 | `backend/app/services/custom_factor_handler.py` | 修复 setup_data、process_type、config 等 |
 | `backend/app/config/training_config.yaml`       | 更新 market、freq、segments 配置         |
 | `backend/app/services/qlib_workflow_service.py` | 移除错误的 provider_uri 参数             |
+
+---
+
+## 回测 Workflow 设计方案 (2026-02-19)
+
+### 概述
+
+基于 Qlib 的回测系统设计回测工作流，采用 **方案 A + 方案 B 结合** 的架构，既支持训练时自动回测，也支持独立回测 API（为模拟盘做准备）。
+
+### 设计目标
+
+1. **训练时自动回测**：训练完成后立即验证模型效果
+2. **独立回测 API**：支持加载已有模型进行回测，为模拟盘提供基础
+3. **策略可配置化**：只需修改 YAML 配置即可切换策略，不需要改代码
+4. **复用 Qlib 官方实现**：使用 `PortAnaRecord` 和 `backtest()` 函数
+
+### Qlib 回测机制分析
+
+#### 核心组件
+
+| 组件              | 说明                              | 文件位置                       |
+| ----------------- | --------------------------------- | ------------------------------ |
+| **backtest()**    | 回测主入口函数                    | `qlib/backtest/__init__.py`    |
+| **PortAnaRecord** | 回测记录模板，集成到训练 workflow | `qlib/workflow/record_temp.py` |
+| **BaseStrategy**  | 策略基类                          | `qlib/strategy/base.py`        |
+| **BaseExecutor**  | 执行器基类                        | `qlib/backtest/executor.py`    |
+| **Exchange**      | 交易所模拟（交易成本、涨跌停等）  | `qlib/backtest/exchange.py`    |
+
+#### 回测流程
+
+```
+加载模型 → 生成预测 → 策略决策 → 模拟执行 → 生成报告
+    ↓           ↓           ↓           ↓           ↓
+model.pkl   pred.pkl   Strategy   Executor   report.pkl
+```
+
+### 架构设计
+
+#### 方案 A：训练时集成回测（PortAnaRecord）
+
+**原理**：在训练配置中添加 `PortAnaRecord`，训练完成后自动执行回测。
+
+**配置示例**：
+
+```yaml
+record:
+  - class: SignalRecord
+    module_path: qlib.workflow.record_temp
+    kwargs: {}
+  - class: PortAnaRecord
+    module_path: qlib.workflow.record_temp
+    kwargs:
+      config:
+        strategy:
+          class: TopkDropoutStrategy
+          module_path: qlib.contrib.strategy
+          kwargs:
+            signal: <PRED>
+            topk: 50
+            n_drop: 5
+        backtest:
+          start_time: 2026-02-09
+          end_time: 2026-02-10
+          account: 100000000
+          benchmark: SH000300
+          exchange_kwargs:
+            limit_threshold: 0.095
+            deal_price: close
+            open_cost: 0.0005
+            close_cost: 0.0015
+            min_cost: 5
+```
+
+**产出物**：
+
+- `report_normal_1day.pkl` - 每日收益报告
+- `positions_normal_1day.pkl` - 每日持仓记录
+- `port_analysis.pkl` - 风险分析（夏普比率、最大回撤等）
+
+#### 方案 B：独立回测 API
+
+**用途**：支持模拟盘场景，每天用最新数据执行回测。
+
+**API 设计**：
+
+```python
+POST /api/v1/backtest/run
+{
+  "model_path": "/app/models/LGBModel_xxx.pkl",
+  "start_time": "2026-02-09",
+  "end_time": "2026-02-10",
+  "strategy": {
+    "class": "TopkDropoutStrategy",
+    "kwargs": {"topk": 50, "n_drop": 5}
+  }
+}
+```
+
+**实现方式**：
+
+```python
+from qlib.backtest import backtest
+
+# 1. 加载模型
+model = load_model(model_path)
+
+# 2. 生成预测
+pred = model.predict(dataset)
+
+# 3. 执行回测
+portfolio_metric, indicator = backtest(
+    start_time=start_time,
+    end_time=end_time,
+    strategy=strategy_config,
+    executor=executor_config,
+    benchmark=benchmark,
+    account=account,
+    exchange_kwargs=exchange_kwargs
+)
+```
+
+### 策略选择
+
+#### 当前策略：TopkDropoutStrategy
+
+**参数说明**：
+
+- `topk: 50` - 持有 50 只股票
+- `n_drop: 5` - 每天换仓 5 只（换手率 10%）
+- `method_sell: bottom` - 卖出预测分数最低的
+- `method_buy: top` - 买入预测分数最高的
+
+**适用场景**：简单的多头策略，适合验证模型预测效果。
+
+#### 未来策略：EnhancedIndexingStrategy
+
+**特点**：指数增强策略，目标是跑赢基准指数同时控制跟踪误差。
+
+**额外要求**：需要准备风险模型数据
+
+```
+/app/riskmodel/
+├── 20260209/
+│   ├── factor_exp.pkl    # 因子暴露
+│   ├── factor_cov.pkl    # 因子协方差
+│   ├── specific_risk.pkl # 特异性风险
+│   └── blacklist.pkl     # 黑名单（可选）
+```
+
+**切换方式**：只需修改 YAML 配置
+
+```yaml
+strategy:
+  class: EnhancedIndexingStrategy # 改这里
+  module_path: qlib.contrib.strategy
+  kwargs:
+    signal: <PRED>
+    riskmodel_root: /app/riskmodel # 添加风险模型路径
+    market: csi300
+```
+
+### 策略可配置化设计
+
+**关键原则**：策略配置完全通过 YAML 传递，代码中使用 `init_instance_by_config`。
+
+```python
+from qlib.utils import init_instance_by_config
+
+# 代码中不硬编码策略类型
+strategy = init_instance_by_config(config["strategy"])
+```
+
+**这样设计的好处**：
+
+1. 切换策略只需修改 YAML 文件
+2. 支持任何符合 Qlib 接口的自定义策略
+3. 便于 A/B 测试不同策略
+
+### 回测指标
+
+| 指标         | 说明                       |
+| ------------ | -------------------------- |
+| **累计收益** | 回测期间的总收益率         |
+| **年化收益** | 年化后的收益率             |
+| **夏普比率** | 风险调整后收益（越高越好） |
+| **最大回撤** | 最大亏损幅度               |
+| **超额收益** | 相对基准的超额收益         |
+| **信息比率** | 超额收益/跟踪误差          |
+| **换手率**   | 每日换仓比例               |
+
+### 实施计划
+
+#### 阶段 1：方案 A - 训练时集成回测 ⚠️ 暂缓
+
+- PortAnaRecord 存在 `index out of bounds` 边界问题
+- 已实现但暂时禁用，等待 Qlib 修复或深入调查
+
+#### 阶段 2：方案 B - 独立回测 API ✅ 已完成
+
+1. ✅ 在 `QlibWorkflowService` 中实现 `execute_backtest()` 方法
+2. ✅ 创建 `backtest_config.yaml` 配置文件
+3. ✅ 创建 `/api/v1/backtest/run` API 端点
+4. ✅ 创建 `/api/v1/backtest/status` API 端点
+5. ✅ 测试独立回测功能（36 交易日，净收益 10.4%）
+
+#### 阶段 3：模拟盘准备
+
+模拟盘功能已具备基础：
+
+- ✅ 增量数据下载
+- ✅ 模型训练和预测
+- ✅ 独立回测 API
+
+待实现：
+
+- [ ] 创建模拟盘调度服务（每日自动执行）
+- [ ] 持仓跟踪和管理
+- [ ] 交易信号推送
+
+### 相关文件
+
+| 文件                                            | 说明                  |
+| ----------------------------------------------- | --------------------- |
+| `backend/app/config/training_config.yaml`       | 训练配置（动态 freq） |
+| `backend/app/config/backtest_config.yaml`       | 回测配置 ✅           |
+| `backend/app/services/qlib_workflow_service.py` | 训练 + 回测服务 ✅    |
+| `backend/app/api/routes/training.py`            | 训练 API 路由 ✅      |
+| `backend/app/api/routes/backtest.py`            | 回测 API 路由 ✅      |
+
+---
+
+## 🎉 核心功能完成里程碑 (2026-02-19)
+
+### 📊 已完成功能总览
+
+| 功能模块         | 状态 | 说明                                           |
+| ---------------- | ---- | ---------------------------------------------- |
+| **数据全量下载** | ✅   | Yahoo Finance 数据源，支持 CN/US 市场          |
+| **数据增量下载** | ✅   | 智能检测缺失日期，只下载增量数据               |
+| **因子计算**     | ✅   | CustomFactorHandler，支持自定义因子和 Alpha158 |
+| **模型训练**     | ✅   | LGBModel，动态时间配置，SignalRecord           |
+| **回测**         | ✅   | 独立回测 API，TopkDropoutStrategy              |
+
+### 🔧 技术亮点
+
+#### 1. 动态配置系统
+
+- **freq 动态检测**：自动检测数据目录，确定使用 day 或 1min 频率
+- **时间范围动态计算**：从 Qlib calendar 获取实际数据范围
+- **70/15/15 自动分割**：train/valid/test 数据集自动划分
+
+#### 2. API 路由重构
+
+按领域分离为独立 router：
+
+| 路由前缀              | 文件             | 功能       |
+| --------------------- | ---------------- | ---------- |
+| `/api/v1/data-source` | `data_source.py` | 数据源管理 |
+| `/api/v1/factors`     | `factors.py`     | 因子管理   |
+| `/api/v1/training`    | `training.py`    | 模型训练   |
+| `/api/v1/backtest`    | `backtest.py`    | 回测       |
+
+#### 3. 独立回测 API (Plan B)
+
+绕过 PortAnaRecord 的 index 错误，直接使用 `backtest_daily`：
+
+```python
+# 使用 Qlib 的 backtest_daily 函数
+report_df, positions = backtest_daily(
+    start_time=start_time,
+    end_time=end_time,
+    strategy=TopkDropoutStrategy(signal=pred, topk=50, n_drop=5),
+    account=100000000,
+    benchmark="SH000300",
+    exchange_kwargs={...}
+)
+```
+
+#### 4. 配置文件结构
+
+**training_config.yaml**：
+
+- 模型配置（LGBModel 参数）
+- 数据集配置（CustomFactorHandler）
+- Record 配置（SignalRecord）
+- 无硬编码时间和 freq
+
+**backtest_config.yaml**：
+
+- 策略配置（TopkDropoutStrategy）
+- 回测参数（account, benchmark, exchange_kwargs）
+- 无硬编码 freq
+
+### 📈 回测结果示例
+
+```json
+{
+  "status": "success",
+  "start_time": "2025-12-18",
+  "end_time": "2026-02-09",
+  "trading_days": 36,
+  "total_return": 0.1101,
+  "total_cost": 0.0058,
+  "net_return": 0.1043,
+  "final_account": 110760196.3
+}
+```
+
+### 🚀 下一阶段工作计划
+
+#### Phase 1：前端开发 (2-3 周)
+
+1. **训练页面**
+
+   - 训练配置展示
+   - 开始训练按钮
+   - 训练进度和结果展示
+
+2. **回测页面**
+
+   - 回测状态检查
+   - 执行回测
+   - 回测结果展示（收益曲线、指标表格）
+
+3. **模型管理页面**
+   - 已训练模型列表
+   - 模型详情和指标
+
+#### Phase 2：模拟盘功能 (1-2 周)
+
+1. **调度服务**
+
+   - 每日自动执行数据更新
+   - 每日自动执行预测和回测
+
+2. **持仓管理**
+
+   - 当前持仓展示
+   - 历史持仓记录
+
+3. **交易信号**
+   - 每日买卖信号生成
+   - 信号推送（可选）
+
+#### Phase 3：高级功能 (持续)
+
+1. **更多回测指标**
+
+   - 夏普比率
+   - 最大回撤
+   - 信息比率
+
+2. **策略扩展**
+
+   - EnhancedIndexingStrategy
+   - 自定义策略支持
+
+3. **模型扩展**
+   - XGBoost
+   - 深度学习模型
+
+### 📝 关于模拟盘
+
+**问题**：回测和模拟盘有什么区别？
+
+**回答**：
+
+- **回测**：使用历史数据验证策略表现
+- **模拟盘**：使用实时数据进行模拟交易，但不实际下单
+
+**当前状态**：
+
+- 回测功能已完成，可以作为模拟盘的基础
+- 模拟盘需要额外的调度服务来每日自动执行
+- 核心逻辑（预测 + 回测）已经就绪

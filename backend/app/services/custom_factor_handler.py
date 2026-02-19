@@ -204,8 +204,15 @@ class CustomFactorHandler(DataHandlerLP):
             # Get list of stored factors (excludes OHLCV raw data)
             stored_factors = storage.list_stored_factors()
 
+            # Get the label name to exclude it from features
+            label_name = self._load_label_from_db()
+
             # Convert to $field_name format and add to feature_expressions
+            # IMPORTANT: Exclude label factor from features to avoid data leakage
             for factor_name in stored_factors:
+                if label_name and factor_name == label_name:
+                    logger.info(f"Excluding label '{factor_name}' from features")
+                    continue
                 feature_expressions.append(f"${factor_name}")
 
             logger.info(

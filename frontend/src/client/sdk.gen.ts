@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { DataSourceGetDataSourceStatusEndpointResponse, DataSourceClearDataSourceEndpointResponse, DataSourceDownloadDataSourceEndpointData, DataSourceDownloadDataSourceEndpointResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, QlibWorkflowsHealthCheckResponse, QlibWorkflowsExecuteTrainingWorkflowData, QlibWorkflowsExecuteTrainingWorkflowResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { DataSourceGetDataSourceStatusEndpointResponse, DataSourceClearDataSourceEndpointResponse, DataSourceDownloadDataSourceEndpointData, DataSourceDownloadDataSourceEndpointResponse, FactorsCreateFactorData, FactorsCreateFactorResponse, FactorsGetFactorsData, FactorsGetFactorsResponse, FactorsGetFactorData, FactorsGetFactorResponse, FactorsUpdateFactorData, FactorsUpdateFactorResponse, FactorsDeleteFactorData, FactorsDeleteFactorResponse, FactorsValidateFactorExpressionData, FactorsValidateFactorExpressionResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, QlibWorkflowsHealthCheckResponse, QlibWorkflowsCheckDataStatusData, QlibWorkflowsCheckDataStatusResponse, QlibWorkflowsStartTrainingResponse, QlibWorkflowsGetTrainingConfigResponse, QlibWorkflowsListModelsResponse, QlibWorkflowsExecuteTrainingWorkflowData, QlibWorkflowsExecuteTrainingWorkflowResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class DataSourceService {
     /**
@@ -64,6 +64,236 @@ export class DataSourceService {
             url: '/api/v1/data-source/download',
             body: data.requestBody,
             mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class FactorsService {
+    /**
+     * Create Factor
+     * Create a new factor
+     *
+     * Educational Notes:
+     * - Uses POST method for resource creation
+     * - Returns 201 Created status on success
+     * - Validates input data using Pydantic models
+     * - Requires user authentication
+     *
+     * Args:
+     * factor_data: Factor creation data
+     * current_user: Authenticated user from JWT token
+     * factor_service: Injected factor service
+     *
+     * Returns:
+     * Created Factor instance
+     *
+     * Raises:
+     * HTTPException: If factor creation fails
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns Factor Successful Response
+     * @throws ApiError
+     */
+    public static createFactor(data: FactorsCreateFactorData): CancelablePromise<FactorsCreateFactorResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/factors/',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Factors
+     * Get list of factors with optional filtering
+     *
+     * Educational Notes:
+     * - Uses GET method for resource retrieval
+     * - Supports query parameters for filtering and pagination
+     * - Returns list of factors matching criteria
+     * - Requires user authentication
+     * - Use factor_type=feature for features (X), factor_type=label for labels (Y)
+     *
+     * Args:
+     * status_filter: Optional status filter (ACTIVE/INACTIVE)
+     * factor_type: Optional type filter (feature/label)
+     * limit: Maximum number of factors to return (1-1000)
+     * offset: Number of factors to skip for pagination
+     * current_user: Authenticated user
+     * factor_service: Injected factor service
+     *
+     * Returns:
+     * List of Factor instances
+     * @param data The data for the request.
+     * @param data.statusFilter Filter by factor status
+     * @param data.factorType Filter by factor type (feature or label)
+     * @param data.limit Maximum number of factors to return
+     * @param data.offset Number of factors to skip
+     * @returns Factor Successful Response
+     * @throws ApiError
+     */
+    public static getFactors(data: FactorsGetFactorsData = {}): CancelablePromise<FactorsGetFactorsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/factors/',
+            query: {
+                status_filter: data.statusFilter,
+                factor_type: data.factorType,
+                limit: data.limit,
+                offset: data.offset
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Get Factor
+     * Get factor by ID
+     *
+     * Educational Notes:
+     * - Uses GET method with path parameter
+     * - Returns single factor or 404 if not found
+     * - Validates UUID format automatically
+     *
+     * Args:
+     * factor_id: Factor UUID
+     * current_user: Authenticated user
+     * factor_service: Injected factor service
+     *
+     * Returns:
+     * Factor instance
+     *
+     * Raises:
+     * HTTPException: If factor not found
+     * @param data The data for the request.
+     * @param data.factorId
+     * @returns Factor Successful Response
+     * @throws ApiError
+     */
+    public static getFactor(data: FactorsGetFactorData): CancelablePromise<FactorsGetFactorResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/factors/{factor_id}',
+            path: {
+                factor_id: data.factorId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Update Factor
+     * Update existing factor
+     *
+     * Educational Notes:
+     * - Uses PUT method for resource update
+     * - Validates expression if provided
+     * - Returns updated factor or 404 if not found
+     *
+     * Args:
+     * factor_id: Factor UUID
+     * factor_data: Updated factor data
+     * current_user: Authenticated user
+     * factor_service: Injected factor service
+     *
+     * Returns:
+     * Updated Factor instance
+     *
+     * Raises:
+     * HTTPException: If factor not found or validation fails
+     * @param data The data for the request.
+     * @param data.factorId
+     * @param data.requestBody
+     * @returns Factor Successful Response
+     * @throws ApiError
+     */
+    public static updateFactor(data: FactorsUpdateFactorData): CancelablePromise<FactorsUpdateFactorResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/factors/{factor_id}',
+            path: {
+                factor_id: data.factorId
+            },
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Delete Factor
+     * Delete factor (soft delete)
+     *
+     * Educational Notes:
+     * - Uses DELETE method for resource deletion
+     * - Returns 204 No Content on successful deletion
+     * - Performs soft delete (sets status to INACTIVE)
+     *
+     * Args:
+     * factor_id: Factor UUID
+     * current_user: Authenticated user
+     * factor_service: Injected factor service
+     *
+     * Raises:
+     * HTTPException: If factor not found or deletion fails
+     * @param data The data for the request.
+     * @param data.factorId
+     * @returns void Successful Response
+     * @throws ApiError
+     */
+    public static deleteFactor(data: FactorsDeleteFactorData): CancelablePromise<FactorsDeleteFactorResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/factors/{factor_id}',
+            path: {
+                factor_id: data.factorId
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Validate Factor Expression
+     * Validate factor expression syntax
+     *
+     * Educational Notes:
+     * - Provides standalone expression validation
+     * - Useful for frontend real-time validation
+     * - Returns detailed validation results
+     *
+     * Args:
+     * expression: Qlib expression string to validate
+     * current_user: Authenticated user
+     * factor_service: Injected factor service
+     *
+     * Returns:
+     * Validation result dictionary
+     * @param data The data for the request.
+     * @param data.expression
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static validateFactorExpression(data: FactorsValidateFactorExpressionData): CancelablePromise<FactorsValidateFactorExpressionResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/factors/validate-expression',
+            query: {
+                expression: data.expression
+            },
             errors: {
                 422: 'Validation Error'
             }
@@ -317,6 +547,82 @@ export class QlibWorkflowsService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/qlib/health'
+        });
+    }
+    
+    /**
+     * Check Data Status
+     * Check if data is available for training.
+     *
+     * Args:
+     * freq: Data frequency ("day" or "1min")
+     *
+     * Returns:
+     * Data availability status
+     * @param data The data for the request.
+     * @param data.freq
+     * @returns DataStatusResponse Successful Response
+     * @throws ApiError
+     */
+    public static checkDataStatus(data: QlibWorkflowsCheckDataStatusData): CancelablePromise<QlibWorkflowsCheckDataStatusResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/qlib/data-status/{freq}',
+            path: {
+                freq: data.freq
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Start Training
+     * Start training workflow using configuration from file.
+     *
+     * This is a simplified endpoint - no configuration needed from frontend.
+     * Training parameters are read from backend/app/config/training_config.yaml.
+     *
+     * Returns:
+     * Training result with model path and metrics
+     * @returns TrainingStartResponse Successful Response
+     * @throws ApiError
+     */
+    public static startTraining(): CancelablePromise<QlibWorkflowsStartTrainingResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/qlib/training/start'
+        });
+    }
+    
+    /**
+     * Get Training Config
+     * Get current training configuration.
+     *
+     * Returns the configuration that will be used when training is started.
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getTrainingConfig(): CancelablePromise<QlibWorkflowsGetTrainingConfigResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/qlib/training/config'
+        });
+    }
+    
+    /**
+     * List Models
+     * List all trained models.
+     *
+     * Returns list of model files with metadata.
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static listModels(): CancelablePromise<QlibWorkflowsListModelsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/qlib/models'
         });
     }
     

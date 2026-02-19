@@ -37,9 +37,10 @@ logger = logging.getLogger(__name__)
 # Model storage directory
 MODELS_DIR = Path(settings.QLIB_DATA_PATH).parent / "models"
 
-# Training configuration file path
+# Configuration file paths
 CONFIG_DIR = Path(__file__).parent.parent / "config"
 TRAINING_CONFIG_PATH = CONFIG_DIR / "training_config.yaml"
+BACKTEST_CONFIG_PATH = CONFIG_DIR / "backtest_config.yaml"
 
 
 class QlibWorkflowService:
@@ -115,8 +116,10 @@ class QlibWorkflowService:
 
         # Extract parameters from config
         experiment_name = config.get("experiment_name", "default")
-        freq = config.get("freq", "day")
         model_name = config.get("model_name", None)
+
+        # Detect freq dynamically from available data
+        freq = self._detect_data_frequency()
 
         # Execute training workflow
         return self.execute_training_workflow(
@@ -125,6 +128,32 @@ class QlibWorkflowService:
             model_name=model_name,
             freq=freq,
         )
+
+    def _detect_data_frequency(self) -> str:
+        """
+        Detect available data frequency by checking which data directories exist.
+
+        Priority: day > 1min (prefer day data if both exist)
+
+        Returns:
+            Detected frequency ("day" or "1min")
+        """
+        day_path = Path(settings.QLIB_DATA_PATH)
+        min_path = Path(settings.QLIB_DATA_PATH_1MIN)
+
+        day_exists = day_path.exists() and (day_path / "features").exists()
+        min_exists = min_path.exists() and (min_path / "features").exists()
+
+        if day_exists:
+            self.logger.info("Detected day frequency data")
+            return "day"
+        elif min_exists:
+            self.logger.info("Detected 1min frequency data")
+            return "1min"
+        else:
+            # Default to day if no data found (will fail later with proper error)
+            self.logger.warning("No data detected, defaulting to day frequency")
+            return "day"
 
     def get_provider_uri(self, freq: str = "day") -> str:
         """
@@ -294,7 +323,9 @@ class QlibWorkflowService:
                     self.logger.info(f"Started experiment: {experiment_name}")
 
                     # Execute workflow steps (following qrun's _exe_task pattern)
-                    result = self._execute_workflow_steps(config, timer, model_name)
+                    result = self._execute_workflow_steps(
+                        config, timer, model_name, freq
+                    )
 
                     # Add timing information
                     result["timings"] = timer.get_summary()
@@ -311,6 +342,7 @@ class QlibWorkflowService:
         config: Dict[str, Any],
         timer: WorkflowTimer,
         model_name: Optional[str] = None,
+        freq: str = "day",
     ) -> Dict[str, Any]:
         """
         Execute the main workflow steps following qrun's _exe_task pattern.
@@ -325,11 +357,17 @@ class QlibWorkflowService:
             config: Workflow configuration dictionary
             timer: Timer for tracking execution time
             model_name: Name for the saved model file
+            freq: Data frequency ("day" or "1min")
 
         Returns:
             Dictionary with workflow results including metrics and model path
         """
         task_config = config.get("task", {})
+
+        # Step 0: Get actual data time range and update config dynamically
+        time_range = self._get_data_time_range()
+        if time_range:
+            task_config = self._apply_dynamic_time_config(task_config, time_range, freq)
 
         # Step 1: Create dataset
         with timer.step("dataset_preparation"):
@@ -450,7 +488,15 @@ class QlibWorkflowService:
         if isinstance(records_config, dict):
             records_config = [records_config]
 
+        # Get actual data time range for dynamic backtest configuration
+        data_time_range = self._get_data_time_range()
+
         for record_config in records_config:
+            # For PortAnaRecord, dynamically set backtest time range from actual data
+            if record_config.get("class") == "PortAnaRecord" and data_time_range:
+                record_config = self._update_backtest_time_range(
+                    record_config, data_time_range
+                )
             try:
                 record_class = record_config.get("class", "Unknown")
                 self.logger.info(f"Executing record: {record_class}")
@@ -485,6 +531,145 @@ class QlibWorkflowService:
                 )
 
         return results
+
+    def _get_data_time_range(self) -> Optional[Dict[str, str]]:
+        """
+        Get actual data time range from Qlib calendar.
+
+        Returns:
+            Dictionary with 'start_time' and 'end_time' keys, or None if unavailable
+        """
+        try:
+            from qlib.data import D
+
+            # Get calendar from Qlib data
+            calendar = D.calendar(freq="day")
+            if calendar is not None and len(calendar) > 0:
+                start_time = str(calendar[0])[:10]  # Format: YYYY-MM-DD
+                end_time = str(calendar[-1])[:10]
+                self.logger.info(
+                    f"Data time range: {start_time} to {end_time} ({len(calendar)} trading days)"
+                )
+                return {"start_time": start_time, "end_time": end_time}
+        except Exception as e:
+            self.logger.warning(f"Failed to get data time range: {e}")
+        return None
+
+    def _update_backtest_time_range(
+        self, record_config: Dict[str, Any], time_range: Dict[str, str]
+    ) -> Dict[str, Any]:
+        """
+        Update PortAnaRecord backtest configuration with actual data time range.
+
+        Note: We set start_time and end_time to None to let PortAnaRecord
+        automatically extract time range from prediction results. This avoids
+        index out of bounds errors caused by calendar boundary issues.
+
+        Args:
+            record_config: Original record configuration
+            time_range: Dictionary with 'start_time' and 'end_time' (for logging only)
+
+        Returns:
+            Updated record configuration
+        """
+        import copy
+
+        config = copy.deepcopy(record_config)
+
+        # Navigate to backtest config
+        kwargs = config.get("kwargs", {})
+        port_config = kwargs.get("config", {})
+        backtest = port_config.get("backtest", {})
+
+        # Set to None to let PortAnaRecord auto-extract from predictions
+        # This avoids index out of bounds errors
+        backtest["start_time"] = None
+        backtest["end_time"] = None
+
+        # Ensure the nested structure exists
+        if "kwargs" not in config:
+            config["kwargs"] = {}
+        if "config" not in config["kwargs"]:
+            config["kwargs"]["config"] = {}
+        config["kwargs"]["config"]["backtest"] = backtest
+
+        self.logger.info(
+            f"Backtest will auto-extract time range from predictions (data range: {time_range['start_time']} to {time_range['end_time']})"
+        )
+        return config
+
+    def _apply_dynamic_time_config(
+        self, task_config: Dict[str, Any], time_range: Dict[str, str], freq: str = "day"
+    ) -> Dict[str, Any]:
+        """
+        Apply dynamic time configuration to all parts of task config.
+
+        This method sets time ranges and freq for:
+        - data_handler (start_time, end_time, fit_start_time, fit_end_time, freq)
+        - segments (train, valid, test) with 70/15/15 split
+        - backtest (start_time, end_time)
+
+        Args:
+            task_config: Original task configuration
+            time_range: Dictionary with 'start_time' and 'end_time'
+            freq: Data frequency ("day" or "1min")
+
+        Returns:
+            Updated task configuration with dynamic time ranges and freq
+        """
+        import copy
+        from datetime import datetime, timedelta
+
+        config = copy.deepcopy(task_config)
+        start = datetime.strptime(time_range["start_time"], "%Y-%m-%d")
+        end = datetime.strptime(time_range["end_time"], "%Y-%m-%d")
+        total_days = (end - start).days
+
+        # Calculate segment boundaries (70% train, 15% valid, 15% test)
+        train_days = int(total_days * 0.70)
+        valid_days = int(total_days * 0.15)
+
+        train_end = start + timedelta(days=train_days)
+        valid_start = train_end + timedelta(days=1)
+        valid_end = valid_start + timedelta(days=valid_days)
+        test_start = valid_end + timedelta(days=1)
+
+        # Format dates
+        fmt = "%Y-%m-%d"
+        train_range = [start.strftime(fmt), train_end.strftime(fmt)]
+        valid_range = [valid_start.strftime(fmt), valid_end.strftime(fmt)]
+        test_range = [test_start.strftime(fmt), end.strftime(fmt)]
+
+        self.logger.info(
+            f"Dynamic time split: train={train_range}, valid={valid_range}, test={test_range}"
+        )
+
+        # Update dataset handler config
+        dataset_config = config.get("dataset", {})
+        kwargs = dataset_config.get("kwargs", {})
+        handler_config = kwargs.get("handler", {})
+        handler_kwargs = handler_config.get("kwargs", {})
+
+        handler_kwargs["start_time"] = time_range["start_time"]
+        handler_kwargs["end_time"] = time_range["end_time"]
+        handler_kwargs["fit_start_time"] = time_range["start_time"]
+        handler_kwargs["fit_end_time"] = valid_end.strftime(fmt)
+        handler_kwargs["freq"] = freq  # Set freq dynamically
+
+        # Update segments
+        kwargs["segments"] = {
+            "train": train_range,
+            "valid": valid_range,
+            "test": test_range,
+        }
+
+        # Ensure nested structure
+        handler_config["kwargs"] = handler_kwargs
+        kwargs["handler"] = handler_config
+        dataset_config["kwargs"] = kwargs
+        config["dataset"] = dataset_config
+
+        return config
 
     def _create_dataset(self, dataset_config: Dict[str, Any]):
         """
@@ -577,6 +762,211 @@ class QlibWorkflowService:
 
         self.logger.info(f"Model loaded from: {model_path}")
         return model
+
+    def _find_latest_predictions(self, mlruns_dir: Path) -> Optional[Any]:
+        """
+        Find the latest pred.pkl file from MLflow artifacts.
+
+        Args:
+            mlruns_dir: Path to MLflow runs directory
+
+        Returns:
+            Loaded predictions DataFrame or None if not found
+        """
+        if not mlruns_dir.exists():
+            self.logger.warning(f"MLflow runs directory not found: {mlruns_dir}")
+            return None
+
+        # Search for pred.pkl files in all experiments/runs
+        pred_files = list(mlruns_dir.glob("**/pred.pkl"))
+        if not pred_files:
+            self.logger.warning("No pred.pkl files found in MLflow artifacts")
+            return None
+
+        # Sort by modification time, get latest
+        latest_pred = max(pred_files, key=lambda p: p.stat().st_mtime)
+        self.logger.info(f"Found latest predictions: {latest_pred}")
+
+        with open(latest_pred, "rb") as f:
+            pred = pickle.load(f)
+
+        return pred
+
+    def load_backtest_config(
+        self, config_path: Optional[Path] = None
+    ) -> Dict[str, Any]:
+        """
+        Load backtest configuration from YAML file.
+
+        Args:
+            config_path: Path to config file (uses default if None)
+
+        Returns:
+            Configuration dictionary
+        """
+        if config_path is None:
+            config_path = BACKTEST_CONFIG_PATH
+
+        if not config_path.exists():
+            self.logger.warning(
+                f"Backtest config not found: {config_path}, using defaults"
+            )
+            return {}
+
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = yaml.safe_load(f)
+
+        self.logger.info(f"Loaded backtest config from: {config_path}")
+        return config
+
+    def execute_backtest(
+        self,
+        pred_path: Optional[str] = None,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None,
+        benchmark: Optional[str] = None,
+        topk: Optional[int] = None,
+        n_drop: Optional[int] = None,
+        account: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """
+        Execute backtest independently using Qlib's backtest functions.
+
+        This method bypasses PortAnaRecord to avoid the index out of bounds error.
+        It directly uses Qlib's backtest API.
+
+        Configuration is loaded from backtest_config.yaml, with API parameters
+        overriding config file values.
+
+        Args:
+            pred_path: Path to prediction file (pred.pkl). If None, uses latest.
+            start_time: Backtest start time. If None, auto-detect from predictions.
+            end_time: Backtest end time. If None, auto-detect from predictions.
+            benchmark: Benchmark symbol for comparison (overrides config).
+            topk: Number of stocks to hold (overrides config).
+            n_drop: Number of stocks to drop each day (overrides config).
+            account: Initial account value (overrides config).
+
+        Returns:
+            Dictionary with backtest results including report and metrics.
+        """
+        import pandas as pd
+        from qlib.contrib.evaluate import backtest_daily
+        from qlib.contrib.strategy import TopkDropoutStrategy
+
+        # Load config from file
+        config = self.load_backtest_config()
+        strategy_config = config.get("strategy", {}).get("kwargs", {})
+        backtest_config = config.get("backtest", {})
+
+        # Use config values as defaults, API params override
+        topk = topk if topk is not None else strategy_config.get("topk", 50)
+        n_drop = n_drop if n_drop is not None else strategy_config.get("n_drop", 5)
+        account = (
+            account
+            if account is not None
+            else backtest_config.get("account", 100000000)
+        )
+        benchmark = (
+            benchmark
+            if benchmark is not None
+            else backtest_config.get("benchmark", "SH000300")
+        )
+        exchange_kwargs = backtest_config.get(
+            "exchange_kwargs",
+            {
+                "limit_threshold": 0.095,
+                "deal_price": "close",
+                "open_cost": 0.0003,
+                "close_cost": 0.0013,
+                "min_cost": 5,
+            },
+        )
+
+        # Detect freq dynamically
+        freq = self._detect_data_frequency()
+        self.logger.info(f"Backtest using freq: {freq}")
+
+        # Initialize Qlib
+        qlib_service = get_qlib_init_service()
+        qlib_service.initialize()
+
+        # Load predictions
+        if pred_path is None:
+            # Find latest prediction from MLflow artifacts directory
+            mlruns_dir = Path(settings.QLIB_DATA_PATH).parent / "mlruns"
+            pred = self._find_latest_predictions(mlruns_dir)
+            if pred is None:
+                return {
+                    "status": "error",
+                    "error": "No predictions found. Please run training first.",
+                }
+        else:
+            with open(pred_path, "rb") as f:
+                pred = pickle.load(f)
+
+        self.logger.info(f"Loaded predictions: {len(pred)} records")
+
+        # Auto-detect time range from predictions
+        dt_values = pred.index.get_level_values("datetime")
+        if start_time is None:
+            start_time = str(dt_values.min())[:10]
+        if end_time is None:
+            # Shift back by 1 day to avoid boundary issues
+            end_time = str(dt_values.max() - pd.Timedelta(days=1))[:10]
+
+        self.logger.info(f"Backtest period: {start_time} to {end_time}")
+
+        # Create strategy
+        strategy = TopkDropoutStrategy(
+            signal=pred,
+            topk=topk,
+            n_drop=n_drop,
+        )
+
+        # Execute backtest using backtest_daily (simpler API)
+        try:
+            report_df, positions = backtest_daily(
+                start_time=start_time,
+                end_time=end_time,
+                strategy=strategy,
+                account=account,
+                benchmark=benchmark,
+                exchange_kwargs=exchange_kwargs,
+            )
+
+            # Calculate metrics
+            total_return = (
+                report_df["return"].sum() if "return" in report_df.columns else 0
+            )
+            total_cost = report_df["cost"].sum() if "cost" in report_df.columns else 0
+
+            result = {
+                "status": "success",
+                "start_time": start_time,
+                "end_time": end_time,
+                "trading_days": len(report_df),
+                "total_return": float(total_return),
+                "total_cost": float(total_cost),
+                "net_return": float(total_return - total_cost),
+                "final_account": (
+                    float(report_df["account"].iloc[-1])
+                    if "account" in report_df.columns
+                    else account
+                ),
+            }
+
+            self.logger.info(
+                f"Backtest completed: {result['trading_days']} trading days, return={result['total_return']:.4f}"
+            )
+            return result
+
+        except Exception as e:
+            self.logger.error(f"Backtest failed: {str(e)}")
+            return {
+                "status": "error",
+                "error": str(e),
+            }
 
 
 # Global instance

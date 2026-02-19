@@ -234,6 +234,27 @@ INDEX_API_CONFIG = {
     },
 }
 
+# Benchmark Index Configuration
+# Maps stock_pool to benchmark index symbol for backtest comparison
+BENCHMARK_CONFIG = {
+    "CSI300": {
+        "yahoo_symbol": "000300.SS",  # CSI 300 Index
+        "qlib_symbol": "SH000300",
+    },
+    "CSI500": {
+        "yahoo_symbol": "000905.SS",  # CSI 500 Index
+        "qlib_symbol": "SH000905",
+    },
+    "SP500": {
+        "yahoo_symbol": "SPY",  # S&P 500 ETF (more reliable than ^GSPC)
+        "qlib_symbol": "SPY",
+    },
+    "NASDAQ100": {
+        "yahoo_symbol": "QQQ",  # Nasdaq 100 ETF (more reliable than ^NDX)
+        "qlib_symbol": "QQQ",
+    },
+}
+
 # Market Configuration
 MARKET_CONFIG = {
     "CN": {

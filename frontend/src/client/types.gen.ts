@@ -31,6 +31,11 @@ export type ClearDataResponse = {
 };
 
 /**
+ * Enumeration of factor computation status
+ */
+export type ComputationStatus = 'pending' | 'computing' | 'completed' | 'failed';
+
+/**
  * Configuration for Qlib Data Handler (e.g., Alpha158)
  *
  * Educational Notes:
@@ -172,6 +177,10 @@ export type DataSourceStatus = {
      */
     features?: (Array<(string)> | null);
     /**
+     * Active label name for prediction target (e.g., 'return_1d')
+     */
+    label?: (string | null);
+    /**
      * Total data size in MB
      */
     data_size_mb?: (number | null);
@@ -179,6 +188,17 @@ export type DataSourceStatus = {
      * Last update timestamp
      */
     last_updated?: (string | null);
+};
+
+/**
+ * Response model for data status check.
+ */
+export type DataStatusResponse = {
+    exists: boolean;
+    message: string;
+    details: {
+        [key: string]: unknown;
+    };
 };
 
 /**
@@ -232,6 +252,130 @@ export type DownloadTaskResponse = {
      * Human-readable message
      */
     message: string;
+};
+
+export type Factor = {
+    /**
+     * Factor name
+     */
+    name: string;
+    /**
+     * Factor expression in Qlib format
+     */
+    expression: string;
+    /**
+     * Factor description
+     */
+    description?: (string | null);
+    /**
+     * Factor type: feature (X) or label (Y)
+     */
+    factor_type?: FactorType;
+    /**
+     * Factor status
+     */
+    status?: FactorStatus;
+    /**
+     * Latest IC value
+     */
+    last_ic_value?: (number | null);
+    /**
+     * Latest IC calculation date
+     */
+    last_ic_date?: (string | null);
+    /**
+     * Average IC value
+     */
+    avg_ic_value?: (number | null);
+    /**
+     * IC Information Ratio
+     */
+    ic_ir_ratio?: (number | null);
+    /**
+     * Last computation time
+     */
+    last_computed_at?: (string | null);
+    /**
+     * Factor computation status
+     */
+    computation_status?: (ComputationStatus | null);
+    /**
+     * Number of data points computed
+     */
+    data_points_count?: (number | null);
+    id?: string;
+    created_at?: string;
+    updated_at?: string;
+    created_by: string;
+};
+
+export type FactorCreate = {
+    /**
+     * Factor name
+     */
+    name: string;
+    /**
+     * Factor expression in Qlib format
+     */
+    expression: string;
+    /**
+     * Factor description
+     */
+    description?: (string | null);
+    /**
+     * Factor type: feature (X) or label (Y)
+     */
+    factor_type?: FactorType;
+    /**
+     * Factor status
+     */
+    status?: FactorStatus;
+    /**
+     * Latest IC value
+     */
+    last_ic_value?: (number | null);
+    /**
+     * Latest IC calculation date
+     */
+    last_ic_date?: (string | null);
+    /**
+     * Average IC value
+     */
+    avg_ic_value?: (number | null);
+    /**
+     * IC Information Ratio
+     */
+    ic_ir_ratio?: (number | null);
+    /**
+     * Last computation time
+     */
+    last_computed_at?: (string | null);
+    /**
+     * Factor computation status
+     */
+    computation_status?: (ComputationStatus | null);
+    /**
+     * Number of data points computed
+     */
+    data_points_count?: (number | null);
+};
+
+/**
+ * Enumeration of factor status
+ */
+export type FactorStatus = 'active' | 'inactive';
+
+/**
+ * Enumeration of factor types - distinguishes features from labels
+ */
+export type FactorType = 'feature' | 'label';
+
+export type FactorUpdate = {
+    name?: (string | null);
+    expression?: (string | null);
+    description?: (string | null);
+    factor_type?: (FactorType | null);
+    status?: (FactorStatus | null);
 };
 
 export type HTTPValidationError = {
@@ -324,6 +468,21 @@ export type TaskConfig = {
 export type Token = {
     access_token: string;
     token_type?: string;
+};
+
+/**
+ * Response model for simplified training start endpoint.
+ */
+export type TrainingStartResponse = {
+    status: string;
+    message: string;
+    model_path?: (string | null);
+    test_predictions_count?: number;
+    experiment_name?: (string | null);
+    timings?: ({
+    [key: string]: unknown;
+} | null);
+    error?: (string | null);
 };
 
 /**
@@ -437,6 +596,58 @@ export type DataSourceDownloadDataSourceEndpointData = {
 
 export type DataSourceDownloadDataSourceEndpointResponse = (DownloadTaskResponse);
 
+export type FactorsCreateFactorData = {
+    requestBody: FactorCreate;
+};
+
+export type FactorsCreateFactorResponse = (Factor);
+
+export type FactorsGetFactorsData = {
+    /**
+     * Filter by factor type (feature or label)
+     */
+    factorType?: (FactorType | null);
+    /**
+     * Maximum number of factors to return
+     */
+    limit?: number;
+    /**
+     * Number of factors to skip
+     */
+    offset?: number;
+    /**
+     * Filter by factor status
+     */
+    statusFilter?: (FactorStatus | null);
+};
+
+export type FactorsGetFactorsResponse = (Array<Factor>);
+
+export type FactorsGetFactorData = {
+    factorId: string;
+};
+
+export type FactorsGetFactorResponse = (Factor);
+
+export type FactorsUpdateFactorData = {
+    factorId: string;
+    requestBody: FactorUpdate;
+};
+
+export type FactorsUpdateFactorResponse = (Factor);
+
+export type FactorsDeleteFactorData = {
+    factorId: string;
+};
+
+export type FactorsDeleteFactorResponse = (void);
+
+export type FactorsValidateFactorExpressionData = {
+    expression: string;
+};
+
+export type FactorsValidateFactorExpressionResponse = (unknown);
+
 export type ItemsReadItemsData = {
     limit?: number;
     skip?: number;
@@ -502,6 +713,18 @@ export type PrivateCreateUserData = {
 export type PrivateCreateUserResponse = (UserPublic);
 
 export type QlibWorkflowsHealthCheckResponse = (unknown);
+
+export type QlibWorkflowsCheckDataStatusData = {
+    freq: string;
+};
+
+export type QlibWorkflowsCheckDataStatusResponse = (DataStatusResponse);
+
+export type QlibWorkflowsStartTrainingResponse = (TrainingStartResponse);
+
+export type QlibWorkflowsGetTrainingConfigResponse = (unknown);
+
+export type QlibWorkflowsListModelsResponse = (unknown);
 
 export type QlibWorkflowsExecuteTrainingWorkflowData = {
     requestBody: TrainingWorkflowRequest;

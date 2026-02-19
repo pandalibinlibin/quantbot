@@ -231,6 +231,61 @@ def get_qlib_dir_for_freq(freq: str) -> str:
         return settings.QLIB_DATA_PATH
 
 
+def _remove_benchmarks_from_instruments(qlib_path: Path) -> None:
+    """
+    Remove benchmark indices from instruments/all.txt file.
+
+    Benchmark indices (e.g., SH000300, SH000905, SPY, QQQ) should only be used
+    for performance comparison, not for trading. This function removes them
+    from the instruments list so they won't participate in training or trading.
+
+    Args:
+        qlib_path: Path to the Qlib data directory
+    """
+    from app.services.data_collectors.yahoo_collector import BENCHMARK_CONFIG
+
+    instruments_file = qlib_path / "instruments" / "all.txt"
+    if not instruments_file.exists():
+        return
+
+    # Get all benchmark qlib symbols
+    benchmark_symbols = set()
+    for config in BENCHMARK_CONFIG.values():
+        benchmark_symbols.add(config["qlib_symbol"])
+
+    try:
+        # Read current instruments
+        with open(instruments_file, "r") as f:
+            lines = f.readlines()
+
+        # Filter out benchmark symbols
+        filtered_lines = []
+        removed_count = 0
+        for line in lines:
+            parts = line.strip().split("\t")
+            if parts and parts[0] in benchmark_symbols:
+                removed_count += 1
+                continue
+            filtered_lines.append(line)
+
+        # Write back filtered instruments
+        if removed_count > 0:
+            with open(instruments_file, "w") as f:
+                f.writelines(filtered_lines)
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.info(
+                f"Removed {removed_count} benchmark indices from instruments/all.txt"
+            )
+
+    except Exception as e:
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to remove benchmarks from instruments: {e}")
+
+
 def convert_csv_to_qlib_format_impl(
     csv_dir: str = "/app/csv_data/cn_data",
     qlib_dir: str = None,
@@ -310,6 +365,10 @@ def convert_csv_to_qlib_format_impl(
             if features_dir.exists():
                 stock_dirs = [d for d in features_dir.iterdir() if d.is_dir()]
                 stock_count = len(stock_dirs)
+
+            # Remove benchmark indices from instruments/all.txt
+            # Benchmark indices should only be used for comparison, not for trading
+            _remove_benchmarks_from_instruments(qlib_path)
 
             return (
                 True,
@@ -546,6 +605,25 @@ def get_data_source_status_impl() -> dict:
             features = features[:20] if len(features) > 20 else features
         except Exception:
             pass
+
+        # Get label name from database to separate from features
+        label_name = None
+        try:
+            from sqlmodel import Session, select
+            from app.core.db import engine
+            from app.models import Factor, FactorStatus, FactorType
+
+            with Session(engine) as session:
+                statement = select(Factor).where(
+                    Factor.factor_type == FactorType.LABEL,
+                    Factor.status == FactorStatus.ACTIVE,
+                )
+                label = session.exec(statement).first()
+                if label:
+                    label_name = label.name
+        except Exception:
+            pass
+
     return {
         "source_name": current_source,
         "data_exists": data_exists,
@@ -555,6 +633,7 @@ def get_data_source_status_impl() -> dict:
         "instruments_count": instruments_count,
         "stock_pool": stock_pool,
         "features": features,
+        "label": label_name,
         "data_size_mb": data_size_mb,
         "last_updated": last_updated,
     }

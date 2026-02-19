@@ -1184,6 +1184,10 @@ class DataSourceStatus(SQLModel):
         default=None,
         description="List of available features (e.g., ['open', 'close', 'high', 'low', 'volume'])",
     )
+    label: str | None = Field(
+        default=None,
+        description="Active label name for prediction target (e.g., 'return_1d')",
+    )
     data_size_mb: float | None = Field(
         default=None, description="Total data size in MB"
     )

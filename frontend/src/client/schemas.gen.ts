@@ -91,6 +91,13 @@ Educational Notes:
 - Simple response to confirm operation`
 } as const;
 
+export const ComputationStatusSchema = {
+    type: 'string',
+    enum: ['pending', 'computing', 'completed', 'failed'],
+    title: 'ComputationStatus',
+    description: 'Enumeration of factor computation status'
+} as const;
+
 export const DataHandlerConfigSchema = {
     properties: {
         class_name: {
@@ -219,6 +226,18 @@ export const DataSourceStatusSchema = {
             title: 'Features',
             description: "List of available features (e.g., ['open', 'close', 'high', 'low', 'volume'])"
         },
+        label: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Label',
+            description: "Active label name for prediction target (e.g., 'return_1d')"
+        },
         data_size_mb: {
             anyOf: [
                 {
@@ -253,6 +272,28 @@ Educational Notes:
 - This model represents the current state of the data
 - Used to display information to users
 - Not stored in database, just for API response`
+} as const;
+
+export const DataStatusResponseSchema = {
+    properties: {
+        exists: {
+            type: 'boolean',
+            title: 'Exists'
+        },
+        message: {
+            type: 'string',
+            title: 'Message'
+        },
+        details: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Details'
+        }
+    },
+    type: 'object',
+    required: ['exists', 'message', 'details'],
+    title: 'DataStatusResponse',
+    description: 'Response model for data status check.'
 } as const;
 
 export const DatasetConfigSchema = {
@@ -446,6 +487,356 @@ export const DownloadTaskResponseSchema = {
 Educational Notes:
 - Returned immediately when user starts download
 - Contains task_id for tracking progress`
+} as const;
+
+export const FactorSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 100,
+            title: 'Name',
+            description: 'Factor name'
+        },
+        expression: {
+            type: 'string',
+            title: 'Expression',
+            description: 'Factor expression in Qlib format'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 500
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description',
+            description: 'Factor description'
+        },
+        factor_type: {
+            '$ref': '#/components/schemas/FactorType',
+            description: 'Factor type: feature (X) or label (Y)',
+            default: 'feature'
+        },
+        status: {
+            '$ref': '#/components/schemas/FactorStatus',
+            description: 'Factor status',
+            default: 'active'
+        },
+        last_ic_value: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Last Ic Value',
+            description: 'Latest IC value'
+        },
+        last_ic_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Last Ic Date',
+            description: 'Latest IC calculation date'
+        },
+        avg_ic_value: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Avg Ic Value',
+            description: 'Average IC value'
+        },
+        ic_ir_ratio: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Ic Ir Ratio',
+            description: 'IC Information Ratio'
+        },
+        last_computed_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Last Computed At',
+            description: 'Last computation time'
+        },
+        computation_status: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/ComputationStatus'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            description: 'Factor computation status'
+        },
+        data_points_count: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Data Points Count',
+            description: 'Number of data points computed'
+        },
+        id: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Id'
+        },
+        created_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Created At'
+        },
+        updated_at: {
+            type: 'string',
+            format: 'date-time',
+            title: 'Updated At'
+        },
+        created_by: {
+            type: 'string',
+            format: 'uuid',
+            title: 'Created By'
+        }
+    },
+    type: 'object',
+    required: ['name', 'expression', 'created_by'],
+    title: 'Factor'
+} as const;
+
+export const FactorCreateSchema = {
+    properties: {
+        name: {
+            type: 'string',
+            maxLength: 100,
+            title: 'Name',
+            description: 'Factor name'
+        },
+        expression: {
+            type: 'string',
+            title: 'Expression',
+            description: 'Factor expression in Qlib format'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 500
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description',
+            description: 'Factor description'
+        },
+        factor_type: {
+            '$ref': '#/components/schemas/FactorType',
+            description: 'Factor type: feature (X) or label (Y)',
+            default: 'feature'
+        },
+        status: {
+            '$ref': '#/components/schemas/FactorStatus',
+            description: 'Factor status',
+            default: 'active'
+        },
+        last_ic_value: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Last Ic Value',
+            description: 'Latest IC value'
+        },
+        last_ic_date: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Last Ic Date',
+            description: 'Latest IC calculation date'
+        },
+        avg_ic_value: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Avg Ic Value',
+            description: 'Average IC value'
+        },
+        ic_ir_ratio: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Ic Ir Ratio',
+            description: 'IC Information Ratio'
+        },
+        last_computed_at: {
+            anyOf: [
+                {
+                    type: 'string',
+                    format: 'date-time'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Last Computed At',
+            description: 'Last computation time'
+        },
+        computation_status: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/ComputationStatus'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            description: 'Factor computation status'
+        },
+        data_points_count: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Data Points Count',
+            description: 'Number of data points computed'
+        }
+    },
+    type: 'object',
+    required: ['name', 'expression'],
+    title: 'FactorCreate'
+} as const;
+
+export const FactorStatusSchema = {
+    type: 'string',
+    enum: ['active', 'inactive'],
+    title: 'FactorStatus',
+    description: 'Enumeration of factor status'
+} as const;
+
+export const FactorTypeSchema = {
+    type: 'string',
+    enum: ['feature', 'label'],
+    title: 'FactorType',
+    description: 'Enumeration of factor types - distinguishes features from labels'
+} as const;
+
+export const FactorUpdateSchema = {
+    properties: {
+        name: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 100
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Name'
+        },
+        expression: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Expression'
+        },
+        description: {
+            anyOf: [
+                {
+                    type: 'string',
+                    maxLength: 500
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Description'
+        },
+        factor_type: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/FactorType'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        status: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/FactorStatus'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        }
+    },
+    type: 'object',
+    title: 'FactorUpdate'
 } as const;
 
 export const HTTPValidationErrorSchema = {
@@ -705,6 +1096,73 @@ export const TokenSchema = {
     type: 'object',
     required: ['access_token'],
     title: 'Token'
+} as const;
+
+export const TrainingStartResponseSchema = {
+    properties: {
+        status: {
+            type: 'string',
+            title: 'Status'
+        },
+        message: {
+            type: 'string',
+            title: 'Message'
+        },
+        model_path: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Model Path'
+        },
+        test_predictions_count: {
+            type: 'integer',
+            title: 'Test Predictions Count',
+            default: 0
+        },
+        experiment_name: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Experiment Name'
+        },
+        timings: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Timings'
+        },
+        error: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error'
+        }
+    },
+    type: 'object',
+    required: ['status', 'message'],
+    title: 'TrainingStartResponse',
+    description: 'Response model for simplified training start endpoint.'
 } as const;
 
 export const TrainingWorkflowRequestSchema = {

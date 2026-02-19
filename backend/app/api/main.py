@@ -6,9 +6,10 @@ from app.api.routes import (
     private,
     users,
     utils,
-    qlib_workflow,
     data_source,
     factors,
+    training,
+    backtest,
 )
 from app.core.config import settings
 
@@ -17,11 +18,14 @@ api_router.include_router(login.router)
 api_router.include_router(users.router)
 api_router.include_router(utils.router)
 api_router.include_router(items.router)
-api_router.include_router(qlib_workflow.router)
+
+# Quantbot API routes - organized by domain
 api_router.include_router(
-    data_source.router, prefix="/data-source", tags=["data-source"]
+    data_source.router, prefix="/data-source", tags=["Data Source"]
 )
-api_router.include_router(factors.router, prefix="/factors", tags=["factors"])
+api_router.include_router(factors.router, prefix="/factors", tags=["Factors"])
+api_router.include_router(training.router, prefix="/training", tags=["Training"])
+api_router.include_router(backtest.router, prefix="/backtest", tags=["Backtest"])
 
 if settings.ENVIRONMENT == "local":
     api_router.include_router(private.router)

@@ -403,6 +403,108 @@ def _get_missing_date_ranges(
         return [(requested_start, requested_end)]
 
 
+def _download_benchmark_index(
+    stock_pool: str,
+    collector,
+    csv_dir: Path,
+    download_ranges: List[Tuple[str, str]],
+    interval: str = "1d",
+) -> bool:
+    """
+    Download benchmark index data for backtest comparison.
+
+    This function downloads the benchmark index corresponding to the stock_pool:
+    - CSI300 -> SH000300 (000300.SS)
+    - CSI500 -> SH000905 (000905.SS)
+    - SP500 -> SPY
+    - NASDAQ100 -> QQQ
+
+    Parameters
+    ----------
+    stock_pool : str
+        Stock pool name (csi300, csi500, sp500, nasdaq100)
+    collector : YahooDataCollector
+        Initialized collector instance for downloading data
+    csv_dir : Path
+        Directory to save CSV files
+    download_ranges : List[Tuple[str, str]]
+        List of (start_date, end_date) tuples
+    interval : str
+        Data interval ("1d" or "1min")
+
+    Returns
+    -------
+    bool
+        True if benchmark download succeeded, False otherwise
+    """
+    from app.services.data_collectors.yahoo_collector import BENCHMARK_CONFIG
+
+    index_upper = stock_pool.upper()
+    if index_upper not in BENCHMARK_CONFIG:
+        logger.warning(f"No benchmark config for stock_pool: {stock_pool}")
+        return False
+
+    benchmark_info = BENCHMARK_CONFIG[index_upper]
+    yahoo_symbol = benchmark_info["yahoo_symbol"]
+    qlib_symbol = benchmark_info["qlib_symbol"]
+
+    logger.info(f"Downloading benchmark index: {yahoo_symbol} -> {qlib_symbol}")
+
+    try:
+        for range_start, range_end in download_ranges:
+            df = collector.get_data(
+                symbol=yahoo_symbol,
+                interval=interval,
+                start_datetime=range_start,
+                end_datetime=range_end,
+            )
+
+            if df is not None and not df.empty:
+                # Filter anomalous timestamps
+                df = _filter_anomalous_timestamps(df, range_start, range_end)
+
+                if df.empty:
+                    logger.warning(
+                        f"All benchmark data filtered out for {yahoo_symbol}"
+                    )
+                    continue
+
+                csv_file = csv_dir / f"{qlib_symbol}.csv"
+
+                if csv_file.exists():
+                    # Merge with existing data
+                    existing_df = pd.read_csv(csv_file, index_col=0, parse_dates=True)
+                    if not isinstance(existing_df.index, pd.DatetimeIndex):
+                        existing_df.index = pd.to_datetime(existing_df.index)
+                    if not isinstance(df.index, pd.DatetimeIndex):
+                        df.index = pd.to_datetime(df.index)
+
+                    combined_df = pd.concat([existing_df, df])
+                    combined_df = combined_df[
+                        ~combined_df.index.duplicated(keep="last")
+                    ]
+                    combined_df = combined_df.sort_index()
+                    combined_df.to_csv(csv_file, index=True)
+                else:
+                    df.to_csv(csv_file, index=True)
+
+                logger.info(
+                    f"Benchmark {qlib_symbol} downloaded: {len(df)} records "
+                    f"({range_start} to {range_end})"
+                )
+            else:
+                logger.warning(
+                    f"No data returned for benchmark {yahoo_symbol} "
+                    f"({range_start} to {range_end})"
+                )
+
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to download benchmark {yahoo_symbol}: {e}")
+        return False
+
+
 def _execute_yahoo_pipeline(
     stock_pool: str,
     download_ranges: List[Tuple[str, str]],
@@ -598,6 +700,15 @@ def _execute_yahoo_pipeline(
         logger.info(
             f"Yahoo pipeline completed: {total_collected}/{len(instruments) * len(download_ranges)} "
             f"total downloads successful ({success_rate:.1f}% success rate)"
+        )
+
+        # Step 1.5: Download benchmark index data for backtest comparison
+        _download_benchmark_index(
+            stock_pool=stock_pool,
+            collector=collector,
+            csv_dir=csv_dir,
+            download_ranges=download_ranges,
+            interval=interval,
         )
 
         # Step 2: Data Normalization using UniversalNormalize

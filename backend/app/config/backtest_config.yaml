@@ -1,0 +1,23 @@
+# Backtest Configuration
+# freq is automatically derived from actual data - no hardcoding needed.
+
+# Strategy configuration
+strategy:
+  class: TopkDropoutStrategy
+  module_path: qlib.contrib.strategy
+  kwargs:
+    topk: 50 # Number of stocks to hold
+    n_drop: 5 # Number of stocks to drop each day
+
+# Backtest parameters
+backtest:
+  account: 100000000 # Initial account value (100 million)
+  benchmark: SH000300 # Benchmark index for comparison
+
+  # A-share trading costs
+  exchange_kwargs:
+    limit_threshold: 0.095 # Price limit threshold
+    deal_price: close # Use close price for trading
+    open_cost: 0.0003 # Buy commission rate
+    close_cost: 0.0013 # Sell commission rate (includes stamp duty)
+    min_cost: 5 # Minimum commission per trade
