@@ -484,16 +484,34 @@ def get_data_source_status_impl() -> dict:
 
                     # Fallback to inference if metadata not available
                     if not stock_pool:
-                        if instruments_count <= 120:
-                            stock_pool = "csi100"
-                        elif instruments_count <= 350:
-                            stock_pool = "csi300"
-                        elif instruments_count <= 600:
-                            stock_pool = "csi500"
-                        elif instruments_count > 1000:
-                            stock_pool = "yahoo_cn_full"
+                        # Detect market type from stock code format
+                        # A-shares: start with 'sh' or 'sz' (e.g., sh600000)
+                        # US stocks: pure letters (e.g., aapl)
+                        sample_code = (
+                            instruments_data[0].lower() if instruments_data else ""
+                        )
+                        is_us_market = sample_code and not (
+                            sample_code.startswith("sh") or sample_code.startswith("sz")
+                        )
+
+                        if is_us_market:
+                            if instruments_count <= 110:
+                                stock_pool = "nasdaq100"
+                            elif instruments_count <= 510:
+                                stock_pool = "sp500"
+                            else:
+                                stock_pool = "us_all"
                         else:
-                            stock_pool = "all"
+                            if instruments_count <= 120:
+                                stock_pool = "csi100"
+                            elif instruments_count <= 350:
+                                stock_pool = "csi300"
+                            elif instruments_count <= 600:
+                                stock_pool = "csi500"
+                            elif instruments_count > 1000:
+                                stock_pool = "yahoo_cn_full"
+                            else:
+                                stock_pool = "all"
         except Exception:
             pass
 

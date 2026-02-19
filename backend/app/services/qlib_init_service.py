@@ -127,6 +127,20 @@ class QlibInitService:
         cls._initialized = False
         logger.warning("⚠️  Qlib initialization state reset")
 
+    def reinitialize(self) -> bool:
+        """
+        Force re-initialization of Qlib.
+
+        This is needed after data updates (e.g., incremental updates) to ensure
+        Qlib loads the latest calendar and other cached data.
+
+        Returns:
+            bool: True if re-initialization was successful
+        """
+        logger.info("Force re-initializing Qlib to refresh cached data...")
+        self._initialized = False
+        return self.initialize()
+
 
 # Global instance (singleton)
 qlib_init_service = QlibInitService()

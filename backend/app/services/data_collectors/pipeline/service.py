@@ -111,7 +111,7 @@ def execute_data_pipeline(request: DownloadDataRequest) -> DownloadTaskResponse:
         else:
             # Incremental update: detect all missing time periods
             download_ranges = _get_missing_date_ranges(
-                request.start_date, request.end_date
+                request.start_date, request.end_date, request.interval
             )
             if not download_ranges:
                 return DownloadTaskResponse(
@@ -186,12 +186,59 @@ def execute_data_pipeline(request: DownloadDataRequest) -> DownloadTaskResponse:
                 # Determine update mode based on incremental flag
                 data_collector_mode = "incremental" if request.incremental else "full"
 
+                # For incremental mode, we need to:
+                # 1. Re-initialize Qlib to refresh cached calendar data
+                # 2. Read the full data date range from calendar
+                # 3. Recompute all factors with full date range and overwrite existing data
+                if request.incremental:
+                    # Re-initialize Qlib to load updated calendar and feature data
+                    from app.services.qlib_init_service import get_qlib_init_service
+
+                    qlib_service = get_qlib_init_service()
+                    qlib_service.reinitialize()
+                    logger.info("Qlib re-initialized after incremental data update")
+
+                    # Read calendar to get full data date range
+                    if factor_freq == "1min":
+                        calendar_file = (
+                            Path(settings.QLIB_DATA_PATH_1MIN)
+                            / "calendars"
+                            / "1min.txt"
+                        )
+                    else:
+                        calendar_file = (
+                            Path(settings.QLIB_DATA_PATH) / "calendars" / "day.txt"
+                        )
+
+                    if calendar_file.exists():
+                        with open(calendar_file, "r") as f:
+                            calendar_dates = [
+                                line.strip() for line in f if line.strip()
+                            ]
+                        if calendar_dates:
+                            # Extract date part (for minute data, dates include time)
+                            factor_start = calendar_dates[0].split()[0]
+                            factor_end = calendar_dates[-1].split()[0]
+                            logger.info(
+                                f"Incremental factor computation: using full calendar range {factor_start} to {factor_end}"
+                            )
+                        else:
+                            factor_start = request.start_date
+                            factor_end = request.end_date
+                    else:
+                        logger.warning(f"Calendar file not found: {calendar_file}")
+                        factor_start = request.start_date
+                        factor_end = request.end_date
+                else:
+                    factor_start = request.start_date
+                    factor_end = request.end_date
+
                 # Trigger factor computation
                 factor_result = factor_pipeline.sync_with_data_collector(
                     factor_names=factor_names,
                     data_collector_mode=data_collector_mode,
-                    start_time=request.start_date,
-                    end_time=request.end_date,
+                    start_time=factor_start,
+                    end_time=factor_end,
                     parallel=True,
                 )
 
@@ -234,39 +281,64 @@ def execute_data_pipeline(request: DownloadDataRequest) -> DownloadTaskResponse:
 
 
 def _get_missing_date_ranges(
-    requested_start: str, requested_end: str
+    requested_start: str, requested_end: str, interval: str = "1d"
 ) -> List[Tuple[str, str]]:
     """
     Detect all missing date ranges in existing Qlib data.
+
+    Args:
+        requested_start: Start date string (YYYY-MM-DD)
+        requested_end: End date string (YYYY-MM-DD)
+        interval: Data interval ("1d" for day, "1m" for minute)
 
     Returns:
         List of (start_date, end_date) tuples for missing periods
     """
     try:
-        from qlib.data import D
         from app.services.qlib_init_service import get_qlib_init_service
 
-        # Check if data directories exist
-        qlib_data_path = Path(settings.QLIB_DATA_PATH)
-        qlib_data_path_1min = Path(settings.QLIB_DATA_PATH_1MIN)
-        if not qlib_data_path.exists() and not qlib_data_path_1min.exists():
-            logger.info("No existing Qlib data found, will download full range")
+        # Determine which data directory and calendar to use based on interval
+        is_minute_data = interval == "1m"
+        if is_minute_data:
+            qlib_data_path = Path(settings.QLIB_DATA_PATH_1MIN)
+            calendar_file = qlib_data_path / "calendars" / "1min.txt"
+        else:
+            qlib_data_path = Path(settings.QLIB_DATA_PATH)
+            calendar_file = qlib_data_path / "calendars" / "day.txt"
+
+        if not qlib_data_path.exists():
+            logger.info(
+                f"No existing Qlib data found at {qlib_data_path}, will download full range"
+            )
             return [(requested_start, requested_end)]
 
         try:
-            # Initialize Qlib using centralized service (ensures single initialization)
-            qlib_service = get_qlib_init_service()
-            qlib_service.initialize()
-
-            # Get trading calendar
-            calendar = D.calendar(freq="day")
-            if calendar is None or len(calendar) == 0:
-                logger.info("No calendar data found, will download full range")
+            # Read calendar directly from file instead of using D.calendar()
+            # This avoids issues with Qlib caching and ensures we get the correct frequency
+            if not calendar_file.exists():
+                logger.info(
+                    f"No calendar file found at {calendar_file}, will download full range"
+                )
                 return [(requested_start, requested_end)]
 
-            # Convert to date strings for comparison
-            existing_dates = set(date.strftime("%Y-%m-%d") for date in calendar)
+            with open(calendar_file, "r") as f:
+                calendar_lines = [line.strip() for line in f if line.strip()]
 
+            if not calendar_lines:
+                logger.info("Calendar file is empty, will download full range")
+                return [(requested_start, requested_end)]
+
+            # Extract dates from calendar (for minute data, extract just the date part)
+            existing_dates = set()
+            for line in calendar_lines:
+                # For minute data: "2026-02-11 09:30:00" -> "2026-02-11"
+                # For day data: "2026-02-11" -> "2026-02-11"
+                date_part = line.split()[0]
+                existing_dates.add(date_part)
+
+            logger.info(
+                f"Found {len(existing_dates)} unique dates in calendar (interval={interval})"
+            )
             # Generate requested date range (business days only)
             requested_start_dt = datetime.strptime(requested_start, "%Y-%m-%d")
             requested_end_dt = datetime.strptime(requested_end, "%Y-%m-%d")

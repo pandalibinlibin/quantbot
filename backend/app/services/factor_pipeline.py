@@ -101,9 +101,10 @@ class FactorPipeline:
         try:
             logger.info(f"Computing factor '{factor_name}' in {update_mode} mode")
 
-            # Auto-determine overwrite based on update mode
+            # Always overwrite factor data since we compute the full date range
+            # For incremental mode, we still compute full range and overwrite
             if overwrite is None:
-                overwrite = update_mode == UpdateMode.FULL
+                overwrite = True
 
             result = {
                 "factor_name": factor_name,
@@ -116,26 +117,13 @@ class FactorPipeline:
 
             pipeline_start = datetime.now()
 
-            # Execute computation based on update mode
-            if update_mode == UpdateMode.FULL:
-                logger.info(f"Performing FULL computation for '{factor_name}'")
-                computation_result = (
-                    self.computation_manager.compute_single_factor_full(
-                        factor_name, start_time, end_time, instruments, overwrite=True
-                    )
-                )
-
-            elif update_mode == UpdateMode.INCREMENTAL:
-                logger.info(f"Performing INCREMENTAL computation for '{factor_name}'")
-                # For incremental, we append new data without overwriting
-                computation_result = (
-                    self.computation_manager.compute_single_factor_full(
-                        factor_name, start_time, end_time, instruments, overwrite=False
-                    )
-                )
-
-            else:
-                raise ValueError(f"Unsupported update mode: {update_mode}")
+            # Execute computation - always use full computation with overwrite
+            logger.info(
+                f"Performing computation for '{factor_name}' (mode: {update_mode})"
+            )
+            computation_result = self.computation_manager.compute_single_factor_full(
+                factor_name, start_time, end_time, instruments, overwrite=True
+            )
 
             result["computation_results"] = computation_result
 
@@ -192,7 +180,10 @@ class FactorPipeline:
             )
 
             batch_start = datetime.now()
-            overwrite = update_mode == UpdateMode.FULL
+            # Always overwrite factor data since we compute the full date range
+            # For incremental mode, we still compute full range (needed for MA5 etc.)
+            # This ensures factor data integrity and correctness
+            overwrite = True
 
             batch_result = {
                 "total_factors": len(factor_names),
@@ -286,11 +277,16 @@ class FactorPipeline:
         """
         Synchronize factor computation with data collector update mode
 
+        For both full and incremental modes, we compute factors for the full
+        date range and overwrite existing factor data. This ensures data
+        integrity and correct computation of factors that depend on historical
+        data (like MA5).
+
         Args:
             factor_names: List of factor names to compute
             data_collector_mode: Data collector update mode ("full" or "incremental")
-            start_time: Start time for computation
-            end_time: End time for computation
+            start_time: Start time for computation (should be full calendar range)
+            end_time: End time for computation (should be full calendar range)
             instruments: List of instruments (None for all)
             parallel: Whether to use parallel processing
 
@@ -301,6 +297,7 @@ class FactorPipeline:
             logger.info(
                 f"Syncing factors with data collector mode: {data_collector_mode}"
             )
+            logger.info(f"Factor computation range: {start_time} to {end_time}")
 
             # Map data collector mode to factor update mode
             if data_collector_mode.lower() == "full":

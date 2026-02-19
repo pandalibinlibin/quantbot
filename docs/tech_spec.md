@@ -1,7 +1,7 @@
 # QuantBot 技术规格文档
 
-**版本**: 2.0 (架构重构版)  
-**最后更新**: 2026-01-26
+**版本**: 2.1 (增量更新修复版)  
+**最后更新**: 2026-02-19
 
 ---
 
@@ -5351,3 +5351,600 @@ def validate_minute_data_request(request: DownloadDataRequest):
 2. **预防性**：界面主动防止无效请求
 3. **友好性**：提供清晰的错误信息和解决建议
 4. **智能性**：自动调整和优化用户选择
+
+---
+
+## 🐛 1min因子计算返回空数据问题修复 (2026-02-19)
+
+### 问题描述
+
+在前端下载1分钟数据后，因子计算（如`daily_return.1min`, `ma5.1min`）返回空DataFrame，但原始数据（OHLCV）可以正常显示。同时，Data Size显示异常小（0.02 MB），Features列表不显示原始数据字段。
+
+### 根本原因分析
+
+经过深入诊断，发现了**三个相关问题**：
+
+#### 问题1：时间格式不匹配
+
+**现象**：`D.features`调用返回空数据
+
+**原因**：
+
+- `factor_processor.py`传递给`D.features`的时间格式是`2026-02-11`（只有日期）
+- Qlib的1min calendar从`09:30:00`开始，不是`00:00:00`
+- 日期格式`2026-02-11`被Qlib解析为`2026-02-11 00:00:00`
+- 查询范围`00:00:00`不在calendar范围`09:30:00-15:00:00`内，导致返回空数据
+
+**验证**：
+
+```python
+# 只用日期格式查询1min数据 - 返回空
+D.features(['sh600000'], fields=['$close'], start_time='2026-02-11', end_time='2026-02-11', freq='1min')
+# Shape: (0, 1) - EMPTY
+
+# 使用完整时间格式查询 - 返回数据
+D.features(['sh600000'], fields=['$close'], start_time='2026-02-11 09:30:00', end_time='2026-02-11 15:00:00', freq='1min')
+# Shape: (11, 1) - 有数据
+```
+
+#### 问题2：数据状态API只检查单一目录
+
+**现象**：Data Size只有0.02 MB，Features列表不显示原始数据字段
+
+**原因**：
+
+- `data_utils.py`的`get_data_source_status_impl()`只检查`/app/qlib_data`目录
+- 1min数据存储在`/app/qlib_data_1min`目录
+- 导致Data Size计算不包含1min数据，Features列表也不包含1min字段
+
+#### 问题3：不同市场交易时间不同
+
+**现象**：美股数据使用中国市场交易时间会导致数据不完整
+
+**原因**：
+
+- 中国A股交易时间：09:30-15:00（含午休11:30-13:00）
+- 美股交易时间：09:30-16:00 EST（无午休）
+- 需要根据stock_pool自动判断市场并使用正确的交易时间
+
+### 解决方案
+
+#### 修复1：factor_processor.py - 自动扩展时间格式
+
+```python
+# For minute-level frequencies, expand date-only format to include full trading hours
+if self.freq in ["1min", "5min", "15min", "30min", "60min"]:
+    start_str = str(start_time)
+    end_str = str(end_time)
+
+    # Determine market trading hours based on region
+    region = "cn"  # Default to China
+    try:
+        metadata_file = Path(settings.QLIB_DATA_PATH_1MIN) / "metadata.json"
+        if metadata_file.exists():
+            with open(metadata_file, "r") as f:
+                metadata = json.load(f)
+                stock_pool = metadata.get("stock_pool", "").lower()
+                if stock_pool in ["sp500", "nasdaq100", "dow30"]:
+                    region = "us"
+    except Exception:
+        pass
+
+    # Set trading hours based on region
+    if region == "us":
+        market_open = "09:30:00"
+        market_close = "16:00:00"  # US market closes at 16:00 EST
+    else:
+        market_open = "09:30:00"
+        market_close = "15:00:00"  # China market closes at 15:00
+
+    # Expand date-only format to full trading hours
+    if len(start_str) == 10:  # Format: YYYY-MM-DD
+        start_time = f"{start_str} {market_open}"
+    if len(end_str) == 10:
+        end_time = f"{end_str} {market_close}"
+```
+
+#### 修复2：data_utils.py - 检查两个数据目录
+
+```python
+def get_data_source_status_impl() -> dict:
+    qlib_data_path = Path(settings.QLIB_DATA_PATH)
+    qlib_data_path_1min = Path(settings.QLIB_DATA_PATH_1MIN)
+
+    # Calculate directory size for both directories
+    total_size = 0
+    for data_path in [qlib_data_path, qlib_data_path_1min]:
+        if data_path.exists():
+            for dirpath, dirnames, filenames in os.walk(data_path):
+                for filename in filenames:
+                    filepath = os.path.join(dirpath, filename)
+                    if os.path.exists(filepath):
+                        total_size += os.path.getsize(filepath)
+
+    # Parse features from both directories
+    features_dirs_to_check = []
+    if (qlib_data_path_1min / "features").exists():
+        features_dirs_to_check.append(qlib_data_path_1min / "features")
+    if (qlib_data_path / "features").exists():
+        features_dirs_to_check.append(qlib_data_path / "features")
+
+    # ... merge features from all directories
+```
+
+#### 修复3：前端提示 - 显示不同市场的交易时间
+
+```tsx
+{
+  /* Minute Data Warning */
+}
+{
+  interval === "1m" && (
+    <Alert>
+      <AlertCircle className="h-4 w-4" />
+      <AlertDescription>
+        <strong>Minute Data Info:</strong>
+        <ul className="list-disc list-inside mt-1 space-y-1">
+          <li>
+            Yahoo Finance only provides minute-level data for the last 30 days
+          </li>
+          {stockPool === "sp500" || stockPool === "nasdaq100" ? (
+            <>
+              <li>
+                <strong>Actual trading hours (US):</strong> {startDate} 09:30:00
+                to {endDate} 16:00:00 EST
+              </li>
+              <li>
+                Data will be collected for US market trading hours (09:30-16:00
+                EST)
+              </li>
+            </>
+          ) : (
+            <>
+              <li>
+                <strong>Actual trading hours (CN):</strong> {startDate} 09:30:00
+                to {endDate} 15:00:00
+              </li>
+              <li>
+                Data will be collected for A-share market trading hours
+                (09:30-11:30, 13:00-15:00)
+              </li>
+            </>
+          )}
+        </ul>
+      </AlertDescription>
+    </Alert>
+  );
+}
+```
+
+### 修改的文件
+
+1. **`backend/app/services/factor_processor.py`**
+
+   - 添加分钟级频率的时间格式自动扩展
+   - 根据metadata.json中的stock_pool判断市场区域
+   - 使用对应市场的交易时间
+
+2. **`backend/app/services/data_utils.py`**
+
+   - 修改`get_data_source_status_impl()`检查两个数据目录
+   - 合并两个目录的Data Size计算
+   - 合并两个目录的Features列表
+
+3. **`frontend/src/routes/_layout/data-sources.tsx`**
+   - 增强分钟数据提示，显示实际交易时间
+   - 根据stock_pool显示不同市场的交易时间
+
+### 验证结果
+
+- ✅ 1min因子计算正常返回数据
+- ✅ Data Size正确显示（1.87 MB）
+- ✅ Features列表显示原始数据字段（close.1min, high.1min, low.1min, open.1min, volume.1min）和因子数据
+- ✅ 前端正确显示不同市场的交易时间提示
+
+### 经验教训
+
+1. **时间格式一致性**：对于分钟级数据，必须使用完整的datetime格式（包含时分秒），不能只用日期
+2. **多目录数据管理**：当数据存储在多个目录时，状态API需要聚合所有目录的信息
+3. **市场差异处理**：不同市场的交易时间不同，系统需要自动识别并处理
+
+---
+
+## 📋 数据和因子模块完整测试方案 (2026-02-19)
+
+### 测试目标
+
+验证数据收集、因子计算在不同市场、不同频率、不同更新模式下的完整功能。
+
+### 测试矩阵
+
+| 测试维度 | 选项                                           |
+| -------- | ---------------------------------------------- |
+| **市场** | A股 (csi300, csi500) / 美股 (sp500, nasdaq100) |
+| **频率** | 日线 (1d) / 分钟线 (1m)                        |
+| **模式** | 全量下载 / 增量更新                            |
+
+### 详细测试用例
+
+#### 测试组1：A股日线数据
+
+**测试1.1：A股日线全量下载**
+
+- Stock Pool: `csi300`
+- Data Interval: `Daily (1d)`
+- Start Date: `2026-02-10`
+- End Date: `2026-02-11`
+- 操作: 点击 "Download Data"
+- 预期结果:
+  - ✅ 数据下载成功
+  - ✅ Features显示: close.day, high.day, low.day, open.day, volume.day + 因子
+  - ✅ Data Size > 0
+  - ✅ Instruments Count ≈ 300
+
+**测试1.2：A股日线增量更新**
+
+- 前置条件: 测试1.1完成
+- 操作: 点击 "Incremental Update"
+- 预期结果:
+  - ✅ 增量更新成功
+  - ✅ Date Range扩展到最新日期
+  - ✅ 数据完整性保持
+
+#### 测试组2：A股分钟数据
+
+**测试2.1：A股分钟全量下载**
+
+- Stock Pool: `csi300`
+- Data Interval: `Minute (1m)`
+- Start Date: 最近7天内的日期
+- End Date: 最近7天内的日期
+- 操作: 点击 "Download Data"
+- 预期结果:
+  - ✅ 提示显示: "Actual trading hours (CN): YYYY-MM-DD 09:30:00 to YYYY-MM-DD 15:00:00"
+  - ✅ 数据下载成功
+  - ✅ Features显示: close.1min, high.1min, low.1min, open.1min, volume.1min + 因子
+  - ✅ 因子数据不为空 (daily_return.1min, ma5.1min等)
+
+**测试2.2：A股分钟增量更新**
+
+- 前置条件: 测试2.1完成
+- 操作: 点击 "Incremental Update"
+- 预期结果:
+  - ✅ 增量更新成功
+  - ✅ 新数据追加到现有数据
+
+#### 测试组3：美股日线数据
+
+**测试3.1：美股日线全量下载**
+
+- Stock Pool: `S&P 500` 或 `NASDAQ 100`
+- Data Interval: `Daily (1d)`
+- Start Date: `2026-02-10`
+- End Date: `2026-02-11`
+- 操作: 先 "Clear Data"，然后 "Download Data"
+- 预期结果:
+  - ✅ 数据下载成功
+  - ✅ Features显示美股数据
+  - ✅ Instruments Count ≈ 500 (S&P 500) 或 ≈ 100 (NASDAQ 100)
+
+**测试3.2：美股日线增量更新**
+
+- 前置条件: 测试3.1完成
+- 操作: 点击 "Incremental Update"
+- 预期结果:
+  - ✅ 增量更新成功
+
+#### 测试组4：美股分钟数据
+
+**测试4.1：美股分钟全量下载**
+
+- Stock Pool: `S&P 500` 或 `NASDAQ 100`
+- Data Interval: `Minute (1m)`
+- Start Date: 最近7天内的日期
+- End Date: 最近7天内的日期
+- 操作: 先 "Clear Data"，然后 "Download Data"
+- 预期结果:
+  - ✅ 提示显示: "Actual trading hours (US): YYYY-MM-DD 09:30:00 to YYYY-MM-DD 16:00:00 EST"
+  - ✅ 数据下载成功
+  - ✅ 因子计算正常（使用美股交易时间16:00而非15:00）
+
+**测试4.2：美股分钟增量更新**
+
+- 前置条件: 测试4.1完成
+- 操作: 点击 "Incremental Update"
+- 预期结果:
+  - ✅ 增量更新成功
+
+#### 测试组5：数据清除功能
+
+**测试5.1：清除数据**
+
+- 操作: 点击 "Clear Data"
+- 预期结果:
+  - ✅ 所有数据被清除
+  - ✅ 状态显示 "No data available"
+  - ✅ Data Size = 0
+
+### 测试检查清单
+
+```
+□ 测试1.1: A股日线全量下载
+□ 测试1.2: A股日线增量更新
+□ 测试2.1: A股分钟全量下载
+□ 测试2.2: A股分钟增量更新
+□ 测试3.1: 美股日线全量下载
+□ 测试3.2: 美股日线增量更新
+□ 测试4.1: 美股分钟全量下载
+□ 测试4.2: 美股分钟增量更新
+□ 测试5.1: 数据清除功能
+```
+
+### 测试执行顺序建议
+
+1. **第一轮：A股测试**
+
+   - 清除数据 → A股日线全量 → A股日线增量 → 清除数据 → A股分钟全量 → A股分钟增量
+
+2. **第二轮：美股测试**
+   - 清除数据 → 美股日线全量 → 美股日线增量 → 清除数据 → 美股分钟全量 → 美股分钟增量
+
+### 监控命令
+
+测试过程中可使用以下命令监控后端日志：
+
+```powershell
+# 实时查看后端日志
+docker logs quantbot-backend-1 --tail=50 -f
+
+# 查看最近的错误
+docker logs quantbot-backend-1 2>&1 | findstr /i "error"
+```
+
+### 问题排查指南
+
+如果测试失败，检查以下内容：
+
+1. **数据下载失败**
+
+   - 检查网络连接
+   - 检查Yahoo Finance API限制（分钟数据仅30天内）
+   - 查看后端日志中的错误信息
+
+2. **因子计算为空**
+
+   - 确认时间格式是否正确扩展
+   - 检查calendar文件是否存在
+   - 验证instruments文件是否正确
+
+3. **增量更新失败**
+   - 确认已有数据存在
+   - 检查日期范围是否有效
+   - 查看后端日志中的详细错误
+
+---
+
+## 🔧 增量更新因子计算修复 (2026-02-19)
+
+### 📋 问题描述
+
+增量更新后，因子数据不完整或不正确。具体表现为：
+
+1. 因子`.bin`文件只包含1个数据点，而不是预期的10个
+2. 1min数据增量更新时，检测到的缺失日期范围错误
+
+### 🔍 根本原因分析
+
+#### 问题1：因子计算日期范围错误
+
+**症状**：增量更新后，MA5等因子只有1个值
+
+**原因**：
+
+- 因子计算使用了增量日期范围（如`2026-02-11`到`2026-02-18`），而不是完整的历史日期范围
+- MA5等因子需要历史数据才能正确计算（需要前5个数据点）
+- Qlib的`D.features()`在只给增量日期范围时，返回空数据或不完整数据
+
+**解决方案**：采用**方案B（全量重算）**
+
+- 增量更新后，重新计算所有因子数据（使用完整的calendar日期范围）
+- 覆盖现有的因子`.bin`文件
+- 虽然计算量稍大，但保证数据完整性和正确性
+
+#### 问题2：Qlib缓存导致数据不更新
+
+**症状**：增量下载后，因子计算仍使用旧的calendar数据
+
+**原因**：
+
+- Qlib在`init()`时会缓存calendar和其他元数据
+- 增量更新后，新的calendar数据没有被Qlib感知
+- 因子计算使用的是缓存的旧calendar
+
+**解决方案**：
+
+- 在`QlibInitService`中添加`reinitialize()`方法
+- 增量更新完成后、因子计算前，强制重新初始化Qlib
+- 这会清除Qlib的内存缓存，加载最新的calendar数据
+
+```python
+# qlib_init_service.py
+def reinitialize(self) -> bool:
+    """Force re-initialization of Qlib to refresh cached data."""
+    self._initialized = False
+    return self.initialize()
+```
+
+#### 问题3：1min数据增量日期范围检测错误
+
+**症状**：1min数据增量更新时，检测到的缺失范围是`2026-02-16 to 2026-02-18`，而不是`2026-02-12`
+
+**原因**：
+
+- `_get_missing_date_ranges()`函数使用`D.calendar(freq="day")`获取calendar
+- 对于1min数据，应该使用1min的calendar文件
+- 使用错误的calendar导致日期检测不准确
+
+**解决方案**：
+
+- 修改`_get_missing_date_ranges()`函数，接收`interval`参数
+- 根据interval选择正确的calendar文件（`day.txt`或`1min.txt`）
+- 直接读取calendar文件，而不是使用`D.calendar()`（避免Qlib缓存问题）
+
+```python
+def _get_missing_date_ranges(
+    requested_start: str, requested_end: str, interval: str = "1d"
+) -> List[Tuple[str, str]]:
+    is_minute_data = interval == "1m"
+    if is_minute_data:
+        calendar_file = qlib_data_path_1min / "calendars" / "1min.txt"
+    else:
+        calendar_file = qlib_data_path / "calendars" / "day.txt"
+    # 直接读取文件，提取日期部分
+```
+
+#### 问题4：Stock Pool显示错误
+
+**症状**：下载S&P 500数据后，前端显示Stock Pool为"csi500"
+
+**原因**：
+
+- `get_data_status()`函数根据instruments数量推断stock_pool
+- 499个股票被错误归类为csi500（条件是`<= 600`）
+- 没有区分美股和A股
+
+**解决方案**：
+
+- 根据股票代码格式区分市场
+- A股：以`sh`或`sz`开头（如`sh600000`）
+- 美股：纯字母（如`aapl`）
+- 根据市场类型使用不同的推断逻辑
+
+### 📝 Qlib使用注意事项
+
+#### 1. Qlib缓存机制
+
+**重要**：Qlib在`init()`时会缓存以下数据：
+
+- Trading calendar（交易日历）
+- Instruments list（股票列表）
+- Feature data（特征数据）
+
+**影响**：
+
+- 增量更新数据后，Qlib可能仍使用缓存的旧数据
+- 必须重新初始化Qlib才能加载新数据
+
+**解决方案**：
+
+```python
+# 增量更新后，强制重新初始化Qlib
+qlib_service = get_qlib_init_service()
+qlib_service.reinitialize()
+```
+
+#### 2. D.calendar() vs 直接读取文件
+
+**问题**：`D.calendar()`受Qlib缓存影响，可能返回旧数据
+
+**建议**：
+
+- 在需要最新calendar数据的场景，直接读取calendar文件
+- 特别是在增量更新的日期范围检测中
+
+```python
+# 直接读取calendar文件
+with open(calendar_file, "r") as f:
+    calendar_lines = [line.strip() for line in f if line.strip()]
+```
+
+#### 3. 因子计算的历史数据依赖
+
+**重要**：某些因子（如MA5、RSI等）需要历史数据才能正确计算
+
+**影响**：
+
+- 如果只计算增量日期的因子，结果可能不完整或错误
+- MA5需要前5个数据点，RSI需要前14个数据点
+
+**解决方案**：
+
+- 方案A：计算增量因子时，传入完整的历史数据范围，但只保存增量部分
+- 方案B（推荐）：增量更新后，重新计算所有因子并覆盖
+
+#### 4. 数据频率分离
+
+**重要**：日线数据和分钟数据必须存储在不同的目录
+
+**目录结构**：
+
+```
+/app/qlib_data/        # 日线数据
+├── calendars/day.txt
+├── instruments/all.txt
+└── features/
+
+/app/qlib_data_1min/   # 分钟数据
+├── calendars/1min.txt
+├── instruments/all.txt
+└── features/
+```
+
+**注意**：
+
+- 检测增量日期范围时，必须使用对应频率的calendar
+- 因子计算时，必须使用对应频率的数据目录
+
+#### 5. Yahoo Finance API特性
+
+**日期边界**：
+
+- `end`参数是排他的，需要+1天才能包含请求的最后一天
+- 分钟数据只能获取最近30天内的数据
+
+**数据返回**：
+
+- 可能返回请求范围外的数据（如最后一条是未来日期）
+- 需要过滤异常时间戳
+
+### ✅ 测试验证结果 (2026-02-19)
+
+| 测试用例 | 市场       | 频率 | 类型 | 结果 | 数据变化 |
+| -------- | ---------- | ---- | ---- | ---- | -------- |
+| 1.1      | A股 csi300 | 1day | 全量 | ✅   | -        |
+| 1.2      | A股 csi300 | 1day | 增量 | ✅   | 7→10     |
+| 2.1      | A股 csi300 | 1min | 全量 | ✅   | -        |
+| 2.2      | A股 csi300 | 1min | 增量 | ✅   | 328→991  |
+| 3.1      | 美股 sp500 | 1day | 全量 | ✅   | -        |
+| 3.2      | 美股 sp500 | 1day | 增量 | ✅   | 7→12     |
+| 4.1      | 美股 sp500 | 1min | 全量 | ✅   | -        |
+| 4.2      | 美股 sp500 | 1min | 增量 | ✅   | 390→1951 |
+
+**数据准确性验证**：
+
+- Close价格与Yahoo Finance API完全一致
+- MA5因子计算正确（误差在浮点精度范围内）
+
+### 🔄 修改的文件
+
+1. **`backend/app/services/qlib_init_service.py`**
+
+   - 添加`reinitialize()`方法，强制重新初始化Qlib
+
+2. **`backend/app/services/data_collectors/pipeline/service.py`**
+
+   - 增量更新后调用`qlib_service.reinitialize()`
+   - 修改`_get_missing_date_ranges()`接收`interval`参数
+   - 根据interval使用正确的calendar文件
+
+3. **`backend/app/services/data_utils.py`**
+
+   - 修改`get_data_status()`的stock_pool推断逻辑
+   - 根据股票代码格式区分美股和A股
+
+4. **`backend/app/services/factor_pipeline.py`**
+
+   - 确保因子计算始终使用`overwrite=True`
+
+5. **`backend/app/services/factor_storage.py`**
+   - 移除复杂的合并逻辑，简化为直接覆盖

@@ -2,13 +2,13 @@
 Factor Storage Manager for bin file operations
 
 This module implements the storage layer for computed factor data,
-using the same CSV+dump_bin approach as our data collection pipeline.
+writing factor bin files directly to each symbol's directory.
 
 Educational Notes:
-- FactorStorage follows the same pattern as convert_csv_to_qlib_format_impl
-- Saves factors as CSV first, then uses dump_bin.py script for conversion
+- FactorStorage writes bin files directly to features/{symbol}/ directories
+- This avoids using dump_bin.py which would overwrite calendar/instruments
 - Ensures complete compatibility with Qlib's bin format
-- Integrates with existing data pipeline infrastructure
+- Supports both day and 1min frequencies with correct directory selection
 """
 
 import logging
@@ -16,9 +16,6 @@ import pandas as pd
 import numpy as np
 from typing import Dict, List, Optional, Union, Any
 from datetime import datetime, date
-import os
-import tempfile
-import subprocess
 from pathlib import Path
 
 from qlib.data import D
@@ -35,13 +32,13 @@ class FactorStorage:
     Factor Storage Manager for bin file operations
 
     This class handles the storage and retrieval of computed factor data
-    using the same CSV+dump_bin approach as our data collection pipeline.
+    by writing bin files directly to each symbol's directory.
 
     Educational Notes:
-    - Uses CSV as intermediate format, then dump_bin.py for conversion
-    - Follows the same pattern as convert_csv_to_qlib_format_impl
-    - Stores factors directly in Qlib's features directory
-    - Fully compatible with existing data pipeline
+    - Writes bin files directly to features/{symbol}/ directories
+    - Avoids dump_bin.py to prevent overwriting calendar/instruments
+    - Supports both day and 1min frequencies with correct directory selection
+    - Fully compatible with Qlib's data format
     """
 
     def __init__(self, freq: str = "day"):
@@ -53,43 +50,74 @@ class FactorStorage:
         """
         self.freq = freq
 
-        # Get Qlib data directory from configuration
-        try:
-            # Try to get data_path from Qlib config
-            data_path_config = C.get("data_path", None)
-            if data_path_config and isinstance(data_path_config, dict):
-                # Get the default frequency path
-                qlib_data_dir = data_path_config.get("__DEFAULT_FREQ", "./qlib_data")
-            else:
-                # Fallback to provider_uri if data_path is not available
-                provider_uri = C.get("provider_uri", "./qlib_data")
-                if isinstance(provider_uri, str):
-                    qlib_data_dir = provider_uri
-                    if qlib_data_dir.startswith("file://"):
-                        qlib_data_dir = qlib_data_dir[7:]  # Remove file:// prefix
-                else:
-                    qlib_data_dir = "./qlib_data"
-
-            self.storage_dir = Path(qlib_data_dir)
-        except Exception as e:
-            logger.warning(f"Failed to get Qlib data directory, using default: {e}")
-            self.storage_dir = Path("qlib_data")
+        # Determine storage directory based on frequency
+        # day data -> qlib_data, 1min data -> qlib_data_1min
+        self.storage_dir = self._get_storage_dir_for_freq(freq)
 
         # Create directory structure following Qlib convention
-        self.factors_dir = self.storage_dir / "features" / freq
+        # Note: factors are stored in features/{symbol}/ directories, not features/{freq}/
+        self.features_dir = self.storage_dir / "features"
         self.metadata_dir = self.storage_dir / "factor_metadata"
 
-        # CSV intermediate directory
-        self.csv_temp_dir = Path("/tmp/factor_csv")
-
         # Ensure directories exist
-        self.factors_dir.mkdir(parents=True, exist_ok=True)
+        self.features_dir.mkdir(parents=True, exist_ok=True)
         self.metadata_dir.mkdir(parents=True, exist_ok=True)
-        self.csv_temp_dir.mkdir(parents=True, exist_ok=True)
 
         logger.info(
             f"FactorStorage initialized: storage_dir={self.storage_dir}, freq={freq}"
         )
+
+    def _get_storage_dir_for_freq(self, freq: str) -> Path:
+        """
+        Get the correct storage directory based on frequency.
+
+        Args:
+            freq: Data frequency (day, 1min, etc.)
+
+        Returns:
+            Path to the storage directory
+        """
+        try:
+            # Try to get data_path from Qlib config
+            data_path_config = C.get("data_path", None)
+            if data_path_config and isinstance(data_path_config, dict):
+                # Get frequency-specific path if available
+                if freq in data_path_config:
+                    qlib_data_dir = str(data_path_config[freq])
+                else:
+                    qlib_data_dir = str(
+                        data_path_config.get("__DEFAULT_FREQ", "./qlib_data")
+                    )
+            else:
+                # Fallback to provider_uri
+                provider_uri = C.get("provider_uri", "./qlib_data")
+                if isinstance(provider_uri, str):
+                    qlib_data_dir = provider_uri
+                    if qlib_data_dir.startswith("file://"):
+                        qlib_data_dir = qlib_data_dir[7:]
+                else:
+                    qlib_data_dir = "./qlib_data"
+
+            # For minute data, use qlib_data_1min directory
+            if freq == "1min" and "1min" not in qlib_data_dir:
+                # Check if qlib_data_1min exists
+                base_dir = (
+                    Path(qlib_data_dir).parent
+                    if "qlib_data" in qlib_data_dir
+                    else Path(".")
+                )
+                min_dir = base_dir / "qlib_data_1min"
+                if min_dir.exists() or not Path(qlib_data_dir).exists():
+                    return min_dir
+
+            return Path(qlib_data_dir)
+
+        except Exception as e:
+            logger.warning(f"Failed to get Qlib data directory, using default: {e}")
+            # Default based on frequency
+            if freq == "1min":
+                return Path("qlib_data_1min")
+            return Path("qlib_data")
 
     def save_factor_data(
         self,
@@ -115,7 +143,7 @@ class FactorStorage:
             logger.info(f"factor_data shape: {factor_data.shape}")
             logger.info(f"freq: {self.freq}")
             logger.info(f"storage_dir: {self.storage_dir}")
-            logger.info(f"factors_dir: {self.factors_dir}")
+            logger.info(f"features_dir: {self.features_dir}")
             logger.info(f"overwrite: {overwrite}")
 
             # Validate input data
@@ -123,28 +151,13 @@ class FactorStorage:
                 logger.warning(f"Factor '{factor_name}' data is empty, skipping save")
                 return False
 
-            # Check if data already exists
-            data_file = self.factors_dir / f"{factor_name.lower()}.{self.freq}.bin"
-            logger.info(f"Target bin file: {data_file}")
-            logger.info(f"Target bin file exists: {data_file.exists()}")
-
-            if data_file.exists() and not overwrite:
-                logger.warning(
-                    f"Factor '{factor_name}' data already exists, use overwrite=True to replace"
-                )
-                return False
-
-            # Step 1: Convert factor data to CSV format
-            logger.info(f"Step 1: Saving factor as CSV")
-            csv_success = self._save_factor_as_csv(factor_name, factor_data)
-            logger.info(f"Step 1 result: csv_success={csv_success}")
-            if not csv_success:
-                return False
-
-            # Step 2: Use dump_bin.py script to convert CSV to bin
-            logger.info(f"Step 2: Converting CSV to bin")
-            bin_success = self._convert_csv_to_bin(factor_name)
-            logger.info(f"Step 2 result: bin_success={bin_success}")
+            # Write factor data directly to bin files in each symbol's directory
+            # This avoids using dump_bin.py which would overwrite calendar/instruments
+            logger.info(f"Writing factor data directly to bin files")
+            bin_success = self._write_factor_to_bin_files(
+                factor_name, factor_data, overwrite
+            )
+            logger.info(f"Bin write result: bin_success={bin_success}")
             if not bin_success:
                 return False
 
@@ -164,228 +177,124 @@ class FactorStorage:
             logger.error(f"Failed to save factor '{factor_name}': {e}")
             return False
 
-    def _save_factor_as_csv(self, factor_name: str, factor_data: pd.DataFrame) -> bool:
+    def _write_factor_to_bin_files(
+        self, factor_name: str, factor_data: pd.DataFrame, overwrite: bool = False
+    ) -> bool:
         """
-        Save factor data as CSV files in the format expected by dump_bin.py
+        Write factor data directly to bin files in each symbol's directory.
+
+        This method writes bin files directly without using dump_bin.py,
+        which would overwrite the calendar and instruments files.
 
         Args:
             factor_name: Name of the factor
-            factor_data: Factor DataFrame
+            factor_data: Factor DataFrame with MultiIndex (instrument, datetime)
+            overwrite: Whether to overwrite existing files
 
         Returns:
-            True if save successful
+            True if successful
         """
         try:
-            # Create temporary directory for this factor
-            factor_csv_dir = self.csv_temp_dir / factor_name
-            factor_csv_dir.mkdir(parents=True, exist_ok=True)
-
-            # Prepare data in dump_bin.py expected format
-            csv_data = self._prepare_csv_data(factor_data, factor_name)
-
-            if csv_data.empty:
-                logger.warning(f"No data to save for factor '{factor_name}'")
+            # Read existing calendar to get date indices
+            calendar_file = self.storage_dir / "calendars" / f"{self.freq}.txt"
+            if not calendar_file.exists():
+                logger.error(f"Calendar file not found: {calendar_file}")
                 return False
 
-            # Group by symbol and save separate CSV files (following dump_bin.py convention)
-            for symbol, group_data in csv_data.groupby("symbol"):
-                csv_file = factor_csv_dir / f"{symbol}.csv"
-                # Sort by date to ensure proper order
-                group_data = group_data.sort_values("date")
-                # Remove symbol column - dump_bin.py gets symbol from filename
-                columns_to_save = ["date", factor_name.lower()]
-                group_data[columns_to_save].to_csv(csv_file, index=False)
-                logger.debug(
-                    f"Saved CSV for symbol {symbol}: {len(group_data)} records"
-                )
+            with open(calendar_file, "r") as f:
+                calendar_dates = [line.strip() for line in f if line.strip()]
+
+            # Create date to index mapping
+            date_to_idx = {pd.Timestamp(d): i for i, d in enumerate(calendar_dates)}
+
+            # Prepare data - handle MultiIndex (instrument, datetime) format
+            if hasattr(factor_data.index, "get_level_values"):
+                df_reset = factor_data.reset_index()
+                # Identify datetime and instrument columns
+                index_names = list(factor_data.index.names)
+                if "instrument" in index_names:
+                    instrument_col = "instrument"
+                    datetime_col = [n for n in index_names if n != "instrument"][0]
+                elif "datetime" in index_names:
+                    datetime_col = "datetime"
+                    instrument_col = [n for n in index_names if n != "datetime"][0]
+                else:
+                    # Try to identify by column content
+                    col_names = list(df_reset.columns)[:2]
+                    datetime_col = col_names[0]
+                    instrument_col = col_names[1]
+                    for col in col_names:
+                        try:
+                            pd.to_datetime(df_reset[col].iloc[0])
+                            datetime_col = col
+                        except:
+                            instrument_col = col
+            else:
+                logger.error("Factor data must have MultiIndex (instrument, datetime)")
+                return False
+
+            # Get the factor value column name
+            value_cols = [
+                c for c in df_reset.columns if c not in [datetime_col, instrument_col]
+            ]
+            if not value_cols:
+                logger.error("No factor value column found")
+                return False
+            value_col = value_cols[0]
+
+            # Group by instrument and write bin files
+            symbols_written = 0
+            for instrument, group in df_reset.groupby(instrument_col):
+                # Get symbol directory (lowercase)
+                symbol_dir = self.features_dir / str(instrument).lower()
+                if not symbol_dir.exists():
+                    logger.warning(
+                        f"Symbol directory not found: {symbol_dir}, skipping"
+                    )
+                    continue
+
+                # Target bin file
+                bin_file = symbol_dir / f"{factor_name.lower()}.{self.freq}.bin"
+
+                # Skip if file exists and not overwrite
+                if bin_file.exists() and not overwrite:
+                    logger.debug(f"Bin file exists, skipping: {bin_file}")
+                    continue
+
+                # Sort by datetime
+                group = group.sort_values(datetime_col)
+
+                # Get first date and validate it's in calendar
+                first_date = pd.Timestamp(group[datetime_col].iloc[0])
+                if first_date not in date_to_idx:
+                    logger.warning(
+                        f"Date {first_date} not in calendar for {instrument}"
+                    )
+                    continue
+
+                start_idx = date_to_idx[first_date]
+
+                # Get factor values as float32 array
+                values = group[value_col].values.astype(np.float32)
+
+                # Write bin file: [start_index as float32] + [values as float32]
+                with open(bin_file, "wb") as f:
+                    np.array([start_idx], dtype=np.float32).tofile(f)
+                    values.tofile(f)
+
+                symbols_written += 1
+                logger.debug(f"Written {len(values)} values to {bin_file}")
 
             logger.info(
-                f"✓ Factor '{factor_name}' saved as CSV: {len(csv_data.groupby('symbol'))} symbols"
+                f"✓ Factor '{factor_name}' written to {symbols_written} symbol directories"
             )
-            return True
+            return symbols_written > 0
 
         except Exception as e:
-            logger.error(f"Failed to save factor '{factor_name}' as CSV: {e}")
-            return False
+            logger.error(f"Failed to write factor bin files: {e}")
+            import traceback
 
-    def _prepare_csv_data(
-        self, factor_data: pd.DataFrame, factor_name: str
-    ) -> pd.DataFrame:
-        """
-        Prepare factor data in CSV format expected by dump_bin.py
-
-        Args:
-            factor_data: Original factor DataFrame
-            factor_name: Name of the factor
-
-        Returns:
-            DataFrame with 'symbol', 'date', and factor columns
-        """
-        try:
-            # Handle MultiIndex (datetime, instrument) format
-            if hasattr(factor_data.index, "get_level_values"):
-                # MultiIndex case: (datetime, instrument)
-                df_reset = factor_data.reset_index()
-
-                # Check the actual index level names to determine correct order
-                index_names = factor_data.index.names
-                if len(df_reset.columns) >= 2:
-                    # Determine which column is datetime and which is instrument
-                    col_names = list(df_reset.columns)
-
-                    # Try to identify datetime column by checking if values can be parsed as dates
-                    datetime_col = None
-                    instrument_col = None
-
-                    for i, col_name in enumerate(
-                        col_names[:2]
-                    ):  # Check first two columns
-                        try:
-                            # Try to parse a sample value as datetime
-                            sample_val = df_reset[col_name].iloc[0]
-                            pd.to_datetime(sample_val)
-                            datetime_col = col_name
-                        except:
-                            instrument_col = col_name
-
-                    # If we couldn't identify by parsing, use index names as fallback
-                    if datetime_col is None or instrument_col is None:
-                        if (
-                            "datetime" in str(index_names[0]).lower()
-                            or "date" in str(index_names[0]).lower()
-                        ):
-                            datetime_col = col_names[0]
-                            instrument_col = col_names[1]
-                        else:
-                            datetime_col = col_names[1]
-                            instrument_col = col_names[0]
-
-                    # Rename columns appropriately
-                    rename_map = {datetime_col: "date", instrument_col: "symbol"}
-                    df_reset = df_reset.rename(columns=rename_map)
-                else:
-                    raise ValueError(
-                        "MultiIndex DataFrame should have at least 2 levels"
-                    )
-
-            else:
-                # Simple index case
-                df_reset = factor_data.reset_index()
-
-                # If no symbol column, create one with default value
-                if "symbol" not in df_reset.columns:
-                    df_reset["symbol"] = "DEFAULT"
-
-                # Ensure date column exists
-                if "date" not in df_reset.columns and factor_data.index.name:
-                    df_reset = df_reset.rename(columns={factor_data.index.name: "date"})
-
-            # Ensure date column is properly formatted
-            df_reset["date"] = pd.to_datetime(df_reset["date"]).dt.strftime("%Y-%m-%d")
-
-            # Rename factor columns to lowercase (Qlib convention)
-            factor_columns = [
-                col for col in df_reset.columns if col not in ["date", "symbol"]
-            ]
-            for col in factor_columns:
-                if col != factor_name.lower():
-                    df_reset = df_reset.rename(columns={col: factor_name.lower()})
-
-            # Ensure we have the required columns
-            required_columns = ["symbol", "date", factor_name.lower()]
-            if not all(col in df_reset.columns for col in required_columns):
-                missing = [
-                    col for col in required_columns if col not in df_reset.columns
-                ]
-                raise ValueError(f"Missing required columns: {missing}")
-
-            # Select only required columns and reorder
-            df_final = df_reset[required_columns].copy()
-
-            # Remove any rows with NaN values in the factor column
-            df_final = df_final.dropna(subset=[factor_name.lower()])
-
-            logger.debug(
-                f"Prepared CSV data: {len(df_final)} rows, columns: {list(df_final.columns)}"
-            )
-            return df_final
-
-        except Exception as e:
-            logger.error(f"Failed to prepare CSV data: {e}")
-            return pd.DataFrame()
-
-    def _convert_csv_to_bin(self, factor_name: str) -> bool:
-        """
-        Convert CSV files to bin format using dump_bin.py script
-
-        Args:
-            factor_name: Name of the factor
-
-        Returns:
-            True if conversion successful
-        """
-        try:
-            logger.info(f"=== CSV TO BIN CONVERSION START for '{factor_name}' ===")
-            factor_csv_dir = self.csv_temp_dir / factor_name
-            logger.info(f"factor_csv_dir: {factor_csv_dir}")
-
-            if not factor_csv_dir.exists():
-                logger.error(f"CSV directory not found: {factor_csv_dir}")
-                return False
-
-            # Count CSV files
-            csv_files = list(factor_csv_dir.glob("*.csv"))
-            logger.info(f"Found {len(csv_files)} CSV files")
-            if not csv_files:
-                logger.error(f"No CSV files found in {factor_csv_dir}")
-                return False
-
-            # Use the same dump_bin.py command as convert_csv_to_qlib_format_impl
-            cmd = [
-                "python",
-                "/app/scripts/dump_bin.py",
-                "dump_all",
-                "--data_path",
-                str(factor_csv_dir),
-                "--qlib_dir",
-                str(self.storage_dir),
-                "--freq",
-                self.freq,
-                "--date_field_name",
-                "date",
-            ]
-            logger.info(f"dump_bin command: {' '.join(cmd)}")
-
-            # Execute the conversion
-            logger.info(f"Converting {len(csv_files)} CSV files to bin format...")
-            result = subprocess.run(cmd, capture_output=True, text=True, cwd="/app")
-
-            logger.info(f"dump_bin returncode: {result.returncode}")
-            if result.stdout:
-                logger.info(f"dump_bin stdout: {result.stdout[:500]}")
-            if result.stderr:
-                logger.info(f"dump_bin stderr: {result.stderr[:500]}")
-
-            if result.returncode == 0:
-                logger.info(
-                    f"✓ Successfully converted factor '{factor_name}' to bin format"
-                )
-
-                # Clean up temporary CSV files
-                import shutil
-
-                shutil.rmtree(factor_csv_dir)
-                logger.debug(f"Cleaned up temporary CSV directory: {factor_csv_dir}")
-
-                return True
-            else:
-                logger.error(f"dump_bin.py conversion failed: {result.stderr}")
-                return False
-
-        except Exception as e:
-            logger.error(
-                f"Failed to convert CSV to bin for factor '{factor_name}': {e}"
-            )
+            logger.error(traceback.format_exc())
             return False
 
     def load_factor_data(
@@ -471,20 +380,38 @@ class FactorStorage:
             List of factor names
         """
         try:
-            factor_names = []
+            factor_names = set()
 
-            if self.factors_dir.exists():
-                # Look for .bin files that match our frequency
-                pattern = f"*.{self.freq}.bin"
-                for bin_file in self.factors_dir.glob(pattern):
-                    # Extract factor name from filename
-                    factor_name = bin_file.stem.replace(f".{self.freq}", "")
-                    # Skip system files that start with $
-                    if not factor_name.startswith("$"):
-                        factor_names.append(factor_name)
+            # Raw data fields that are not factors
+            raw_fields = {
+                "open",
+                "high",
+                "low",
+                "close",
+                "volume",
+                "amount",
+                "factor",
+                "vwap",
+            }
+
+            if self.features_dir.exists():
+                # Look in first symbol directory to find factor files
+                symbol_dirs = [d for d in self.features_dir.iterdir() if d.is_dir()]
+                if symbol_dirs:
+                    first_symbol_dir = symbol_dirs[0]
+                    pattern = f"*.{self.freq}.bin"
+                    for bin_file in first_symbol_dir.glob(pattern):
+                        # Extract factor name from filename
+                        factor_name = bin_file.stem.replace(f".{self.freq}", "")
+                        # Skip raw data fields and system files
+                        if (
+                            factor_name.lower() not in raw_fields
+                            and not factor_name.startswith("$")
+                        ):
+                            factor_names.add(factor_name)
 
             logger.info(f"Found {len(factor_names)} stored factors")
-            return factor_names
+            return list(factor_names)
 
         except Exception as e:
             logger.error(f"Failed to list stored factors: {e}")
@@ -501,11 +428,21 @@ class FactorStorage:
             True if deletion successful
         """
         try:
-            # Delete data file
-            data_file = self.factors_dir / f"{factor_name.lower()}.{self.freq}.bin"
-            if data_file.exists():
-                data_file.unlink()
-                logger.info(f"✓ Deleted factor data file: {data_file}")
+            # Delete factor bin files from all symbol directories
+            deleted_count = 0
+            if self.features_dir.exists():
+                for symbol_dir in self.features_dir.iterdir():
+                    if symbol_dir.is_dir():
+                        data_file = (
+                            symbol_dir / f"{factor_name.lower()}.{self.freq}.bin"
+                        )
+                        if data_file.exists():
+                            data_file.unlink()
+                            deleted_count += 1
+
+            logger.info(
+                f"✓ Deleted factor data files from {deleted_count} symbol directories"
+            )
 
             # Delete metadata file
             metadata_file = self.metadata_dir / f"{factor_name}_metadata.json"
@@ -541,8 +478,16 @@ class FactorStorage:
 
             total_size = 0
             for factor_name in stored_factors:
-                data_file = self.factors_dir / f"{factor_name.lower()}.{self.freq}.bin"
-                factor_size = data_file.stat().st_size if data_file.exists() else 0
+                # Sum up factor file sizes across all symbol directories
+                factor_size = 0
+                if self.features_dir.exists():
+                    for symbol_dir in self.features_dir.iterdir():
+                        if symbol_dir.is_dir():
+                            data_file = (
+                                symbol_dir / f"{factor_name.lower()}.{self.freq}.bin"
+                            )
+                            if data_file.exists():
+                                factor_size += data_file.stat().st_size
                 total_size += factor_size
 
                 metadata = self.get_factor_metadata(factor_name)
