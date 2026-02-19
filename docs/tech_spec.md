@@ -6716,3 +6716,187 @@ report_df, positions = backtest_daily(
 - 回测功能已完成，可以作为模拟盘的基础
 - 模拟盘需要额外的调度服务来每日自动执行
 - 核心逻辑（预测 + 回测）已经就绪
+
+---
+
+## 🐛 常见问题与经验教训
+
+### 问题 1：股票代码大小写不匹配（重复出现多次）
+
+**问题描述**：
+
+在 Qlib 数据目录中，`instruments/all.txt` 文件中的股票代码是**大写**（如 `SH600000`），但 `features/` 目录下的子目录是**小写**（如 `sh600000`）。这导致路径匹配失败，无法读取数据。
+
+**错误表现**：
+
+```
+{"detail":"No data could be read from bin files"}
+```
+
+或者 Qlib API 返回空数据。
+
+**根本原因**：
+
+- Yahoo Finance 数据源返回的股票代码格式与 Qlib 内部存储格式不一致
+- 数据写入时使用了一种大小写，读取时使用了另一种大小写
+- Linux 文件系统区分大小写，Windows 不区分，导致问题在不同环境表现不同
+
+**解决方案**：
+
+```python
+# 读取 instruments 时统一转换为小写
+with open(instruments_file, "r") as f:
+    instruments = [line.strip().split("\t")[0].lower() for line in f if line.strip()]
+```
+
+**预防措施**：
+
+1. **数据写入时统一格式**：在数据下载和存储时，统一将股票代码转换为小写
+2. **读取时做防御性处理**：读取数据时始终转换为小写后再匹配
+3. **添加日志**：在关键路径添加日志，记录实际使用的路径和文件名
+4. **单元测试**：添加测试用例验证大小写处理
+
+---
+
+### 问题 2：Qlib 初始化状态不一致
+
+**问题描述**：
+
+在 Docker 容器热重载后，Qlib 的 `provider_uri` 配置可能不正确，导致 `D.calendar()` 和 `D.features()` 等 API 调用失败。
+
+**错误表现**：
+
+```
+ValueError: can't find a freq from [] that can resample to day!
+data_path={'__DEFAULT_FREQ': PosixPath('/app')}  # 应该是 /app/qlib_data
+```
+
+**根本原因**：
+
+- `QlibInitService` 使用类级别的 `_initialized` 标志
+- 热重载后 Python 进程重启，`_initialized` 被重置为 `False`
+- 但 Qlib 内部状态可能不一致，或者被其他代码错误初始化
+
+**解决方案**：
+
+对于数据导出功能，**完全绕过 Qlib API**，直接读取二进制文件：
+
+```python
+import struct
+
+# 直接读取 bin 文件
+with open(bin_file, "rb") as f:
+    data = f.read()
+num_values = len(data) // 4
+values = struct.unpack(f"{num_values}f", data)
+```
+
+**为什么选择直接读取**：
+
+| Qlib API 方式 | 直接读取方式 |
+|--------------|-------------|
+| 需要正确初始化 `provider_uri` | 不需要 Qlib 初始化 |
+| 热重载后状态不一致 | 每次独立读取 |
+| 依赖 Qlib 内部缓存 | 直接读取文件系统 |
+| 复杂的多频率配置 | 简单的文件操作 |
+
+---
+
+### 问题 3：前端 API URL 路径问题
+
+**问题描述**：
+
+前端使用相对路径 `/api/v1/...` 发送请求，但在 Docker 环境中，前端容器和后端容器是分离的，相对路径会发送到前端容器自己。
+
+**错误表现**：
+
+```
+Failed to load resource: the server responded with a status of 404 (Not Found)
+api/v1/data-source/export-data:1
+```
+
+**根本原因**：
+
+- 生成的 API client 使用 `OpenAPI.BASE = import.meta.env.VITE_API_URL`
+- 但手动编写的 `fetch` 调用使用了相对路径
+- 前端容器（nginx）没有配置代理到后端
+
+**解决方案**：
+
+```typescript
+// 使用环境变量构建完整 URL
+const apiUrl = import.meta.env.VITE_API_URL || "";
+const response = await fetch(`${apiUrl}/api/v1/data-source/export-data`, {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+  },
+});
+```
+
+**预防措施**：
+
+1. **统一使用生成的 API client**：尽量使用 OpenAPI 生成的 client，而不是手动 fetch
+2. **如果必须手动 fetch**：始终使用 `import.meta.env.VITE_API_URL` 作为基础 URL
+3. **检查网络请求**：开发时使用浏览器开发者工具检查实际发送的 URL
+
+---
+
+### 问题 4：Qlib 二进制文件格式
+
+**知识点**：
+
+Qlib 使用 `float32` 格式存储二进制数据：
+
+```python
+import struct
+
+# 读取 bin 文件
+with open("close.day.bin", "rb") as f:
+    data = f.read()
+
+# 解析为 float32 数组
+num_values = len(data) // 4  # float32 = 4 bytes
+values = struct.unpack(f"{num_values}f", data)
+```
+
+**文件结构**：
+
+```
+qlib_data/
+├── calendars/
+│   └── day.txt           # 交易日历，每行一个日期
+├── instruments/
+│   └── all.txt           # 股票列表，格式：代码\t开始日期\t结束日期
+└── features/
+    └── sh600000/         # 每个股票一个目录
+        ├── close.day.bin # 收盘价
+        ├── open.day.bin  # 开盘价
+        ├── high.day.bin  # 最高价
+        ├── low.day.bin   # 最低价
+        └── volume.day.bin # 成交量
+```
+
+---
+
+### 调试技巧总结
+
+1. **使用 curl 直接测试后端 API**：
+   ```bash
+   curl -X POST "http://localhost:8000/api/v1/data-source/export-data"
+   ```
+
+2. **检查 Docker 容器内的文件结构**：
+   ```bash
+   docker compose exec backend ls -la /app/qlib_data/features/
+   docker compose exec backend cat /app/qlib_data/instruments/all.txt | head -5
+   ```
+
+3. **查看后端日志**：
+   ```bash
+   docker compose logs backend --tail=100
+   ```
+
+4. **添加详细日志**：在关键路径添加 `logger.info()` 记录变量值
+
+5. **浏览器开发者工具**：检查 Network 标签页，查看实际发送的请求 URL 和响应

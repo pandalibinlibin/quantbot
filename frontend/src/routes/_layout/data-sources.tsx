@@ -81,6 +81,41 @@ function DataSourcesPage() {
     },
   });
 
+  // Mutation for exporting data
+  const exportDataMutation = useMutation({
+    mutationFn: async () => {
+      const apiUrl = import.meta.env.VITE_API_URL || "";
+      const response = await fetch(`${apiUrl}/api/v1/data-source/export-data`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || "Export failed");
+      }
+
+      // Get filename from Content-Disposition header
+      const contentDisposition = response.headers.get("Content-Disposition");
+      const filename = contentDisposition
+        ? contentDisposition.split("filename=")[1].replace(/"/g, "")
+        : `qlib_data_export_${new Date().toISOString().slice(0, 10)}.csv`;
+
+      // Download file
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    },
+  });
+
   // Handler functions
   const handleDownload = () => {
     const request: DownloadDataRequest = {
@@ -180,15 +215,19 @@ function DataSourcesPage() {
                     <div className="col-span-2">
                       <Label className="text-sm font-medium">Features</Label>
                       <div className="flex flex-wrap gap-1 mt-1">
-                        {status.features?.filter(f => !status.label || !f.startsWith(status.label)).map((feature) => (
-                          <Badge
-                            key={feature}
-                            variant="secondary"
-                            className="text-xs"
-                          >
-                            {feature}
-                          </Badge>
-                        )) || (
+                        {status.features
+                          ?.filter(
+                            (f) => !status.label || !f.startsWith(status.label),
+                          )
+                          .map((feature) => (
+                            <Badge
+                              key={feature}
+                              variant="secondary"
+                              className="text-xs"
+                            >
+                              {feature}
+                            </Badge>
+                          )) || (
                           <span className="text-sm text-muted-foreground">
                             No features available
                           </span>
@@ -196,7 +235,9 @@ function DataSourcesPage() {
                       </div>
                     </div>
                     <div className="col-span-2">
-                      <Label className="text-sm font-medium">Label (Prediction Target)</Label>
+                      <Label className="text-sm font-medium">
+                        Label (Prediction Target)
+                      </Label>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {status.label ? (
                           <Badge
@@ -228,6 +269,20 @@ function DataSourcesPage() {
                       {incrementalUpdateMutation.isPending
                         ? "Updating..."
                         : "Incremental Update"}
+                    </Button>
+                    <Button
+                      onClick={() => exportDataMutation.mutate()}
+                      variant="default"
+                      size="sm"
+                      disabled={!status || exportDataMutation.isPending}
+                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-300 disabled:text-gray-500"
+                    >
+                      <RefreshCw
+                        className={`h-4 w-4 ${exportDataMutation.isPending ? "animate-spin" : ""}`}
+                      />
+                      {exportDataMutation.isPending
+                        ? "Exporting..."
+                        : "Export Data"}
                     </Button>
                     <Button
                       onClick={handleClear}

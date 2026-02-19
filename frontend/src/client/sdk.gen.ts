@@ -3,7 +3,53 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { DataSourceGetDataSourceStatusEndpointResponse, DataSourceClearDataSourceEndpointResponse, DataSourceDownloadDataSourceEndpointData, DataSourceDownloadDataSourceEndpointResponse, FactorsCreateFactorData, FactorsCreateFactorResponse, FactorsGetFactorsData, FactorsGetFactorsResponse, FactorsGetFactorData, FactorsGetFactorResponse, FactorsUpdateFactorData, FactorsUpdateFactorResponse, FactorsDeleteFactorData, FactorsDeleteFactorResponse, FactorsValidateFactorExpressionData, FactorsValidateFactorExpressionResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, QlibWorkflowsHealthCheckResponse, QlibWorkflowsCheckDataStatusData, QlibWorkflowsCheckDataStatusResponse, QlibWorkflowsStartTrainingResponse, QlibWorkflowsGetTrainingConfigResponse, QlibWorkflowsListModelsResponse, QlibWorkflowsExecuteTrainingWorkflowData, QlibWorkflowsExecuteTrainingWorkflowResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { BacktestGetBacktestStatusResponse, BacktestExecuteBacktestData, BacktestExecuteBacktestResponse, DataSourceGetDataSourceStatusEndpointResponse, DataSourceClearDataSourceEndpointResponse, DataSourceDownloadDataSourceEndpointData, DataSourceDownloadDataSourceEndpointResponse, DataSourceExportDataEndpointResponse, FactorsCreateFactorData, FactorsCreateFactorResponse, FactorsGetFactorsData, FactorsGetFactorsResponse, FactorsGetFactorData, FactorsGetFactorResponse, FactorsUpdateFactorData, FactorsUpdateFactorResponse, FactorsDeleteFactorData, FactorsDeleteFactorResponse, FactorsValidateFactorExpressionData, FactorsValidateFactorExpressionResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, PrivateCreateUserData, PrivateCreateUserResponse, TrainingCheckDataStatusData, TrainingCheckDataStatusResponse, TrainingStartTrainingResponse, TrainingGetTrainingConfigResponse, TrainingListModelsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+
+export class BacktestService {
+    /**
+     * Get Backtest Status
+     * Check if backtest is ready to run.
+     *
+     * Returns information about available models and predictions.
+     * @returns BacktestStatusResponse Successful Response
+     * @throws ApiError
+     */
+    public static getBacktestStatus(): CancelablePromise<BacktestGetBacktestStatusResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/backtest/status'
+        });
+    }
+    
+    /**
+     * Execute Backtest
+     * Execute backtest using latest predictions.
+     *
+     * This endpoint runs backtest independently from training workflow.
+     * It uses the latest predictions from MLflow artifacts.
+     *
+     * Args:
+     * request: Backtest configuration (all fields optional with defaults)
+     *
+     * Returns:
+     * Backtest results including returns and metrics
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns BacktestResponse Successful Response
+     * @throws ApiError
+     */
+    public static executeBacktest(data: BacktestExecuteBacktestData = {}): CancelablePromise<BacktestExecuteBacktestResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/backtest/run',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
 
 export class DataSourceService {
     /**
@@ -67,6 +113,28 @@ export class DataSourceService {
             errors: {
                 422: 'Validation Error'
             }
+        });
+    }
+    
+    /**
+     * Export Data Endpoint
+     * Export all feature data from qlib bin files to CSV
+     *
+     * Educational Notes:
+     * - Reads all .bin files from qlib_data directory
+     * - Converts to pandas DataFrame
+     * - Returns as downloadable CSV file
+     * - Useful for data analysis and backup
+     *
+     * Returns:
+     * CSV file with all feature data
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static exportDataEndpoint(): CancelablePromise<DataSourceExportDataEndpointResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/data-source/export-data'
         });
     }
 }
@@ -531,25 +599,7 @@ export class PrivateService {
     }
 }
 
-export class QlibWorkflowsService {
-    /**
-     * Health Check
-     * Simple health check endpoint.
-     *
-     * Educational Notes:
-     * - Returns basic status information
-     * - Used to verify the API is working
-     * - No complex logic, just a simple response
-     * @returns unknown Successful Response
-     * @throws ApiError
-     */
-    public static healthCheck(): CancelablePromise<QlibWorkflowsHealthCheckResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/v1/qlib/health'
-        });
-    }
-    
+export class TrainingService {
     /**
      * Check Data Status
      * Check if data is available for training.
@@ -564,10 +614,10 @@ export class QlibWorkflowsService {
      * @returns DataStatusResponse Successful Response
      * @throws ApiError
      */
-    public static checkDataStatus(data: QlibWorkflowsCheckDataStatusData): CancelablePromise<QlibWorkflowsCheckDataStatusResponse> {
+    public static checkDataStatus(data: TrainingCheckDataStatusData): CancelablePromise<TrainingCheckDataStatusResponse> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/v1/qlib/data-status/{freq}',
+            url: '/api/v1/training/data-status/{freq}',
             path: {
                 freq: data.freq
             },
@@ -581,7 +631,6 @@ export class QlibWorkflowsService {
      * Start Training
      * Start training workflow using configuration from file.
      *
-     * This is a simplified endpoint - no configuration needed from frontend.
      * Training parameters are read from backend/app/config/training_config.yaml.
      *
      * Returns:
@@ -589,10 +638,10 @@ export class QlibWorkflowsService {
      * @returns TrainingStartResponse Successful Response
      * @throws ApiError
      */
-    public static startTraining(): CancelablePromise<QlibWorkflowsStartTrainingResponse> {
+    public static startTraining(): CancelablePromise<TrainingStartTrainingResponse> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/v1/qlib/training/start'
+            url: '/api/v1/training/start'
         });
     }
     
@@ -604,10 +653,10 @@ export class QlibWorkflowsService {
      * @returns unknown Successful Response
      * @throws ApiError
      */
-    public static getTrainingConfig(): CancelablePromise<QlibWorkflowsGetTrainingConfigResponse> {
+    public static getTrainingConfig(): CancelablePromise<TrainingGetTrainingConfigResponse> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/v1/qlib/training/config'
+            url: '/api/v1/training/config'
         });
     }
     
@@ -619,35 +668,10 @@ export class QlibWorkflowsService {
      * @returns unknown Successful Response
      * @throws ApiError
      */
-    public static listModels(): CancelablePromise<QlibWorkflowsListModelsResponse> {
+    public static listModels(): CancelablePromise<TrainingListModelsResponse> {
         return __request(OpenAPI, {
             method: 'GET',
-            url: '/api/v1/qlib/models'
-        });
-    }
-    
-    /**
-     * Execute Training Workflow
-     * Execute Qlib training workflow.
-     *
-     * Educational Notes:
-     * - Uses our Pydantic models for request/response validation
-     * - Calls existing QlibWorkflowService for business logic
-     * - Returns structured response with training results
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns TrainingWorkflowResponse Successful Response
-     * @throws ApiError
-     */
-    public static executeTrainingWorkflow(data: QlibWorkflowsExecuteTrainingWorkflowData): CancelablePromise<QlibWorkflowsExecuteTrainingWorkflowResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/v1/qlib/training-workflow',
-            body: data.requestBody,
-            mediaType: 'application/json',
-            errors: {
-                422: 'Validation Error'
-            }
+            url: '/api/v1/training/models'
         });
     }
 }
