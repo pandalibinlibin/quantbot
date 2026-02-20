@@ -6634,6 +6634,7 @@ report_df, positions = backtest_daily(
 #### 1. Data Sources 页面 (`/data-sources`)
 
 **功能**：
+
 - 展示当前数据状态（股票数量、日期范围、数据频率）
 - 下载数据（全量下载）
 - 增量更新数据
@@ -6650,17 +6651,17 @@ report_df, positions = backtest_daily(
 
 **布局修复**：
 使用以下结构防止页面滚动到导航栏：
+
 ```tsx
 <div className="flex flex-col overflow-hidden -m-6 md:-m-8 h-[calc(100vh-8rem)]">
-  <div className="h-full overflow-y-auto p-6 md:p-8">
-    {/* 页面内容 */}
-  </div>
+  <div className="h-full overflow-y-auto p-6 md:p-8">{/* 页面内容 */}</div>
 </div>
 ```
 
 #### 2. Training 页面 (`/training`)
 
 **功能**：
+
 - 展示模型配置（从 `training_config.yaml` 读取）
   - 模型类型（LGBModel）
   - 超参数（learning_rate, max_depth, num_leaves 等）
@@ -6677,6 +6678,7 @@ report_df, positions = backtest_daily(
 | `POST /api/v1/training/start` | 启动训练 |
 
 **训练流程验证**：
+
 ```
 Training until validation scores don't improve for 50 rounds
 [20]       train's l2: 0.99534     valid's l2: 0.996307
@@ -6686,9 +6688,48 @@ Early stopping, best iteration is:
 ```
 
 **设计原则**：
+
 - 用户不能修改模型配置（配置在 YAML 文件中管理）
 - 页面只展示配置信息，唯一操作是"Start Training"按钮
 - 训练完成后自动刷新模型列表
+
+#### 3. Backtest 页面 (`/backtest`)
+
+**功能**：
+
+- 展示策略配置（从 `backtest_config.yaml` 读取）
+  - 策略类型（TopkDropoutStrategy）
+  - 策略参数（topk, n_drop, account, benchmark）
+  - 交易成本参数（open_cost, close_cost, min_cost）
+- 展示回测状态（是否有预测可用、最新模型）
+- 展示回测结果
+  - 交易天数、总收益率、净收益率
+  - 交易成本、最终账户价值
+- Run Backtest 按钮
+
+**API 调用**：
+| API | 用途 |
+|-----|------|
+| `GET /api/v1/backtest/config` | 获取回测配置 |
+| `GET /api/v1/backtest/status` | 获取回测状态 |
+| `GET /api/v1/backtest/latest-result` | 获取最近回测结果（持久化） |
+| `POST /api/v1/backtest/run` | 执行回测 |
+
+**回测流程验证**：
+
+```
+INFO:app.services.qlib_workflow_service:Found latest predictions: /app/mlruns/.../pred.pkl
+INFO:app.services.qlib_workflow_service:Loaded predictions: 11025 records
+INFO:app.services.qlib_workflow_service:Backtest period: 2025-12-18 to 2026-02-09
+backtest loop: 100%|██████████| 36/36 [00:00<00:00, 72.77it/s]
+INFO:app.services.qlib_workflow_service:Backtest completed: 36 trading days, return=0.1101
+```
+
+**设计原则**：
+
+- 用户不能修改策略配置（配置在 YAML 文件中管理）
+- 页面只展示配置信息，唯一操作是"Run Backtest"按钮
+- 回测结果持久化到后端缓存，页面切换后不会丢失
 
 ### 🚀 下一阶段工作计划
 
@@ -6706,11 +6747,7 @@ Early stopping, best iteration is:
 
 3. ~~**训练和分析页面**~~ ✅ 已完成
 
-4. **回测和指标分析页面**
-   - 回测状态检查
-   - 执行回测
-   - 回测结果展示（收益曲线、指标表格）
-   - 夏普比率、最大回撤等指标
+4. ~~**回测和指标分析页面**~~ ✅ 已完成
 
 **注意**：不需要独立的模型管理页面。系统只使用最新训练的模型进行回测。如果配置文件中更换了模型类型，需要删除旧模型后重新训练。
 
@@ -6846,12 +6883,12 @@ values = struct.unpack(f"{num_values}f", data)
 
 **为什么选择直接读取**：
 
-| Qlib API 方式 | 直接读取方式 |
-|--------------|-------------|
+| Qlib API 方式                 | 直接读取方式       |
+| ----------------------------- | ------------------ |
 | 需要正确初始化 `provider_uri` | 不需要 Qlib 初始化 |
-| 热重载后状态不一致 | 每次独立读取 |
-| 依赖 Qlib 内部缓存 | 直接读取文件系统 |
-| 复杂的多频率配置 | 简单的文件操作 |
+| 热重载后状态不一致            | 每次独立读取       |
+| 依赖 Qlib 内部缓存            | 直接读取文件系统   |
+| 复杂的多频率配置              | 简单的文件操作     |
 
 ---
 
@@ -6935,17 +6972,20 @@ qlib_data/
 ### 调试技巧总结
 
 1. **使用 curl 直接测试后端 API**：
+
    ```bash
    curl -X POST "http://localhost:8000/api/v1/data-source/export-data"
    ```
 
 2. **检查 Docker 容器内的文件结构**：
+
    ```bash
    docker compose exec backend ls -la /app/qlib_data/features/
    docker compose exec backend cat /app/qlib_data/instruments/all.txt | head -5
    ```
 
 3. **查看后端日志**：
+
    ```bash
    docker compose logs backend --tail=100
    ```

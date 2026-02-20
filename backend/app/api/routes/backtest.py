@@ -5,6 +5,7 @@ Endpoints for backtesting strategies using model predictions.
 """
 
 from typing import Optional
+from datetime import datetime
 from fastapi import APIRouter
 from pydantic import BaseModel
 
@@ -13,6 +14,9 @@ from app.core.config import settings
 from pathlib import Path
 
 router = APIRouter()
+
+# In-memory cache for latest backtest result
+_latest_backtest_result: Optional[dict] = None
 
 
 class BacktestStatusResponse(BaseModel):
@@ -53,6 +57,54 @@ class BacktestResponse(BaseModel):
     error: Optional[str] = None
 
 
+@router.get("/config")
+def get_backtest_config():
+    """
+    Get current backtest configuration.
+
+    Returns the strategy and backtest parameters from backtest_config.yaml.
+    """
+    service = get_qlib_workflow_service()
+
+    try:
+        config = service.load_backtest_config()
+        return {
+            "status": "success",
+            "config": config,
+        }
+    except FileNotFoundError as e:
+        return {
+            "status": "error",
+            "error": str(e),
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error": str(e),
+        }
+
+
+@router.get("/latest-result")
+def get_latest_backtest_result():
+    """
+    Get the latest backtest result.
+
+    Returns the most recent backtest result if available.
+    """
+    global _latest_backtest_result
+
+    if _latest_backtest_result is None:
+        return {
+            "status": "no_result",
+            "message": "No backtest has been run yet",
+        }
+
+    return {
+        "status": "success",
+        "result": _latest_backtest_result,
+    }
+
+
 @router.get("/status", response_model=BacktestStatusResponse)
 def get_backtest_status():
     """
@@ -60,7 +112,6 @@ def get_backtest_status():
 
     Returns information about available models and predictions.
     """
-    from datetime import datetime
 
     service = get_qlib_workflow_service()
 
@@ -119,6 +170,8 @@ def execute_backtest(request: Optional[BacktestRequest] = None):
     Returns:
         Backtest results including returns and metrics
     """
+    global _latest_backtest_result
+
     service = get_qlib_workflow_service()
 
     # Use default values if no request body provided
@@ -142,6 +195,20 @@ def execute_backtest(request: Optional[BacktestRequest] = None):
                 message="Backtest failed",
                 error=result.get("error"),
             )
+
+        # Cache the successful result
+        _latest_backtest_result = {
+            "status": "success",
+            "message": "Backtest completed successfully",
+            "start_time": result.get("start_time"),
+            "end_time": result.get("end_time"),
+            "trading_days": result.get("trading_days", 0),
+            "total_return": result.get("total_return", 0.0),
+            "total_cost": result.get("total_cost", 0.0),
+            "net_return": result.get("net_return", 0.0),
+            "final_account": result.get("final_account", 0.0),
+            "executed_at": datetime.now().isoformat(),
+        }
 
         return BacktestResponse(
             status="success",

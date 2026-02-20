@@ -5,6 +5,7 @@ import {
   Brain,
   Database,
   FlaskConical,
+  TrendingUp,
 } from "lucide-react";
 
 import { SidebarAppearance } from "@/components/Common/Appearance";
@@ -24,6 +25,7 @@ const baseItems: Item[] = [
   { icon: Database, title: "Data Sources", path: "/data-sources" },
   { icon: FlaskConical, title: "Factors", path: "/factors" },
   { icon: Brain, title: "Training", path: "/training" },
+  { icon: TrendingUp, title: "Backtest", path: "/backtest" },
   { icon: Briefcase, title: "Items", path: "/items" },
 ];
 

@@ -432,6 +432,8 @@ export type ValidationError = {
     type: string;
 };
 
+export type BacktestGetBacktestConfigResponse = (unknown);
+
 export type BacktestGetBacktestStatusResponse = (BacktestStatusResponse);
 
 export type BacktestExecuteBacktestData = {

@@ -96,6 +96,34 @@ class QlibWorkflowService:
         self.logger.info(f"Loaded training config from: {config_path}")
         return config
 
+    def load_backtest_config(
+        self, config_path: Optional[Path] = None
+    ) -> Dict[str, Any]:
+        """
+        Load backtest configuration from YAML file.
+
+        Args:
+            config_path: Path to config file (uses default if None)
+
+        Returns:
+            Configuration dictionary
+
+        Raises:
+            FileNotFoundError: If config file does not exist
+            yaml.YAMLError: If config file is invalid
+        """
+        if config_path is None:
+            config_path = BACKTEST_CONFIG_PATH
+
+        if not config_path.exists():
+            raise FileNotFoundError(f"Backtest config file not found: {config_path}")
+
+        with open(config_path, "r", encoding="utf-8") as f:
+            config = yaml.safe_load(f)
+
+        self.logger.info(f"Loaded backtest config from: {config_path}")
+        return config
+
     def execute_training_from_config(
         self, config_path: Optional[Path] = None
     ) -> Dict[str, Any]:
