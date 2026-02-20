@@ -1,5 +1,4 @@
 import {
-  Briefcase,
   Home,
   Users,
   Brain,
@@ -22,11 +21,10 @@ import { User } from "./User";
 
 const baseItems: Item[] = [
   { icon: Home, title: "Dashboard", path: "/" },
-  { icon: Database, title: "Data Sources", path: "/data-sources" },
   { icon: FlaskConical, title: "Factors", path: "/factors" },
+  { icon: Database, title: "Data Sources", path: "/data-sources" },
   { icon: Brain, title: "Training", path: "/training" },
   { icon: TrendingUp, title: "Backtest", path: "/backtest" },
-  { icon: Briefcase, title: "Items", path: "/items" },
 ];
 
 export function AppSidebar() {
