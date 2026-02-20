@@ -457,6 +457,9 @@ class QlibWorkflowService:
         """
         Save trained model to filesystem.
 
+        This method deletes all existing model files before saving the new one,
+        ensuring only the latest model is kept in the system.
+
         Args:
             model: Trained model object
             model_name: Name for the model file (auto-generated if None)
@@ -475,6 +478,14 @@ class QlibWorkflowService:
             model_name = f"{model_name}.pkl"
 
         model_path = MODELS_DIR / model_name
+
+        # Delete all existing model files before saving new one
+        for old_model in MODELS_DIR.glob("*.pkl"):
+            try:
+                old_model.unlink()
+                self.logger.info(f"Deleted old model: {old_model}")
+            except Exception as e:
+                self.logger.warning(f"Failed to delete old model {old_model}: {e}")
 
         # Save model using pickle
         with open(model_path, "wb") as f:

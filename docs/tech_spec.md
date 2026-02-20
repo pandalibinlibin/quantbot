@@ -6993,3 +6993,36 @@ qlib_data/
 4. **添加详细日志**：在关键路径添加 `logger.info()` 记录变量值
 
 5. **浏览器开发者工具**：检查 Network 标签页，查看实际发送的请求 URL 和响应
+
+---
+
+## 📝 更新日志
+
+### 2026-02-20: 模型管理优化
+
+**改动内容**：
+
+- 在 `_save_model_to_filesystem` 方法中添加删除旧模型的逻辑
+- 训练新模型前，自动删除 `MODELS_DIR` 目录中所有现有的 `.pkl` 文件
+- 确保系统中只保留最新训练的模型
+
+**修改文件**：
+
+- `backend/app/services/qlib_workflow_service.py`
+
+**代码位置**：第 482-488 行
+
+```python
+# Delete all existing model files before saving new one
+for old_model in MODELS_DIR.glob("*.pkl"):
+    try:
+        old_model.unlink()
+        self.logger.info(f"Deleted old model: {old_model}")
+    except Exception as e:
+        self.logger.warning(f"Failed to delete old model {old_model}: {e}")
+```
+
+**设计理由**：
+
+- 简化模型管理，避免模型文件堆积
+- 系统设计为单模型架构，只需保留最新模型用于回测
