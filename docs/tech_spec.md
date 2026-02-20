@@ -7079,3 +7079,69 @@ report_df, positions = backtest_daily(strategy=strategy, ...)
 - 数据增量更新后，无需重新训练即可回测
 - 回测使用全部数据，更接近实际使用场景
 - 模型复用，提高效率
+
+### 2026-02-20: 回测支持任意数据频率
+
+**问题**：
+
+- 原回测逻辑使用 `backtest_daily`，只支持日频数据
+- 系统支持下载分钟数据、训练分钟模型，但回测不支持分钟频率
+- 用户下载分钟数据后，回测会使用错误的频率
+
+**解决方案**：
+
+使用 Qlib 的通用 `backtest` 函数替代 `backtest_daily`，根据数据频率动态配置回测参数。
+
+**修改文件**：
+
+- `backend/app/services/qlib_workflow_service.py`
+
+**主要改动**：
+
+```python
+# Use general backtest function that supports any frequency
+from qlib.backtest import backtest as backtest_func
+from qlib.backtest.executor import SimulatorExecutor
+from qlib.utils.time import Freq
+
+# Create executor with correct frequency
+executor_config = {
+    "time_per_step": freq,  # "day" or "1min"
+    "generate_portfolio_metrics": True,
+}
+executor = SimulatorExecutor(**executor_config)
+
+# Update exchange_kwargs with correct frequency
+_exchange_kwargs = {
+    "freq": freq,
+    "limit_threshold": ...,
+    "deal_price": ...,
+    ...
+}
+
+# Execute backtest
+portfolio_metric_dict, indicator_dict = backtest_func(
+    start_time=start_time,
+    end_time=end_time,
+    strategy=strategy,
+    executor=executor,
+    account=account,
+    benchmark=benchmark,
+    exchange_kwargs=_exchange_kwargs,
+)
+
+# Extract report from the correct frequency key
+analysis_freq = "{0}{1}".format(*Freq.parse(freq))
+report_df, positions = portfolio_metric_dict.get(analysis_freq)
+```
+
+**设计理由**：
+
+- 回测逻辑正确支持日频和分钟频率
+- 当前使用 TopkDropoutStrategy，分钟级回测会每分钟调仓（成本高）
+- 后续可以实现更适合分钟级的策略（如 TWAP、VWAP）
+
+**注意事项**：
+
+- TopkDropoutStrategy 是日频策略，分钟级使用会导致高换手率和高成本
+- 分钟级策略优化留待后续版本实现

@@ -887,7 +887,6 @@ class QlibWorkflowService:
             Dictionary with backtest results including report, metrics, and data time range.
         """
         import pandas as pd
-        from qlib.contrib.evaluate import backtest_daily
         from qlib.contrib.strategy import TopkDropoutStrategy
         from qlib.data.dataset import DatasetH
 
@@ -999,15 +998,22 @@ class QlibWorkflowService:
             }
 
         # Step 5: Auto-detect time range from predictions for backtest
-        # Note: Qlib's backtest_daily has boundary issues on the last day,
-        # so we need to shift back by 1 day to avoid index out of bounds error
+        # Note: Qlib's backtest has boundary issues on the last period,
+        # so we need to shift back by 1 period to avoid index out of bounds error
         dt_values = pred.index.get_level_values("datetime")
         start_time = str(dt_values.min())[:10]
-        end_time = str(dt_values.max() - pd.Timedelta(days=1))[:10]
+        if freq == "day":
+            end_time = str(dt_values.max() - pd.Timedelta(days=1))[:10]
+        else:
+            # For minute data, shift back by 1 minute
+            end_time = str(dt_values.max() - pd.Timedelta(minutes=1))
 
-        self.logger.info(f"Backtest period: {start_time} to {end_time}")
+        self.logger.info(f"Backtest period: {start_time} to {end_time}, freq={freq}")
 
         # Step 6: Create strategy and execute backtest
+        # Note: TopkDropoutStrategy will rebalance at each time step (day or minute)
+        # For minute-level data, this may result in high trading costs
+        # TODO: Implement better strategies for minute-level trading
         strategy = TopkDropoutStrategy(
             signal=pred,
             topk=topk,
@@ -1015,14 +1021,42 @@ class QlibWorkflowService:
         )
 
         try:
-            report_df, positions = backtest_daily(
+            # Use general backtest function that supports any frequency
+            from qlib.backtest import backtest as backtest_func
+            from qlib.backtest.executor import SimulatorExecutor
+            from qlib.utils.time import Freq
+
+            # Create executor with correct frequency
+            executor_config = {
+                "time_per_step": freq,
+                "generate_portfolio_metrics": True,
+            }
+            executor = SimulatorExecutor(**executor_config)
+
+            # Update exchange_kwargs with correct frequency
+            _exchange_kwargs = {
+                "freq": freq,
+                "limit_threshold": exchange_kwargs.get("limit_threshold", 0.095),
+                "deal_price": exchange_kwargs.get("deal_price", "close"),
+                "open_cost": exchange_kwargs.get("open_cost", 0.0003),
+                "close_cost": exchange_kwargs.get("close_cost", 0.0013),
+                "min_cost": exchange_kwargs.get("min_cost", 5),
+            }
+
+            # Execute backtest
+            portfolio_metric_dict, indicator_dict = backtest_func(
                 start_time=start_time,
                 end_time=end_time,
                 strategy=strategy,
+                executor=executor,
                 account=account,
                 benchmark=benchmark,
-                exchange_kwargs=exchange_kwargs,
+                exchange_kwargs=_exchange_kwargs,
             )
+
+            # Extract report from the correct frequency key
+            analysis_freq = "{0}{1}".format(*Freq.parse(freq))
+            report_df, positions = portfolio_metric_dict.get(analysis_freq)
 
             # Calculate metrics
             total_return = (
