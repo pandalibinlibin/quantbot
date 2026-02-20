@@ -6629,6 +6629,67 @@ report_df, positions = backtest_daily(
 }
 ```
 
+### ✅ 已完成的前端页面
+
+#### 1. Data Sources 页面 (`/data-sources`)
+
+**功能**：
+- 展示当前数据状态（股票数量、日期范围、数据频率）
+- 下载数据（全量下载）
+- 增量更新数据
+- 导出数据为 CSV
+- 清除数据
+
+**API 调用**：
+| API | 用途 |
+|-----|------|
+| `GET /api/v1/data-source/status` | 获取数据状态 |
+| `POST /api/v1/data-source/download` | 下载数据 |
+| `POST /api/v1/data-source/export-data` | 导出 CSV |
+| `DELETE /api/v1/data-source/clear` | 清除数据 |
+
+**布局修复**：
+使用以下结构防止页面滚动到导航栏：
+```tsx
+<div className="flex flex-col overflow-hidden -m-6 md:-m-8 h-[calc(100vh-8rem)]">
+  <div className="h-full overflow-y-auto p-6 md:p-8">
+    {/* 页面内容 */}
+  </div>
+</div>
+```
+
+#### 2. Training 页面 (`/training`)
+
+**功能**：
+- 展示模型配置（从 `training_config.yaml` 读取）
+  - 模型类型（LGBModel）
+  - 超参数（learning_rate, max_depth, num_leaves 等）
+- 展示已训练的模型列表
+  - 模型文件名、大小、创建时间
+- 展示训练状态（Idle / Training / Completed / Failed）
+- 启动训练按钮
+
+**API 调用**：
+| API | 用途 |
+|-----|------|
+| `GET /api/v1/training/config` | 获取训练配置 |
+| `GET /api/v1/training/models` | 获取已训练模型列表 |
+| `POST /api/v1/training/start` | 启动训练 |
+
+**训练流程验证**：
+```
+Training until validation scores don't improve for 50 rounds
+[20]       train's l2: 0.99534     valid's l2: 0.996307
+[40]       train's l2: 0.994794    valid's l2: 0.996388
+Early stopping, best iteration is:
+[20]       train's l2: 0.99534     valid's l2: 0.996307
+```
+
+**设计原则**：
+- 用户不能修改模型配置（配置在 YAML 文件中管理）
+- 页面只展示配置信息，唯一操作是"Start Training"按钮
+- 训练完成后自动刷新模型列表
+
 ### 🚀 下一阶段工作计划
 
 #### Phase 1：前端开发 (2-3 周)
@@ -6641,17 +6702,9 @@ report_df, positions = backtest_daily(
    - 因子创建和编辑
    - 因子分析和可视化
 
-2. **数据页面**
+2. ~~**数据页面**~~ ✅ 已完成
 
-   - 数据状态展示
-   - 数据下载（全量/增量）
-   - 数据范围和质量统计
-
-3. **训练和分析页面**
-
-   - 训练配置展示
-   - 开始训练按钮
-   - 训练结果和指标分析
+3. ~~**训练和分析页面**~~ ✅ 已完成
 
 4. **回测和指标分析页面**
    - 回测状态检查
