@@ -7145,3 +7145,49 @@ report_df, positions = portfolio_metric_dict.get(analysis_freq)
 
 - TopkDropoutStrategy 是日频策略，分钟级使用会导致高换手率和高成本
 - 分钟级策略优化留待后续版本实现
+
+### 2026-02-20: 回测结果持久化
+
+**问题**：
+
+- 回测结果存储在内存中（全局变量 `_latest_backtest_result`）
+- 服务器重启后结果丢失
+- 用户刷新页面后无法恢复上次的回测结果
+
+**解决方案**：
+
+将回测结果保存到 JSON 文件，而不是内存。
+
+**存储位置**：`/app/backtest_results/latest_result.json`
+
+**修改文件**：
+
+- `backend/app/api/routes/backtest.py`
+
+**主要改动**：
+
+```python
+# File path for persisting latest backtest result
+BACKTEST_RESULTS_DIR = Path(settings.QLIB_DATA_PATH).parent / "backtest_results"
+LATEST_RESULT_FILE = BACKTEST_RESULTS_DIR / "latest_result.json"
+
+def _save_backtest_result(result: dict) -> None:
+    """Save backtest result to JSON file."""
+    BACKTEST_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    with open(LATEST_RESULT_FILE, "w") as f:
+        json.dump(result, f, indent=2)
+
+def _load_backtest_result() -> Optional[dict]:
+    """Load backtest result from JSON file."""
+    if LATEST_RESULT_FILE.exists():
+        with open(LATEST_RESULT_FILE, "r") as f:
+            return json.load(f)
+    return None
+```
+
+**设计理由**：
+
+- 服务器重启后结果不丢失
+- 简单，无需数据库
+- JSON 格式易于调试和查看
+- 只保存最新一次结果，符合当前需求

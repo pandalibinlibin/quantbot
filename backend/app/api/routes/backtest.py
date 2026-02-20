@@ -4,19 +4,36 @@ Backtest API Routes
 Endpoints for backtesting strategies using model predictions.
 """
 
+import json
 from typing import Optional
 from datetime import datetime
 from fastapi import APIRouter
 from pydantic import BaseModel
+from pathlib import Path
 
 from app.services.qlib_workflow_service import get_qlib_workflow_service
 from app.core.config import settings
-from pathlib import Path
 
 router = APIRouter()
 
-# In-memory cache for latest backtest result
-_latest_backtest_result: Optional[dict] = None
+# File path for persisting latest backtest result
+BACKTEST_RESULTS_DIR = Path(settings.QLIB_DATA_PATH).parent / "backtest_results"
+LATEST_RESULT_FILE = BACKTEST_RESULTS_DIR / "latest_result.json"
+
+
+def _save_backtest_result(result: dict) -> None:
+    """Save backtest result to JSON file."""
+    BACKTEST_RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    with open(LATEST_RESULT_FILE, "w") as f:
+        json.dump(result, f, indent=2)
+
+
+def _load_backtest_result() -> Optional[dict]:
+    """Load backtest result from JSON file."""
+    if LATEST_RESULT_FILE.exists():
+        with open(LATEST_RESULT_FILE, "r") as f:
+            return json.load(f)
+    return None
 
 
 class BacktestStatusResponse(BaseModel):
@@ -89,10 +106,11 @@ def get_latest_backtest_result():
     Get the latest backtest result.
 
     Returns the most recent backtest result if available.
+    Result is loaded from persistent file storage.
     """
-    global _latest_backtest_result
+    result = _load_backtest_result()
 
-    if _latest_backtest_result is None:
+    if result is None:
         return {
             "status": "no_result",
             "message": "No backtest has been run yet",
@@ -100,7 +118,7 @@ def get_latest_backtest_result():
 
     return {
         "status": "success",
-        "result": _latest_backtest_result,
+        "result": result,
     }
 
 
@@ -157,6 +175,7 @@ def execute_backtest(request: Optional[BacktestRequest] = None):
     2. Loads all feature data from bin files (excluding labels)
     3. Uses the model to generate predictions on all data
     4. Executes backtest using the predictions
+    5. Saves result to persistent file storage
 
     Args:
         request: Backtest configuration (all fields optional with defaults)
@@ -164,8 +183,6 @@ def execute_backtest(request: Optional[BacktestRequest] = None):
     Returns:
         Backtest results including returns, metrics, and data time range
     """
-    global _latest_backtest_result
-
     service = get_qlib_workflow_service()
 
     # Use default values if no request body provided
@@ -187,8 +204,8 @@ def execute_backtest(request: Optional[BacktestRequest] = None):
                 error=result.get("error"),
             )
 
-        # Cache the successful result
-        _latest_backtest_result = {
+        # Save the successful result to persistent file
+        backtest_result = {
             "status": "success",
             "message": "Backtest completed successfully",
             "data_start_time": result.get("data_start_time"),
@@ -202,6 +219,7 @@ def execute_backtest(request: Optional[BacktestRequest] = None):
             "final_account": result.get("final_account", 0.0),
             "executed_at": datetime.now().isoformat(),
         }
+        _save_backtest_result(backtest_result)
 
         return BacktestResponse(
             status="success",
