@@ -7026,3 +7026,56 @@ for old_model in MODELS_DIR.glob("*.pkl"):
 
 - 简化模型管理，避免模型文件堆积
 - 系统设计为单模型架构，只需保留最新模型用于回测
+
+### 2026-02-20: 回测逻辑重构
+
+**问题**：
+
+- 原回测逻辑使用训练时生成的 `pred.pkl` 文件
+- 无法在最新数据上回测，必须重新训练才能更新预测
+- 不符合实际量化投资的使用场景
+
+**正确的回测流程**：
+
+1. 加载最新的模型文件
+2. 加载 bin 文件中的全部特征数据（不包括 label）
+3. 用模型对全部数据做推理，生成预测
+4. 用预测结果执行回测
+
+**修改文件**：
+
+- `backend/app/api/routes/backtest.py`
+- `backend/app/services/qlib_workflow_service.py`
+
+**主要改动**：
+
+1. **`GET /backtest/status`**：就绪条件从检查 `pred.pkl` 改为检查模型是否存在
+2. **`POST /backtest/run`**：使用模型推理而不是加载 `pred.pkl`
+3. **`BacktestResponse`**：新增 `data_start_time` 和 `data_end_time` 字段，表示数据范围
+
+**新的回测流程**：
+
+```python
+# Step 1: Load the latest model
+model = pickle.load(open(latest_model_path, "rb"))
+
+# Step 2: Get data time range from bin files
+time_range = self._get_data_time_range()
+
+# Step 3: Create dataset for inference (features only, no labels)
+handler = CustomFactorHandler(instruments="all", start_time=..., end_time=...)
+dataset = DatasetH(handler=handler, segments={"backtest": [start, end]})
+
+# Step 4: Generate predictions using the model
+pred = model.predict(dataset, segment="backtest")
+
+# Step 5: Execute backtest
+strategy = TopkDropoutStrategy(signal=pred, topk=topk, n_drop=n_drop)
+report_df, positions = backtest_daily(strategy=strategy, ...)
+```
+
+**设计理由**：
+
+- 数据增量更新后，无需重新训练即可回测
+- 回测使用全部数据，更接近实际使用场景
+- 模型复用，提高效率

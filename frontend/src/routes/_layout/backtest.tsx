@@ -368,6 +368,24 @@ function BacktestPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {/* Data Time Range */}
+                  <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 md:col-span-3">
+                    <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                      <Calendar className="h-4 w-4" />
+                      <span className="text-sm">Data Time Range</span>
+                    </div>
+                    <div className="text-lg font-medium">
+                      {backtestResult.data_start_time ||
+                        backtestResult.start_time}{" "}
+                      ~{" "}
+                      {backtestResult.data_end_time || backtestResult.end_time}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Backtest period: {backtestResult.start_time} ~{" "}
+                      {backtestResult.end_time}
+                    </div>
+                  </div>
+
                   {/* Trading Period */}
                   <div className="bg-muted/50 rounded-lg p-4">
                     <div className="flex items-center gap-2 text-muted-foreground mb-1">

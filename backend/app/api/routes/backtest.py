@@ -33,9 +33,6 @@ class BacktestStatusResponse(BaseModel):
 class BacktestRequest(BaseModel):
     """Request model for backtest endpoint."""
 
-    pred_path: Optional[str] = None  # Path to predictions file, None for latest
-    start_time: Optional[str] = None  # Backtest start time, None for auto-detect
-    end_time: Optional[str] = None  # Backtest end time, None for auto-detect
     benchmark: str = "SH000300"  # Benchmark symbol
     topk: int = 50  # Number of stocks to hold
     n_drop: int = 5  # Number of stocks to drop each day
@@ -47,8 +44,10 @@ class BacktestResponse(BaseModel):
 
     status: str
     message: str
-    start_time: Optional[str] = None
-    end_time: Optional[str] = None
+    data_start_time: Optional[str] = None  # Data range start (from bin files)
+    data_end_time: Optional[str] = None  # Data range end (from bin files)
+    start_time: Optional[str] = None  # Actual backtest start time
+    end_time: Optional[str] = None  # Actual backtest end time
     trading_days: int = 0
     total_return: float = 0.0
     total_cost: float = 0.0
@@ -110,7 +109,8 @@ def get_backtest_status():
     """
     Check if backtest is ready to run.
 
-    Returns information about available models and predictions.
+    Backtest requires a trained model to perform inference on all available data.
+    Returns information about available models and data.
     """
 
     service = get_qlib_workflow_service()
@@ -119,56 +119,50 @@ def get_backtest_status():
     models = service.list_models()
     models_count = len(models)
     latest_model = models[0]["name"] if models else None
+    latest_model_time = models[0]["modified_at"] if models else None
 
-    # Check for predictions in MLflow artifacts
-    mlruns_dir = Path(settings.QLIB_DATA_PATH).parent / "mlruns"
-    pred_files = list(mlruns_dir.glob("**/pred.pkl")) if mlruns_dir.exists() else []
-    predictions_available = len(pred_files) > 0
+    # Check for data availability
+    data_status = service.check_data_exists()
+    data_available = data_status.get("exists", False)
 
-    latest_prediction_time = None
-    if pred_files:
-        latest_pred = max(pred_files, key=lambda p: p.stat().st_mtime)
-        latest_prediction_time = datetime.fromtimestamp(
-            latest_pred.stat().st_mtime
-        ).isoformat()
-
-    # Determine if ready
-    ready = predictions_available
+    # Determine if ready: need both model and data
+    ready = models_count > 0 and data_available
 
     if ready:
-        message = (
-            f"Ready for backtest. {models_count} models available, predictions found."
-        )
-    elif models_count > 0:
-        message = (
-            "Models available but no predictions found. Please run training first."
-        )
+        message = f"Ready for backtest. Model: {latest_model}, data available."
+    elif models_count > 0 and not data_available:
+        message = "Model available but no data found. Please download data first."
+    elif models_count == 0 and data_available:
+        message = "Data available but no model found. Please train a model first."
     else:
-        message = "No models or predictions available. Please run training first."
+        message = "No model or data available. Please download data and train a model."
 
     return BacktestStatusResponse(
         ready=ready,
         message=message,
         models_count=models_count,
-        predictions_available=predictions_available,
+        predictions_available=data_available,  # Reuse field to indicate data availability
         latest_model=latest_model,
-        latest_prediction_time=latest_prediction_time,
+        latest_prediction_time=latest_model_time,  # Reuse field for model time
     )
 
 
 @router.post("/run", response_model=BacktestResponse)
 def execute_backtest(request: Optional[BacktestRequest] = None):
     """
-    Execute backtest using latest predictions.
+    Execute backtest using model inference on all available data.
 
-    This endpoint runs backtest independently from training workflow.
-    It uses the latest predictions from MLflow artifacts.
+    This endpoint:
+    1. Loads the latest trained model
+    2. Loads all feature data from bin files (excluding labels)
+    3. Uses the model to generate predictions on all data
+    4. Executes backtest using the predictions
 
     Args:
         request: Backtest configuration (all fields optional with defaults)
 
     Returns:
-        Backtest results including returns and metrics
+        Backtest results including returns, metrics, and data time range
     """
     global _latest_backtest_result
 
@@ -180,9 +174,6 @@ def execute_backtest(request: Optional[BacktestRequest] = None):
 
     try:
         result = service.execute_backtest(
-            pred_path=request.pred_path,
-            start_time=request.start_time,
-            end_time=request.end_time,
             benchmark=request.benchmark,
             topk=request.topk,
             n_drop=request.n_drop,
@@ -200,6 +191,8 @@ def execute_backtest(request: Optional[BacktestRequest] = None):
         _latest_backtest_result = {
             "status": "success",
             "message": "Backtest completed successfully",
+            "data_start_time": result.get("data_start_time"),
+            "data_end_time": result.get("data_end_time"),
             "start_time": result.get("start_time"),
             "end_time": result.get("end_time"),
             "trading_days": result.get("trading_days", 0),
@@ -213,6 +206,8 @@ def execute_backtest(request: Optional[BacktestRequest] = None):
         return BacktestResponse(
             status="success",
             message="Backtest completed successfully",
+            data_start_time=result.get("data_start_time"),
+            data_end_time=result.get("data_end_time"),
             start_time=result.get("start_time"),
             end_time=result.get("end_time"),
             trading_days=result.get("trading_days", 0),

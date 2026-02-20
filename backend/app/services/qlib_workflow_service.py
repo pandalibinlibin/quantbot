@@ -860,38 +860,36 @@ class QlibWorkflowService:
 
     def execute_backtest(
         self,
-        pred_path: Optional[str] = None,
-        start_time: Optional[str] = None,
-        end_time: Optional[str] = None,
         benchmark: Optional[str] = None,
         topk: Optional[int] = None,
         n_drop: Optional[int] = None,
         account: Optional[float] = None,
     ) -> Dict[str, Any]:
         """
-        Execute backtest independently using Qlib's backtest functions.
+        Execute backtest using model inference on all available data.
 
-        This method bypasses PortAnaRecord to avoid the index out of bounds error.
-        It directly uses Qlib's backtest API.
+        This method:
+        1. Loads the latest trained model
+        2. Loads all feature data from bin files (excluding labels)
+        3. Uses the model to generate predictions on all data
+        4. Executes backtest using the predictions
 
         Configuration is loaded from backtest_config.yaml, with API parameters
         overriding config file values.
 
         Args:
-            pred_path: Path to prediction file (pred.pkl). If None, uses latest.
-            start_time: Backtest start time. If None, auto-detect from predictions.
-            end_time: Backtest end time. If None, auto-detect from predictions.
             benchmark: Benchmark symbol for comparison (overrides config).
             topk: Number of stocks to hold (overrides config).
             n_drop: Number of stocks to drop each day (overrides config).
             account: Initial account value (overrides config).
 
         Returns:
-            Dictionary with backtest results including report and metrics.
+            Dictionary with backtest results including report, metrics, and data time range.
         """
         import pandas as pd
         from qlib.contrib.evaluate import backtest_daily
         from qlib.contrib.strategy import TopkDropoutStrategy
+        from qlib.data.dataset import DatasetH
 
         # Load config from file
         config = self.load_backtest_config()
@@ -930,40 +928,92 @@ class QlibWorkflowService:
         qlib_service = get_qlib_init_service()
         qlib_service.initialize()
 
-        # Load predictions
-        if pred_path is None:
-            # Find latest prediction from MLflow artifacts directory
-            mlruns_dir = Path(settings.QLIB_DATA_PATH).parent / "mlruns"
-            pred = self._find_latest_predictions(mlruns_dir)
-            if pred is None:
-                return {
-                    "status": "error",
-                    "error": "No predictions found. Please run training first.",
-                }
-        else:
-            with open(pred_path, "rb") as f:
-                pred = pickle.load(f)
+        # Step 1: Load the latest model
+        models = self.list_models()
+        if not models:
+            return {
+                "status": "error",
+                "error": "No trained model found. Please train a model first.",
+            }
 
-        self.logger.info(f"Loaded predictions: {len(pred)} records")
+        latest_model_path = models[0]["path"]
+        self.logger.info(f"Loading model from: {latest_model_path}")
 
-        # Auto-detect time range from predictions
+        try:
+            with open(latest_model_path, "rb") as f:
+                model = pickle.load(f)
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to load model: {str(e)}",
+            }
+
+        # Step 2: Get data time range from bin files
+        time_range = self._get_data_time_range()
+        if not time_range:
+            return {
+                "status": "error",
+                "error": "Failed to get data time range from bin files.",
+            }
+
+        data_start_time = time_range["start_time"]
+        data_end_time = time_range["end_time"]
+        self.logger.info(f"Data time range: {data_start_time} to {data_end_time}")
+
+        # Step 3: Create dataset for inference (features only, no labels)
+        try:
+            from app.services.custom_factor_handler import CustomFactorHandler
+
+            handler = CustomFactorHandler(
+                instruments="all",
+                start_time=data_start_time,
+                end_time=data_end_time,
+                freq=freq,
+                infer_processors=[],  # No processing needed for inference
+            )
+
+            dataset = DatasetH(
+                handler=handler,
+                segments={
+                    "backtest": [data_start_time, data_end_time],
+                },
+            )
+
+            self.logger.info("Dataset created for backtest inference")
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to create dataset: {str(e)}",
+            }
+
+        # Step 4: Generate predictions using the model
+        try:
+            pred = model.predict(dataset, segment="backtest")
+            self.logger.info(f"Generated predictions: {len(pred)} records")
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to generate predictions: {str(e)}",
+            }
+
+        # Step 5: Auto-detect time range from predictions for backtest
+        # Note: Qlib's backtest_daily has boundary issues on the last day,
+        # so we need to shift back by 1 day to avoid index out of bounds error
         dt_values = pred.index.get_level_values("datetime")
-        if start_time is None:
-            start_time = str(dt_values.min())[:10]
-        if end_time is None:
-            # Shift back by 1 day to avoid boundary issues
-            end_time = str(dt_values.max() - pd.Timedelta(days=1))[:10]
+        start_time = str(dt_values.min())[:10]
+        end_time = str(dt_values.max() - pd.Timedelta(days=1))[:10]
 
         self.logger.info(f"Backtest period: {start_time} to {end_time}")
 
-        # Create strategy
+        # Step 6: Create strategy and execute backtest
         strategy = TopkDropoutStrategy(
             signal=pred,
             topk=topk,
             n_drop=n_drop,
         )
 
-        # Execute backtest using backtest_daily (simpler API)
         try:
             report_df, positions = backtest_daily(
                 start_time=start_time,
@@ -982,6 +1032,8 @@ class QlibWorkflowService:
 
             result = {
                 "status": "success",
+                "data_start_time": start_time,  # Use actual backtest range
+                "data_end_time": end_time,  # Use actual backtest range
                 "start_time": start_time,
                 "end_time": end_time,
                 "trading_days": len(report_df),
