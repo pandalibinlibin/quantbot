@@ -78,38 +78,15 @@ class FactorStorage:
             Path to the storage directory
         """
         try:
-            # Try to get data_path from Qlib config
-            data_path_config = C.get("data_path", None)
-            if data_path_config and isinstance(data_path_config, dict):
-                # Get frequency-specific path if available
-                if freq in data_path_config:
-                    qlib_data_dir = str(data_path_config[freq])
-                else:
-                    qlib_data_dir = str(
-                        data_path_config.get("__DEFAULT_FREQ", "./qlib_data")
-                    )
+            # Use qlib_config to get the correct path
+            from app.config.qlib import qlib_config
+
+            if freq == "1min":
+                qlib_data_dir = qlib_config.qlib_data_path_1min
             else:
-                # Fallback to provider_uri
-                provider_uri = C.get("provider_uri", "./qlib_data")
-                if isinstance(provider_uri, str):
-                    qlib_data_dir = provider_uri
-                    if qlib_data_dir.startswith("file://"):
-                        qlib_data_dir = qlib_data_dir[7:]
-                else:
-                    qlib_data_dir = "./qlib_data"
+                qlib_data_dir = qlib_config.qlib_data_path_day
 
-            # For minute data, use qlib_data_1min directory
-            if freq == "1min" and "1min" not in qlib_data_dir:
-                # Check if qlib_data_1min exists
-                base_dir = (
-                    Path(qlib_data_dir).parent
-                    if "qlib_data" in qlib_data_dir
-                    else Path(".")
-                )
-                min_dir = base_dir / "qlib_data_1min"
-                if min_dir.exists() or not Path(qlib_data_dir).exists():
-                    return min_dir
-
+            logger.info(f"Using qlib_data_dir from qlib_config: {qlib_data_dir}")
             return Path(qlib_data_dir)
 
         except Exception as e:
@@ -664,6 +641,14 @@ class FactorStorage:
             logger.info(
                 f"Computing factor '{factor_name}' from expression: {expression}"
             )
+
+            # Ensure Qlib is initialized with the correct provider
+            try:
+                qlib.init(provider_uri=str(self.storage_dir), region="cn")
+                logger.info(f"Qlib initialized with provider: {self.storage_dir}")
+            except Exception as e:
+                # Qlib may already be initialized, which is fine
+                logger.debug(f"Qlib init note: {e}")
 
             # Get list of instruments from instruments/all.txt
             instruments_file = self.storage_dir / "instruments" / "all.txt"

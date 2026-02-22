@@ -47,6 +47,8 @@ import {
   FlaskConical,
   RefreshCw,
   Lock,
+  Layers,
+  Tag,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -341,6 +343,52 @@ function FactorsPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+          </div>
+
+          {/* Summary Cards */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Factors
+                </CardTitle>
+                <Layers className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {(features?.length || 0) + (labels?.length || 0)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Features + Labels combined
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Features</CardTitle>
+                <FlaskConical className="h-4 w-4 text-blue-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {features?.length || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Input variables (X) for training
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Labels</CardTitle>
+                <Tag className="h-4 w-4 text-green-500" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{labels?.length || 0}</div>
+                <p className="text-xs text-muted-foreground">
+                  Target variable (Y) to predict
+                </p>
+              </CardContent>
+            </Card>
           </div>
 
           {/* Error Alert */}

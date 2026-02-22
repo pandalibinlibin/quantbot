@@ -7634,3 +7634,203 @@ print(qlib_config.topk)          # 50
 3. **Configuration change detection**: Use a hash of key configuration values to detect changes and trigger data cleanup.
 
 4. **Singleton pattern for config**: Using singleton pattern ensures consistent configuration access across the application.
+
+---
+
+## 🎨 Frontend Refactor: Factor Page Complete (2026-02-22)
+
+### 📋 Overview
+
+Successfully completed the Factor page refactoring with comprehensive testing of create, update, and delete operations, including bin file synchronization verification.
+
+### ✅ Implemented Features
+
+#### 1. Summary Cards
+
+Added three summary cards at the top of the Factor page:
+
+- **Total Factors**: Count of all active factors (features + labels)
+- **Features**: Count of feature-type factors
+- **Labels**: Count of label-type factors
+
+Each card displays the count with appropriate icons (Database, Layers, Tag).
+
+#### 2. Built-in OHLCV Features Display
+
+- Built-in features (close.day, high.day, low.day, open.day, volume.day) are correctly displayed
+- Marked as "Built-in" and locked (non-editable, non-deletable)
+- Retrieved from data source status API
+
+#### 3. Factor CRUD Operations with Bin File Synchronization
+
+**Create Factor**:
+
+- Frontend creates factor in database
+- Backend automatically computes and saves bin files to `/app/qlib_data/features/{symbol}/`
+- Uses Qlib's `D.features()` to compute factor values from expression
+- Saves to all 300 symbol directories
+
+**Update Factor**:
+
+- Frontend updates factor expression
+- Backend detects expression change
+- Automatically deletes old bin files
+- Recomputes and saves new bin files
+- Database record updated
+
+**Delete Factor**:
+
+- Frontend triggers delete operation
+- Backend performs hard delete (removes from database completely)
+- Automatically deletes all associated bin files
+- Clean removal from all 300 symbol directories
+
+### 🔧 Technical Fixes
+
+#### Fix 1: FactorStorage Path Configuration
+
+**Problem**: `FactorStorage` was using incorrect path (`.` instead of `/app/qlib_data`)
+
+**Solution**: Modified `_get_storage_dir_for_freq()` to use `qlib_config`:
+
+```python
+def _get_storage_dir_for_freq(self, freq: str) -> Path:
+    from app.config.qlib import qlib_config
+
+    if freq == "1min":
+        qlib_data_dir = qlib_config.qlib_data_path_1min
+    else:
+        qlib_data_dir = qlib_config.qlib_data_path_day
+
+    return Path(qlib_data_dir)
+```
+
+#### Fix 2: Delete API Response Error
+
+**Problem**: DELETE endpoint returned 204 No Content but had response body, causing `RuntimeError: Response content longer than Content-Length`
+
+**Solution**: Changed from `JSONResponse` to `Response`:
+
+```python
+# Before
+return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
+
+# After
+return Response(status_code=status.HTTP_204_NO_CONTENT)
+```
+
+#### Fix 3: Soft Delete to Hard Delete
+
+**Problem**: `delete_factor_with_cleanup()` was performing soft delete (setting status to DELETED), causing factors to remain in database
+
+**Solution**: Changed to hard delete:
+
+```python
+# Before
+factor.status = FactorStatus.DELETED
+factor.updated_at = datetime.utcnow()
+session.add(factor)
+session.commit()
+
+# After
+session.delete(factor)
+session.commit()
+```
+
+### ✅ Comprehensive Testing Results
+
+#### Test 4a: Create Factor and Verify Bin Files ✅
+
+**Steps**:
+
+1. Created factor `test_rsi` with expression `Mean($close, 14)`
+2. Verified bin file creation: `test_rsi.day.bin` exists
+3. Verified data integrity: 253 data points, 100% valid
+
+**Results**:
+
+- ✅ Bin file created successfully
+- ✅ Data size: 1012 bytes
+- ✅ Non-NaN count: 253/253 (100%)
+- ✅ Values correct: [10.27, 10.285, 10.326667, ...]
+
+#### Test 4b: Update Factor and Verify Bin Files ✅
+
+**Steps**:
+
+1. Updated expression from `Mean($close, 14)` to `Mean($close, 20)`
+2. Verified file modification time changed
+3. Verified database expression updated
+4. Verified bin files recomputed
+
+**Results**:
+
+- ✅ Database expression updated to `Mean($close, 20)`
+- ✅ File mtime changed: 1771757475 → 1771757763
+- ✅ 300 old bin files deleted
+- ✅ 300 new bin files created
+- ✅ Data recomputed correctly
+
+#### Test 4c: Delete Factor and Verify Bin Files Deleted ✅
+
+**Steps**:
+
+1. Deleted `test_rsi` factor from frontend
+2. Verified bin files deleted
+3. Verified database record removed
+
+**Results**:
+
+- ✅ Bin file deleted: `test_rsi.day.bin` does not exist
+- ✅ Database record removed: Not found
+- ✅ 300 bin files deleted from all symbol directories
+- ✅ Frontend no longer displays the factor
+
+### 📊 System Architecture
+
+**Factor Lifecycle Flow**:
+
+```
+Frontend Action → Backend API → FactorService → FactorStorage → Qlib Data
+     ↓                ↓              ↓              ↓              ↓
+  Create         POST /factors   create_factor   compute_and_   features/
+                                                  save_factor    {symbol}/
+                                                                 *.day.bin
+     ↓                ↓              ↓              ↓              ↓
+  Update         PUT /factors    update_factor_  delete_old +   Delete old
+                                 with_recompute  recompute      + Create new
+     ↓                ↓              ↓              ↓              ↓
+  Delete         DELETE /factors delete_factor_  delete_factor  Delete all
+                                 with_cleanup    _bin_files     bin files
+```
+
+### 🎯 Key Achievements
+
+1. **Complete CRUD Operations**: All factor operations work correctly with bin file synchronization
+2. **Data Integrity**: 100% consistency between database and bin files
+3. **Automatic Cleanup**: No orphaned bin files or database records
+4. **User Experience**: Smooth frontend interactions with proper error handling
+5. **Built-in Features**: Correctly displayed and protected from modification
+
+### 📝 Files Modified
+
+**Backend**:
+
+- `backend/app/services/factor_storage.py` - Fixed path configuration
+- `backend/app/services/factor_service.py` - Changed to hard delete
+- `backend/app/api/routes/factors.py` - Fixed DELETE response
+
+**Frontend**:
+
+- `frontend/src/routes/_layout/factors.tsx` - Added summary cards
+
+### 🚀 Next Steps
+
+Factor page refactoring is complete. Ready to proceed with:
+
+1. Data Source page design and implementation
+2. Training page design and implementation
+3. Backtest page design and implementation
+4. Paper Trading page design and implementation
+
+---

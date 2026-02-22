@@ -420,7 +420,8 @@ def get_data_source_status_impl() -> dict:
     qlib_data_path_1min = Path(settings.QLIB_DATA_PATH_1MIN)
 
     # Get current data source from configuration
-    current_source = data_source_manager.get_current_source()
+    current_config = data_source_manager.get_current_config()
+    current_source = current_config.get("source", "yahoo")
 
     # Check if either qlib_data directory has complete data structure
     # A directory is considered valid only if it has calendars, instruments, and features subdirectories

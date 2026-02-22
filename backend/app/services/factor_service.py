@@ -155,7 +155,7 @@ class FactorService:
         Get list of factors with optional filtering
 
         Args:
-            status: Optional status filter
+            status: Optional status filter (defaults to ACTIVE only)
             factor_type: Optional type filter (feature or label)
             limit: Maximum number of factors to return
             offset: Number of factors to skip
@@ -167,8 +167,11 @@ class FactorService:
             with Session(engine) as session:
                 statement = select(Factor)
 
+                # Default to ACTIVE only if no status filter specified
                 if status:
                     statement = statement.where(Factor.status == status)
+                else:
+                    statement = statement.where(Factor.status == FactorStatus.ACTIVE)
 
                 if factor_type:
                     statement = statement.where(Factor.factor_type == factor_type)
@@ -511,13 +514,11 @@ class FactorService:
                 delete_bin_result = storage.delete_factor_bin_files(factor_name)
                 logger.info(f"Deleted bin files: {delete_bin_result}")
 
-                # Delete from database (soft delete)
-                factor.status = FactorStatus.DELETED
-                factor.updated_at = datetime.utcnow()
-                session.add(factor)
+                # Delete from database (hard delete)
+                session.delete(factor)
                 session.commit()
 
-                logger.info(f"Factor '{factor_name}' deleted with cleanup")
+                logger.info(f"Factor '{factor_name}' hard deleted with cleanup")
 
                 return {
                     "success": True,

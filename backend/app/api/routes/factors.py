@@ -13,7 +13,7 @@ Educational Notes:
 
 import uuid
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Response
 from fastapi.responses import JSONResponse
 import logging
 
@@ -80,6 +80,24 @@ async def create_factor(
 
         # Create factor
         factor = factor_service.create_factor(factor_data, current_user.id)
+
+        # Compute and save factor bin files
+        try:
+            compute_result = factor_service.compute_and_save_factor(factor.id)
+            if compute_result.get("status") == "success":
+                logger.info(
+                    f"Factor '{factor.name}' bin files computed: "
+                    f"{compute_result.get('symbols_written', 0)} symbols"
+                )
+            else:
+                logger.warning(
+                    f"Factor '{factor.name}' bin file computation failed: "
+                    f"{compute_result.get('error', 'unknown error')}"
+                )
+        except Exception as e:
+            logger.warning(
+                f"Failed to compute bin files for factor '{factor.name}': {e}"
+            )
 
         logger.info(f"Factor '{factor.name}' created successfully with ID: {factor.id}")
         return factor
@@ -242,17 +260,24 @@ async def update_factor(
                     detail=f"Invalid factor expression: {validation_result['error']}",
                 )
 
-        # Update factor
-        factor = factor_service.update_factor(factor_id, factor_data)
+        # Update factor with recompute (handles bin file update if expression changed)
+        result = factor_service.update_factor_with_recompute(factor_id, factor_data)
 
-        if not factor:
+        if result.get("status") == "error":
             logger.warning(f"Factor {factor_id} not found for update")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Factor with ID {factor_id} not found",
+                detail=result.get("error", f"Factor with ID {factor_id} not found"),
             )
 
-        logger.info(f"Factor '{factor.name}' updated successfully")
+        factor = result.get("factor")
+        if result.get("recomputed"):
+            logger.info(
+                f"Factor '{factor.name}' updated and recomputed: "
+                f"{result.get('symbols_written', 0)} symbols"
+            )
+        else:
+            logger.info(f"Factor '{factor.name}' updated successfully")
         return factor
 
     except HTTPException:
@@ -272,12 +297,13 @@ async def delete_factor(
     factor_service: FactorService = Depends(get_factor_service),
 ):
     """
-    Delete factor (soft delete)
+    Delete factor and clean up bin files
 
     Educational Notes:
     - Uses DELETE method for resource deletion
     - Returns 204 No Content on successful deletion
-    - Performs soft delete (sets status to INACTIVE)
+    - Performs hard delete from database
+    - Also deletes associated bin files from Qlib data directory
 
     Args:
         factor_id: Factor UUID
@@ -290,17 +316,20 @@ async def delete_factor(
     logger.info(f"Deleting factor {factor_id} for user {current_user.id}")
 
     try:
-        success = factor_service.delete_factor(factor_id)
+        result = factor_service.delete_factor_with_cleanup(factor_id)
 
-        if not success:
-            logger.warning(f"Factor {factor_id} not found for deletion")
+        if result.get("status") == "error":
+            logger.warning(f"Factor {factor_id} deletion failed: {result.get('error')}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Factor with ID {factor_id} not found",
+                detail=result.get("error", f"Factor with ID {factor_id} not found"),
             )
 
-        logger.info(f"Factor {factor_id} deleted successfully")
-        return JSONResponse(status_code=status.HTTP_204_NO_CONTENT, content=None)
+        logger.info(
+            f"Factor {factor_id} deleted successfully. "
+            f"Bin files deleted: {result.get('bin_files_deleted', 0)}"
+        )
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     except HTTPException:
         raise
