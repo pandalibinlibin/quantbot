@@ -11,6 +11,7 @@ from app.api.routes import (
     training,
     online,
     paper_trading,
+    models,
 )
 from app.core.config import settings
 
@@ -25,6 +26,7 @@ api_router.include_router(
     data_source.router, prefix="/data-source", tags=["Data Source"]
 )
 api_router.include_router(factors.router, prefix="/factors", tags=["Factors"])
+api_router.include_router(models.router, prefix="/models", tags=["Models"])
 api_router.include_router(training.router, prefix="/training", tags=["Training"])
 api_router.include_router(online.router, prefix="/online", tags=["Online Serving"])
 api_router.include_router(

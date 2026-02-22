@@ -3,7 +3,7 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { DataSourceGetDataSourceStatusEndpointResponse, DataSourceClearDataSourceEndpointResponse, DataSourceDownloadDataSourceEndpointData, DataSourceDownloadDataSourceEndpointResponse, DataSourceExportDataEndpointResponse, DataSourceGetDataHealthEndpointResponse, FactorsCreateFactorData, FactorsCreateFactorResponse, FactorsGetFactorsData, FactorsGetFactorsResponse, FactorsGetFactorData, FactorsGetFactorResponse, FactorsUpdateFactorData, FactorsUpdateFactorResponse, FactorsDeleteFactorData, FactorsDeleteFactorResponse, FactorsValidateFactorExpressionData, FactorsValidateFactorExpressionResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, OnlineServingExecuteRoutineData, OnlineServingExecuteRoutineResponse, OnlineServingGetStatusResponse, OnlineServingGetSignalsResponse, OnlineServingResetStateResponse, OnlineServingExecuteBacktestData, OnlineServingExecuteBacktestResponse, PaperTradingGetPortfolioResponse, PaperTradingGetTradingPlanData, PaperTradingGetTradingPlanResponse, PaperTradingExecuteTradesData, PaperTradingExecuteTradesResponse, PaperTradingGetTradeHistoryData, PaperTradingGetTradeHistoryResponse, PaperTradingGetPerformanceResponse, PaperTradingResetPaperTradingResponse, PrivateCreateUserData, PrivateCreateUserResponse, TrainingCheckDataStatusData, TrainingCheckDataStatusResponse, TrainingStartTrainingResponse, TrainingGetTrainingConfigResponse, TrainingListModelsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { DataSourceGetDataSourceStatusEndpointResponse, DataSourceClearDataSourceEndpointResponse, DataSourceDownloadDataSourceEndpointData, DataSourceDownloadDataSourceEndpointResponse, DataSourceExportDataEndpointResponse, DataSourceGetDataHealthEndpointResponse, FactorsCreateFactorData, FactorsCreateFactorResponse, FactorsGetFactorsData, FactorsGetFactorsResponse, FactorsGetFactorData, FactorsGetFactorResponse, FactorsUpdateFactorData, FactorsUpdateFactorResponse, FactorsDeleteFactorData, FactorsDeleteFactorResponse, FactorsValidateFactorExpressionData, FactorsValidateFactorExpressionResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, ModelsGetActiveModelMetricsResponse, ModelsGetIcSeriesChartResponse, ModelsGetMonthlyIcChartResponse, ModelsGetGroupReturnsChartResponse, ModelsGetLongShortSeriesChartResponse, ModelsGetAutoCorrelationChartResponse, ModelsGetFeatureImportanceData, ModelsGetFeatureImportanceResponse, OnlineServingExecuteRoutineData, OnlineServingExecuteRoutineResponse, OnlineServingGetStatusResponse, OnlineServingGetSignalsResponse, OnlineServingResetStateResponse, OnlineServingExecuteBacktestData, OnlineServingExecuteBacktestResponse, PaperTradingGetPortfolioResponse, PaperTradingGetTradingPlanData, PaperTradingGetTradingPlanResponse, PaperTradingExecuteTradesData, PaperTradingExecuteTradesResponse, PaperTradingGetTradeHistoryData, PaperTradingGetTradeHistoryResponse, PaperTradingGetPerformanceResponse, PaperTradingResetPaperTradingResponse, PrivateCreateUserData, PrivateCreateUserResponse, TrainingCheckDataStatusData, TrainingCheckDataStatusResponse, TrainingStartTrainingResponse, TrainingGetTrainingConfigResponse, TrainingListModelsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
 
 export class DataSourceService {
     /**
@@ -543,6 +543,166 @@ export class LoginService {
             url: '/api/v1/password-recovery-html-content/{email}',
             path: {
                 email: data.email
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class ModelsService {
+    /**
+     * Get Active Model Metrics
+     * Get comprehensive metrics for the active Rolling Ensemble model.
+     *
+     * Returns:
+     * Complete model metrics including IC, Long-Short, Quality, and Feature Importance
+     *
+     * Raises:
+     * HTTPException: If metrics file not found or invalid
+     *
+     * Educational Notes:
+     * - Metrics are calculated during routine after model training
+     * - Returns pre-calculated metrics to avoid page load delays
+     * - Includes all metrics needed for comprehensive analysis
+     * @returns ModelMetricsResponse Successful Response
+     * @throws ApiError
+     */
+    public static getActiveModelMetrics(): CancelablePromise<ModelsGetActiveModelMetricsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/models/active/metrics'
+        });
+    }
+    
+    /**
+     * Get Ic Series Chart
+     * Get IC time series data for chart visualization.
+     *
+     * Returns:
+     * IC and Rank IC time series data
+     *
+     * Educational Notes:
+     * - Daily IC values show prediction quality over time
+     * - Both IC (Pearson) and Rank IC (Spearman) are included
+     * @returns ChartDataResponse Successful Response
+     * @throws ApiError
+     */
+    public static getIcSeriesChart(): CancelablePromise<ModelsGetIcSeriesChartResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/models/active/charts/ic-series'
+        });
+    }
+    
+    /**
+     * Get Monthly Ic Chart
+     * Get monthly IC data for heatmap visualization.
+     *
+     * Returns:
+     * Monthly IC aggregated by year and month
+     *
+     * Educational Notes:
+     * - Shows IC stability across different time periods
+     * - Useful for identifying seasonal patterns
+     * @returns ChartDataResponse Successful Response
+     * @throws ApiError
+     */
+    public static getMonthlyIcChart(): CancelablePromise<ModelsGetMonthlyIcChartResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/models/active/charts/monthly-ic'
+        });
+    }
+    
+    /**
+     * Get Group Returns Chart
+     * Get group return data for cumulative return visualization.
+     *
+     * Returns:
+     * Cumulative returns for 5 groups (Group1-Group5)
+     *
+     * Educational Notes:
+     * - Group1 has highest predicted returns, Group5 has lowest
+     * - If model is effective, Group1 should outperform Group5
+     * - Clear separation indicates good ranking ability
+     * @returns ChartDataResponse Successful Response
+     * @throws ApiError
+     */
+    public static getGroupReturnsChart(): CancelablePromise<ModelsGetGroupReturnsChartResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/models/active/charts/group-returns'
+        });
+    }
+    
+    /**
+     * Get Long Short Series Chart
+     * Get long-short return time series data.
+     *
+     * Returns:
+     * Daily long-short returns
+     *
+     * Educational Notes:
+     * - Shows daily performance of long-short strategy
+     * - Used for distribution analysis and Sharpe calculation
+     * @returns ChartDataResponse Successful Response
+     * @throws ApiError
+     */
+    public static getLongShortSeriesChart(): CancelablePromise<ModelsGetLongShortSeriesChartResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/models/active/charts/long-short-series'
+        });
+    }
+    
+    /**
+     * Get Auto Correlation Chart
+     * Get auto correlation time series data.
+     *
+     * Returns:
+     * Daily auto correlation values
+     *
+     * Educational Notes:
+     * - Measures prediction stability over time
+     * - Values 0.1-0.3 are normal
+     * - Too high (>0.9) may indicate overfitting
+     * @returns ChartDataResponse Successful Response
+     * @throws ApiError
+     */
+    public static getAutoCorrelationChart(): CancelablePromise<ModelsGetAutoCorrelationChartResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/models/active/charts/auto-correlation'
+        });
+    }
+    
+    /**
+     * Get Feature Importance
+     * Get feature importance data.
+     *
+     * Args:
+     * limit: Optional limit on number of features to return (default: all)
+     *
+     * Returns:
+     * List of features with importance values
+     *
+     * Educational Notes:
+     * - Shows which factors contribute most to predictions
+     * - Based on latest model (Model 13)
+     * - Critical for factor engineering and understanding model behavior
+     * @param data The data for the request.
+     * @param data.limit
+     * @returns FeatureImportanceItem Successful Response
+     * @throws ApiError
+     */
+    public static getFeatureImportance(data: ModelsGetFeatureImportanceData = {}): CancelablePromise<ModelsGetFeatureImportanceResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/models/active/feature-importance',
+            query: {
+                limit: data.limit
             },
             errors: {
                 422: 'Validation Error'

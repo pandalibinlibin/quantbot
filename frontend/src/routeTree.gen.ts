@@ -15,8 +15,8 @@ import { Route as RecoverPasswordRouteImport } from './routes/recover-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
-import { Route as LayoutTrainingRouteImport } from './routes/_layout/training'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
+import { Route as LayoutModelsRouteImport } from './routes/_layout/models'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutFactorsRouteImport } from './routes/_layout/factors'
 import { Route as LayoutDataSourcesRouteImport } from './routes/_layout/data-sources'
@@ -52,14 +52,14 @@ const LayoutIndexRoute = LayoutIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LayoutRoute,
 } as any)
-const LayoutTrainingRoute = LayoutTrainingRouteImport.update({
-  id: '/training',
-  path: '/training',
-  getParentRoute: () => LayoutRoute,
-} as any)
 const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutModelsRoute = LayoutModelsRouteImport.update({
+  id: '/models',
+  path: '/models',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutItemsRoute = LayoutItemsRouteImport.update({
@@ -98,8 +98,8 @@ export interface FileRoutesByFullPath {
   '/data-sources': typeof LayoutDataSourcesRoute
   '/factors': typeof LayoutFactorsRoute
   '/items': typeof LayoutItemsRoute
+  '/models': typeof LayoutModelsRoute
   '/settings': typeof LayoutSettingsRoute
-  '/training': typeof LayoutTrainingRoute
   '/': typeof LayoutIndexRoute
 }
 export interface FileRoutesByTo {
@@ -112,8 +112,8 @@ export interface FileRoutesByTo {
   '/data-sources': typeof LayoutDataSourcesRoute
   '/factors': typeof LayoutFactorsRoute
   '/items': typeof LayoutItemsRoute
+  '/models': typeof LayoutModelsRoute
   '/settings': typeof LayoutSettingsRoute
-  '/training': typeof LayoutTrainingRoute
   '/': typeof LayoutIndexRoute
 }
 export interface FileRoutesById {
@@ -128,8 +128,8 @@ export interface FileRoutesById {
   '/_layout/data-sources': typeof LayoutDataSourcesRoute
   '/_layout/factors': typeof LayoutFactorsRoute
   '/_layout/items': typeof LayoutItemsRoute
+  '/_layout/models': typeof LayoutModelsRoute
   '/_layout/settings': typeof LayoutSettingsRoute
-  '/_layout/training': typeof LayoutTrainingRoute
   '/_layout/': typeof LayoutIndexRoute
 }
 export interface FileRouteTypes {
@@ -144,8 +144,8 @@ export interface FileRouteTypes {
     | '/data-sources'
     | '/factors'
     | '/items'
+    | '/models'
     | '/settings'
-    | '/training'
     | '/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -158,8 +158,8 @@ export interface FileRouteTypes {
     | '/data-sources'
     | '/factors'
     | '/items'
+    | '/models'
     | '/settings'
-    | '/training'
     | '/'
   id:
     | '__root__'
@@ -173,8 +173,8 @@ export interface FileRouteTypes {
     | '/_layout/data-sources'
     | '/_layout/factors'
     | '/_layout/items'
+    | '/_layout/models'
     | '/_layout/settings'
-    | '/_layout/training'
     | '/_layout/'
   fileRoutesById: FileRoutesById
 }
@@ -230,18 +230,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
-    '/_layout/training': {
-      id: '/_layout/training'
-      path: '/training'
-      fullPath: '/training'
-      preLoaderRoute: typeof LayoutTrainingRouteImport
-      parentRoute: typeof LayoutRoute
-    }
     '/_layout/settings': {
       id: '/_layout/settings'
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof LayoutSettingsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/models': {
+      id: '/_layout/models'
+      path: '/models'
+      fullPath: '/models'
+      preLoaderRoute: typeof LayoutModelsRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/items': {
@@ -288,8 +288,8 @@ interface LayoutRouteChildren {
   LayoutDataSourcesRoute: typeof LayoutDataSourcesRoute
   LayoutFactorsRoute: typeof LayoutFactorsRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
+  LayoutModelsRoute: typeof LayoutModelsRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
-  LayoutTrainingRoute: typeof LayoutTrainingRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
 }
 
@@ -299,8 +299,8 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutDataSourcesRoute: LayoutDataSourcesRoute,
   LayoutFactorsRoute: LayoutFactorsRoute,
   LayoutItemsRoute: LayoutItemsRoute,
+  LayoutModelsRoute: LayoutModelsRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
-  LayoutTrainingRoute: LayoutTrainingRoute,
   LayoutIndexRoute: LayoutIndexRoute,
 }
 

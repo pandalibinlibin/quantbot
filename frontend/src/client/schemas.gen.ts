@@ -315,6 +315,41 @@ export const BuyOrderSchema = {
     description: 'Buy order in trading plan.'
 } as const;
 
+export const ChartDataResponseSchema = {
+    properties: {
+        chart_type: {
+            type: 'string',
+            title: 'Chart Type',
+            description: 'Type of chart data'
+        },
+        data: {
+            anyOf: [
+                {
+                    additionalProperties: true,
+                    type: 'object'
+                },
+                {
+                    items: {
+                        additionalProperties: true,
+                        type: 'object'
+                    },
+                    type: 'array'
+                }
+            ],
+            title: 'Data',
+            description: 'Chart data - can be dict or list of dicts'
+        }
+    },
+    type: 'object',
+    required: ['chart_type', 'data'],
+    title: 'ChartDataResponse',
+    description: `Chart data response for various chart types.
+
+Educational Notes:
+- Different chart types return different data structures
+- All time series data uses string dates for JSON compatibility`
+} as const;
+
 export const ClearDataResponseSchema = {
     properties: {
         success: {
@@ -1163,6 +1198,25 @@ export const FactorUpdateSchema = {
     title: 'FactorUpdate'
 } as const;
 
+export const FeatureImportanceItemSchema = {
+    properties: {
+        feature: {
+            type: 'string',
+            title: 'Feature',
+            description: 'Feature name'
+        },
+        importance: {
+            type: 'number',
+            title: 'Importance',
+            description: 'Importance value'
+        }
+    },
+    type: 'object',
+    required: ['feature', 'importance'],
+    title: 'FeatureImportanceItem',
+    description: 'Single feature importance item.'
+} as const;
+
 export const HTTPValidationErrorSchema = {
     properties: {
         detail: {
@@ -1209,6 +1263,50 @@ export const HoldOrderSchema = {
     required: ['instrument', 'current_weight', 'target_weight', 'score', 'score_rank'],
     title: 'HoldOrder',
     description: 'Hold order in trading plan.'
+} as const;
+
+export const ICMetricsSchema = {
+    properties: {
+        ic_mean: {
+            type: 'number',
+            title: 'Ic Mean',
+            description: 'Mean IC (Pearson correlation)'
+        },
+        ic_std: {
+            type: 'number',
+            title: 'Ic Std',
+            description: 'Standard deviation of IC'
+        },
+        icir: {
+            type: 'number',
+            title: 'Icir',
+            description: 'IC Information Ratio (IC Mean / IC Std)'
+        },
+        rank_ic_mean: {
+            type: 'number',
+            title: 'Rank Ic Mean',
+            description: 'Mean Rank IC (Spearman correlation)'
+        },
+        rank_ic_std: {
+            type: 'number',
+            title: 'Rank Ic Std',
+            description: 'Standard deviation of Rank IC'
+        },
+        rank_icir: {
+            type: 'number',
+            title: 'Rank Icir',
+            description: 'Rank IC Information Ratio'
+        }
+    },
+    type: 'object',
+    required: ['ic_mean', 'ic_std', 'icir', 'rank_ic_mean', 'rank_ic_std', 'rank_icir'],
+    title: 'ICMetrics',
+    description: `IC (Information Coefficient) metrics.
+
+Educational Notes:
+- IC measures correlation between predictions and actual returns
+- Higher IC indicates better predictive power
+- ICIR measures stability of IC (IC Mean / IC Std)`
 } as const;
 
 export const IntegrityChecksSchema = {
@@ -1348,6 +1446,40 @@ export const ItemsPublicSchema = {
     title: 'ItemsPublic'
 } as const;
 
+export const LongShortMetricsSchema = {
+    properties: {
+        long_short_ann_return: {
+            type: 'number',
+            title: 'Long Short Ann Return',
+            description: 'Annualized long-short return'
+        },
+        long_short_ann_sharpe: {
+            type: 'number',
+            title: 'Long Short Ann Sharpe',
+            description: 'Annualized long-short Sharpe ratio'
+        },
+        long_avg_ann_return: {
+            type: 'number',
+            title: 'Long Avg Ann Return',
+            description: 'Annualized long-average return'
+        },
+        long_avg_ann_sharpe: {
+            type: 'number',
+            title: 'Long Avg Ann Sharpe',
+            description: 'Annualized long-average Sharpe ratio'
+        }
+    },
+    type: 'object',
+    required: ['long_short_ann_return', 'long_short_ann_sharpe', 'long_avg_ann_return', 'long_avg_ann_sharpe'],
+    title: 'LongShortMetrics',
+    description: `Long-Short strategy performance metrics.
+
+Educational Notes:
+- Long-Short: Long top 20% stocks, short bottom 20% stocks
+- Sharpe Ratio: Return per unit of risk (higher is better)
+- Annualized metrics scaled to yearly performance`
+} as const;
+
 export const MessageSchema = {
     properties: {
         message: {
@@ -1397,6 +1529,62 @@ export const MissingDataDetailSchema = {
     required: ['instrument', 'open', 'high', 'low', 'close', 'volume'],
     title: 'MissingDataDetail',
     description: 'Details of missing data for a specific instrument.'
+} as const;
+
+export const ModelMetricsResponseSchema = {
+    properties: {
+        model_type: {
+            type: 'string',
+            title: 'Model Type',
+            description: "Model type (e.g., 'Rolling Ensemble')"
+        },
+        calculated_at: {
+            type: 'string',
+            title: 'Calculated At',
+            description: 'When metrics were calculated'
+        },
+        frequency: {
+            type: 'string',
+            title: 'Frequency',
+            description: "Data frequency ('day' or '1min')"
+        },
+        ic_metrics: {
+            '$ref': '#/components/schemas/ICMetrics',
+            description: 'IC analysis metrics'
+        },
+        long_short_metrics: {
+            '$ref': '#/components/schemas/LongShortMetrics',
+            description: 'Long-short strategy metrics'
+        },
+        quality_metrics: {
+            '$ref': '#/components/schemas/QualityMetrics',
+            description: 'Prediction quality metrics'
+        },
+        feature_importance: {
+            anyOf: [
+                {
+                    items: {
+                        '$ref': '#/components/schemas/FeatureImportanceItem'
+                    },
+                    type: 'array'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Feature Importance',
+            description: 'Feature importance from latest model'
+        }
+    },
+    type: 'object',
+    required: ['model_type', 'calculated_at', 'frequency', 'ic_metrics', 'long_short_metrics', 'quality_metrics'],
+    title: 'ModelMetricsResponse',
+    description: `Complete model metrics response.
+
+Educational Notes:
+- Contains all metrics for the active Rolling Ensemble model
+- Metrics are pre-calculated during routine to avoid delays
+- Used for comprehensive model performance analysis`
 } as const;
 
 export const NewPasswordSchema = {
@@ -1654,6 +1842,34 @@ export const PrivateUserCreateSchema = {
     type: 'object',
     required: ['email', 'password', 'full_name'],
     title: 'PrivateUserCreate'
+} as const;
+
+export const QualityMetricsSchema = {
+    properties: {
+        long_precision: {
+            type: 'number',
+            title: 'Long Precision',
+            description: 'Long prediction precision'
+        },
+        short_precision: {
+            type: 'number',
+            title: 'Short Precision',
+            description: 'Short prediction precision'
+        },
+        auto_correlation: {
+            type: 'number',
+            title: 'Auto Correlation',
+            description: 'Auto correlation (lag=1)'
+        }
+    },
+    type: 'object',
+    required: ['long_precision', 'short_precision', 'auto_correlation'],
+    title: 'QualityMetrics',
+    description: `Prediction quality metrics.
+
+Educational Notes:
+- Precision: Accuracy of predictions (>0.55 is good)
+- Auto Correlation: Prediction stability over time (0.1-0.3 is normal)`
 } as const;
 
 export const RoutineRequestSchema = {

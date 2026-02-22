@@ -83,6 +83,28 @@ export type BuyOrder = {
 };
 
 /**
+ * Chart data response for various chart types.
+ *
+ * Educational Notes:
+ * - Different chart types return different data structures
+ * - All time series data uses string dates for JSON compatibility
+ */
+export type ChartDataResponse = {
+    /**
+     * Type of chart data
+     */
+    chart_type: string;
+    /**
+     * Chart data - can be dict or list of dicts
+     */
+    data: ({
+    [key: string]: unknown;
+} | Array<{
+    [key: string]: unknown;
+}>);
+};
+
+/**
  * Response model for data clearing operation.
  *
  * Educational Notes:
@@ -460,6 +482,20 @@ export type FactorUpdate = {
 };
 
 /**
+ * Single feature importance item.
+ */
+export type FeatureImportanceItem = {
+    /**
+     * Feature name
+     */
+    feature: string;
+    /**
+     * Importance value
+     */
+    importance: number;
+};
+
+/**
  * Hold order in trading plan.
  */
 export type HoldOrder = {
@@ -473,6 +509,41 @@ export type HoldOrder = {
 
 export type HTTPValidationError = {
     detail?: Array<ValidationError>;
+};
+
+/**
+ * IC (Information Coefficient) metrics.
+ *
+ * Educational Notes:
+ * - IC measures correlation between predictions and actual returns
+ * - Higher IC indicates better predictive power
+ * - ICIR measures stability of IC (IC Mean / IC Std)
+ */
+export type ICMetrics = {
+    /**
+     * Mean IC (Pearson correlation)
+     */
+    ic_mean: number;
+    /**
+     * Standard deviation of IC
+     */
+    ic_std: number;
+    /**
+     * IC Information Ratio (IC Mean / IC Std)
+     */
+    icir: number;
+    /**
+     * Mean Rank IC (Spearman correlation)
+     */
+    rank_ic_mean: number;
+    /**
+     * Standard deviation of Rank IC
+     */
+    rank_ic_std: number;
+    /**
+     * Rank IC Information Ratio
+     */
+    rank_icir: number;
 };
 
 /**
@@ -515,6 +586,33 @@ export type ItemUpdate = {
     description?: (string | null);
 };
 
+/**
+ * Long-Short strategy performance metrics.
+ *
+ * Educational Notes:
+ * - Long-Short: Long top 20% stocks, short bottom 20% stocks
+ * - Sharpe Ratio: Return per unit of risk (higher is better)
+ * - Annualized metrics scaled to yearly performance
+ */
+export type LongShortMetrics = {
+    /**
+     * Annualized long-short return
+     */
+    long_short_ann_return: number;
+    /**
+     * Annualized long-short Sharpe ratio
+     */
+    long_short_ann_sharpe: number;
+    /**
+     * Annualized long-average return
+     */
+    long_avg_ann_return: number;
+    /**
+     * Annualized long-average Sharpe ratio
+     */
+    long_avg_ann_sharpe: number;
+};
+
 export type Message = {
     message: string;
 };
@@ -547,6 +645,45 @@ export type MissingDataDetail = {
      * Number of missing values in volume column
      */
     volume: number;
+};
+
+/**
+ * Complete model metrics response.
+ *
+ * Educational Notes:
+ * - Contains all metrics for the active Rolling Ensemble model
+ * - Metrics are pre-calculated during routine to avoid delays
+ * - Used for comprehensive model performance analysis
+ */
+export type ModelMetricsResponse = {
+    /**
+     * Model type (e.g., 'Rolling Ensemble')
+     */
+    model_type: string;
+    /**
+     * When metrics were calculated
+     */
+    calculated_at: string;
+    /**
+     * Data frequency ('day' or '1min')
+     */
+    frequency: string;
+    /**
+     * IC analysis metrics
+     */
+    ic_metrics: ICMetrics;
+    /**
+     * Long-short strategy metrics
+     */
+    long_short_metrics: LongShortMetrics;
+    /**
+     * Prediction quality metrics
+     */
+    quality_metrics: QualityMetrics;
+    /**
+     * Feature importance from latest model
+     */
+    feature_importance?: (Array<FeatureImportanceItem> | null);
 };
 
 export type NewPassword = {
@@ -620,6 +757,28 @@ export type PrivateUserCreate = {
     password: string;
     full_name: string;
     is_verified?: boolean;
+};
+
+/**
+ * Prediction quality metrics.
+ *
+ * Educational Notes:
+ * - Precision: Accuracy of predictions (>0.55 is good)
+ * - Auto Correlation: Prediction stability over time (0.1-0.3 is normal)
+ */
+export type QualityMetrics = {
+    /**
+     * Long prediction precision
+     */
+    long_precision: number;
+    /**
+     * Short prediction precision
+     */
+    short_precision: number;
+    /**
+     * Auto correlation (lag=1)
+     */
+    auto_correlation: number;
 };
 
 /**
@@ -968,6 +1127,24 @@ export type LoginRecoverPasswordHtmlContentData = {
 };
 
 export type LoginRecoverPasswordHtmlContentResponse = (string);
+
+export type ModelsGetActiveModelMetricsResponse = (ModelMetricsResponse);
+
+export type ModelsGetIcSeriesChartResponse = (ChartDataResponse);
+
+export type ModelsGetMonthlyIcChartResponse = (ChartDataResponse);
+
+export type ModelsGetGroupReturnsChartResponse = (ChartDataResponse);
+
+export type ModelsGetLongShortSeriesChartResponse = (ChartDataResponse);
+
+export type ModelsGetAutoCorrelationChartResponse = (ChartDataResponse);
+
+export type ModelsGetFeatureImportanceData = {
+    limit?: (number | null);
+};
+
+export type ModelsGetFeatureImportanceResponse = (Array<FeatureImportanceItem>);
 
 export type OnlineServingExecuteRoutineData = {
     requestBody?: RoutineRequest;

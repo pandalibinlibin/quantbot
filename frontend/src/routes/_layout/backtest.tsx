@@ -22,7 +22,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
-import { BacktestService } from "@/client";
 import { OpenAPI } from "@/client";
 import { toast } from "sonner";
 
@@ -51,6 +50,34 @@ async function fetchLatestBacktestResult() {
   );
   if (!response.ok) {
     throw new Error("Failed to fetch latest backtest result");
+  }
+  return response.json();
+}
+
+// Temporary helper to fetch backtest status
+async function fetchBacktestStatus() {
+  const response = await fetch(`${OpenAPI.BASE}/api/v1/backtest/status`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch backtest status");
+  }
+  return response.json();
+}
+
+// Temporary helper to execute backtest
+async function executeBacktest() {
+  const response = await fetch(`${OpenAPI.BASE}/api/v1/backtest/run`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+      "Content-Type": "application/json",
+    },
+  });
+  if (!response.ok) {
+    throw new Error("Failed to execute backtest");
   }
   return response.json();
 }
@@ -88,7 +115,7 @@ function BacktestPage() {
   // Query for backtest status
   const { data: statusData, isLoading: statusLoading } = useQuery({
     queryKey: ["backtestStatus"],
-    queryFn: () => BacktestService.getBacktestStatus(),
+    queryFn: () => fetchBacktestStatus(),
     refetchInterval: 10000, // Refresh every 10 seconds
   });
 
@@ -100,8 +127,8 @@ function BacktestPage() {
 
   // Mutation for running backtest
   const runBacktestMutation = useMutation({
-    mutationFn: () => BacktestService.executeBacktest(),
-    onSuccess: (response) => {
+    mutationFn: () => executeBacktest(),
+    onSuccess: (response: any) => {
       if (response.status === "success") {
         toast.success(
           `Backtest completed! Net return: ${formatPercent(response.net_return || 0)}`,

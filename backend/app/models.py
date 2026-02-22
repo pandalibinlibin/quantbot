@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
@@ -1383,3 +1383,208 @@ class DataHealthMetrics(SQLModel):
     )
     integrity_checks: IntegrityChecks = Field(description="Results of integrity checks")
     checked_at: str = Field(description="Timestamp when check was performed")
+
+
+# ============================================================================
+# Model Metrics Models
+# ============================================================================
+
+
+class ICDistributionBin(SQLModel):
+    """Single bin for IC distribution histogram."""
+
+    bin_start: float = Field(description="Bin start value")
+    bin_end: float = Field(description="Bin end value")
+    count: int = Field(description="Count in this bin")
+    bin_center: float = Field(description="Bin center value")
+
+
+class QQPlotPoint(SQLModel):
+    """Single point for Q-Q plot."""
+
+    theoretical: float = Field(description="Theoretical quantile")
+    sample: float = Field(description="Sample quantile")
+
+
+class ICDistribution(SQLModel):
+    """IC distribution data for histogram and Q-Q plot."""
+
+    histogram: List[ICDistributionBin] = Field(description="Histogram bins")
+    qq_plot: List[QQPlotPoint] = Field(description="Q-Q plot data")
+    mean: float = Field(description="Mean of IC values")
+    std: float = Field(description="Standard deviation of IC values")
+    skewness: float = Field(description="Skewness of IC distribution")
+    kurtosis: float = Field(description="Kurtosis of IC distribution")
+
+
+class ICMetrics(SQLModel):
+    """
+    IC (Information Coefficient) metrics.
+
+    Educational Notes:
+    - IC measures correlation between predictions and actual returns
+    - Higher IC indicates better predictive power
+    - ICIR measures stability of IC (IC Mean / IC Std)
+    """
+
+    ic_mean: float = Field(description="Mean IC (Pearson correlation)")
+    ic_std: float = Field(description="Standard deviation of IC")
+    icir: float = Field(description="IC Information Ratio (IC Mean / IC Std)")
+    rank_ic_mean: float = Field(description="Mean Rank IC (Spearman correlation)")
+    rank_ic_std: float = Field(description="Standard deviation of Rank IC")
+    rank_icir: float = Field(description="Rank IC Information Ratio")
+
+    # Chart data
+    monthly_ic: Optional[List[Dict[str, Any]]] = Field(
+        default=None, description="Monthly IC data for heatmap"
+    )
+    ic_distribution: Optional[ICDistribution] = Field(
+        default=None, description="IC distribution for histogram and Q-Q plot"
+    )
+
+
+class ReturnDistributionBin(SQLModel):
+    """Single bin for return distribution histogram."""
+
+    bin_start: float = Field(description="Bin start value")
+    bin_end: float = Field(description="Bin end value")
+    count: int = Field(description="Count in this bin")
+    bin_center: float = Field(description="Bin center value")
+
+
+class CumulativeReturnPoint(SQLModel):
+    """Single point for cumulative returns chart."""
+
+    datetime: str = Field(description="Date")
+    cumulative_return: float = Field(description="Cumulative return value")
+
+
+class LongShortMetrics(SQLModel):
+    """
+    Long-Short strategy performance metrics.
+
+    Educational Notes:
+    - Long-Short: Long top 20% stocks, short bottom 20% stocks
+    - Sharpe Ratio: Return per unit of risk (higher is better)
+    - Annualized metrics scaled to yearly performance
+    """
+
+    long_short_ann_return: float = Field(description="Annualized long-short return")
+    long_short_ann_sharpe: float = Field(
+        description="Annualized long-short Sharpe ratio"
+    )
+    long_avg_ann_return: float = Field(description="Annualized long-average return")
+    long_avg_ann_sharpe: float = Field(
+        description="Annualized long-average Sharpe ratio"
+    )
+
+    # Chart data
+    cumulative_returns: Optional[List[CumulativeReturnPoint]] = Field(
+        default=None, description="Cumulative returns time series"
+    )
+    return_distribution: Optional[List[ReturnDistributionBin]] = Field(
+        default=None, description="Return distribution histogram"
+    )
+
+
+class TurnoverPoint(SQLModel):
+    """Single point for turnover time series."""
+
+    datetime: str = Field(description="Date")
+    turnover: float = Field(description="Turnover value")
+
+
+class TurnoverData(SQLModel):
+    """Turnover analysis data."""
+
+    top_turnover_series: List[TurnoverPoint] = Field(
+        description="Top stocks turnover time series"
+    )
+    bottom_turnover_series: List[TurnoverPoint] = Field(
+        description="Bottom stocks turnover time series"
+    )
+    avg_top_turnover: float = Field(description="Average top turnover")
+    avg_bottom_turnover: float = Field(description="Average bottom turnover")
+
+
+class QualityMetrics(SQLModel):
+    """
+    Prediction quality metrics.
+
+    Educational Notes:
+    - Precision: Accuracy of predictions (>0.55 is good)
+    - Auto Correlation: Prediction stability over time (0.1-0.3 is normal)
+    """
+
+    long_precision: float = Field(description="Long prediction precision")
+    short_precision: float = Field(description="Short prediction precision")
+    auto_correlation: float = Field(description="Auto correlation (lag=1)")
+
+    # Chart data
+    turnover: Optional[TurnoverData] = Field(
+        default=None, description="Turnover analysis data"
+    )
+
+
+class FeatureImportanceItem(SQLModel):
+    """Single feature importance item."""
+
+    feature: str = Field(description="Feature name")
+    importance: float = Field(description="Importance value")
+
+
+class TimeSeriesDataPoint(SQLModel):
+    """Single time series data point."""
+
+    datetime: str = Field(description="Date/time as string")
+    value: float = Field(description="Value at this time point")
+
+
+class MonthlyICDataPoint(SQLModel):
+    """Monthly IC data point for heatmap."""
+
+    year: int = Field(description="Year")
+    month: int = Field(description="Month (1-12)")
+    ic: float = Field(description="IC value for this month")
+
+
+class ModelMetricsResponse(SQLModel):
+    """
+    Complete model metrics response.
+
+    Educational Notes:
+    - Contains all metrics for the active Rolling Ensemble model
+    - Metrics are pre-calculated during routine to avoid delays
+    - Used for comprehensive model performance analysis
+    """
+
+    model_type: str = Field(description="Model type (e.g., 'Rolling Ensemble')")
+    calculated_at: str = Field(description="When metrics were calculated")
+    frequency: str = Field(description="Data frequency ('day' or '1min')")
+
+    # Core metrics
+    ic_metrics: ICMetrics = Field(description="IC analysis metrics")
+    long_short_metrics: LongShortMetrics = Field(
+        description="Long-short strategy metrics"
+    )
+    quality_metrics: QualityMetrics = Field(description="Prediction quality metrics")
+
+    # Feature importance (optional)
+    feature_importance: Optional[List[FeatureImportanceItem]] = Field(
+        default=None, description="Feature importance from latest model"
+    )
+
+
+class ChartDataResponse(SQLModel):
+    """
+    Chart data response for various chart types.
+
+    Educational Notes:
+    - Different chart types return different data structures
+    - All time series data uses string dates for JSON compatibility
+    """
+
+    chart_type: str = Field(description="Type of chart data")
+    data: Union[Dict[str, Any], List[Dict[str, Any]]] = Field(
+        description="Chart data - can be dict or list of dicts"
+    )

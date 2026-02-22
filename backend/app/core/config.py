@@ -63,6 +63,8 @@ class Settings(BaseSettings):
     QLIB_DATA_PATH_1MIN: str = "/app/qlib_data_1min"
     CSV_DATA_PATH: str = "/app/csv_data"
     DEFAULT_CSV_FILE_NAME: str = "csv_data_cn.zip"
+    # MLflow runs directory for model artifacts and metrics
+    MLRUNS_PATH: str = "/app/mlruns"
 
     @computed_field  # type: ignore[prop-decorator]
     @property

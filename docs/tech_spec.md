@@ -8279,8 +8279,459 @@ Kept only:
 
 Data Source page refactoring is complete. Ready to proceed with:
 
-1. Training page design and implementation
+1. Models page design and implementation
 2. Backtest page design and implementation
 3. Paper Trading page design and implementation
+
+---
+
+## 📊 Frontend Refactor: Models Page Design (2026-02-22)
+
+### 📋 Design Objectives
+
+Refactor the Training page to Models page:
+
+1. Rename page from "Training" to "Models"
+2. Display Rolling Ensemble model performance metrics
+3. Provide comprehensive model analysis with charts
+4. No training controls (training handled by routine)
+
+### 🎯 Design Requirements
+
+**Key Decisions**:
+
+1. ✅ Display only the active Rolling Ensemble model (not individual models)
+2. ✅ Use feature importance from the latest model (Model 13)
+3. ✅ Calculate metrics in Routine (not on page load)
+4. ✅ Chart-heavy UI with text explanations
+
+**Rolling Training Context**:
+
+- System uses Rolling Training with 13 models (240 days / 20-day step)
+- Each model trained on expanding window (e.g., Model 13 uses all 240 days)
+- Final predictions use RollingEnsemble (average of all 13 models)
+- Models page displays ensemble performance, not individual models
+
+### 📊 Metrics to Display
+
+Based on Qlib's professional quantitative analysis:
+
+#### 1. IC Metrics (Information Coefficient)
+
+- **IC Mean**: Average correlation between predictions and returns
+- **IC Std**: Standard deviation of IC
+- **ICIR**: IC Information Ratio (IC Mean / IC Std)
+- **Rank IC Mean**: Spearman correlation (rank-based)
+- **Rank IC Std**: Standard deviation of Rank IC
+- **Rank ICIR**: Rank IC Information Ratio
+
+**Evaluation Standards**:
+
+- IC > 0.03: Good
+- IC > 0.05: Excellent
+- IC > 0.08: Outstanding
+- ICIR > 1.0: Stable
+- ICIR > 1.5: Very stable
+
+#### 2. Long-Short Strategy Performance
+
+- **Long-Short Ann Return**: Annualized return of long-short strategy
+- **Long-Short Ann Sharpe**: Sharpe ratio (return/risk)
+- **Long-Avg Ann Return**: Long vs market average return
+- **Long-Avg Ann Sharpe**: Long-average Sharpe ratio
+
+**Evaluation Standards**:
+
+- Return > 10%: Good
+- Return > 15%: Excellent
+- Sharpe > 1.0: Acceptable
+- Sharpe > 1.5: Excellent
+- Sharpe > 2.0: Outstanding
+
+#### 3. Feature Importance
+
+- Top 20 features from latest model
+- Bar chart visualization
+- Helps understand key factors
+
+#### 4. Prediction Quality
+
+- **Long Precision**: Accuracy of up predictions (>0.55 good, >0.60 excellent)
+- **Short Precision**: Accuracy of down predictions
+- **Auto Correlation**: Prediction stability (0.1-0.3 normal)
+
+#### 5. Group Return Analysis
+
+- 5 groups by prediction score
+- Cumulative return curves
+- Validates model's ranking ability
+
+### 🎨 Page Layout
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Models                                              │
+│  Current Active Model: Rolling Ensemble (13 models) │
+├─────────────────────────────────────────────────────┤
+│  📊 Model Overview (4 Summary Cards)                │
+│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐      │
+│  │Model   │ │Trained │ │IC      │ │Sharpe  │      │
+│  │Rolling │ │2026-02 │ │0.045   │ │1.8     │      │
+│  │Ensemble│ │        │ │        │ │        │      │
+│  └────────┘ └────────┘ └────────┘ └────────┘      │
+├─────────────────────────────────────────────────────┤
+│  📈 IC Analysis Card                                │
+│  ┌─────────────────────────────────────────────┐   │
+│  │ [IC Time Series Chart - Daily IC bars]      │   │
+│  │ Explanation: IC measures prediction-return  │   │
+│  │ correlation. Higher is better.              │   │
+│  │ Current: IC=0.045 (Excellent), ICIR=1.23   │   │
+│  └─────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────┐   │
+│  │ [Monthly IC Heatmap]                        │   │
+│  │ Explanation: Observe IC stability over time │   │
+│  └─────────────────────────────────────────────┘   │
+├─────────────────────────────────────────────────────┤
+│  💰 Long-Short Performance Card                     │
+│  ┌─────────────────────────────────────────────┐   │
+│  │ [5-Group Cumulative Return Chart]           │   │
+│  │ Explanation: Group1 (highest prediction)    │   │
+│  │ should have highest return                  │   │
+│  └─────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────┐   │
+│  │ [Long-Short Return Distribution]            │   │
+│  │ Ann Return: 15.2%, Sharpe: 1.8 (Excellent)  │   │
+│  └─────────────────────────────────────────────┘   │
+├─────────────────────────────────────────────────────┤
+│  🔍 Feature Importance Card                         │
+│  ┌─────────────────────────────────────────────┐   │
+│  │ [Top 20 Features Bar Chart]                 │   │
+│  │ Explanation: Shows most valuable factors    │   │
+│  │ [View All Features] button                  │   │
+│  └─────────────────────────────────────────────┘   │
+├─────────────────────────────────────────────────────┤
+│  ✅ Prediction Quality Card                         │
+│  │ Long Precision: 0.58, Short Precision: 0.56│   │
+│  ┌─────────────────────────────────────────────┐   │
+│  │ [Auto Correlation Time Series]              │   │
+│  │ Explanation: Measures prediction stability  │   │
+│  │ Current: 0.12 (Normal, not overfitting)     │   │
+│  └─────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────┘
+```
+
+### 🔧 Technical Implementation
+
+#### Backend Architecture
+
+**1. ModelMetricsService** (`backend/app/services/model_metrics_service.py`)
+
+- Calculates all metrics using Qlib's analysis functions
+- Methods:
+  - `calculate_all_metrics()`: Main entry point
+  - `_calculate_ic_metrics()`: IC, ICIR, Rank IC, time series, monthly heatmap
+  - `_calculate_long_short_metrics()`: Returns, Sharpe, cumulative data
+  - `_calculate_quality_metrics()`: Precision, auto correlation
+  - `_calculate_feature_importance()`: From latest model
+  - `_calculate_group_returns()`: 5-group analysis
+  - `save_metrics()`: Save to JSON file
+  - `load_metrics()`: Load from JSON file
+
+**2. Integration with Routine** (`backend/app/services/online_serving_service.py`)
+
+- Added Step 5 in `routine()` method
+- Calls `_calculate_model_metrics()` after signal generation
+- Automatically loads label data
+- Extracts latest model for feature importance
+- Saves to `mlruns/model_metrics/active_metrics.json`
+
+**3. Data Flow**:
+
+```
+Routine → Train Models → Generate Signals → Calculate Metrics → Save JSON
+                                                ↓
+                                        Frontend API Request
+                                                ↓
+                                        Load JSON → Display
+```
+
+#### Qlib Analysis Functions Used
+
+From `qlib.contrib.eva.alpha`:
+
+- `calc_ic()`: Calculate IC and Rank IC
+- `calc_long_short_return()`: Calculate long-short returns
+- `calc_long_short_prec()`: Calculate precision
+- `pred_autocorr()`: Calculate auto correlation
+
+From `qlib.model.interpret.base`:
+
+- `get_feature_importance()`: Extract feature importance
+
+From `qlib.contrib.report.analysis_model`:
+
+- Monthly IC calculation logic
+- Group return analysis logic
+
+#### Metrics Storage
+
+**File**: `mlruns/model_metrics/active_metrics.json`
+
+**Structure**:
+
+```json
+{
+  "model_type": "Rolling Ensemble",
+  "calculated_at": "2026-02-22T10:00:00Z",
+  "frequency": "day",
+  "ic_metrics": {
+    "ic_mean": 0.045,
+    "ic_std": 0.035,
+    "icir": 1.23,
+    "rank_ic_mean": 0.052,
+    "rank_ic_std": 0.038,
+    "rank_icir": 1.45,
+    "ic_series": [...],
+    "rank_ic_series": [...],
+    "monthly_ic": [...]
+  },
+  "long_short_metrics": {
+    "long_short_ann_return": 0.152,
+    "long_short_ann_sharpe": 1.8,
+    "long_avg_ann_return": 0.085,
+    "long_avg_ann_sharpe": 1.2,
+    "long_short_series": [...]
+  },
+  "quality_metrics": {
+    "long_precision": 0.58,
+    "short_precision": 0.56,
+    "auto_correlation": 0.12,
+    "auto_corr_series": [...]
+  },
+  "feature_importance": [...],
+  "group_returns": {
+    "Group1": [...],
+    "Group2": [...],
+    ...
+  }
+}
+```
+
+### 📝 Key Design Decisions
+
+1. **Why Rolling Ensemble?**
+
+   - Online Serving uses RollingEnsemble to combine 13 models
+   - Ensemble predictions are what's actually used in production
+   - More accurate than showing individual model metrics
+
+2. **Why Calculate in Routine?**
+
+   - Metrics calculation is expensive (involves loading label data)
+   - Pre-calculating avoids page load delays
+   - Metrics only need to update when new models are trained
+
+3. **Why Latest Model for Feature Importance?**
+
+   - Ensemble doesn't have a single feature importance
+   - Latest model (Model 13) has most data and is most representative
+   - Still provides valuable insights for factor engineering
+
+4. **Why Chart + Text?**
+   - Charts provide visual intuition
+   - Text explanations help non-experts understand
+   - Evaluation standards guide interpretation
+
+### 🎯 Implementation Status
+
+**Phase 1: Backend - Metrics Calculation** ✅
+
+- ✅ Created ModelMetricsService with all metrics
+- ✅ Integrated into Routine service
+- ✅ Automatic label data loading
+- ✅ Latest model extraction for feature importance
+- ✅ JSON storage for frontend access
+
+**Phase 2: Backend - API Endpoints** ✅
+
+- ✅ API models for metrics response
+- ✅ GET /api/v1/models/active/metrics
+- ✅ GET /api/v1/models/active/charts/{chart_type}
+
+**Phase 3: Frontend - UI Implementation** ✅
+
+- ✅ Renamed Training page to Models
+- ✅ Implemented all chart components
+- ✅ Added text explanations and interpretations
+- ✅ Integrated with API
+
+---
+
+## 📊 Models Page - Chart Implementation Details
+
+**Last Updated**: 2026-02-23
+
+### Overview
+
+The Models page displays comprehensive metrics for the Rolling Ensemble model, including IC analysis, Long-Short strategy performance, prediction quality, and feature importance.
+
+### Charts Implemented
+
+| Chart               | Purpose                                   | Data Source                              |
+| ------------------- | ----------------------------------------- | ---------------------------------------- |
+| IC Time Series      | Daily IC values over time                 | `ic_metrics.ic_series`                   |
+| Monthly IC Heatmap  | IC aggregated by month                    | `ic_metrics.monthly_ic`                  |
+| IC Distribution     | Histogram of daily IC values              | `ic_metrics.ic_distribution.histogram`   |
+| Q-Q Plot            | Check if IC follows normal distribution   | `ic_metrics.ic_distribution.qq_plot`     |
+| Group Returns       | Cumulative returns by prediction quintile | `group_returns` (separate API)           |
+| Cumulative Returns  | Long-Short strategy cumulative returns    | `long_short_metrics.cumulative_returns`  |
+| Return Distribution | Histogram of daily returns                | `long_short_metrics.return_distribution` |
+| Turnover Analysis   | Top/Bottom stock turnover over time       | `quality_metrics.turnover`               |
+| Feature Importance  | Model feature importance ranking          | `feature_importance`                     |
+
+### Key Metrics Explained
+
+#### IC (Information Coefficient)
+
+- **Definition**: Correlation between model predictions and actual returns
+- **Range**: -1 to +1
+- **Good IC**: > 0.03, Very Good: > 0.05
+- **ICIR**: IC Mean / IC Std (measures stability)
+
+#### Turnover
+
+- **Definition**: Percentage of stocks changed daily in Top/Bottom selection
+- **High Turnover (>50%)**: High trading costs, unstable predictions
+- **Low Turnover (<30%)**: Low trading costs, stable predictions
+- **Current Model**: ~73% (high, needs optimization)
+
+#### Group Returns
+
+- Stocks sorted by prediction score into 5 groups (quintiles)
+- Group 1: Top 20% (predicted to rise most)
+- Group 5: Bottom 20% (predicted to fall most)
+- Ideal: Clear separation with Group 1 on top
+
+### Backend Implementation
+
+#### Pydantic Models Added (`app/models.py`)
+
+```python
+# IC Distribution models
+class ICDistributionBin(SQLModel):
+    bin_start: float
+    bin_end: float
+    count: int
+    bin_center: float
+
+class QQPlotPoint(SQLModel):
+    theoretical: float
+    sample: float
+
+class ICDistribution(SQLModel):
+    histogram: List[ICDistributionBin]
+    qq_plot: List[QQPlotPoint]
+    mean: float
+    std: float
+    skewness: float
+    kurtosis: float
+
+# Cumulative Returns models
+class CumulativeReturnPoint(SQLModel):
+    datetime: str
+    cumulative_return: float
+
+class ReturnDistributionBin(SQLModel):
+    bin_start: float
+    bin_end: float
+    count: int
+    bin_center: float
+
+# Turnover models
+class TurnoverPoint(SQLModel):
+    datetime: str
+    turnover: float
+
+class TurnoverData(SQLModel):
+    top_turnover_series: List[TurnoverPoint]
+    bottom_turnover_series: List[TurnoverPoint]
+    avg_top_turnover: float
+    avg_bottom_turnover: float
+
+# Updated metrics models with chart data
+class ICMetrics(SQLModel):
+    # ... basic metrics ...
+    monthly_ic: Optional[List[Dict[str, Any]]]
+    ic_distribution: Optional[ICDistribution]
+
+class LongShortMetrics(SQLModel):
+    # ... basic metrics ...
+    cumulative_returns: Optional[List[CumulativeReturnPoint]]
+    return_distribution: Optional[List[ReturnDistributionBin]]
+
+class QualityMetrics(SQLModel):
+    # ... basic metrics ...
+    turnover: Optional[TurnoverData]
+```
+
+#### Metrics Calculation (`app/services/model_metrics_service.py`)
+
+Key methods added:
+
+- `_calculate_monthly_ic()`: Aggregates IC by year-month for heatmap
+- `_calculate_ic_distribution()`: Creates histogram bins and Q-Q plot data
+- `_calculate_turnover()`: Calculates daily Top/Bottom stock turnover
+
+### Problems Encountered and Solutions
+
+#### Problem 1: Charts Not Displaying
+
+**Symptom**: New charts (Monthly IC, IC Distribution, etc.) not showing on frontend
+**Root Cause**: Pydantic models (`ICMetrics`, `LongShortMetrics`, `QualityMetrics`) didn't include new fields
+**Solution**: Added new Pydantic models and updated existing models with Optional chart data fields
+
+#### Problem 2: API Returns Data But findstr Fails
+
+**Symptom**: `curl ... | findstr "ic_distribution"` shows "line too long"
+**Cause**: JSON response is a single long line, exceeds findstr's line limit
+**Solution**: This actually confirms data is present; use `> file.json` to save and inspect
+
+#### Problem 3: Chart Container Size -1
+
+**Symptom**: Console shows "width(-1) and height(-1) of chart should be greater than 0"
+**Cause**: Recharts ResponsiveContainer needs parent with defined dimensions
+**Solution**: Ensure parent div has explicit height (e.g., `h-64` class)
+
+### Frontend Implementation (`frontend/src/routes/_layout/models.tsx`)
+
+Key components:
+
+- `MonthlyICHeatmap`: Custom SVG-based heatmap component
+- IC Distribution: Recharts BarChart
+- Q-Q Plot: Recharts ScatterChart with reference line
+- Cumulative Returns: Recharts AreaChart
+- Turnover Analysis: Recharts LineChart with dual lines
+
+### Lessons Learned
+
+1. **Pydantic Model Sync**: When adding new fields to backend JSON, must update Pydantic models for API to return them
+2. **Optional Fields**: Use `Optional[T] = Field(default=None)` for backward compatibility
+3. **Chart Sizing**: Always provide explicit height for Recharts containers
+4. **Data Validation**: PowerShell `findstr` has line length limits; use file output for large JSON
+
+### Model Performance Interpretation
+
+Current model metrics indicate weak predictive power:
+
+- IC Mean ≈ -0.001 (should be > 0.03)
+- ICIR ≈ -0.009 (should be > 0.5)
+- Turnover ≈ 73% (should be < 30%)
+
+**Potential Improvements**:
+
+1. Add more factors (Alpha158 has 158 factors vs current 8)
+2. Extend prediction horizon (predict 5-day returns instead of 1-day)
+3. Add turnover penalty in strategy
+4. Use more training data
 
 ---

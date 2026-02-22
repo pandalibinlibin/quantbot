@@ -24,6 +24,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import pandas as pd
+
 from app.config.qlib import qlib_config
 from app.services.qlib_init_service import get_qlib_init_service
 
@@ -48,6 +50,7 @@ class OnlineServingService:
         self._freq: str = "day"
         self._last_routine_time: Optional[datetime] = None
         self._initialization_error: Optional[str] = None
+        self._experiment_name: str = qlib_config.experiment_name
         self.logger = logger
 
     @property
@@ -466,6 +469,19 @@ class OnlineServingService:
                     "success": True,
                     "duration_seconds": round(step_duration, 2),
                     "details": {"signal_count": signal_count},
+                }
+            )
+
+            # Step 5: Calculate model metrics
+            step_start = time.time()
+            metrics_result = self._calculate_model_metrics(signals)
+            step_duration = time.time() - step_start
+            result["steps"].append(
+                {
+                    "step": "model_metrics_calculation",
+                    "success": metrics_result.get("success", False),
+                    "duration_seconds": round(step_duration, 2),
+                    "details": metrics_result,
                 }
             )
 
@@ -914,6 +930,181 @@ class OnlineServingService:
                 status["online_models_error"] = str(e)
 
         return status
+
+    def _calculate_model_metrics(self, signals: pd.Series) -> Dict[str, Any]:
+        """
+        Calculate comprehensive model performance metrics for the Rolling Ensemble.
+
+        This method:
+        1. Loads label data corresponding to the signals
+        2. Calls ModelMetricsService to calculate all metrics
+        3. Saves metrics to file for frontend access
+
+        Args:
+            signals: Ensemble predictions from OnlineManager
+
+        Returns:
+            Result dictionary with success status
+        """
+        try:
+            from app.services.model_metrics_service import get_model_metrics_service
+            from qlib.data.dataset.loader import QlibDataLoader
+
+            if signals is None or len(signals) == 0:
+                self.logger.warning("No signals available for metrics calculation")
+                return {"success": False, "error": "No signals available"}
+
+            self.logger.info(f"Calculating metrics for {len(signals)} predictions...")
+
+            # Get label data
+            # We need to load the same label data that was used in training
+            try:
+                # Get the task template to extract label configuration
+                task_template = self._build_task_template()
+                dataset_config = task_template.get("dataset", {})
+
+                # Extract label from dataset config
+                # The label is typically in dataset.kwargs.segments.train
+                label_expr = None
+                if "kwargs" in dataset_config:
+                    kwargs = dataset_config["kwargs"]
+                    if "handler" in kwargs:
+                        handler_config = kwargs["handler"]
+                        if (
+                            isinstance(handler_config, dict)
+                            and "kwargs" in handler_config
+                        ):
+                            handler_kwargs = handler_config["kwargs"]
+                            if "label" in handler_kwargs:
+                                label_expr = handler_kwargs["label"]
+
+                if label_expr is None:
+                    # Default label expression
+                    label_expr = ["Ref($close, -2)/Ref($close, -1) - 1"]
+
+                self.logger.info(f"Loading label data with expression: {label_expr}")
+
+                # Load label data using Qlib
+                from qlib.data import D
+
+                # Get instruments and date range from signals
+                instruments = (
+                    signals.index.get_level_values("instrument").unique().tolist()
+                )
+                start_date = signals.index.get_level_values("datetime").min()
+                end_date = signals.index.get_level_values("datetime").max()
+
+                # Load label data
+                label_data = D.features(
+                    instruments=instruments,
+                    fields=label_expr,
+                    start_time=start_date,
+                    end_time=end_date,
+                    freq=self._freq,
+                )
+
+                if label_data is None or label_data.empty:
+                    self.logger.warning("Failed to load label data")
+                    return {"success": False, "error": "Failed to load label data"}
+
+                # Convert to Series (take first column if multiple)
+                if isinstance(label_data, pd.DataFrame):
+                    label = label_data.iloc[:, 0]
+                else:
+                    label = label_data
+
+                self.logger.info(f"Loaded {len(label)} label samples")
+
+            except Exception as e:
+                self.logger.error(f"Failed to load label data: {e}")
+                return {
+                    "success": False,
+                    "error": f"Failed to load label data: {str(e)}",
+                }
+
+            # Get the latest model for feature importance
+            # Try to get the latest recorder from the strategy
+            latest_model = None
+            try:
+                from qlib.workflow import R
+                from qlib.workflow.online.utils import OnlineToolR
+
+                online_tool = OnlineToolR()
+
+                # Get experiment recorders directly
+                exp = R.get_exp(experiment_name=self._experiment_name)
+                recorders = exp.list_recorders()
+
+                if recorders:
+                    # Filter for online recorders
+                    online_recorders = []
+                    for rec_id, rec_info in recorders.items():
+                        try:
+                            rec = exp.get_recorder(recorder_id=rec_id)
+                            if (
+                                online_tool.get_online_tag(rec)
+                                == OnlineToolR.ONLINE_TAG
+                            ):
+                                online_recorders.append(rec)
+                        except Exception:
+                            continue
+
+                    if online_recorders:
+                        # Get the latest recorder (last in list)
+                        latest_recorder = online_recorders[-1]
+                        self.logger.info(
+                            f"Found {len(online_recorders)} online recorders, using latest"
+                        )
+
+                        # Try different model file names
+                        model_files = ["trained_model.pkl", "model.pkl", "params.pkl"]
+                        for model_file in model_files:
+                            try:
+                                latest_model = latest_recorder.load_object(model_file)
+                                self.logger.info(
+                                    f"Loaded model from {model_file} for feature importance"
+                                )
+                                break
+                            except Exception as e:
+                                self.logger.debug(f"Could not load {model_file}: {e}")
+                                continue
+
+                        if latest_model is None:
+                            self.logger.warning(
+                                "Could not load model from any known file"
+                            )
+                    else:
+                        self.logger.warning("No online recorders found")
+
+            except Exception as e:
+                self.logger.warning(f"Failed to load latest model: {e}")
+
+            # Calculate metrics
+            metrics_service = get_model_metrics_service()
+            all_metrics = metrics_service.calculate_all_metrics(
+                pred=signals, label=label, model=latest_model, freq=self._freq
+            )
+
+            # Save metrics
+            metrics_service.save_metrics(all_metrics, model_id="active")
+
+            self.logger.info("Model metrics calculated and saved successfully")
+
+            return {
+                "success": True,
+                "message": "Model metrics calculated successfully",
+                "metrics_summary": {
+                    "ic": all_metrics["ic_metrics"]["ic_mean"],
+                    "icir": all_metrics["ic_metrics"]["icir"],
+                    "long_short_sharpe": all_metrics["long_short_metrics"][
+                        "long_short_ann_sharpe"
+                    ],
+                },
+            }
+
+        except Exception as e:
+            self.logger.error(f"Failed to calculate model metrics: {e}")
+            return {"success": False, "error": str(e)}
 
     def reset(self) -> Dict[str, Any]:
         """

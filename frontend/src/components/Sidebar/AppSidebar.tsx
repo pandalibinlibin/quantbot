@@ -23,7 +23,7 @@ const baseItems: Item[] = [
   { icon: Home, title: "Dashboard", path: "/" },
   { icon: FlaskConical, title: "Factors", path: "/factors" },
   { icon: Database, title: "Data Sources", path: "/data-sources" },
-  { icon: Brain, title: "Training", path: "/training" },
+  { icon: Brain, title: "Models", path: "/models" },
   { icon: TrendingUp, title: "Backtest", path: "/backtest" },
 ];
 
