@@ -10,22 +10,32 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle, Database, RefreshCw, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertCircle,
+  Database,
+  RefreshCw,
+  Trash2,
+  TrendingUp,
+  Clock,
+  BarChart3,
+  HardDrive,
+  CheckCircle,
+  AlertTriangle,
+  XCircle,
+} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { DataSourceService } from "@/client";
-import type { DownloadDataRequest } from "@/client";
 
 export const Route = createFileRoute("/_layout/data-sources")({
   component: DataSourcesPage,
@@ -41,41 +51,27 @@ export const Route = createFileRoute("/_layout/data-sources")({
 function DataSourcesPage() {
   const queryClient = useQueryClient();
 
-  // Form state
-  const [source, setSource] = useState<string>("yahoo");
-  const [stockPool, setStockPool] = useState<string>("csi300");
-  const [startDate, setStartDate] = useState<string>("2024-01-01");
-  const [endDate, setEndDate] = useState<string>("2024-01-31");
-  const [interval, setInterval] = useState<string>("1d");
+  // Dialog state for details
+  const [missingDataDialogOpen, setMissingDataDialogOpen] = useState(false);
+  const [anomaliesDialogOpen, setAnomaliesDialogOpen] = useState(false);
 
   // Query for data source status
   const { data: status, isLoading: statusLoading } = useQuery({
     queryKey: ["dataSourceStatus"],
     queryFn: () => DataSourceService.getDataSourceStatusEndpoint(),
-    refetchInterval: 5000, // Refresh every 5 seconds
+    refetchInterval: 5000,
+  });
+
+  // Query for data health metrics
+  const { data: healthMetrics } = useQuery({
+    queryKey: ["dataHealthMetrics"],
+    queryFn: () => DataSourceService.getDataHealthEndpoint(),
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   // Mutation for clearing data
   const clearDataMutation = useMutation({
     mutationFn: () => DataSourceService.clearDataSourceEndpoint(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["dataSourceStatus"] });
-    },
-  });
-
-  // Mutation for downloading data (reset mode)
-  const downloadDataMutation = useMutation({
-    mutationFn: (request: DownloadDataRequest) =>
-      DataSourceService.downloadDataSourceEndpoint({ requestBody: request }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["dataSourceStatus"] });
-    },
-  });
-
-  // Separate mutation for incremental updates
-  const incrementalUpdateMutation = useMutation({
-    mutationFn: (request: DownloadDataRequest) =>
-      DataSourceService.downloadDataSourceEndpoint({ requestBody: request }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dataSourceStatus"] });
     },
@@ -116,33 +112,13 @@ function DataSourcesPage() {
     },
   });
 
-  // Handler functions
-  const handleDownload = () => {
-    const request: DownloadDataRequest = {
-      stock_pool: stockPool,
-      start_date: startDate,
-      end_date: endDate,
-      interval: interval,
-    };
-    downloadDataMutation.mutate(request);
-  };
-
-  const handleIncremental = () => {
-    // For incremental update, use current data source and stock pool from status
-    // but automatically update to latest available trading date
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(today.getDate() - 1);
-    const targetDate = yesterday.toISOString().split("T")[0];
-
-    const request: DownloadDataRequest = {
-      stock_pool: status?.stock_pool || stockPool,
-      start_date: status?.data_range_end || startDate, // Start from last available date
-      end_date: targetDate, // Update to yesterday (more likely to have data)
-      incremental: true,
-      interval: interval,
-    };
-    incrementalUpdateMutation.mutate(request);
+  // Helper function to get frequency display text
+  const getFrequencyText = () => {
+    if (!status?.features || status.features.length === 0) return "Unknown";
+    const firstFeature = status.features[0];
+    if (firstFeature.includes(".1min")) return "Minute (1m)";
+    if (firstFeature.includes(".day")) return "Daily (1d)";
+    return "Unknown";
   };
 
   const handleClear = () => {
@@ -156,9 +132,78 @@ function DataSourcesPage() {
           <div>
             <h1 className="text-3xl font-bold">Data Sources</h1>
             <p className="text-muted-foreground">
-              Manage your quantitative data sources and collections
+              Monitor your quantitative data quality and status
             </p>
           </div>
+
+          {/* Summary Cards */}
+          {status && status.source_name && status.source_name !== "unknown" && (
+            <div className="grid gap-4 md:grid-cols-5">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Data Source
+                  </CardTitle>
+                  <Database className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{status.source_name}</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Stock Pool
+                  </CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{status.stock_pool}</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Frequency
+                  </CardTitle>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{getFrequencyText()}</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Instruments
+                  </CardTitle>
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {status.instruments_count}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Data Size
+                  </CardTitle>
+                  <HardDrive className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {status.data_size_mb} MB
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           {/* Current Status Card */}
           <Card>
@@ -212,7 +257,7 @@ function DataSourcesPage() {
                         {status.data_range_start} to {status.data_range_end}
                       </p>
                     </div>
-                    <div className="col-span-2">
+                    <div className="col-span-4">
                       <Label className="text-sm font-medium">Features</Label>
                       <div className="flex flex-wrap gap-1 mt-1">
                         {status.features
@@ -233,43 +278,29 @@ function DataSourcesPage() {
                           </span>
                         )}
                       </div>
-                    </div>
-                    <div className="col-span-2">
-                      <Label className="text-sm font-medium">
-                        Label (Prediction Target)
-                      </Label>
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {status.label ? (
-                          <Badge
-                            variant="default"
-                            className="text-xs bg-amber-500 hover:bg-amber-600"
-                          >
-                            {status.label}
-                          </Badge>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">
-                            No label configured
-                          </span>
-                        )}
+                      <div className="mt-3">
+                        <Label className="text-sm font-medium">
+                          Label (Prediction Target)
+                        </Label>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {status.label ? (
+                            <Badge
+                              variant="default"
+                              className="text-xs bg-amber-500 hover:bg-amber-600"
+                            >
+                              {status.label}
+                            </Badge>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">
+                              No label configured
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
                   <Separator className="my-4" />
                   <div className="flex justify-center gap-3">
-                    <Button
-                      onClick={handleIncremental}
-                      variant="default"
-                      size="sm"
-                      disabled={!status || incrementalUpdateMutation.isPending}
-                      className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-300 disabled:text-gray-500"
-                    >
-                      <RefreshCw
-                        className={`h-4 w-4 ${incrementalUpdateMutation.isPending ? "animate-spin" : ""}`}
-                      />
-                      {incrementalUpdateMutation.isPending
-                        ? "Updating..."
-                        : "Incremental Update"}
-                    </Button>
                     <Button
                       onClick={() => exportDataMutation.mutate()}
                       variant="default"
@@ -309,152 +340,234 @@ function DataSourcesPage() {
             </CardContent>
           </Card>
 
-          {/* Data Collection Configuration */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Data Collection Configuration</CardTitle>
-              <CardDescription>
-                Configure your data collection parameters
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="stockPool">Stock Pool</Label>
-                  <Select value={stockPool} onValueChange={setStockPool}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="csi300">CSI 300</SelectItem>
-                      <SelectItem value="csi500">CSI 500</SelectItem>
-                      <SelectItem value="sp500">S&P 500</SelectItem>
-                      <SelectItem value="nasdaq100">NASDAQ 100</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="interval">Data Interval</Label>
-                  <Select value={interval} onValueChange={setInterval}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1d">Daily (1d)</SelectItem>
-                      <SelectItem value="1m">Minute (1m)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">Data Source</Label>
-                  <p className="text-lg font-semibold text-muted-foreground">
-                    Yahoo Finance
-                  </p>
-                  <p className="text-xs text-muted-foreground">(Configured)</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="startDate">Start Date</Label>
-                  <Input
-                    id="startDate"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="endDate">End Date</Label>
-                  <Input
-                    id="endDate"
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Minute Data Warning */}
-              {interval === "1m" && (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>Minute Data Info:</strong>
-                    <ul className="list-disc list-inside mt-1 space-y-1">
-                      <li>
-                        Yahoo Finance only provides minute-level data for the
-                        last 30 days
-                      </li>
-                      {stockPool === "sp500" || stockPool === "nasdaq100" ? (
-                        <>
-                          <li>
-                            <strong>Actual trading hours (US):</strong>{" "}
-                            {startDate} 09:30:00 to {endDate} 16:00:00 EST
-                          </li>
-                          <li>
-                            Data will be collected for US market trading hours
-                            (09:30-16:00 EST)
-                          </li>
-                        </>
+          {/* Data Quality Metrics Card */}
+          {healthMetrics && healthMetrics.data_exists && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5" />
+                  Data Quality Metrics
+                </CardTitle>
+                <CardDescription>
+                  Comprehensive data health analysis
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Completeness</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-lg font-semibold">
+                        {healthMetrics.completeness_percentage.toFixed(1)}%
+                      </p>
+                      {healthMetrics.completeness_percentage >= 95 ? (
+                        <Badge variant="default" className="bg-green-600">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Good
+                        </Badge>
+                      ) : healthMetrics.completeness_percentage >= 80 ? (
+                        <Badge variant="default" className="bg-yellow-600">
+                          <AlertTriangle className="h-3 w-3 mr-1" />
+                          Warning
+                        </Badge>
                       ) : (
-                        <>
-                          <li>
-                            <strong>Actual trading hours (CN):</strong>{" "}
-                            {startDate} 09:30:00 to {endDate} 15:00:00
-                          </li>
-                          <li>
-                            Data will be collected for A-share market trading
-                            hours (09:30-11:30, 13:00-15:00)
-                          </li>
-                        </>
+                        <Badge variant="destructive">
+                          <XCircle className="h-3 w-3 mr-1" />
+                          Poor
+                        </Badge>
                       )}
-                    </ul>
-                  </AlertDescription>
-                </Alert>
-              )}
+                    </div>
+                  </div>
 
-              <Separator className="my-4" />
-              <Button
-                onClick={handleDownload}
-                disabled={downloadDataMutation.isPending}
-                className="flex items-center gap-2 w-full"
-              >
-                <RefreshCw
-                  className={`h-4 w-4 ${downloadDataMutation.isPending ? "animate-spin" : ""}`}
-                />
-                {downloadDataMutation.isPending
-                  ? "Downloading..."
-                  : "Download Data"}
-              </Button>
-            </CardContent>
-          </Card>
+                  <div>
+                    <Label className="text-sm font-medium">Missing Data</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-lg font-semibold">
+                        {healthMetrics.missing_data_count} instruments
+                      </p>
+                      {healthMetrics.missing_data_count > 0 && (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-blue-600"
+                          onClick={() => setMissingDataDialogOpen(true)}
+                        >
+                          Details
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium">Anomalies</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-lg font-semibold">
+                        {healthMetrics.anomaly_count} detected
+                      </p>
+                      {healthMetrics.anomaly_count > 0 && (
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-blue-600"
+                          onClick={() => setAnomaliesDialogOpen(true)}
+                        >
+                          Details
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium">Integrity</Label>
+                    <div className="flex flex-col gap-1 mt-1">
+                      {healthMetrics.integrity_checks.required_columns && (
+                        <Badge variant="outline" className="w-fit">
+                          <CheckCircle className="h-3 w-3 mr-1 text-green-600" />
+                          Columns OK
+                        </Badge>
+                      )}
+                      {healthMetrics.integrity_checks.factor_column && (
+                        <Badge variant="outline" className="w-fit">
+                          <CheckCircle className="h-3 w-3 mr-1 text-green-600" />
+                          Factor OK
+                        </Badge>
+                      )}
+                      {healthMetrics.integrity_checks.directory_case && (
+                        <Badge variant="outline" className="w-fit">
+                          <CheckCircle className="h-3 w-3 mr-1 text-green-600" />
+                          Naming OK
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Status Messages */}
-          {(downloadDataMutation.isError ||
-            incrementalUpdateMutation.isError ||
-            clearDataMutation.isError) && (
+          {clearDataMutation.isError && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                {downloadDataMutation.error?.message ||
-                  incrementalUpdateMutation.error?.message ||
-                  clearDataMutation.error?.message}
+                {clearDataMutation.error?.message}
               </AlertDescription>
             </Alert>
           )}
 
-          {(downloadDataMutation.isSuccess ||
-            incrementalUpdateMutation.isSuccess ||
-            clearDataMutation.isSuccess) && (
+          {clearDataMutation.isSuccess && (
             <Alert>
-              <AlertDescription>
-                Operation completed successfully!
-              </AlertDescription>
+              <AlertDescription>Data cleared successfully!</AlertDescription>
             </Alert>
           )}
         </div>
       </div>
+
+      {/* Missing Data Details Dialog */}
+      <Dialog
+        open={missingDataDialogOpen}
+        onOpenChange={setMissingDataDialogOpen}
+      >
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Missing Data Details</DialogTitle>
+            <DialogDescription>
+              Instruments with missing OHLCV data
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {healthMetrics?.missing_data_details?.map((detail, index) => (
+              <div key={index} className="border-b pb-3">
+                <p className="font-semibold text-sm mb-2">
+                  {detail.instrument}
+                </p>
+                <div className="grid grid-cols-5 gap-2 text-xs">
+                  {detail.open > 0 && (
+                    <div>
+                      <span className="text-muted-foreground">Open:</span>{" "}
+                      <span className="font-medium">{detail.open}</span>
+                    </div>
+                  )}
+                  {detail.high > 0 && (
+                    <div>
+                      <span className="text-muted-foreground">High:</span>{" "}
+                      <span className="font-medium">{detail.high}</span>
+                    </div>
+                  )}
+                  {detail.low > 0 && (
+                    <div>
+                      <span className="text-muted-foreground">Low:</span>{" "}
+                      <span className="font-medium">{detail.low}</span>
+                    </div>
+                  )}
+                  {detail.close > 0 && (
+                    <div>
+                      <span className="text-muted-foreground">Close:</span>{" "}
+                      <span className="font-medium">{detail.close}</span>
+                    </div>
+                  )}
+                  {detail.volume > 0 && (
+                    <div>
+                      <span className="text-muted-foreground">Volume:</span>{" "}
+                      <span className="font-medium">{detail.volume}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            {(!healthMetrics?.missing_data_details ||
+              healthMetrics.missing_data_details.length === 0) && (
+              <p className="text-sm text-muted-foreground">
+                No missing data found.
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Anomalies Details Dialog */}
+      <Dialog open={anomaliesDialogOpen} onOpenChange={setAnomaliesDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Data Anomalies Details</DialogTitle>
+            <DialogDescription>
+              Large step changes detected in OHLCV data
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {healthMetrics?.anomalies?.map((anomaly, index) => (
+              <div key={index} className="border-b pb-3">
+                <div className="grid grid-cols-4 gap-2 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Instrument:</span>{" "}
+                    <span className="font-medium">{anomaly.instrument}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Column:</span>{" "}
+                    <span className="font-medium">{anomaly.column}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Date:</span>{" "}
+                    <span className="font-medium">{anomaly.date}</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Change:</span>{" "}
+                    <Badge variant="destructive">
+                      {(anomaly.pct_change * 100).toFixed(1)}%
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {(!healthMetrics?.anomalies ||
+              healthMetrics.anomalies.length === 0) && (
+              <p className="text-sm text-muted-foreground">
+                No anomalies detected.
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

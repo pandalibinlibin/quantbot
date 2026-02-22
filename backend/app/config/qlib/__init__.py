@@ -244,6 +244,11 @@ class QlibConfig:
         """Get backtest parameters."""
         return self._backtest_config.get("backtest", {})
 
+    @property
+    def data_quality(self) -> Dict[str, Any]:
+        """Get data quality check configuration."""
+        return self._config.get("data_quality", {})
+
     def get_data_config_hash(self) -> str:
         """
         Get a hash string representing current data configuration.

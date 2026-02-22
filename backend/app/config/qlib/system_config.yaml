@@ -53,3 +53,17 @@ online_serving:
   rolling_type: "expanding" # Options: "expanding" or "sliding"
 
 # NOTE: Paper Trading configuration has been moved to paper_trading_config.yaml
+
+# Data Quality Check Configuration
+data_quality:
+  # Threshold for detecting large step changes in price columns (OHLC)
+  # A value of 0.5 means 50% change is considered abnormal
+  large_step_threshold_price: 0.5
+
+  # Threshold for detecting large step changes in volume column
+  # A value of 3.0 means 300% change is considered abnormal
+  large_step_threshold_volume: 3.0
+
+  # Maximum allowed missing values per column
+  # A value of 0 means no missing values are allowed
+  missing_data_threshold: 0

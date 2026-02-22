@@ -2,58 +2,57 @@
 
 export const BacktestRequestSchema = {
     properties: {
-        pred_path: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Pred Path'
-        },
-        start_time: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Start Time'
-        },
-        end_time: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'End Time'
-        },
         benchmark: {
-            type: 'string',
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
             title: 'Benchmark',
-            default: 'SH000300'
+            description: 'Benchmark symbol for comparison (default: SH000300)',
+            example: 'SH000300'
         },
         topk: {
-            type: 'integer',
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
             title: 'Topk',
-            default: 50
+            description: 'Number of stocks to hold (default: 50)',
+            example: 50
         },
         n_drop: {
-            type: 'integer',
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
             title: 'N Drop',
-            default: 5
+            description: 'Number of stocks to drop each day (default: 5)',
+            example: 5
         },
         account: {
-            type: 'number',
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
             title: 'Account',
-            default: 100000000
+            description: 'Initial account value (default: 100000000)',
+            example: 100000000
         }
     },
     type: 'object',
@@ -67,10 +66,6 @@ export const BacktestResponseSchema = {
             type: 'string',
             title: 'Status'
         },
-        message: {
-            type: 'string',
-            title: 'Message'
-        },
         start_time: {
             anyOf: [
                 {
@@ -93,30 +88,115 @@ export const BacktestResponseSchema = {
             ],
             title: 'End Time'
         },
+        freq: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Freq'
+        },
         trading_days: {
-            type: 'integer',
-            title: 'Trading Days',
-            default: 0
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Trading Days'
+        },
+        signal_count: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Signal Count'
         },
         total_return: {
-            type: 'number',
-            title: 'Total Return',
-            default: 0
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Total Return'
         },
         total_cost: {
-            type: 'number',
-            title: 'Total Cost',
-            default: 0
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Total Cost'
         },
         net_return: {
-            type: 'number',
-            title: 'Net Return',
-            default: 0
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Net Return'
         },
         final_account: {
-            type: 'number',
-            title: 'Final Account',
-            default: 0
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Final Account'
+        },
+        topk: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Topk'
+        },
+        n_drop: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'N Drop'
+        },
+        benchmark: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Benchmark'
         },
         error: {
             anyOf: [
@@ -131,58 +211,9 @@ export const BacktestResponseSchema = {
         }
     },
     type: 'object',
-    required: ['status', 'message'],
+    required: ['status'],
     title: 'BacktestResponse',
     description: 'Response model for backtest endpoint.'
-} as const;
-
-export const BacktestStatusResponseSchema = {
-    properties: {
-        ready: {
-            type: 'boolean',
-            title: 'Ready'
-        },
-        message: {
-            type: 'string',
-            title: 'Message'
-        },
-        models_count: {
-            type: 'integer',
-            title: 'Models Count',
-            default: 0
-        },
-        predictions_available: {
-            type: 'boolean',
-            title: 'Predictions Available',
-            default: false
-        },
-        latest_model: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Latest Model'
-        },
-        latest_prediction_time: {
-            anyOf: [
-                {
-                    type: 'string'
-                },
-                {
-                    type: 'null'
-                }
-            ],
-            title: 'Latest Prediction Time'
-        }
-    },
-    type: 'object',
-    required: ['ready', 'message'],
-    title: 'BacktestStatusResponse',
-    description: 'Response model for backtest status check.'
 } as const;
 
 export const Body_login_login_access_tokenSchema = {
@@ -242,6 +273,48 @@ export const Body_login_login_access_tokenSchema = {
     title: 'Body_login-login_access_token'
 } as const;
 
+export const BuyOrderSchema = {
+    properties: {
+        instrument: {
+            type: 'string',
+            title: 'Instrument'
+        },
+        direction: {
+            type: 'string',
+            title: 'Direction',
+            default: 'BUY'
+        },
+        target_weight: {
+            type: 'number',
+            title: 'Target Weight'
+        },
+        reference_price: {
+            type: 'number',
+            title: 'Reference Price'
+        },
+        limit_price: {
+            type: 'number',
+            title: 'Limit Price'
+        },
+        score: {
+            type: 'number',
+            title: 'Score'
+        },
+        instruction: {
+            type: 'string',
+            title: 'Instruction'
+        },
+        score_rank: {
+            type: 'integer',
+            title: 'Score Rank'
+        }
+    },
+    type: 'object',
+    required: ['instrument', 'target_weight', 'reference_price', 'limit_price', 'score', 'instruction', 'score_rank'],
+    title: 'BuyOrder',
+    description: 'Buy order in trading plan.'
+} as const;
+
 export const ClearDataResponseSchema = {
     properties: {
         success: {
@@ -281,6 +354,94 @@ export const ComputationStatusSchema = {
     enum: ['pending', 'computing', 'completed', 'failed'],
     title: 'ComputationStatus',
     description: 'Enumeration of factor computation status'
+} as const;
+
+export const DataAnomalySchema = {
+    properties: {
+        instrument: {
+            type: 'string',
+            title: 'Instrument',
+            description: 'Instrument code'
+        },
+        column: {
+            type: 'string',
+            title: 'Column',
+            description: "Column with anomaly (e.g., 'close', 'volume')"
+        },
+        date: {
+            type: 'string',
+            title: 'Date',
+            description: 'Date of anomaly occurrence'
+        },
+        pct_change: {
+            type: 'number',
+            title: 'Pct Change',
+            description: 'Percentage change detected'
+        }
+    },
+    type: 'object',
+    required: ['instrument', 'column', 'date', 'pct_change'],
+    title: 'DataAnomaly',
+    description: 'Details of a detected data anomaly (large step change).'
+} as const;
+
+export const DataHealthMetricsSchema = {
+    properties: {
+        data_exists: {
+            type: 'boolean',
+            title: 'Data Exists',
+            description: 'Whether data exists in qlib_data directory'
+        },
+        completeness_percentage: {
+            type: 'number',
+            title: 'Completeness Percentage',
+            description: 'Percentage of complete data (0-100)'
+        },
+        missing_data_count: {
+            type: 'integer',
+            title: 'Missing Data Count',
+            description: 'Number of instruments with missing data'
+        },
+        missing_data_details: {
+            items: {
+                '$ref': '#/components/schemas/MissingDataDetail'
+            },
+            type: 'array',
+            title: 'Missing Data Details',
+            description: 'Detailed list of missing data by instrument'
+        },
+        anomaly_count: {
+            type: 'integer',
+            title: 'Anomaly Count',
+            description: 'Number of detected anomalies'
+        },
+        anomalies: {
+            items: {
+                '$ref': '#/components/schemas/DataAnomaly'
+            },
+            type: 'array',
+            title: 'Anomalies',
+            description: 'Detailed list of anomalies detected'
+        },
+        integrity_checks: {
+            '$ref': '#/components/schemas/IntegrityChecks',
+            description: 'Results of integrity checks'
+        },
+        checked_at: {
+            type: 'string',
+            title: 'Checked At',
+            description: 'Timestamp when check was performed'
+        }
+    },
+    type: 'object',
+    required: ['data_exists', 'completeness_percentage', 'missing_data_count', 'missing_data_details', 'anomaly_count', 'anomalies', 'integrity_checks', 'checked_at'],
+    title: 'DataHealthMetrics',
+    description: `Comprehensive data health metrics.
+
+Educational Notes:
+- Provides overview of data quality
+- Includes both summary statistics and detailed lists
+- Used for monitoring and alerting`
 } as const;
 
 export const DataSourceStatusSchema = {
@@ -518,6 +679,138 @@ export const DownloadTaskResponseSchema = {
 Educational Notes:
 - Returned immediately when user starts download
 - Contains task_id for tracking progress`
+} as const;
+
+export const ExecuteRequestSchema = {
+    properties: {
+        date: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Date',
+            description: 'Date in YYYY-MM-DD format (None for latest)',
+            example: '2026-02-13'
+        },
+        topk: {
+            type: 'integer',
+            maximum: 500,
+            minimum: 1,
+            title: 'Topk',
+            description: 'Number of stocks to hold',
+            default: 50
+        },
+        n_drop: {
+            type: 'integer',
+            maximum: 50,
+            minimum: 0,
+            title: 'N Drop',
+            description: 'Number of stocks to drop each day',
+            default: 5
+        },
+        slippage: {
+            type: 'number',
+            maximum: 0.1,
+            minimum: 0,
+            title: 'Slippage',
+            description: 'Slippage for price simulation (default 0.1%)',
+            default: 0.001
+        },
+        dry_run: {
+            type: 'boolean',
+            title: 'Dry Run',
+            description: 'If True, simulate without saving',
+            default: false
+        }
+    },
+    type: 'object',
+    title: 'ExecuteRequest',
+    description: 'Request model for execute endpoint.'
+} as const;
+
+export const ExecuteResponseSchema = {
+    properties: {
+        success: {
+            type: 'boolean',
+            title: 'Success'
+        },
+        date: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Date'
+        },
+        dry_run: {
+            type: 'boolean',
+            title: 'Dry Run',
+            default: false
+        },
+        slippage: {
+            type: 'number',
+            title: 'Slippage',
+            default: 0.001
+        },
+        sells_executed: {
+            type: 'integer',
+            title: 'Sells Executed',
+            default: 0
+        },
+        buys_executed: {
+            type: 'integer',
+            title: 'Buys Executed',
+            default: 0
+        },
+        executed_sells: {
+            items: {
+                '$ref': '#/components/schemas/TradeItem'
+            },
+            type: 'array',
+            title: 'Executed Sells',
+            default: []
+        },
+        executed_buys: {
+            items: {
+                '$ref': '#/components/schemas/TradeItem'
+            },
+            type: 'array',
+            title: 'Executed Buys',
+            default: []
+        },
+        final_cash: {
+            type: 'number',
+            title: 'Final Cash',
+            default: 0
+        },
+        final_position_count: {
+            type: 'integer',
+            title: 'Final Position Count',
+            default: 0
+        },
+        error: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error'
+        }
+    },
+    type: 'object',
+    required: ['success'],
+    title: 'ExecuteResponse',
+    description: 'Response model for execute endpoint.'
 } as const;
 
 export const FactorSchema = {
@@ -884,6 +1177,64 @@ export const HTTPValidationErrorSchema = {
     title: 'HTTPValidationError'
 } as const;
 
+export const HoldOrderSchema = {
+    properties: {
+        instrument: {
+            type: 'string',
+            title: 'Instrument'
+        },
+        direction: {
+            type: 'string',
+            title: 'Direction',
+            default: 'HOLD'
+        },
+        current_weight: {
+            type: 'number',
+            title: 'Current Weight'
+        },
+        target_weight: {
+            type: 'number',
+            title: 'Target Weight'
+        },
+        score: {
+            type: 'number',
+            title: 'Score'
+        },
+        score_rank: {
+            type: 'integer',
+            title: 'Score Rank'
+        }
+    },
+    type: 'object',
+    required: ['instrument', 'current_weight', 'target_weight', 'score', 'score_rank'],
+    title: 'HoldOrder',
+    description: 'Hold order in trading plan.'
+} as const;
+
+export const IntegrityChecksSchema = {
+    properties: {
+        required_columns: {
+            type: 'boolean',
+            title: 'Required Columns',
+            description: 'Whether all required OHLCV columns exist'
+        },
+        factor_column: {
+            type: 'boolean',
+            title: 'Factor Column',
+            description: 'Whether factor column exists and has data'
+        },
+        directory_case: {
+            type: 'boolean',
+            title: 'Directory Case',
+            description: 'Whether all feature directories are lowercase'
+        }
+    },
+    type: 'object',
+    required: ['required_columns', 'factor_column', 'directory_case'],
+    title: 'IntegrityChecks',
+    description: 'Results of data integrity checks.'
+} as const;
+
 export const ItemCreateSchema = {
     properties: {
         title: {
@@ -1009,6 +1360,45 @@ export const MessageSchema = {
     title: 'Message'
 } as const;
 
+export const MissingDataDetailSchema = {
+    properties: {
+        instrument: {
+            type: 'string',
+            title: 'Instrument',
+            description: 'Instrument code'
+        },
+        open: {
+            type: 'integer',
+            title: 'Open',
+            description: 'Number of missing values in open column'
+        },
+        high: {
+            type: 'integer',
+            title: 'High',
+            description: 'Number of missing values in high column'
+        },
+        low: {
+            type: 'integer',
+            title: 'Low',
+            description: 'Number of missing values in low column'
+        },
+        close: {
+            type: 'integer',
+            title: 'Close',
+            description: 'Number of missing values in close column'
+        },
+        volume: {
+            type: 'integer',
+            title: 'Volume',
+            description: 'Number of missing values in volume column'
+        }
+    },
+    type: 'object',
+    required: ['instrument', 'open', 'high', 'low', 'close', 'volume'],
+    title: 'MissingDataDetail',
+    description: 'Details of missing data for a specific instrument.'
+} as const;
+
 export const NewPasswordSchema = {
     properties: {
         token: {
@@ -1025,6 +1415,220 @@ export const NewPasswordSchema = {
     type: 'object',
     required: ['token', 'new_password'],
     title: 'NewPassword'
+} as const;
+
+export const PerformanceResponseSchema = {
+    properties: {
+        success: {
+            type: 'boolean',
+            title: 'Success'
+        },
+        initial_cash: {
+            type: 'number',
+            title: 'Initial Cash',
+            default: 0
+        },
+        current_value: {
+            type: 'number',
+            title: 'Current Value',
+            default: 0
+        },
+        total_return: {
+            type: 'number',
+            title: 'Total Return',
+            default: 0
+        },
+        total_return_pct: {
+            type: 'string',
+            title: 'Total Return Pct',
+            default: '0.00%'
+        },
+        total_trades: {
+            type: 'integer',
+            title: 'Total Trades',
+            default: 0
+        },
+        buy_trades: {
+            type: 'integer',
+            title: 'Buy Trades',
+            default: 0
+        },
+        sell_trades: {
+            type: 'integer',
+            title: 'Sell Trades',
+            default: 0
+        },
+        trading_days: {
+            type: 'integer',
+            title: 'Trading Days',
+            default: 0
+        },
+        position_count: {
+            type: 'integer',
+            title: 'Position Count',
+            default: 0
+        },
+        error: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error'
+        }
+    },
+    type: 'object',
+    required: ['success'],
+    title: 'PerformanceResponse',
+    description: 'Response model for performance endpoint.'
+} as const;
+
+export const PlanSummarySchema = {
+    properties: {
+        sell_count: {
+            type: 'integer',
+            title: 'Sell Count'
+        },
+        buy_count: {
+            type: 'integer',
+            title: 'Buy Count'
+        },
+        hold_count: {
+            type: 'integer',
+            title: 'Hold Count'
+        }
+    },
+    type: 'object',
+    required: ['sell_count', 'buy_count', 'hold_count'],
+    title: 'PlanSummary',
+    description: 'Summary of trading plan.'
+} as const;
+
+export const PortfolioResponseSchema = {
+    properties: {
+        success: {
+            type: 'boolean',
+            title: 'Success'
+        },
+        cash: {
+            type: 'number',
+            title: 'Cash',
+            default: 0
+        },
+        positions: {
+            items: {
+                '$ref': '#/components/schemas/PositionItem'
+            },
+            type: 'array',
+            title: 'Positions',
+            default: []
+        },
+        position_count: {
+            type: 'integer',
+            title: 'Position Count',
+            default: 0
+        },
+        total_position_value: {
+            type: 'number',
+            title: 'Total Position Value',
+            default: 0
+        },
+        total_value: {
+            type: 'number',
+            title: 'Total Value',
+            default: 0
+        },
+        created_at: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Created At'
+        },
+        updated_at: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Updated At'
+        },
+        error: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error'
+        }
+    },
+    type: 'object',
+    required: ['success'],
+    title: 'PortfolioResponse',
+    description: 'Response model for portfolio endpoint.'
+} as const;
+
+export const PortfolioSummarySchema = {
+    properties: {
+        total_value: {
+            type: 'number',
+            title: 'Total Value'
+        },
+        cash: {
+            type: 'number',
+            title: 'Cash'
+        },
+        position_value: {
+            type: 'number',
+            title: 'Position Value'
+        },
+        position_count: {
+            type: 'integer',
+            title: 'Position Count'
+        }
+    },
+    type: 'object',
+    required: ['total_value', 'cash', 'position_value', 'position_count'],
+    title: 'PortfolioSummary',
+    description: 'Portfolio summary in trading plan.'
+} as const;
+
+export const PositionItemSchema = {
+    properties: {
+        instrument: {
+            type: 'string',
+            title: 'Instrument'
+        },
+        shares: {
+            type: 'integer',
+            title: 'Shares'
+        },
+        avg_cost: {
+            type: 'number',
+            title: 'Avg Cost'
+        },
+        current_value: {
+            type: 'number',
+            title: 'Current Value'
+        }
+    },
+    type: 'object',
+    required: ['instrument', 'shares', 'avg_cost', 'current_value'],
+    title: 'PositionItem',
+    description: 'Single position item.'
 } as const;
 
 export const PrivateUserCreateSchema = {
@@ -1052,6 +1656,326 @@ export const PrivateUserCreateSchema = {
     title: 'PrivateUserCreate'
 } as const;
 
+export const RoutineRequestSchema = {
+    properties: {
+        cur_time: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Cur Time',
+            description: 'Current time in YYYY-MM-DD format. None for latest.',
+            example: '2025-02-22'
+        }
+    },
+    type: 'object',
+    title: 'RoutineRequest',
+    description: 'Request model for routine endpoint.'
+} as const;
+
+export const RoutineResponseSchema = {
+    properties: {
+        success: {
+            type: 'boolean',
+            title: 'Success'
+        },
+        message: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Message'
+        },
+        cur_time: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Cur Time'
+        },
+        executed_at: {
+            type: 'string',
+            title: 'Executed At'
+        },
+        steps: {
+            items: {
+                '$ref': '#/components/schemas/StepResult'
+            },
+            type: 'array',
+            title: 'Steps',
+            default: []
+        },
+        total_duration_seconds: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Total Duration Seconds'
+        },
+        error: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error'
+        }
+    },
+    type: 'object',
+    required: ['success', 'executed_at'],
+    title: 'RoutineResponse',
+    description: 'Response model for routine endpoint.'
+} as const;
+
+export const SellOrderSchema = {
+    properties: {
+        instrument: {
+            type: 'string',
+            title: 'Instrument'
+        },
+        direction: {
+            type: 'string',
+            title: 'Direction',
+            default: 'SELL'
+        },
+        sell_pct: {
+            type: 'number',
+            title: 'Sell Pct'
+        },
+        current_weight: {
+            type: 'number',
+            title: 'Current Weight'
+        },
+        reference_price: {
+            type: 'number',
+            title: 'Reference Price'
+        },
+        limit_price: {
+            type: 'number',
+            title: 'Limit Price'
+        },
+        score: {
+            type: 'number',
+            title: 'Score'
+        },
+        reason: {
+            type: 'string',
+            title: 'Reason'
+        },
+        instruction: {
+            type: 'string',
+            title: 'Instruction'
+        }
+    },
+    type: 'object',
+    required: ['instrument', 'sell_pct', 'current_weight', 'reference_price', 'limit_price', 'score', 'reason', 'instruction'],
+    title: 'SellOrder',
+    description: 'Sell order in trading plan.'
+} as const;
+
+export const SignalItemSchema = {
+    properties: {
+        datetime: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Datetime'
+        },
+        instrument: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Instrument'
+        },
+        key: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Key'
+        },
+        score: {
+            type: 'number',
+            title: 'Score'
+        }
+    },
+    type: 'object',
+    required: ['score'],
+    title: 'SignalItem',
+    description: 'Single signal item.'
+} as const;
+
+export const SignalsResponseSchema = {
+    properties: {
+        success: {
+            type: 'boolean',
+            title: 'Success'
+        },
+        signal_count: {
+            type: 'integer',
+            title: 'Signal Count',
+            default: 0
+        },
+        signals: {
+            items: {
+                '$ref': '#/components/schemas/SignalItem'
+            },
+            type: 'array',
+            title: 'Signals',
+            default: []
+        },
+        error: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error'
+        }
+    },
+    type: 'object',
+    required: ['success'],
+    title: 'SignalsResponse',
+    description: 'Response model for signals endpoint.'
+} as const;
+
+export const StatusResponseSchema = {
+    properties: {
+        is_initialized: {
+            type: 'boolean',
+            title: 'Is Initialized'
+        },
+        freq: {
+            type: 'string',
+            title: 'Freq'
+        },
+        last_routine_time: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Last Routine Time'
+        },
+        initialization_error: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Initialization Error'
+        },
+        config: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Config',
+            default: {}
+        },
+        online_models_count: {
+            anyOf: [
+                {
+                    type: 'integer'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Online Models Count'
+        },
+        online_models_error: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Online Models Error'
+        }
+    },
+    type: 'object',
+    required: ['is_initialized', 'freq'],
+    title: 'StatusResponse',
+    description: 'Response model for status endpoint.'
+} as const;
+
+export const StepResultSchema = {
+    properties: {
+        step: {
+            type: 'string',
+            title: 'Step'
+        },
+        success: {
+            type: 'boolean',
+            title: 'Success'
+        },
+        duration_seconds: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Duration Seconds'
+        },
+        details: {
+            additionalProperties: true,
+            type: 'object',
+            title: 'Details',
+            default: {}
+        }
+    },
+    type: 'object',
+    required: ['step', 'success'],
+    title: 'StepResult',
+    description: 'Result of a single step in the routine.'
+} as const;
+
 export const TokenSchema = {
     properties: {
         access_token: {
@@ -1067,6 +1991,262 @@ export const TokenSchema = {
     type: 'object',
     required: ['access_token'],
     title: 'Token'
+} as const;
+
+export const TradeItemSchema = {
+    properties: {
+        date: {
+            type: 'string',
+            title: 'Date'
+        },
+        instrument: {
+            type: 'string',
+            title: 'Instrument'
+        },
+        action: {
+            type: 'string',
+            title: 'Action'
+        },
+        shares: {
+            type: 'integer',
+            title: 'Shares'
+        },
+        price: {
+            type: 'number',
+            title: 'Price'
+        },
+        value: {
+            type: 'number',
+            title: 'Value'
+        },
+        sell_pct: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Sell Pct'
+        },
+        target_weight: {
+            anyOf: [
+                {
+                    type: 'number'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Target Weight'
+        },
+        executed_at: {
+            type: 'string',
+            title: 'Executed At'
+        }
+    },
+    type: 'object',
+    required: ['date', 'instrument', 'action', 'shares', 'price', 'value', 'executed_at'],
+    title: 'TradeItem',
+    description: 'Single trade item.'
+} as const;
+
+export const TradesResponseSchema = {
+    properties: {
+        success: {
+            type: 'boolean',
+            title: 'Success'
+        },
+        total_trades: {
+            type: 'integer',
+            title: 'Total Trades',
+            default: 0
+        },
+        trades: {
+            items: {
+                '$ref': '#/components/schemas/TradeItem'
+            },
+            type: 'array',
+            title: 'Trades',
+            default: []
+        },
+        error: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error'
+        }
+    },
+    type: 'object',
+    required: ['success'],
+    title: 'TradesResponse',
+    description: 'Response model for trades endpoint.'
+} as const;
+
+export const TradingPlanRequestSchema = {
+    properties: {
+        date: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Date',
+            description: 'Date in YYYY-MM-DD format (None for latest)',
+            example: '2026-02-13'
+        },
+        topk: {
+            type: 'integer',
+            maximum: 500,
+            minimum: 1,
+            title: 'Topk',
+            description: 'Number of stocks to hold',
+            default: 50
+        },
+        n_drop: {
+            type: 'integer',
+            maximum: 50,
+            minimum: 0,
+            title: 'N Drop',
+            description: 'Number of stocks to drop each day',
+            default: 5
+        },
+        slippage: {
+            type: 'number',
+            maximum: 0.1,
+            minimum: 0,
+            title: 'Slippage',
+            description: 'Expected slippage for price estimation (default 0.1%)',
+            default: 0.001
+        }
+    },
+    type: 'object',
+    title: 'TradingPlanRequest',
+    description: 'Request model for trading plan endpoint.'
+} as const;
+
+export const TradingPlanResponseSchema = {
+    properties: {
+        success: {
+            type: 'boolean',
+            title: 'Success'
+        },
+        date: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Date'
+        },
+        generated_at: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Generated At'
+        },
+        strategy: {
+            type: 'string',
+            title: 'Strategy',
+            default: 'TopkDropout'
+        },
+        topk: {
+            type: 'integer',
+            title: 'Topk',
+            default: 50
+        },
+        n_drop: {
+            type: 'integer',
+            title: 'N Drop',
+            default: 5
+        },
+        target_weight_per_stock: {
+            type: 'number',
+            title: 'Target Weight Per Stock',
+            default: 2
+        },
+        slippage: {
+            type: 'number',
+            title: 'Slippage',
+            default: 0.001
+        },
+        portfolio_summary: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/PortfolioSummary'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        sell_orders: {
+            items: {
+                '$ref': '#/components/schemas/SellOrder'
+            },
+            type: 'array',
+            title: 'Sell Orders',
+            default: []
+        },
+        buy_orders: {
+            items: {
+                '$ref': '#/components/schemas/BuyOrder'
+            },
+            type: 'array',
+            title: 'Buy Orders',
+            default: []
+        },
+        hold_orders: {
+            items: {
+                '$ref': '#/components/schemas/HoldOrder'
+            },
+            type: 'array',
+            title: 'Hold Orders',
+            default: []
+        },
+        summary: {
+            anyOf: [
+                {
+                    '$ref': '#/components/schemas/PlanSummary'
+                },
+                {
+                    type: 'null'
+                }
+            ]
+        },
+        error: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error'
+        }
+    },
+    type: 'object',
+    required: ['success'],
+    title: 'TradingPlanResponse',
+    description: 'Response model for trading plan endpoint.'
 } as const;
 
 export const TrainingStartResponseSchema = {
@@ -1405,4 +2585,50 @@ export const ValidationErrorSchema = {
     type: 'object',
     required: ['loc', 'msg', 'type'],
     title: 'ValidationError'
+} as const;
+
+export const app__api__routes__online__ResetResponseSchema = {
+    properties: {
+        success: {
+            type: 'boolean',
+            title: 'Success'
+        },
+        message: {
+            type: 'string',
+            title: 'Message'
+        }
+    },
+    type: 'object',
+    required: ['success', 'message'],
+    title: 'ResetResponse',
+    description: 'Response model for reset endpoint.'
+} as const;
+
+export const app__api__routes__paper_trading__ResetResponseSchema = {
+    properties: {
+        success: {
+            type: 'boolean',
+            title: 'Success'
+        },
+        message: {
+            type: 'string',
+            title: 'Message',
+            default: ''
+        },
+        error: {
+            anyOf: [
+                {
+                    type: 'string'
+                },
+                {
+                    type: 'null'
+                }
+            ],
+            title: 'Error'
+        }
+    },
+    type: 'object',
+    required: ['success'],
+    title: 'ResetResponse',
+    description: 'Response model for reset endpoint.'
 } as const;

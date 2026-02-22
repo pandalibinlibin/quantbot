@@ -22,6 +22,7 @@ from app.models import (
     DownloadDataRequest,
     DownloadTaskResponse,
     ClearDataResponse,
+    DataHealthMetrics,
 )
 from app.services.data_utils import (
     clear_qlib_data,
@@ -271,3 +272,33 @@ def export_data_endpoint():
     except Exception as e:
         logger.error(f"Failed to export data: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to export data: {str(e)}")
+
+
+@router.get("/health", response_model=DataHealthMetrics)
+def get_data_health_endpoint():
+    """
+    Get data health metrics.
+
+    Educational Notes:
+    - Provides comprehensive data quality analysis
+    - Checks for missing data, anomalies, and integrity issues
+    - Based on Qlib's DataHealthChecker
+    - Results are cached from routine execution
+    """
+    try:
+        from app.services.data_health_service import get_data_health_service
+        from app.config.qlib import qlib_config
+
+        health_service = get_data_health_service()
+        freq = qlib_config.freq
+
+        # Perform health check
+        health_metrics = health_service.check_data_health(freq=freq)
+
+        return DataHealthMetrics(**health_metrics)
+
+    except Exception as e:
+        logger.error(f"Failed to get data health: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get data health: {str(e)}"
+        )

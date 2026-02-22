@@ -1320,3 +1320,66 @@ class PipelineStageResult(BaseModel):
     success: bool
     message: str
     error: Optional[str] = None
+
+
+# ============================================================================
+# Data Health Check Models
+# ============================================================================
+class MissingDataDetail(SQLModel):
+    """Details of missing data for a specific instrument."""
+
+    instrument: str = Field(description="Instrument code")
+    open: int = Field(description="Number of missing values in open column")
+    high: int = Field(description="Number of missing values in high column")
+    low: int = Field(description="Number of missing values in low column")
+    close: int = Field(description="Number of missing values in close column")
+    volume: int = Field(description="Number of missing values in volume column")
+
+
+class DataAnomaly(SQLModel):
+    """Details of a detected data anomaly (large step change)."""
+
+    instrument: str = Field(description="Instrument code")
+    column: str = Field(description="Column with anomaly (e.g., 'close', 'volume')")
+    date: str = Field(description="Date of anomaly occurrence")
+    pct_change: float = Field(description="Percentage change detected")
+
+
+class IntegrityChecks(SQLModel):
+    """Results of data integrity checks."""
+
+    required_columns: bool = Field(
+        description="Whether all required OHLCV columns exist"
+    )
+    factor_column: bool = Field(description="Whether factor column exists and has data")
+    directory_case: bool = Field(
+        description="Whether all feature directories are lowercase"
+    )
+
+
+class DataHealthMetrics(SQLModel):
+    """
+    Comprehensive data health metrics.
+
+    Educational Notes:
+    - Provides overview of data quality
+    - Includes both summary statistics and detailed lists
+    - Used for monitoring and alerting
+    """
+
+    data_exists: bool = Field(description="Whether data exists in qlib_data directory")
+    completeness_percentage: float = Field(
+        description="Percentage of complete data (0-100)"
+    )
+    missing_data_count: int = Field(
+        description="Number of instruments with missing data"
+    )
+    missing_data_details: List[MissingDataDetail] = Field(
+        description="Detailed list of missing data by instrument"
+    )
+    anomaly_count: int = Field(description="Number of detected anomalies")
+    anomalies: List[DataAnomaly] = Field(
+        description="Detailed list of anomalies detected"
+    )
+    integrity_checks: IntegrityChecks = Field(description="Results of integrity checks")
+    checked_at: str = Field(description="Timestamp when check was performed")
