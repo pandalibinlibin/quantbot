@@ -30,33 +30,6 @@ class TrainingStartResponse(BaseModel):
     error: Optional[str] = None
 
 
-class BacktestRequest(BaseModel):
-    """Request model for backtest endpoint."""
-
-    pred_path: Optional[str] = None  # Path to predictions file, None for latest
-    start_time: Optional[str] = None  # Backtest start time, None for auto-detect
-    end_time: Optional[str] = None  # Backtest end time, None for auto-detect
-    benchmark: str = "SH000300"  # Benchmark symbol
-    topk: int = 50  # Number of stocks to hold
-    n_drop: int = 5  # Number of stocks to drop each day
-    account: float = 100000000  # Initial account value
-
-
-class BacktestResponse(BaseModel):
-    """Response model for backtest endpoint."""
-
-    status: str
-    message: str
-    start_time: Optional[str] = None
-    end_time: Optional[str] = None
-    trading_days: int = 0
-    total_return: float = 0.0
-    total_cost: float = 0.0
-    net_return: float = 0.0
-    final_account: float = 0.0
-    error: Optional[str] = None
-
-
 class DataStatusResponse(BaseModel):
     """Response model for data status check."""
 
@@ -183,60 +156,6 @@ def list_models():
         "count": len(models),
         "models": models,
     }
-
-
-@router.post("/backtest", response_model=BacktestResponse)
-def execute_backtest(request: BacktestRequest = BacktestRequest()):
-    """
-    Execute backtest using latest predictions.
-
-    This endpoint runs backtest independently from training workflow.
-    It uses the latest predictions from MLflow artifacts.
-
-    Args:
-        request: Backtest configuration (all fields optional with defaults)
-
-    Returns:
-        Backtest results including returns and metrics
-    """
-    service = get_qlib_workflow_service()
-
-    try:
-        result = service.execute_backtest(
-            pred_path=request.pred_path,
-            start_time=request.start_time,
-            end_time=request.end_time,
-            benchmark=request.benchmark,
-            topk=request.topk,
-            n_drop=request.n_drop,
-            account=request.account,
-        )
-
-        if result.get("status") == "error":
-            return BacktestResponse(
-                status="error",
-                message="Backtest failed",
-                error=result.get("error"),
-            )
-
-        return BacktestResponse(
-            status="success",
-            message="Backtest completed successfully",
-            start_time=result.get("start_time"),
-            end_time=result.get("end_time"),
-            trading_days=result.get("trading_days", 0),
-            total_return=result.get("total_return", 0.0),
-            total_cost=result.get("total_cost", 0.0),
-            net_return=result.get("net_return", 0.0),
-            final_account=result.get("final_account", 0.0),
-        )
-
-    except Exception as e:
-        return BacktestResponse(
-            status="error",
-            message="Backtest failed",
-            error=str(e),
-        )
 
 
 @router.post("/training-workflow", response_model=TrainingWorkflowResponse)

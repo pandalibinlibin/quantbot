@@ -1,0 +1,338 @@
+"""
+Online Serving API routes.
+
+This module provides REST API endpoints for Qlib Online Serving operations:
+- POST /routine: Execute daily routine (main entry point)
+- GET /status: Get current status
+- GET /signals: Get latest trading signals
+- POST /backtest: Execute backtest using Online Serving signals
+- POST /reset: Reset state (for debugging)
+
+The routine endpoint is the main entry point that should be called
+by a scheduled task (e.g., cron job) after market close each day.
+"""
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional
+import logging
+
+from app.services.online_serving_service import get_online_serving_service
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+
+# Request/Response Models
+
+
+class RoutineRequest(BaseModel):
+    """Request model for routine endpoint."""
+
+    cur_time: Optional[str] = Field(
+        None,
+        description="Current time in YYYY-MM-DD format. None for latest.",
+        example="2025-02-22",
+    )
+
+
+class StepResult(BaseModel):
+    """Result of a single step in the routine."""
+
+    step: str
+    success: bool
+    duration_seconds: Optional[float] = None
+    details: Dict[str, Any] = {}
+
+
+class RoutineResponse(BaseModel):
+    """Response model for routine endpoint."""
+
+    success: bool
+    message: Optional[str] = None
+    cur_time: Optional[str] = None
+    executed_at: str
+    steps: List[StepResult] = []
+    total_duration_seconds: Optional[float] = None
+    error: Optional[str] = None
+
+
+class StatusResponse(BaseModel):
+    """Response model for status endpoint."""
+
+    is_initialized: bool
+    freq: str
+    last_routine_time: Optional[str] = None
+    initialization_error: Optional[str] = None
+    config: Dict[str, Any] = {}
+    online_models_count: Optional[int] = None
+    online_models_error: Optional[str] = None
+
+
+class SignalItem(BaseModel):
+    """Single signal item."""
+
+    datetime: Optional[str] = None
+    instrument: Optional[str] = None
+    key: Optional[str] = None
+    score: float
+
+
+class SignalsResponse(BaseModel):
+    """Response model for signals endpoint."""
+
+    success: bool
+    signal_count: int = 0
+    signals: List[SignalItem] = []
+    error: Optional[str] = None
+
+
+class ResetResponse(BaseModel):
+    """Response model for reset endpoint."""
+
+    success: bool
+    message: str
+
+
+# API Endpoints
+
+
+@router.post("/routine", response_model=RoutineResponse)
+def execute_routine(request: RoutineRequest = None):
+    """
+    Execute daily routine (main entry point).
+
+    This endpoint should be called by a scheduled task after market close.
+    It performs the following steps:
+    1. Auto-initializes Online Serving if not yet initialized
+    2. Updates data incrementally
+    3. Executes OnlineManager.routine() - checks training, updates models
+    4. Generates trading signals
+
+    The first call will take longer as it needs to initialize and train
+    initial models.
+    """
+    try:
+        service = get_online_serving_service()
+        cur_time = request.cur_time if request else None
+
+        logger.info(f"Executing routine with cur_time={cur_time}")
+        result = service.routine(cur_time=cur_time)
+
+        # Convert to response model
+        steps = [
+            StepResult(
+                step=s["step"],
+                success=s["success"],
+                duration_seconds=s.get("duration_seconds"),
+                details=s.get("details", {}),
+            )
+            for s in result.get("steps", [])
+        ]
+
+        return RoutineResponse(
+            success=result.get("success", False),
+            message=result.get("message"),
+            cur_time=result.get("cur_time"),
+            executed_at=result.get("executed_at", ""),
+            steps=steps,
+            total_duration_seconds=result.get("total_duration_seconds"),
+            error=result.get("error"),
+        )
+
+    except Exception as e:
+        logger.error(f"Routine execution failed: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Routine execution failed: {str(e)}"
+        )
+
+
+@router.get("/status", response_model=StatusResponse)
+def get_status():
+    """
+    Get current status of Online Serving.
+
+    Returns information about:
+    - Initialization state
+    - Data frequency
+    - Last routine execution time
+    - Configuration
+    - Online models count
+    """
+    try:
+        service = get_online_serving_service()
+        status = service.get_status()
+
+        return StatusResponse(**status)
+
+    except Exception as e:
+        logger.error(f"Failed to get status: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get status: {str(e)}")
+
+
+@router.get("/signals", response_model=SignalsResponse)
+def get_signals():
+    """
+    Get latest trading signals.
+
+    Returns the most recent trading signals generated by the online models.
+    Signals include stock codes and prediction scores.
+
+    Note: Returns at most 100 signals to limit response size.
+    """
+    try:
+        service = get_online_serving_service()
+        result = service.get_signals()
+
+        # Convert signals to response format
+        signals = []
+        for s in result.get("signals", []):
+            signals.append(
+                SignalItem(
+                    datetime=s.get("datetime"),
+                    instrument=s.get("instrument"),
+                    key=s.get("key"),
+                    score=s.get("score", 0.0),
+                )
+            )
+
+        return SignalsResponse(
+            success=result.get("success", False),
+            signal_count=result.get("signal_count", 0),
+            signals=signals,
+            error=result.get("error"),
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get signals: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get signals: {str(e)}")
+
+
+@router.post("/reset", response_model=ResetResponse)
+def reset_state():
+    """
+    Reset Online Serving state (for debugging).
+
+    This clears all state and allows re-initialization on the next
+    routine call. Use with caution in production.
+    """
+    try:
+        service = get_online_serving_service()
+        result = service.reset()
+
+        return ResetResponse(
+            success=result.get("success", False),
+            message=result.get("message", ""),
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to reset state: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to reset state: {str(e)}")
+
+
+# Backtest Models
+
+
+class BacktestRequest(BaseModel):
+    """Request model for backtest endpoint."""
+
+    benchmark: Optional[str] = Field(
+        None,
+        description="Benchmark symbol for comparison (default: SH000300)",
+        example="SH000300",
+    )
+    topk: Optional[int] = Field(
+        None,
+        description="Number of stocks to hold (default: 50)",
+        example=50,
+    )
+    n_drop: Optional[int] = Field(
+        None,
+        description="Number of stocks to drop each day (default: 5)",
+        example=5,
+    )
+    account: Optional[float] = Field(
+        None,
+        description="Initial account value (default: 100000000)",
+        example=100000000,
+    )
+
+
+class BacktestResponse(BaseModel):
+    """Response model for backtest endpoint."""
+
+    status: str
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    freq: Optional[str] = None
+    trading_days: Optional[int] = None
+    signal_count: Optional[int] = None
+    total_return: Optional[float] = None
+    total_cost: Optional[float] = None
+    net_return: Optional[float] = None
+    final_account: Optional[float] = None
+    topk: Optional[int] = None
+    n_drop: Optional[int] = None
+    benchmark: Optional[str] = None
+    error: Optional[str] = None
+
+
+@router.post("/backtest", response_model=BacktestResponse)
+def execute_backtest(request: Optional[BacktestRequest] = None):
+    """
+    Execute backtest using trained model on full historical data.
+
+    This endpoint:
+    1. Loads the latest trained model from Online Serving or MLflow
+    2. Creates a dataset with full historical data
+    3. Uses the model to generate predictions (signals) for all days
+    4. Executes backtest using the predictions with TopkDropout strategy
+
+    This is independent of /routine - it only requires a trained model to exist.
+
+    Args:
+        request: Backtest configuration (all fields optional with defaults)
+
+    Returns:
+        Backtest results including returns, metrics, and configuration
+    """
+    try:
+        service = get_online_serving_service()
+
+        # Use default values if no request body provided
+        if request is None:
+            request = BacktestRequest()
+
+        result = service.execute_backtest(
+            benchmark=request.benchmark,
+            topk=request.topk,
+            n_drop=request.n_drop,
+            account=request.account,
+        )
+
+        if result.get("status") == "error":
+            return BacktestResponse(
+                status="error",
+                error=result.get("error"),
+            )
+
+        return BacktestResponse(
+            status="success",
+            start_time=result.get("start_time"),
+            end_time=result.get("end_time"),
+            freq=result.get("freq"),
+            trading_days=result.get("trading_days"),
+            signal_count=result.get("signal_count"),
+            total_return=result.get("total_return"),
+            total_cost=result.get("total_cost"),
+            net_return=result.get("net_return"),
+            final_account=result.get("final_account"),
+            topk=result.get("topk"),
+            n_drop=result.get("n_drop"),
+            benchmark=result.get("benchmark"),
+        )
+
+    except Exception as e:
+        logger.error(f"Backtest failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Backtest failed: {str(e)}")

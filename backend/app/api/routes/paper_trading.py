@@ -1,0 +1,503 @@
+"""
+Paper Trading API routes.
+
+This module provides REST API endpoints for paper trading operations:
+- GET /portfolio: Get current portfolio status
+- POST /plan: Generate percentage-based trading plan
+- POST /execute: Execute paper trades
+- GET /trades: Get trade history
+- GET /performance: Get performance metrics
+- POST /reset: Reset paper trading state
+
+Key Design:
+- Trading plans use PERCENTAGES instead of absolute quantities
+- Sell orders: sell_pct (percentage of position to sell)
+- Buy orders: target_weight (percentage of total assets to allocate)
+- This ensures consistency between paper trading and real trading
+"""
+
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional
+import logging
+
+from app.services.paper_trading_service import get_paper_trading_service
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+
+# Request/Response Models
+
+
+class PositionItem(BaseModel):
+    """Single position item."""
+
+    instrument: str
+    shares: int
+    avg_cost: float
+    current_value: float
+
+
+class PortfolioResponse(BaseModel):
+    """Response model for portfolio endpoint."""
+
+    success: bool
+    cash: float = 0.0
+    positions: List[PositionItem] = []
+    position_count: int = 0
+    total_position_value: float = 0.0
+    total_value: float = 0.0
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+    error: Optional[str] = None
+
+
+class SellOrder(BaseModel):
+    """Sell order in trading plan."""
+
+    instrument: str
+    direction: str = "SELL"
+    sell_pct: float  # Percentage of position to sell (usually 100%)
+    current_weight: float  # Current weight in portfolio
+    reference_price: float
+    limit_price: float  # Limit order price (reference_price * (1 - max_slippage))
+    score: float
+    reason: str
+    instruction: str  # Trading instruction for trader
+
+
+class BuyOrder(BaseModel):
+    """Buy order in trading plan."""
+
+    instrument: str
+    direction: str = "BUY"
+    target_weight: float  # Target percentage of total assets
+    reference_price: float
+    limit_price: float  # Limit order price (reference_price * (1 + max_slippage))
+    score: float
+    instruction: str  # Trading instruction for trader
+    score_rank: int
+
+
+class HoldOrder(BaseModel):
+    """Hold order in trading plan."""
+
+    instrument: str
+    direction: str = "HOLD"
+    current_weight: float
+    target_weight: float
+    score: float
+    score_rank: int
+
+
+class PortfolioSummary(BaseModel):
+    """Portfolio summary in trading plan."""
+
+    total_value: float
+    cash: float
+    position_value: float
+    position_count: int
+
+
+class PlanSummary(BaseModel):
+    """Summary of trading plan."""
+
+    sell_count: int
+    buy_count: int
+    hold_count: int
+
+
+class TradingPlanRequest(BaseModel):
+    """Request model for trading plan endpoint."""
+
+    date: Optional[str] = Field(
+        None,
+        description="Date in YYYY-MM-DD format (None for latest)",
+        example="2026-02-13",
+    )
+    topk: int = Field(
+        50,
+        description="Number of stocks to hold",
+        ge=1,
+        le=500,
+    )
+    n_drop: int = Field(
+        5,
+        description="Number of stocks to drop each day",
+        ge=0,
+        le=50,
+    )
+    slippage: float = Field(
+        0.001,
+        description="Expected slippage for price estimation (default 0.1%)",
+        ge=0,
+        le=0.1,
+    )
+
+
+class TradingPlanResponse(BaseModel):
+    """Response model for trading plan endpoint."""
+
+    success: bool
+    date: Optional[str] = None
+    generated_at: Optional[str] = None
+    strategy: str = "TopkDropout"
+    topk: int = 50
+    n_drop: int = 5
+    target_weight_per_stock: float = 2.0
+    slippage: float = 0.001
+    portfolio_summary: Optional[PortfolioSummary] = None
+    sell_orders: List[SellOrder] = []
+    buy_orders: List[BuyOrder] = []
+    hold_orders: List[HoldOrder] = []
+    summary: Optional[PlanSummary] = None
+    error: Optional[str] = None
+
+
+class ExecuteRequest(BaseModel):
+    """Request model for execute endpoint."""
+
+    date: Optional[str] = Field(
+        None,
+        description="Date in YYYY-MM-DD format (None for latest)",
+        example="2026-02-13",
+    )
+    topk: int = Field(
+        50,
+        description="Number of stocks to hold",
+        ge=1,
+        le=500,
+    )
+    n_drop: int = Field(
+        5,
+        description="Number of stocks to drop each day",
+        ge=0,
+        le=50,
+    )
+    slippage: float = Field(
+        0.001,
+        description="Slippage for price simulation (default 0.1%)",
+        ge=0,
+        le=0.1,
+    )
+    dry_run: bool = Field(
+        False,
+        description="If True, simulate without saving",
+    )
+
+
+class TradeItem(BaseModel):
+    """Single trade item."""
+
+    date: str
+    instrument: str
+    action: str
+    shares: int
+    price: float
+    value: float
+    sell_pct: Optional[float] = None  # For sell orders
+    target_weight: Optional[float] = None  # For buy orders
+    executed_at: str
+
+
+class ExecuteResponse(BaseModel):
+    """Response model for execute endpoint."""
+
+    success: bool
+    date: Optional[str] = None
+    dry_run: bool = False
+    slippage: float = 0.001
+    sells_executed: int = 0
+    buys_executed: int = 0
+    executed_sells: List[TradeItem] = []
+    executed_buys: List[TradeItem] = []
+    final_cash: float = 0.0
+    final_position_count: int = 0
+    error: Optional[str] = None
+
+
+class TradesRequest(BaseModel):
+    """Request model for trades endpoint."""
+
+    limit: int = Field(
+        100,
+        description="Maximum number of trades to return",
+        ge=1,
+        le=1000,
+    )
+    instrument: Optional[str] = Field(
+        None,
+        description="Filter by instrument",
+    )
+
+
+class TradesResponse(BaseModel):
+    """Response model for trades endpoint."""
+
+    success: bool
+    total_trades: int = 0
+    trades: List[TradeItem] = []
+    error: Optional[str] = None
+
+
+class PerformanceResponse(BaseModel):
+    """Response model for performance endpoint."""
+
+    success: bool
+    initial_cash: float = 0.0
+    current_value: float = 0.0
+    total_return: float = 0.0
+    total_return_pct: str = "0.00%"
+    total_trades: int = 0
+    buy_trades: int = 0
+    sell_trades: int = 0
+    trading_days: int = 0
+    position_count: int = 0
+    error: Optional[str] = None
+
+
+class ResetResponse(BaseModel):
+    """Response model for reset endpoint."""
+
+    success: bool
+    message: str = ""
+    error: Optional[str] = None
+
+
+# API Endpoints
+
+
+@router.get("/portfolio", response_model=PortfolioResponse)
+def get_portfolio():
+    """
+    Get current portfolio status.
+
+    Returns cash balance, positions, and total value.
+    """
+    try:
+        service = get_paper_trading_service()
+        result = service.get_portfolio()
+
+        # Convert positions to response format
+        positions = [PositionItem(**p) for p in result.get("positions", [])]
+
+        return PortfolioResponse(
+            success=result.get("success", False),
+            cash=result.get("cash", 0.0),
+            positions=positions,
+            position_count=result.get("position_count", 0),
+            total_position_value=result.get("total_position_value", 0.0),
+            total_value=result.get("total_value", 0.0),
+            created_at=result.get("created_at"),
+            updated_at=result.get("updated_at"),
+            error=result.get("error"),
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get portfolio: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get portfolio: {str(e)}"
+        )
+
+
+@router.post("/plan", response_model=TradingPlanResponse)
+def get_trading_plan(request: TradingPlanRequest = None):
+    """
+    Generate a percentage-based trading plan.
+
+    Returns trading plan with:
+    - sell_orders: stocks to sell with sell_pct (percentage of position)
+    - buy_orders: stocks to buy with target_weight (percentage of total assets)
+    - hold_orders: stocks to hold
+
+    This plan can be given to traders for execution.
+    The percentage-based design ensures consistency between paper trading and real trading.
+    """
+    try:
+        service = get_paper_trading_service()
+
+        date = request.date if request else None
+        topk = request.topk if request else 50
+        n_drop = request.n_drop if request else 5
+        slippage = request.slippage if request else 0.001
+
+        result = service.get_trading_plan(
+            date=date, topk=topk, n_drop=n_drop, slippage=slippage
+        )
+
+        if not result.get("success"):
+            return TradingPlanResponse(
+                success=False,
+                error=result.get("error"),
+            )
+
+        # Convert to response format
+        sell_orders = [SellOrder(**s) for s in result.get("sell_orders", [])]
+        buy_orders = [BuyOrder(**b) for b in result.get("buy_orders", [])]
+        hold_orders = [HoldOrder(**h) for h in result.get("hold_orders", [])]
+
+        portfolio_summary = None
+        if result.get("portfolio_summary"):
+            portfolio_summary = PortfolioSummary(**result["portfolio_summary"])
+
+        summary = None
+        if result.get("summary"):
+            summary = PlanSummary(**result["summary"])
+
+        return TradingPlanResponse(
+            success=True,
+            date=result.get("date"),
+            generated_at=result.get("generated_at"),
+            strategy=result.get("strategy", "TopkDropout"),
+            topk=result.get("topk", topk),
+            n_drop=result.get("n_drop", n_drop),
+            target_weight_per_stock=result.get("target_weight_per_stock", 2.0),
+            slippage=result.get("slippage", slippage),
+            portfolio_summary=portfolio_summary,
+            sell_orders=sell_orders,
+            buy_orders=buy_orders,
+            hold_orders=hold_orders,
+            summary=summary,
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to generate trading plan: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to generate trading plan: {str(e)}"
+        )
+
+
+@router.post("/execute", response_model=ExecuteResponse)
+def execute_trades(request: ExecuteRequest = None):
+    """
+    Execute paper trades based on percentage-based trading plan.
+
+    Uses market order simulation with slippage:
+    - Buy price = reference_price * (1 + slippage)
+    - Sell price = reference_price * (1 - slippage)
+
+    Use dry_run=True to simulate without saving.
+    """
+    try:
+        service = get_paper_trading_service()
+
+        date = request.date if request else None
+        topk = request.topk if request else 50
+        n_drop = request.n_drop if request else 5
+        slippage = request.slippage if request else 0.001
+        dry_run = request.dry_run if request else False
+
+        result = service.execute_trades(
+            date=date, topk=topk, n_drop=n_drop, slippage=slippage, dry_run=dry_run
+        )
+
+        # Convert trades to response format
+        executed_sells = [TradeItem(**t) for t in result.get("executed_sells", [])]
+        executed_buys = [TradeItem(**t) for t in result.get("executed_buys", [])]
+
+        return ExecuteResponse(
+            success=result.get("success", False),
+            date=result.get("date"),
+            dry_run=result.get("dry_run", False),
+            slippage=result.get("slippage", slippage),
+            sells_executed=result.get("sells_executed", 0),
+            buys_executed=result.get("buys_executed", 0),
+            executed_sells=executed_sells,
+            executed_buys=executed_buys,
+            final_cash=result.get("final_cash", 0.0),
+            final_position_count=result.get("final_position_count", 0),
+            error=result.get("error"),
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to execute trades: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to execute trades: {str(e)}"
+        )
+
+
+@router.get("/trades", response_model=TradesResponse)
+def get_trade_history(limit: int = 100, instrument: Optional[str] = None):
+    """
+    Get trade history.
+
+    Returns list of executed trades, optionally filtered by instrument.
+    """
+    try:
+        service = get_paper_trading_service()
+        result = service.get_trade_history(limit=limit, instrument=instrument)
+
+        # Convert trades to response format
+        trades = [TradeItem(**t) for t in result.get("trades", [])]
+
+        return TradesResponse(
+            success=result.get("success", False),
+            total_trades=result.get("total_trades", 0),
+            trades=trades,
+            error=result.get("error"),
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get trade history: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get trade history: {str(e)}"
+        )
+
+
+@router.get("/performance", response_model=PerformanceResponse)
+def get_performance():
+    """
+    Get paper trading performance metrics.
+
+    Returns total return, trade statistics, and other metrics.
+    """
+    try:
+        service = get_paper_trading_service()
+        result = service.get_performance()
+
+        return PerformanceResponse(
+            success=result.get("success", False),
+            initial_cash=result.get("initial_cash", 0.0),
+            current_value=result.get("current_value", 0.0),
+            total_return=result.get("total_return", 0.0),
+            total_return_pct=result.get("total_return_pct", "0.00%"),
+            total_trades=result.get("total_trades", 0),
+            buy_trades=result.get("buy_trades", 0),
+            sell_trades=result.get("sell_trades", 0),
+            trading_days=result.get("trading_days", 0),
+            position_count=result.get("position_count", 0),
+            error=result.get("error"),
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get performance: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get performance: {str(e)}"
+        )
+
+
+@router.post("/reset", response_model=ResetResponse)
+def reset_paper_trading():
+    """
+    Reset paper trading state.
+
+    Clears all positions, trades, and daily records.
+    Use with caution - this cannot be undone.
+    """
+    try:
+        service = get_paper_trading_service()
+        result = service.reset()
+
+        return ResetResponse(
+            success=result.get("success", False),
+            message=result.get("message", ""),
+            error=result.get("error"),
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to reset paper trading: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to reset paper trading: {str(e)}"
+        )

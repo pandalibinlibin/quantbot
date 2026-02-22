@@ -1,0 +1,983 @@
+"""
+Qlib Online Serving Service
+
+This service manages the complete Qlib Online Serving workflow:
+- Auto-initialization on first routine call
+- Data incremental update
+- Rolling model training (via TrainerRM + MongoDB)
+- Signal generation
+- Integration with paper trading (Phase 4)
+
+Key Components:
+- OnlineManager: Manages online strategies and models
+- RollingStrategy: Defines rolling training strategy
+- TrainerRM: Trainer based on TaskManager (MongoDB)
+- RollingGen: Generates rolling tasks
+
+Usage:
+    service = get_online_serving_service()
+    result = service.routine()  # Auto-initializes if needed
+"""
+
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+from app.core.config import settings
+from app.services.qlib_init_service import get_qlib_init_service
+
+logger = logging.getLogger(__name__)
+
+
+class OnlineServingService:
+    """
+    Qlib Online Serving Service
+
+    Manages the complete online serving workflow including:
+    - Auto-initialization on first routine call
+    - Data incremental update
+    - Rolling model training
+    - Signal generation
+    """
+
+    def __init__(self):
+        """Initialize the Online Serving service."""
+        self._online_manager = None
+        self._is_initialized: bool = False
+        self._freq: str = "day"
+        self._last_routine_time: Optional[datetime] = None
+        self._initialization_error: Optional[str] = None
+        self.logger = logger
+
+    @property
+    def is_initialized(self) -> bool:
+        """Check if OnlineManager is initialized."""
+        return self._is_initialized and self._online_manager is not None
+
+    def _detect_data_frequency(self) -> str:
+        """
+        Detect data frequency based on available bin data.
+
+        Returns:
+            "day" or "1min" based on available data
+        """
+        # Check if minute data exists and has actual data
+        min_data_path = Path(settings.QLIB_DATA_PATH_1MIN)
+        if min_data_path.exists():
+            bin_files = list(min_data_path.glob("**/*.bin"))
+            if bin_files:
+                self.logger.info("Detected minute-level data, using freq='1min'")
+                return "1min"
+
+        # Default to day frequency
+        self.logger.info("Using default day-level frequency")
+        return "day"
+
+    def _ensure_qlib_initialized(self) -> bool:
+        """
+        Ensure Qlib is initialized before any operation.
+
+        Returns:
+            True if Qlib is initialized successfully
+        """
+        qlib_service = get_qlib_init_service()
+        # Note: is_initialized is a method, not a property
+        if not qlib_service.is_initialized():
+            self.logger.info("Initializing Qlib...")
+            qlib_service.initialize()
+        return qlib_service.is_initialized()
+
+    def _get_data_time_range(self) -> tuple:
+        """
+        Get data time range from Qlib calendar.
+
+        Returns:
+            Tuple of (start_time, end_time) as strings
+        """
+        from qlib.data import D
+
+        try:
+            # Get calendar for the detected frequency
+            cal = D.calendar(freq=self._freq)
+            if cal is not None and len(cal) > 0:
+                start_time = cal[0].strftime("%Y-%m-%d")
+                end_time = cal[-1].strftime("%Y-%m-%d")
+                self.logger.info(f"Data time range: {start_time} to {end_time}")
+                return start_time, end_time
+        except Exception as e:
+            self.logger.warning(f"Failed to get calendar: {e}")
+
+        # Fallback to default range
+        return "2020-01-01", "2025-12-31"
+
+    def _build_task_template(self) -> Dict[str, Any]:
+        """
+        Build task template for RollingStrategy.
+
+        This template defines the model, dataset, and record configuration
+        for rolling training tasks. Uses dynamic detection for:
+        - Data frequency (day/1min)
+        - Time range (from actual data)
+        - Instruments (all available stocks)
+
+        Returns:
+            Task template dictionary
+        """
+        # Detect frequency
+        self._freq = self._detect_data_frequency()
+
+        # Get actual data time range
+        start_time, end_time = self._get_data_time_range()
+
+        # Build task template based on frequency
+        # Use CustomFactorHandler and "all" instruments like training_config.yaml
+        task_template = {
+            "model": {
+                "class": "LGBModel",
+                "module_path": "qlib.contrib.model.gbdt",
+                "kwargs": {
+                    "loss": "mse",
+                    "colsample_bytree": 0.8879,
+                    "learning_rate": 0.05,
+                    "subsample": 0.8789,
+                    "lambda_l1": 205.6999,
+                    "lambda_l2": 580.9768,
+                    "max_depth": 8,
+                    "num_leaves": 210,
+                    "num_threads": 4,
+                    "num_boost_round": 100,
+                    "verbose": -1,
+                },
+            },
+            "dataset": {
+                "class": "DatasetH",
+                "module_path": "qlib.data.dataset",
+                "kwargs": {
+                    "handler": {
+                        "class": "CustomFactorHandler",
+                        "module_path": "app.services.custom_factor_handler",
+                        "kwargs": {
+                            "start_time": start_time,
+                            "end_time": end_time,
+                            "fit_start_time": start_time,
+                            "fit_end_time": end_time,
+                            "instruments": "all",
+                            "freq": self._freq,
+                            "enable_alpha158": False,
+                        },
+                    },
+                    "segments": {
+                        "train": (start_time, end_time),
+                        "valid": (start_time, end_time),
+                        "test": (start_time, end_time),
+                    },
+                },
+            },
+            "record": [
+                {
+                    "class": "SignalRecord",
+                    "module_path": "qlib.workflow.record_temp",
+                },
+            ],
+        }
+
+        return task_template
+
+    def _get_latest_data_date(self) -> Optional[str]:
+        """
+        Get the latest date available in Qlib data.
+
+        Returns:
+            Latest date string in YYYY-MM-DD format, or None if not available
+        """
+        try:
+            import qlib
+            from qlib.data import D
+
+            # Get calendar (trading days)
+            calendar = D.calendar(freq=self._freq)
+            if calendar is not None and len(calendar) > 0:
+                latest_date = calendar[-1]
+                # Convert to string format
+                if hasattr(latest_date, "strftime"):
+                    return latest_date.strftime("%Y-%m-%d")
+                return str(latest_date)[:10]
+            return None
+        except Exception as e:
+            self.logger.warning(f"Failed to get latest data date: {e}")
+            return None
+
+    def _prepare_signals_with_online_filter(self) -> None:
+        """
+        Re-prepare signals using only "online" tagged recorders.
+
+        This fixes the issue where offline recorders' predictions (with older data)
+        override online recorders' predictions (with latest data) due to duplicate
+        rec_key in RollingStrategy.get_collector().
+        """
+        try:
+            from qlib.workflow.online.utils import OnlineToolR
+            from qlib.model.ens.ensemble import RollingEnsemble, AverageEnsemble
+            from qlib.workflow.task.collect import MergeCollector
+
+            # Create OnlineToolR instance to access get_online_tag method
+            online_tool = OnlineToolR()
+
+            # Create filter function to only use "online" tagged recorders
+            def online_filter(rec):
+                return online_tool.get_online_tag(rec) == OnlineToolR.ONLINE_TAG
+
+            # Get collector with online filter for each strategy
+            collector_dict = {}
+            for strategy in self._online_manager.strategies:
+                # Get collector with rec_filter_func to filter only online recorders
+                collector = strategy.get_collector(
+                    process_list=[RollingEnsemble()], rec_filter_func=online_filter
+                )
+                collector_dict[strategy.name_id] = collector
+
+            # Merge collectors
+            merge_collector = MergeCollector(collector_dict, process_list=[])
+
+            # Prepare signals using AverageEnsemble
+            signals = AverageEnsemble()(merge_collector())
+
+            # Update OnlineManager's signals
+            self._online_manager.signals = signals
+
+            self.logger.info(
+                f"Re-prepared signals with online filter, total {len(signals)} signals"
+            )
+
+            # Log date range for verification
+            if signals is not None and len(signals) > 0:
+                dates = signals.index.get_level_values("datetime").unique()
+                self.logger.info(f"Signal date range: {dates.min()} to {dates.max()}")
+
+        except Exception as e:
+            self.logger.error(f"Failed to re-prepare signals with online filter: {e}")
+            raise
+
+    def _auto_init(self) -> Dict[str, Any]:
+        """
+        Auto-initialize OnlineManager on first routine call.
+
+        This method:
+        1. Ensures Qlib is initialized
+        2. Creates RollingGen for rolling task generation
+        3. Creates RollingStrategy with task template
+        4. Creates TrainerRM (MongoDB-based trainer)
+        5. Creates OnlineManager
+        6. Calls first_train() to train initial models
+
+        Returns:
+            Initialization result dictionary
+        """
+        try:
+            self.logger.info("Auto-initializing Online Serving...")
+
+            # Ensure Qlib is initialized
+            if not self._ensure_qlib_initialized():
+                raise RuntimeError("Failed to initialize Qlib")
+
+            # Import Qlib components
+            from qlib.workflow.online.manager import OnlineManager
+            from qlib.workflow.online.strategy import RollingStrategy
+            from qlib.workflow.task.gen import RollingGen
+            from qlib.model.trainer import TrainerRM
+
+            # Configure MongoDB for TaskManager
+            import qlib
+
+            qlib.config.C["mongo"] = {
+                "task_url": settings.MONGODB_URI,
+                "task_db_name": settings.MONGODB_DATABASE,
+            }
+
+            # Set MLflow/Recorder path
+            mlruns_path = Path(settings.QLIB_MLRUNS_PATH)
+            mlruns_path.mkdir(parents=True, exist_ok=True)
+
+            # Build task template (this also sets self._freq)
+            task_template = self._build_task_template()
+
+            # Get begin_time from data range
+            start_time, end_time = self._get_data_time_range()
+
+            # Create RollingGen
+            rolling_gen = RollingGen(
+                step=settings.ONLINE_SERVING_ROLLING_STEP,
+                rtype=settings.ONLINE_SERVING_ROLLING_TYPE,
+            )
+
+            # Create RollingStrategy
+            experiment_name = settings.ONLINE_SERVING_EXPERIMENT_NAME
+            strategy = RollingStrategy(
+                name_id=experiment_name,
+                task_template=task_template,
+                rolling_gen=rolling_gen,
+            )
+
+            # Create TrainerRM (MongoDB-based)
+            trainer = TrainerRM(
+                experiment_name=experiment_name,
+                task_pool=experiment_name,
+            )
+
+            # Create OnlineManager with dynamic begin_time
+            self._online_manager = OnlineManager(
+                strategies=strategy,
+                trainer=trainer,
+                begin_time=start_time,
+                freq=self._freq,
+            )
+
+            # First train - train initial models
+            self.logger.info("Executing first_train() to train initial models...")
+            self._online_manager.first_train()
+
+            self._is_initialized = True
+            self._initialization_error = None
+
+            # Generate initial signals by calling routine with latest data date
+            # This ensures signals are generated up to the latest available data
+            self.logger.info(f"Generating initial signals up to {end_time}...")
+            self._online_manager.routine(cur_time=end_time)
+
+            # Re-prepare signals with online-only filter to fix the issue where
+            # offline recorders' predictions override online recorders' predictions
+            self._prepare_signals_with_online_filter()
+
+            self.logger.info("Online Serving initialized successfully")
+
+            return {
+                "success": True,
+                "message": "Online Serving initialized successfully",
+                "experiment_name": experiment_name,
+                "rolling_step": settings.ONLINE_SERVING_ROLLING_STEP,
+                "rolling_type": settings.ONLINE_SERVING_ROLLING_TYPE,
+                "freq": self._freq,
+            }
+
+        except Exception as e:
+            self._initialization_error = str(e)
+            self.logger.error(f"Failed to initialize Online Serving: {e}")
+            raise
+
+    def routine(self, cur_time: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Execute daily routine (main entry point).
+
+        This method:
+        1. Auto-initializes if not yet initialized
+        2. Updates data incrementally
+        3. Calls OnlineManager.routine() - checks training, updates models, generates signals
+        4. Returns execution result with step timing
+
+        Args:
+            cur_time: Current time string (YYYY-MM-DD), None for latest
+
+        Returns:
+            Execution result dictionary with step timing
+        """
+        import time
+
+        routine_start = time.time()
+        result = {
+            "success": False,
+            "cur_time": cur_time,
+            "executed_at": datetime.now().isoformat(),
+            "steps": [],
+            "total_duration_seconds": 0,
+        }
+
+        try:
+            # Step 1: Auto-initialize if needed
+            if not self.is_initialized:
+                step_start = time.time()
+                self.logger.info("Online Serving not initialized, auto-initializing...")
+                init_result = self._auto_init()
+                step_duration = time.time() - step_start
+                result["steps"].append(
+                    {
+                        "step": "initialization",
+                        "success": True,
+                        "duration_seconds": round(step_duration, 2),
+                        "details": init_result,
+                    }
+                )
+
+            # Step 2: Update data incrementally
+            step_start = time.time()
+            self.logger.info("Updating data incrementally...")
+            data_update_result = self._update_data_incrementally()
+            step_duration = time.time() - step_start
+            result["steps"].append(
+                {
+                    "step": "data_update",
+                    "success": data_update_result.get("success", False),
+                    "duration_seconds": round(step_duration, 2),
+                    "details": data_update_result,
+                }
+            )
+
+            # Step 3: Execute OnlineManager routine
+            step_start = time.time()
+
+            # Use latest data date if cur_time is None or invalid
+            effective_cur_time = cur_time
+            if effective_cur_time is None:
+                # Get latest date from data
+                effective_cur_time = self._get_latest_data_date()
+                self.logger.info(
+                    f"cur_time not provided, using latest data date: {effective_cur_time}"
+                )
+            else:
+                # Validate cur_time - if it's earlier than data range, use latest data date
+                latest_data_date = self._get_latest_data_date()
+                if latest_data_date and effective_cur_time < latest_data_date:
+                    self.logger.warning(
+                        f"Provided cur_time {effective_cur_time} is earlier than latest data date {latest_data_date}, "
+                        f"using latest data date instead"
+                    )
+                    effective_cur_time = latest_data_date
+
+            self.logger.info(
+                f"Executing OnlineManager routine with cur_time={effective_cur_time}..."
+            )
+            self._online_manager.routine(cur_time=effective_cur_time)
+
+            # Re-prepare signals with online-only filter to fix the issue where
+            # offline recorders' predictions override online recorders' predictions
+            self._prepare_signals_with_online_filter()
+
+            step_duration = time.time() - step_start
+            result["steps"].append(
+                {
+                    "step": "online_manager_routine",
+                    "success": True,
+                    "duration_seconds": round(step_duration, 2),
+                    "details": {"message": "OnlineManager routine completed"},
+                }
+            )
+
+            # Step 4: Get signals (for logging/verification)
+            step_start = time.time()
+            signals = self._online_manager.get_signals()
+            signal_count = len(signals) if signals is not None else 0
+            step_duration = time.time() - step_start
+            result["steps"].append(
+                {
+                    "step": "signal_generation",
+                    "success": True,
+                    "duration_seconds": round(step_duration, 2),
+                    "details": {"signal_count": signal_count},
+                }
+            )
+
+            self._last_routine_time = datetime.now()
+            result["success"] = True
+            result["message"] = "Routine completed successfully"
+            result["total_duration_seconds"] = round(time.time() - routine_start, 2)
+
+            self.logger.info(
+                f"Routine completed successfully, generated {signal_count} signals"
+            )
+
+        except Exception as e:
+            result["success"] = False
+            result["error"] = str(e)
+            result["total_duration_seconds"] = round(time.time() - routine_start, 2)
+            self.logger.error(f"Routine failed: {e}")
+
+        return result
+
+    def _update_data_incrementally(self) -> Dict[str, Any]:
+        """
+        Update data incrementally or download default data if none exists.
+
+        Logic:
+        1. If bin data exists: perform incremental update on existing data
+        2. If no data exists: download CSI300 daily data (past 1 year) as default
+
+        Returns:
+            Data update result dictionary
+        """
+        try:
+            day_data_path = Path(settings.QLIB_DATA_PATH)
+            min_data_path = Path(settings.QLIB_DATA_PATH_1MIN)
+
+            has_day_data = day_data_path.exists() and any(
+                day_data_path.glob("**/*.bin")
+            )
+            has_min_data = min_data_path.exists() and any(
+                min_data_path.glob("**/*.bin")
+            )
+
+            # Case 1: No data exists - download default CSI300 daily data (past 1 year)
+            if not has_day_data and not has_min_data:
+                self.logger.info(
+                    "No data found, downloading default CSI300 daily data (past 1 year)..."
+                )
+                return self._download_default_data()
+
+            # Case 2: Data exists - perform incremental update
+            self.logger.info("Data exists, performing incremental update...")
+            return self._perform_incremental_update(has_day_data, has_min_data)
+
+        except Exception as e:
+            self.logger.error(f"Data update failed: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+            }
+
+    def _download_default_data(self) -> Dict[str, Any]:
+        """
+        Download default CSI300 daily data (past 1 year) when no data exists.
+
+        Returns:
+            Download result dictionary
+        """
+        try:
+            from app.services.data_collectors.pipeline import execute_data_pipeline
+            from app.models import DownloadDataRequest
+            from datetime import datetime, timedelta
+
+            # Calculate date range: past 1 year
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=365)
+
+            request = DownloadDataRequest(
+                stock_pool="csi300",
+                start_date=start_date.strftime("%Y-%m-%d"),
+                end_date=end_date.strftime("%Y-%m-%d"),
+                incremental=False,
+                interval="1d",
+            )
+
+            self.logger.info(
+                f"Downloading CSI300 daily data from {request.start_date} to {request.end_date}..."
+            )
+
+            result = execute_data_pipeline(request)
+
+            if result.status == "started":
+                self.logger.info("Default CSI300 data download started successfully")
+                return {
+                    "success": True,
+                    "message": "Downloaded default CSI300 daily data (past 1 year)",
+                    "task_id": result.task_id,
+                    "stock_pool": "csi300",
+                    "start_date": request.start_date,
+                    "end_date": request.end_date,
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": f"Download failed: {result.message}",
+                }
+
+        except Exception as e:
+            self.logger.error(f"Failed to download default data: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+            }
+
+    def _perform_incremental_update(
+        self, has_day_data: bool, has_min_data: bool
+    ) -> Dict[str, Any]:
+        """
+        Perform incremental update on existing data.
+
+        Args:
+            has_day_data: Whether daily data exists
+            has_min_data: Whether minute data exists
+
+        Returns:
+            Update result dictionary
+        """
+        try:
+            from app.services.data_collectors.pipeline import execute_data_pipeline
+            from app.models import DownloadDataRequest
+            from datetime import datetime, timedelta
+            import json
+
+            # Read stock_pool from metadata.json (saved during initial download)
+            metadata_file = Path(settings.QLIB_DATA_PATH) / "metadata.json"
+            stock_pool = None
+
+            if metadata_file.exists():
+                try:
+                    with open(metadata_file, "r") as f:
+                        metadata = json.load(f)
+                        stock_pool = metadata.get("stock_pool")
+                        self.logger.info(f"Read stock_pool from metadata: {stock_pool}")
+                except Exception as e:
+                    self.logger.warning(f"Failed to read metadata.json: {e}")
+
+            # Validate stock_pool - must be a supported value
+            supported_pools = ["csi300", "csi500", "sp500", "nasdaq100"]
+            if not stock_pool or stock_pool not in supported_pools:
+                stock_pool = "csi300"  # Default to csi300
+                self.logger.warning(
+                    f"No valid stock_pool in metadata, using default 'csi300'"
+                )
+
+            # Determine which data to update
+            interval = "1d" if has_day_data else "1m"
+
+            # For incremental update, use the last 30 days as the range
+            # The pipeline will detect and fill gaps
+            request = DownloadDataRequest(
+                stock_pool=stock_pool,
+                start_date=(datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d"),
+                end_date=datetime.now().strftime("%Y-%m-%d"),
+                incremental=True,
+                interval=interval,
+            )
+
+            self.logger.info(
+                f"Performing incremental update for {interval} data, stock_pool={stock_pool}..."
+            )
+
+            result = execute_data_pipeline(request)
+
+            return {
+                "success": True,
+                "message": "Incremental update completed",
+                "task_id": result.task_id,
+                "stock_pool": stock_pool,
+                "has_day_data": has_day_data,
+                "has_min_data": has_min_data,
+                "interval": interval,
+            }
+
+        except Exception as e:
+            self.logger.error(f"Incremental update failed: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "has_day_data": has_day_data,
+                "has_min_data": has_min_data,
+            }
+
+    def get_signals(self, limit: Optional[int] = 100) -> Dict[str, Any]:
+        """
+        Get latest trading signals.
+
+        Args:
+            limit: Maximum number of signals to return. None for all signals.
+
+        Returns:
+            Trading signals dictionary
+        """
+        if not self.is_initialized:
+            return {
+                "success": False,
+                "error": "Online Serving not initialized",
+                "signals": None,
+            }
+
+        try:
+            signals = self._online_manager.get_signals()
+
+            # Convert signals to serializable format
+            if signals is not None:
+                # Signals are typically a pandas Series or DataFrame
+                signals_list = []
+                if hasattr(signals, "to_dict"):
+                    signals_dict = signals.to_dict()
+                    for key, value in signals_dict.items():
+                        if isinstance(key, tuple):
+                            # MultiIndex: (datetime, instrument)
+                            signals_list.append(
+                                {
+                                    "datetime": str(key[0]),
+                                    "instrument": str(key[1]),
+                                    "score": float(value),
+                                }
+                            )
+                        else:
+                            signals_list.append(
+                                {
+                                    "key": str(key),
+                                    "score": float(value),
+                                }
+                            )
+
+                # Apply limit if specified
+                result_signals = signals_list if limit is None else signals_list[:limit]
+                return {
+                    "success": True,
+                    "signal_count": len(signals_list),
+                    "signals": result_signals,
+                }
+            else:
+                return {
+                    "success": True,
+                    "signal_count": 0,
+                    "signals": [],
+                }
+
+        except Exception as e:
+            self.logger.error(f"Failed to get signals: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "signals": None,
+            }
+
+    def execute_backtest(
+        self,
+        benchmark: Optional[str] = None,
+        topk: Optional[int] = None,
+        n_drop: Optional[int] = None,
+        account: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """
+        Execute backtest using signals from OnlineManager.
+
+        This method:
+        1. Auto-initializes OnlineManager if not initialized (loads models from MongoDB)
+        2. Gets signals from OnlineManager (ensemble of all rolling-trained models)
+        3. Executes backtest using the signals with TopkDropout strategy
+
+        The signals are generated by multiple rolling-trained models, each responsible
+        for a specific time window. OnlineManager handles the ensemble logic.
+
+        Args:
+            benchmark: Benchmark symbol for comparison (default: SH000300)
+            topk: Number of stocks to hold (default: 50)
+            n_drop: Number of stocks to drop each day (default: 5)
+            account: Initial account value (default: 100000000)
+
+        Returns:
+            Dictionary with backtest results
+        """
+        import pandas as pd
+        from qlib.contrib.strategy import TopkDropoutStrategy
+        from qlib.backtest import backtest as backtest_func
+        from qlib.backtest.executor import SimulatorExecutor
+        from qlib.utils.time import Freq
+
+        # Default values
+        benchmark = benchmark or "SH000300"
+        topk = topk or 50
+        n_drop = n_drop or 5
+        account = account or 100000000
+
+        try:
+            # Ensure Qlib is initialized
+            if not self._ensure_qlib_initialized():
+                return {
+                    "status": "error",
+                    "error": "Failed to initialize Qlib",
+                }
+
+            # Detect frequency
+            freq = self._detect_data_frequency()
+            self.logger.info(f"Backtest using freq: {freq}")
+
+            # Step 1: Auto-initialize OnlineManager if not initialized
+            # This loads trained models from MongoDB
+            if not self.is_initialized:
+                self.logger.info("Auto-initializing OnlineManager for backtest...")
+                init_result = self._auto_init()
+                if not init_result.get("success"):
+                    return {
+                        "status": "error",
+                        "error": f"Failed to initialize OnlineManager: {init_result.get('error', 'Unknown error')}",
+                    }
+
+            # Step 2: Get signals from OnlineManager
+            # OnlineManager handles multi-model ensemble and generates signals for all time periods
+            pred = self._online_manager.get_signals()
+            if pred is None or len(pred) == 0:
+                return {
+                    "status": "error",
+                    "error": "No signals available. OnlineManager may not have trained models.",
+                }
+
+            self.logger.info(
+                f"Using {len(pred)} signals from OnlineManager for backtest"
+            )
+
+            # Step 3: Get time range from predictions
+            dt_values = pred.index.get_level_values("datetime")
+            signal_start = dt_values.min()
+            signal_end = dt_values.max()
+
+            self.logger.info(
+                f"Signal date range: {signal_start} to {signal_end}, "
+                f"unique dates: {len(dt_values.unique())}"
+            )
+
+            bt_start_time = str(signal_start)[:10]
+            # Shift back by 1 day because backtest needs next day's return
+            if freq == "day":
+                bt_end_time = str(signal_end - pd.Timedelta(days=1))[:10]
+            else:
+                bt_end_time = str(signal_end - pd.Timedelta(minutes=1))
+
+            self.logger.info(f"Backtest period: {bt_start_time} to {bt_end_time}")
+
+            # Step 4: Create strategy with predictions as signals
+            strategy = TopkDropoutStrategy(
+                signal=pred,
+                topk=topk,
+                n_drop=n_drop,
+            )
+
+            # Exchange configuration
+            exchange_kwargs = {
+                "freq": freq,
+                "limit_threshold": 0.095,
+                "deal_price": "close",
+                "open_cost": 0.0003,
+                "close_cost": 0.0013,
+                "min_cost": 5,
+            }
+
+            # Create executor
+            executor_config = {
+                "time_per_step": freq,
+                "generate_portfolio_metrics": True,
+            }
+            executor = SimulatorExecutor(**executor_config)
+
+            # Step 7: Execute backtest
+            portfolio_metric_dict, indicator_dict = backtest_func(
+                start_time=bt_start_time,
+                end_time=bt_end_time,
+                strategy=strategy,
+                executor=executor,
+                account=account,
+                benchmark=benchmark,
+                exchange_kwargs=exchange_kwargs,
+            )
+
+            # Extract report
+            analysis_freq = "{0}{1}".format(*Freq.parse(freq))
+            report_df, positions = portfolio_metric_dict.get(analysis_freq)
+
+            # Calculate metrics
+            total_return = (
+                report_df["return"].sum() if "return" in report_df.columns else 0
+            )
+            total_cost = report_df["cost"].sum() if "cost" in report_df.columns else 0
+
+            result = {
+                "status": "success",
+                "start_time": bt_start_time,
+                "end_time": bt_end_time,
+                "freq": freq,
+                "trading_days": len(report_df),
+                "signal_count": len(pred),
+                "total_return": float(total_return),
+                "total_cost": float(total_cost),
+                "net_return": float(total_return - total_cost),
+                "final_account": (
+                    float(report_df["account"].iloc[-1])
+                    if "account" in report_df.columns
+                    else account
+                ),
+                "topk": topk,
+                "n_drop": n_drop,
+                "benchmark": benchmark,
+            }
+
+            self.logger.info(
+                f"Backtest completed: {result['trading_days']} trading days, "
+                f"return={result['total_return']:.4f}"
+            )
+            return result
+
+        except Exception as e:
+            self.logger.error(f"Backtest failed: {e}")
+            return {
+                "status": "error",
+                "error": str(e),
+            }
+
+    def get_status(self) -> Dict[str, Any]:
+        """
+        Get current status of Online Serving.
+
+        Returns:
+            Status dictionary
+        """
+        status = {
+            "is_initialized": self.is_initialized,
+            "freq": self._freq,
+            "last_routine_time": (
+                self._last_routine_time.isoformat() if self._last_routine_time else None
+            ),
+            "initialization_error": self._initialization_error,
+            "config": {
+                "experiment_name": settings.ONLINE_SERVING_EXPERIMENT_NAME,
+                "rolling_step": settings.ONLINE_SERVING_ROLLING_STEP,
+                "rolling_type": settings.ONLINE_SERVING_ROLLING_TYPE,
+                "mongodb_uri": settings.MONGODB_URI,
+                "mlruns_path": settings.QLIB_MLRUNS_PATH,
+            },
+        }
+
+        # Add online models info if initialized
+        if self.is_initialized and self._online_manager is not None:
+            try:
+                # Get online models from strategy
+                strategies = self._online_manager.strategies
+                if strategies:
+                    strategy = (
+                        strategies[0] if isinstance(strategies, list) else strategies
+                    )
+                    if hasattr(strategy, "tool") and strategy.tool is not None:
+                        online_models = strategy.tool.online_models()
+                        status["online_models_count"] = (
+                            len(online_models) if online_models else 0
+                        )
+            except Exception as e:
+                status["online_models_error"] = str(e)
+
+        return status
+
+    def reset(self) -> Dict[str, Any]:
+        """
+        Reset Online Serving state (for debugging).
+
+        This clears all state and allows re-initialization.
+
+        Returns:
+            Reset result dictionary
+        """
+        self._online_manager = None
+        self._is_initialized = False
+        self._last_routine_time = None
+        self._initialization_error = None
+
+        self.logger.info("Online Serving state reset")
+
+        return {
+            "success": True,
+            "message": "Online Serving state reset successfully",
+        }
+
+
+# Singleton instance
+_online_serving_service: Optional[OnlineServingService] = None
+
+
+def get_online_serving_service() -> OnlineServingService:
+    """
+    Get the singleton OnlineServingService instance.
+
+    Returns:
+        OnlineServingService instance
+    """
+    global _online_serving_service
+    if _online_serving_service is None:
+        _online_serving_service = OnlineServingService()
+    return _online_serving_service

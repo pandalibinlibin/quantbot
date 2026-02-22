@@ -7191,3 +7191,294 @@ def _load_backtest_result() -> Optional[dict]:
 - 简单，无需数据库
 - JSON 格式易于调试和查看
 - 只保存最新一次结果，符合当前需求
+
+---
+
+## 2025-02-22: Phase 3 - Online Serving Integration (Phase 1 Implementation)
+
+### Overview
+
+Implemented Qlib Online Serving integration to enable automated daily workflow:
+
+- Data incremental update
+- Rolling model training
+- Signal generation
+- Paper trading (Phase 4)
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Scheduled Task (Daily after market close)                      │
+│  POST /api/v1/online/routine                                    │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  Step 0: Auto-initialize (if first call)                        │
+│  - Create OnlineManager, RollingStrategy, TrainerRM             │
+│  - Execute first_train() to train initial models                │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  Step 1: Data incremental update                                │
+│  - Call data source module to fetch latest data                 │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  Step 2: OnlineManager.routine()                                │
+│  - Check if rolling training is needed                          │
+│  - Train new models if needed                                   │
+│  - Update online models                                         │
+│  - Generate trading signals                                     │
+└─────────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────────┐
+│  Step 3: Get signals for paper trading                          │
+│  - OnlineManager.get_signals()                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### New Files
+
+| File                                             | Description                  |
+| ------------------------------------------------ | ---------------------------- |
+| `backend/app/services/online_serving_service.py` | Online Serving service class |
+| `backend/app/api/routes/online.py`               | Online Serving API routes    |
+
+### Modified Files
+
+| File                          | Changes                                        |
+| ----------------------------- | ---------------------------------------------- |
+| `backend/app/core/config.py`  | Added MongoDB and Online Serving configuration |
+| `backend/app/api/main.py`     | Registered online routes                       |
+| `docker-compose.override.yml` | Added MongoDB service and mlruns volume        |
+
+### Configuration (config.py)
+
+```python
+# MongoDB Configuration (for Qlib Online Serving TaskManager)
+MONGODB_URI: str = "mongodb://mongodb:27017"
+MONGODB_DATABASE: str = "quantbot_qlib"
+
+# Qlib Recorder/MLflow Configuration
+QLIB_MLRUNS_PATH: str = "/app/mlruns"
+
+# Online Serving Configuration
+ONLINE_SERVING_EXPERIMENT_NAME: str = "quantbot_online"
+ONLINE_SERVING_ROLLING_STEP: int = 20  # Rolling step in trading days
+ONLINE_SERVING_ROLLING_TYPE: Literal["expanding", "sliding"] = "expanding"
+```
+
+### API Endpoints
+
+| Endpoint                 | Method | Description                              |
+| ------------------------ | ------ | ---------------------------------------- |
+| `/api/v1/online/routine` | POST   | Execute daily routine (main entry point) |
+| `/api/v1/online/status`  | GET    | Get current status                       |
+| `/api/v1/online/signals` | GET    | Get latest trading signals               |
+| `/api/v1/online/reset`   | POST   | Reset state (for debugging)              |
+
+### Key Components
+
+1. **OnlineServingService**: Main service class managing Online Serving workflow
+2. **OnlineManager**: Qlib component managing online strategies and models
+3. **RollingStrategy**: Defines rolling training strategy
+4. **TrainerRM**: MongoDB-based trainer for task management
+5. **RollingGen**: Generates rolling training tasks
+
+### Auto-initialization
+
+The system auto-initializes on first `/routine` call:
+
+- No manual initialization required
+- First call takes longer (trains initial models)
+- Subsequent calls are faster (only trains if rolling step reached)
+
+### Dynamic Frequency Detection
+
+The system automatically detects data frequency:
+
+- Checks for minute-level data in `QLIB_DATA_PATH_1MIN`
+- Falls back to day-level frequency if no minute data found
+
+---
+
+## 2026-02-22: Phase 4 - Paper Trading Implementation
+
+### Overview
+
+Implemented Paper Trading service for simulated trading based on Online Serving signals.
+
+**Key Design Decisions**:
+
+- **Percentage-based trading plan**: Uses percentages instead of absolute quantities to ensure consistency between paper trading and real trading
+- **Limit order with market order fallback**: Provides clear trading instructions for traders
+
+### Trading Plan Design
+
+| Field             | Description                                   |
+| ----------------- | --------------------------------------------- |
+| `sell_pct`        | Percentage of position to sell (usually 100%) |
+| `target_weight`   | Target percentage of total assets to allocate |
+| `reference_price` | Reference price (currently: opening price)    |
+| `limit_price`     | Limit order price with slippage buffer        |
+| `instruction`     | Clear trading instruction for traders         |
+
+### Trading Instruction Example
+
+```json
+{
+  "sell_orders": [
+    {
+      "instrument": "000001.SZ",
+      "direction": "SELL",
+      "sell_pct": 100.0,
+      "reference_price": 15.2,
+      "limit_price": 15.12,
+      "instruction": "挂限价单 ≥15.12 卖出全部持仓，若未成交则改市价单"
+    }
+  ],
+  "buy_orders": [
+    {
+      "instrument": "600519.SH",
+      "direction": "BUY",
+      "target_weight": 2.0,
+      "reference_price": 1850.5,
+      "limit_price": 1859.75,
+      "instruction": "挂限价单 ≤1859.75 买入(金额=总资产×2.0%)，若未成交则改市价单"
+    }
+  ]
+}
+```
+
+### API Endpoints
+
+| Endpoint                            | Method | Description                            |
+| ----------------------------------- | ------ | -------------------------------------- |
+| `/api/v1/paper-trading/portfolio`   | GET    | Get current portfolio status           |
+| `/api/v1/paper-trading/plan`        | POST   | Generate percentage-based trading plan |
+| `/api/v1/paper-trading/execute`     | POST   | Execute paper trades (simulation)      |
+| `/api/v1/paper-trading/trades`      | GET    | Get trade history                      |
+| `/api/v1/paper-trading/performance` | GET    | Get performance metrics                |
+| `/api/v1/paper-trading/reset`       | POST   | Reset paper trading state              |
+
+### New Files
+
+| File                                            | Description                 |
+| ----------------------------------------------- | --------------------------- |
+| `backend/app/services/paper_trading_service.py` | Paper Trading service class |
+| `backend/app/api/routes/paper_trading.py`       | Paper Trading API routes    |
+
+### Future Improvements (TODO)
+
+#### Phase 4.1: Price Prediction Model
+
+- [ ] Use LSTM/Transformer to predict more accurate reference prices
+- [ ] Replace simple opening price with model-predicted prices
+- [ ] Improve limit order pricing accuracy
+- [ ] Reduce slippage losses
+
+#### Phase 4.2: Dynamic Slippage Adjustment
+
+- [ ] Calculate historical volatility for each stock
+- [ ] Dynamically adjust slippage based on volatility
+- [ ] Consider trading volume impact on slippage
+- [ ] Implement adaptive slippage model
+
+#### Phase 4.3: Real-time Price Integration
+
+- [ ] Integrate real-time price data source (AKShare/Tushare)
+- [ ] Fetch actual opening prices instead of placeholders
+- [ ] Support intraday price updates
+- [ ] Add price alert functionality
+
+#### Phase 4.4: Trade Execution Tracking
+
+- [ ] Record actual trade execution results from traders
+- [ ] Compare paper trading vs real trading performance
+- [ ] Generate execution quality reports
+- [ ] Track slippage statistics
+
+---
+
+## Bug Fixes (2026-02-22)
+
+### 1. Signal Date Range Issue
+
+**Problem**: Paper trading plan showed signals only up to `2026-02-10` despite data being available until `2026-02-13`.
+
+**Root Cause**: In Qlib's `OnlineManager`, when `prepare_signals()` collects predictions from recorders, both "online" and "offline" tagged recorders are included. Due to duplicate `rec_key` (model class + test segment), offline recorders' predictions (with older data) override online recorders' predictions (with latest data).
+
+**Solution**: Added `_prepare_signals_with_online_filter()` method in `OnlineServingService` to:
+
+1. Filter recorders by "online" tag using `OnlineToolR.get_online_tag()`
+2. Create a filtered collector with only online recorders
+3. Re-prepare signals after `routine()` execution
+
+**Modified Files**:
+
+- `backend/app/services/online_serving_service.py`
+  - Added `_prepare_signals_with_online_filter()` method
+  - Called in `_auto_init()` and `routine()` after standard routine execution
+
+**Key Code**:
+
+```python
+def _prepare_signals_with_online_filter(self) -> None:
+    from qlib.workflow.online.utils import OnlineToolR
+    from qlib.model.ens.ensemble import RollingEnsemble, AverageEnsemble
+    from qlib.workflow.task.collect import MergeCollector
+
+    online_tool = OnlineToolR()
+
+    def online_filter(rec):
+        return online_tool.get_online_tag(rec) == OnlineToolR.ONLINE_TAG
+
+    collector_dict = {}
+    for strategy in self._online_manager.strategies:
+        collector = strategy.get_collector(
+            process_list=[RollingEnsemble()],
+            rec_filter_func=online_filter
+        )
+        collector_dict[strategy.name_id] = collector
+
+    merge_collector = MergeCollector(collector_dict, process_list=[])
+    signals = AverageEnsemble()(merge_collector())
+    self._online_manager.signals = signals
+```
+
+### 2. Reference Price Placeholder Issue
+
+**Problem**: `reference_price` in trading plan was always `10.0` (hardcoded placeholder).
+
+**Root Cause**: `_get_latest_prices()` method in `PaperTradingService` was not implemented, returning default value `10.0` for all instruments.
+
+**Solution**: Implemented real price fetching from Qlib data:
+
+1. Convert instrument format from `SH600000` to `sh600000` (lowercase for Qlib)
+2. Use `D.features()` to fetch `$close` prices
+3. Extract latest close price for each instrument
+
+**Modified Files**:
+
+- `backend/app/services/paper_trading_service.py`
+  - Rewrote `_get_latest_prices()` method to fetch real prices from Qlib
+
+**Key Code**:
+
+```python
+def _get_latest_prices(self, instruments: List[str]) -> Dict[str, float]:
+    from qlib.data import D
+
+    # Convert: SH600000 -> sh600000 (lowercase for Qlib)
+    qlib_instruments = [inst.lower() for inst in instruments]
+
+    df = D.features(qlib_instruments, fields=["$close"], freq="day")
+
+    for qlib_inst in qlib_instruments:
+        inst_data = df.xs(qlib_inst, level="instrument")
+        latest_close = inst_data["$close"].dropna().iloc[-1]
+        prices[original_inst] = float(latest_close)
+```
+
+**Result**: Trading plan now shows real stock prices (e.g., SH600309: 84.96, SZ300750: 365.34)

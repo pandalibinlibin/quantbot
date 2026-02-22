@@ -290,6 +290,7 @@ def convert_csv_to_qlib_format_impl(
     csv_dir: str = "/app/csv_data/cn_data",
     qlib_dir: str = None,
     freq: str = "day",
+    incremental: bool = False,
 ) -> Tuple[bool, str]:
     """
     Convert CSV data to Qlib .bin format using Qlib's dump_bin utility.
@@ -298,11 +299,13 @@ def convert_csv_to_qlib_format_impl(
     - Automatically selects the correct output directory based on frequency
     - Day data goes to QLIB_DATA_PATH, minute data goes to QLIB_DATA_PATH_1MIN
     - This follows Qlib's official recommendation for multi-frequency data
+    - In incremental mode, existing data is preserved and merged with new data
 
     Args:
         csv_dir: Directory containing CSV files
         qlib_dir: Target directory for Qlib .bin data (auto-selected if None)
         freq: Data frequency ('day' or '1min')
+        incremental: If True, preserve existing data and merge with new data
 
     Returns:
         Tuple of (success, message)
@@ -326,8 +329,12 @@ def convert_csv_to_qlib_format_impl(
         if not csv_files:
             return False, f"No CSV file found in {csv_dir}"
 
-        # Clear qlib directory contents (don't delete the directory itself due to Docker mount)
-        if qlib_path.exists():
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        # Only clear qlib directory contents in full refresh mode (not incremental)
+        if not incremental and qlib_path.exists():
             import shutil
             import glob
 
@@ -337,14 +344,17 @@ def convert_csv_to_qlib_format_impl(
                     shutil.rmtree(item)
                 else:
                     os.remove(item)
-        else:
+            logger.info("Full refresh: cleared existing Qlib data")
+        elif not qlib_path.exists():
             qlib_path.mkdir(parents=True, exist_ok=True)
 
         # Use local dump_bin script to convert CSV to binary format
+        # Use dump_update for incremental mode, dump_all for full refresh
+        dump_command = "dump_update" if incremental else "dump_all"
         cmd = [
             "python",
             "/app/scripts/dump_bin.py",
-            "dump_all",
+            dump_command,
             "--data_path",
             str(source_path),
             "--qlib_dir",
@@ -354,6 +364,10 @@ def convert_csv_to_qlib_format_impl(
             "--date_field_name",
             "date",
         ]
+
+        logger.info(
+            f"Running dump_bin with command: {dump_command} (incremental={incremental})"
+        )
 
         # Execute the conversion
         result = subprocess.run(cmd, capture_output=True, text=True, cwd="/app")

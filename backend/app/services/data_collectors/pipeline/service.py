@@ -151,6 +151,8 @@ def execute_data_pipeline(request: DownloadDataRequest) -> DownloadTaskResponse:
                 message=f"Pipeline execution failed: {message}",
             )
 
+        # Note: metadata.json is saved inside _execute_yahoo_pipeline after successful conversion
+
         # Step 3: Trigger factor computation after successful data collection
         try:
             logger.info("=== FACTOR COMPUTATION START ===")
@@ -795,8 +797,9 @@ def _execute_yahoo_pipeline(
         )
 
         # Let convert_csv_to_qlib_format_impl auto-select the correct directory based on frequency
+        # Pass incremental flag to preserve existing data during incremental updates
         convert_success, convert_message = convert_csv_to_qlib_format_impl(
-            csv_dir=str(csv_dir), freq=qlib_freq
+            csv_dir=str(csv_dir), freq=qlib_freq, incremental=incremental
         )
         if not convert_success:
             return False, f"Qlib format conversion failed: {convert_message}"

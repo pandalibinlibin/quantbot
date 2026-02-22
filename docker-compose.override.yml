@@ -80,12 +80,15 @@ services:
         - path: ./backend/pyproject.toml
           action: rebuild
     # TODO: remove once coverage is done locally
+    depends_on:
+      - mongodb
     volumes:
       - ./backend/htmlcov:/app/htmlcovzh
       - ./backend/app:/app/app
       - ./backend/tests:/app/tests
       - qlib-data:/app/qlib_data
       - qlib-data-1min:/app/qlib_data_1min
+      - mlruns-data:/app/mlruns
       - ./backend/scripts:/app/scripts:cached
       - ./temp_scripts:/app/temp_scripts:cached
     environment:
@@ -111,6 +114,18 @@ services:
     volumes:
       - redis-data:/data
     command: redis-server --appendonly yes
+    networks:
+      - default
+
+  mongodb:
+    image: mongo:7.0
+    restart: "no"
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: quantbot_qlib
     networks:
       - default
 
@@ -160,4 +175,8 @@ volumes:
   qlib-data-1min:
     driver: local
   redis-data:
+    driver: local
+  mongodb-data:
+    driver: local
+  mlruns-data:
     driver: local
