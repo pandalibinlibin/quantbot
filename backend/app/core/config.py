@@ -98,30 +98,9 @@ class Settings(BaseSettings):
     def emails_enabled(self) -> bool:
         return bool(self.SMTP_HOST and self.EMAILS_FROM_EMAIL)
 
-    # Data Source Configuration
-    DATA_SOURCE: Literal["yahoo", "tushare", "akshare"] = "yahoo"  # Primary data source
-
-    # Qlib Configuration
-    QLIB_REGION: Literal["cn", "us"] = (
-        "cn"  # Default region for Qlib initialization (supports both CN and US markets)
-    )
-
-    # MongoDB Configuration (for Qlib Online Serving TaskManager)
-    MONGODB_URI: str = "mongodb://mongodb:27017"
-    MONGODB_DATABASE: str = "quantbot_qlib"
-
-    # Qlib Recorder/MLflow Configuration
-    QLIB_MLRUNS_PATH: str = "/app/mlruns"
-
-    # Online Serving Configuration
-    ONLINE_SERVING_EXPERIMENT_NAME: str = "quantbot_online"
-    ONLINE_SERVING_ROLLING_STEP: int = 20  # Rolling step in trading days
-    ONLINE_SERVING_ROLLING_TYPE: Literal["expanding", "sliding"] = "expanding"
-
-    # Paper Trading Configuration
-    PAPER_TRADING_INITIAL_CASH: float = 100000000.0  # Initial cash (100M)
-    PAPER_TRADING_TOPK: int = 50  # Number of stocks to hold
-    PAPER_TRADING_N_DROP: int = 5  # Number of stocks to drop each day
+    # NOTE: Qlib-related configurations have been moved to:
+    # backend/app/config/qlib/system_config.yaml
+    # This includes: data source, stock pool, freq, region, MongoDB, Online Serving, Paper Trading
 
     EMAIL_TEST_USER: EmailStr = "test@example.com"
     FIRST_SUPERUSER: EmailStr

@@ -1,0 +1,55 @@
+# System Configuration for Qlib Data
+# Changes to this file will trigger data cleanup and re-download on next routine call
+#
+# IMPORTANT: When you modify freq, source, stock_pool, or region,
+# the system will automatically:
+# 1. Detect the configuration change
+# 2. Clean up existing data
+# 3. Re-download data based on new configuration
+
+data:
+  # Data frequency
+  # Options: "day" (daily data) or "1min" (minute-level data)
+  freq: "day"
+
+  # Data source
+  # Options: "yahoo" (Yahoo Finance), "tushare", "akshare"
+  source: "yahoo"
+
+  # Stock pool
+  # China: "csi300", "csi500", "csi800", "all"
+  # US: "sp500", "nasdaq100"
+  stock_pool: "csi300"
+
+  # Market region
+  # Options: "cn" (China A-shares) or "us" (US stocks)
+  region: "cn"
+
+  # Download range (automatically calculated based on freq)
+  # - day: past 365 days (1 year)
+  # - 1min: past 5 trading days
+  # These values are used internally, no need to modify
+  download_days:
+    day: 365
+    1min: 5
+
+# NOTE: Data paths (QLIB_DATA_PATH, QLIB_DATA_PATH_1MIN, CSV_DATA_PATH) are
+# configured via environment variables in .env file, not here.
+# This ensures Docker volume mounts work correctly.
+
+paths:
+  # MLflow runs path (can be configured here)
+  mlruns: "/app/mlruns"
+
+# MongoDB configuration for Qlib Online Serving
+mongodb:
+  uri: "mongodb://mongodb:27017"
+  database: "quantbot_qlib"
+
+# Online Serving configuration
+online_serving:
+  experiment_name: "quantbot_online"
+  rolling_step: 20 # Rolling step in trading days
+  rolling_type: "expanding" # Options: "expanding" or "sliding"
+
+# NOTE: Paper Trading configuration has been moved to paper_trading_config.yaml

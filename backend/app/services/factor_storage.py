@@ -556,3 +556,240 @@ class FactorStorage:
             metadata["instruments"] = instruments
 
         return metadata
+
+    def delete_factor_bin_files(self, factor_name: str) -> Dict[str, Any]:
+        """
+        Delete all bin files for a specific factor across all symbols.
+
+        This method removes the factor's bin file from each symbol's directory
+        and also removes the factor's metadata file.
+
+        Args:
+            factor_name: Name of the factor to delete
+
+        Returns:
+            Dictionary with deletion results
+        """
+        try:
+            logger.info(f"Deleting bin files for factor: {factor_name}")
+
+            # Construct the bin file name based on frequency
+            # Format: {factor_name}.{freq}.bin (e.g., my_factor.day.bin)
+            bin_filename = f"{factor_name}.{self.freq}.bin"
+
+            deleted_count = 0
+            failed_count = 0
+            deleted_symbols = []
+
+            # Iterate through all symbol directories
+            if not self.features_dir.exists():
+                logger.warning(
+                    f"Features directory does not exist: {self.features_dir}"
+                )
+                return {
+                    "success": True,
+                    "factor_name": factor_name,
+                    "deleted_count": 0,
+                    "message": "No features directory found",
+                }
+
+            for symbol_dir in self.features_dir.iterdir():
+                if not symbol_dir.is_dir():
+                    continue
+
+                bin_file = symbol_dir / bin_filename
+                if bin_file.exists():
+                    try:
+                        bin_file.unlink()
+                        deleted_count += 1
+                        deleted_symbols.append(symbol_dir.name)
+                    except Exception as e:
+                        logger.error(f"Failed to delete {bin_file}: {e}")
+                        failed_count += 1
+
+            # Delete metadata file
+            metadata_file = self.metadata_dir / f"{factor_name}_metadata.json"
+            if metadata_file.exists():
+                try:
+                    metadata_file.unlink()
+                    logger.info(f"Deleted metadata file: {metadata_file}")
+                except Exception as e:
+                    logger.warning(f"Failed to delete metadata file: {e}")
+
+            logger.info(
+                f"Deleted {deleted_count} bin files for factor '{factor_name}' "
+                f"(failed: {failed_count})"
+            )
+
+            return {
+                "success": failed_count == 0,
+                "factor_name": factor_name,
+                "deleted_count": deleted_count,
+                "failed_count": failed_count,
+                "deleted_symbols": deleted_symbols[:10],  # First 10 for brevity
+                "total_symbols": len(deleted_symbols),
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to delete factor bin files: {e}")
+            return {
+                "success": False,
+                "factor_name": factor_name,
+                "error": str(e),
+            }
+
+    def compute_factor_from_expression(
+        self,
+        factor_name: str,
+        expression: str,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None,
+    ) -> Optional[pd.DataFrame]:
+        """
+        Compute factor values from expression using existing bin data.
+
+        This method uses Qlib's D.features() to compute factor values
+        from the given expression, using existing OHLCV bin data.
+
+        Args:
+            factor_name: Name for the computed factor
+            expression: Qlib expression (e.g., "$close/$open", "Ref($close, 1)")
+            start_time: Start time for computation (None for all available data)
+            end_time: End time for computation (None for all available data)
+
+        Returns:
+            DataFrame with computed factor values, or None if failed
+        """
+        try:
+            logger.info(
+                f"Computing factor '{factor_name}' from expression: {expression}"
+            )
+
+            # Get list of instruments from instruments/all.txt
+            instruments_file = self.storage_dir / "instruments" / "all.txt"
+            if not instruments_file.exists():
+                logger.error(f"Instruments file not found: {instruments_file}")
+                return None
+
+            # Read instruments
+            instruments = []
+            with open(instruments_file, "r") as f:
+                for line in f:
+                    parts = line.strip().split("\t")
+                    if parts:
+                        instruments.append(parts[0])
+
+            if not instruments:
+                logger.error("No instruments found")
+                return None
+
+            logger.info(f"Found {len(instruments)} instruments")
+
+            # Use Qlib D.features() to compute the expression
+            # The expression will be evaluated using existing bin data
+            try:
+                factor_data = D.features(
+                    instruments=instruments,
+                    fields=[expression],
+                    start_time=start_time,
+                    end_time=end_time,
+                    freq=self.freq,
+                )
+
+                if factor_data is None or factor_data.empty:
+                    logger.warning(f"No data computed for expression: {expression}")
+                    return None
+
+                # Rename the column to factor_name
+                factor_data.columns = [factor_name]
+
+                logger.info(
+                    f"Computed factor '{factor_name}': shape={factor_data.shape}, "
+                    f"non-null={factor_data[factor_name].notna().sum()}"
+                )
+
+                return factor_data
+
+            except Exception as e:
+                logger.error(f"Qlib D.features() failed: {e}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Failed to compute factor from expression: {e}")
+            return None
+
+    def compute_and_save_factor(
+        self,
+        factor_name: str,
+        expression: str,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None,
+        overwrite: bool = True,
+    ) -> Dict[str, Any]:
+        """
+        Compute factor from expression and save to bin files.
+
+        This is a convenience method that combines compute_factor_from_expression
+        and save_factor_data.
+
+        Args:
+            factor_name: Name for the factor
+            expression: Qlib expression
+            start_time: Start time for computation
+            end_time: End time for computation
+            overwrite: Whether to overwrite existing bin files
+
+        Returns:
+            Dictionary with computation and save results
+        """
+        try:
+            # Step 1: If overwrite, delete existing bin files first
+            if overwrite:
+                delete_result = self.delete_factor_bin_files(factor_name)
+                logger.info(f"Deleted existing bin files: {delete_result}")
+
+            # Step 2: Compute factor from expression
+            factor_data = self.compute_factor_from_expression(
+                factor_name=factor_name,
+                expression=expression,
+                start_time=start_time,
+                end_time=end_time,
+            )
+
+            if factor_data is None:
+                return {
+                    "success": False,
+                    "factor_name": factor_name,
+                    "error": "Failed to compute factor from expression",
+                }
+
+            # Step 3: Save to bin files
+            save_success = self.save_factor_data(
+                factor_name=factor_name,
+                factor_data=factor_data,
+                overwrite=overwrite,
+            )
+
+            if not save_success:
+                return {
+                    "success": False,
+                    "factor_name": factor_name,
+                    "error": "Failed to save factor to bin files",
+                }
+
+            return {
+                "success": True,
+                "factor_name": factor_name,
+                "expression": expression,
+                "shape": list(factor_data.shape),
+                "non_null_count": int(factor_data.iloc[:, 0].notna().sum()),
+                "message": f"Factor '{factor_name}' computed and saved successfully",
+            }
+
+        except Exception as e:
+            logger.error(f"Failed to compute and save factor: {e}")
+            return {
+                "success": False,
+                "factor_name": factor_name,
+                "error": str(e),
+            }

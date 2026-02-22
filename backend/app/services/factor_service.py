@@ -305,3 +305,230 @@ class FactorService:
         except Exception as e:
             logger.error(f"Factor expression validation failed: {e}")
             return {"valid": False, "error": str(e)}
+
+    def compute_and_save_factor(
+        self, factor_id: uuid.UUID, freq: str = "day"
+    ) -> Dict[str, Any]:
+        """
+        Compute factor from its expression and save to bin files.
+
+        This method:
+        1. Loads the factor from database
+        2. Uses FactorStorage to compute the expression using existing bin data
+        3. Saves the computed values to bin files
+
+        Args:
+            factor_id: UUID of the factor to compute
+            freq: Data frequency (day, 1min)
+
+        Returns:
+            Dictionary with computation results
+        """
+        logger.info(f"Computing and saving factor: {factor_id}")
+
+        try:
+            with Session(engine) as session:
+                factor = session.get(Factor, factor_id)
+                if not factor:
+                    return {
+                        "success": False,
+                        "error": f"Factor {factor_id} not found",
+                    }
+
+                if not factor.expression:
+                    return {
+                        "success": False,
+                        "error": f"Factor '{factor.name}' has no expression",
+                    }
+
+                # Import FactorStorage
+                from app.services.factor_storage import FactorStorage
+
+                storage = FactorStorage(freq=freq)
+
+                # Compute and save factor
+                result = storage.compute_and_save_factor(
+                    factor_name=factor.name,
+                    expression=factor.expression,
+                    overwrite=True,
+                )
+
+                if result.get("success"):
+                    # Update factor status to ACTIVE if not already
+                    if factor.status != FactorStatus.ACTIVE:
+                        factor.status = FactorStatus.ACTIVE
+                        factor.updated_at = datetime.utcnow()
+                        session.add(factor)
+                        session.commit()
+
+                    logger.info(
+                        f"Factor '{factor.name}' computed and saved successfully"
+                    )
+
+                return result
+
+        except Exception as e:
+            logger.error(f"Failed to compute and save factor: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+            }
+
+    def update_factor_with_recompute(
+        self,
+        factor_id: uuid.UUID,
+        factor_data: FactorUpdate,
+        freq: str = "day",
+    ) -> Dict[str, Any]:
+        """
+        Update factor and recompute if expression changed.
+
+        This method:
+        1. Checks if expression has changed
+        2. If changed, deletes old bin files and recomputes
+        3. Updates the database record
+
+        Args:
+            factor_id: UUID of the factor to update
+            factor_data: Update data
+            freq: Data frequency (day, 1min)
+
+        Returns:
+            Dictionary with update results
+        """
+        logger.info(f"Updating factor with recompute: {factor_id}")
+
+        try:
+            with Session(engine) as session:
+                factor = session.get(Factor, factor_id)
+                if not factor:
+                    return {
+                        "success": False,
+                        "error": f"Factor {factor_id} not found",
+                    }
+
+                old_expression = factor.expression
+                old_name = factor.name
+                expression_changed = False
+                name_changed = False
+
+                # Check what changed
+                update_dict = factor_data.model_dump(exclude_unset=True)
+
+                if (
+                    "expression" in update_dict
+                    and update_dict["expression"] != old_expression
+                ):
+                    expression_changed = True
+                    logger.info(
+                        f"Expression changed from '{old_expression}' to '{update_dict['expression']}'"
+                    )
+
+                if "name" in update_dict and update_dict["name"] != old_name:
+                    name_changed = True
+                    logger.info(
+                        f"Name changed from '{old_name}' to '{update_dict['name']}'"
+                    )
+
+                # Import FactorStorage
+                from app.services.factor_storage import FactorStorage
+
+                storage = FactorStorage(freq=freq)
+
+                # If name or expression changed, delete old bin files
+                if name_changed or expression_changed:
+                    delete_result = storage.delete_factor_bin_files(old_name)
+                    logger.info(f"Deleted old bin files: {delete_result}")
+
+                # Update database record
+                for key, value in update_dict.items():
+                    setattr(factor, key, value)
+
+                factor.updated_at = datetime.utcnow()
+                session.add(factor)
+                session.commit()
+                session.refresh(factor)
+
+                # Recompute if expression changed (or name changed with existing expression)
+                recompute_result = None
+                if expression_changed or (name_changed and factor.expression):
+                    recompute_result = storage.compute_and_save_factor(
+                        factor_name=factor.name,
+                        expression=factor.expression,
+                        overwrite=True,
+                    )
+                    logger.info(f"Recompute result: {recompute_result}")
+
+                return {
+                    "success": True,
+                    "factor": factor,
+                    "expression_changed": expression_changed,
+                    "name_changed": name_changed,
+                    "recompute_result": recompute_result,
+                }
+
+        except Exception as e:
+            logger.error(f"Failed to update factor with recompute: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+            }
+
+    def delete_factor_with_cleanup(
+        self, factor_id: uuid.UUID, freq: str = "day"
+    ) -> Dict[str, Any]:
+        """
+        Delete factor from database and clean up bin files.
+
+        This method:
+        1. Deletes all bin files for the factor
+        2. Deletes the factor from database
+
+        Args:
+            factor_id: UUID of the factor to delete
+            freq: Data frequency (day, 1min)
+
+        Returns:
+            Dictionary with deletion results
+        """
+        logger.info(f"Deleting factor with cleanup: {factor_id}")
+
+        try:
+            with Session(engine) as session:
+                factor = session.get(Factor, factor_id)
+                if not factor:
+                    return {
+                        "success": False,
+                        "error": f"Factor {factor_id} not found",
+                    }
+
+                factor_name = factor.name
+
+                # Import FactorStorage and delete bin files
+                from app.services.factor_storage import FactorStorage
+
+                storage = FactorStorage(freq=freq)
+                delete_bin_result = storage.delete_factor_bin_files(factor_name)
+                logger.info(f"Deleted bin files: {delete_bin_result}")
+
+                # Delete from database (soft delete)
+                factor.status = FactorStatus.DELETED
+                factor.updated_at = datetime.utcnow()
+                session.add(factor)
+                session.commit()
+
+                logger.info(f"Factor '{factor_name}' deleted with cleanup")
+
+                return {
+                    "success": True,
+                    "factor_name": factor_name,
+                    "bin_files_deleted": delete_bin_result.get("deleted_count", 0),
+                    "message": f"Factor '{factor_name}' deleted successfully",
+                }
+
+        except Exception as e:
+            logger.error(f"Failed to delete factor with cleanup: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+            }

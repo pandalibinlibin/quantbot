@@ -24,7 +24,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from app.core.config import settings
+from app.config.qlib import qlib_config
 from app.services.qlib_init_service import get_qlib_init_service
 
 logger = logging.getLogger(__name__)
@@ -62,17 +62,10 @@ class OnlineServingService:
         Returns:
             "day" or "1min" based on available data
         """
-        # Check if minute data exists and has actual data
-        min_data_path = Path(settings.QLIB_DATA_PATH_1MIN)
-        if min_data_path.exists():
-            bin_files = list(min_data_path.glob("**/*.bin"))
-            if bin_files:
-                self.logger.info("Detected minute-level data, using freq='1min'")
-                return "1min"
-
-        # Default to day frequency
-        self.logger.info("Using default day-level frequency")
-        return "day"
+        # Use frequency from configuration
+        freq = qlib_config.freq
+        self.logger.info(f"Using frequency from config: freq='{freq}'")
+        return freq
 
     def _ensure_qlib_initialized(self) -> bool:
         """
@@ -291,12 +284,12 @@ class OnlineServingService:
             import qlib
 
             qlib.config.C["mongo"] = {
-                "task_url": settings.MONGODB_URI,
-                "task_db_name": settings.MONGODB_DATABASE,
+                "task_url": qlib_config.mongodb_uri,
+                "task_db_name": qlib_config.mongodb_database,
             }
 
             # Set MLflow/Recorder path
-            mlruns_path = Path(settings.QLIB_MLRUNS_PATH)
+            mlruns_path = Path(qlib_config.mlruns_path)
             mlruns_path.mkdir(parents=True, exist_ok=True)
 
             # Build task template (this also sets self._freq)
@@ -307,12 +300,12 @@ class OnlineServingService:
 
             # Create RollingGen
             rolling_gen = RollingGen(
-                step=settings.ONLINE_SERVING_ROLLING_STEP,
-                rtype=settings.ONLINE_SERVING_ROLLING_TYPE,
+                step=qlib_config.rolling_step,
+                rtype=qlib_config.rolling_type,
             )
 
             # Create RollingStrategy
-            experiment_name = settings.ONLINE_SERVING_EXPERIMENT_NAME
+            experiment_name = qlib_config.experiment_name
             strategy = RollingStrategy(
                 name_id=experiment_name,
                 task_template=task_template,
@@ -355,8 +348,8 @@ class OnlineServingService:
                 "success": True,
                 "message": "Online Serving initialized successfully",
                 "experiment_name": experiment_name,
-                "rolling_step": settings.ONLINE_SERVING_ROLLING_STEP,
-                "rolling_type": settings.ONLINE_SERVING_ROLLING_TYPE,
+                "rolling_step": qlib_config.rolling_step,
+                "rolling_type": qlib_config.rolling_type,
                 "freq": self._freq,
             }
 
@@ -505,26 +498,26 @@ class OnlineServingService:
             Data update result dictionary
         """
         try:
-            day_data_path = Path(settings.QLIB_DATA_PATH)
-            min_data_path = Path(settings.QLIB_DATA_PATH_1MIN)
+            from app.services.data_source_manager import data_source_manager
 
-            has_day_data = day_data_path.exists() and any(
-                day_data_path.glob("**/*.bin")
-            )
-            has_min_data = min_data_path.exists() and any(
-                min_data_path.glob("**/*.bin")
-            )
+            # Check for config changes and cleanup if needed
+            config_changed = data_source_manager.check_and_handle_config_change()
+            if config_changed:
+                self.logger.info("Data configuration changed, data has been cleaned up")
 
-            # Case 1: No data exists - download default CSI300 daily data (past 1 year)
-            if not has_day_data and not has_min_data:
+            # Check if data exists
+            has_data = data_source_manager.has_data()
+
+            # Case 1: No data exists - download data based on config
+            if not has_data:
                 self.logger.info(
-                    "No data found, downloading default CSI300 daily data (past 1 year)..."
+                    f"No data found, downloading {qlib_config.stock_pool} {qlib_config.freq} data..."
                 )
                 return self._download_default_data()
 
             # Case 2: Data exists - perform incremental update
             self.logger.info("Data exists, performing incremental update...")
-            return self._perform_incremental_update(has_day_data, has_min_data)
+            return self._perform_incremental_update()
 
         except Exception as e:
             self.logger.error(f"Data update failed: {e}")
@@ -535,7 +528,7 @@ class OnlineServingService:
 
     def _download_default_data(self) -> Dict[str, Any]:
         """
-        Download default CSI300 daily data (past 1 year) when no data exists.
+        Download data based on system_config.yaml settings when no data exists.
 
         Returns:
             Download result dictionary
@@ -543,33 +536,38 @@ class OnlineServingService:
         try:
             from app.services.data_collectors.pipeline import execute_data_pipeline
             from app.models import DownloadDataRequest
+            from app.services.data_source_manager import data_source_manager
             from datetime import datetime, timedelta
 
-            # Calculate date range: past 1 year
-            end_date = datetime.now()
-            start_date = end_date - timedelta(days=365)
+            # Get date range from config
+            start_date_str, end_date_str = data_source_manager.get_download_date_range()
+
+            # Get interval based on freq
+            interval = "1d" if qlib_config.freq == "day" else "1m"
 
             request = DownloadDataRequest(
-                stock_pool="csi300",
-                start_date=start_date.strftime("%Y-%m-%d"),
-                end_date=end_date.strftime("%Y-%m-%d"),
+                stock_pool=qlib_config.stock_pool,
+                start_date=start_date_str,
+                end_date=end_date_str,
                 incremental=False,
-                interval="1d",
+                interval=interval,
             )
 
             self.logger.info(
-                f"Downloading CSI300 daily data from {request.start_date} to {request.end_date}..."
+                f"Downloading {qlib_config.stock_pool} {interval} data "
+                f"from {request.start_date} to {request.end_date}..."
             )
 
             result = execute_data_pipeline(request)
 
             if result.status == "started":
-                self.logger.info("Default CSI300 data download started successfully")
+                self.logger.info(f"Data download started successfully")
                 return {
                     "success": True,
-                    "message": "Downloaded default CSI300 daily data (past 1 year)",
+                    "message": f"Downloaded {qlib_config.stock_pool} {interval} data",
                     "task_id": result.task_id,
-                    "stock_pool": "csi300",
+                    "stock_pool": qlib_config.stock_pool,
+                    "freq": qlib_config.freq,
                     "start_date": request.start_date,
                     "end_date": request.end_date,
                 }
@@ -580,21 +578,15 @@ class OnlineServingService:
                 }
 
         except Exception as e:
-            self.logger.error(f"Failed to download default data: {e}")
+            self.logger.error(f"Failed to download data: {e}")
             return {
                 "success": False,
                 "error": str(e),
             }
 
-    def _perform_incremental_update(
-        self, has_day_data: bool, has_min_data: bool
-    ) -> Dict[str, Any]:
+    def _perform_incremental_update(self) -> Dict[str, Any]:
         """
-        Perform incremental update on existing data.
-
-        Args:
-            has_day_data: Whether daily data exists
-            has_min_data: Whether minute data exists
+        Perform incremental update on existing data based on system_config.yaml.
 
         Returns:
             Update result dictionary
@@ -603,31 +595,10 @@ class OnlineServingService:
             from app.services.data_collectors.pipeline import execute_data_pipeline
             from app.models import DownloadDataRequest
             from datetime import datetime, timedelta
-            import json
 
-            # Read stock_pool from metadata.json (saved during initial download)
-            metadata_file = Path(settings.QLIB_DATA_PATH) / "metadata.json"
-            stock_pool = None
-
-            if metadata_file.exists():
-                try:
-                    with open(metadata_file, "r") as f:
-                        metadata = json.load(f)
-                        stock_pool = metadata.get("stock_pool")
-                        self.logger.info(f"Read stock_pool from metadata: {stock_pool}")
-                except Exception as e:
-                    self.logger.warning(f"Failed to read metadata.json: {e}")
-
-            # Validate stock_pool - must be a supported value
-            supported_pools = ["csi300", "csi500", "sp500", "nasdaq100"]
-            if not stock_pool or stock_pool not in supported_pools:
-                stock_pool = "csi300"  # Default to csi300
-                self.logger.warning(
-                    f"No valid stock_pool in metadata, using default 'csi300'"
-                )
-
-            # Determine which data to update
-            interval = "1d" if has_day_data else "1m"
+            # Use config values directly
+            stock_pool = qlib_config.stock_pool
+            interval = "1d" if qlib_config.freq == "day" else "1m"
 
             # For incremental update, use the last 30 days as the range
             # The pipeline will detect and fill gaps
@@ -650,8 +621,7 @@ class OnlineServingService:
                 "message": "Incremental update completed",
                 "task_id": result.task_id,
                 "stock_pool": stock_pool,
-                "has_day_data": has_day_data,
-                "has_min_data": has_min_data,
+                "freq": qlib_config.freq,
                 "interval": interval,
             }
 
@@ -660,8 +630,6 @@ class OnlineServingService:
             return {
                 "success": False,
                 "error": str(e),
-                "has_day_data": has_day_data,
-                "has_min_data": has_min_data,
             }
 
     def get_signals(self, limit: Optional[int] = 100) -> Dict[str, Any]:
@@ -917,11 +885,14 @@ class OnlineServingService:
             ),
             "initialization_error": self._initialization_error,
             "config": {
-                "experiment_name": settings.ONLINE_SERVING_EXPERIMENT_NAME,
-                "rolling_step": settings.ONLINE_SERVING_ROLLING_STEP,
-                "rolling_type": settings.ONLINE_SERVING_ROLLING_TYPE,
-                "mongodb_uri": settings.MONGODB_URI,
-                "mlruns_path": settings.QLIB_MLRUNS_PATH,
+                "experiment_name": qlib_config.experiment_name,
+                "rolling_step": qlib_config.rolling_step,
+                "rolling_type": qlib_config.rolling_type,
+                "mongodb_uri": qlib_config.mongodb_uri,
+                "mlruns_path": qlib_config.mlruns_path,
+                "stock_pool": qlib_config.stock_pool,
+                "source": qlib_config.source,
+                "region": qlib_config.region,
             },
         }
 

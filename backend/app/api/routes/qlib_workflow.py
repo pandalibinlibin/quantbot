@@ -78,7 +78,7 @@ def start_training():
     Start training workflow using configuration from file.
 
     This is a simplified endpoint - no configuration needed from frontend.
-    Training parameters are read from backend/app/config/training_config.yaml.
+    Training parameters are read from backend/app/config/qlib/training_config.yaml.
 
     Returns:
         Training result with model path and metrics

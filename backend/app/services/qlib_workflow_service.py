@@ -37,8 +37,8 @@ logger = logging.getLogger(__name__)
 # Model storage directory
 MODELS_DIR = Path(settings.QLIB_DATA_PATH).parent / "models"
 
-# Configuration file paths
-CONFIG_DIR = Path(__file__).parent.parent / "config"
+# Configuration file paths (moved to config/qlib/ directory)
+CONFIG_DIR = Path(__file__).parent.parent / "config" / "qlib"
 TRAINING_CONFIG_PATH = CONFIG_DIR / "training_config.yaml"
 BACKTEST_CONFIG_PATH = CONFIG_DIR / "backtest_config.yaml"
 

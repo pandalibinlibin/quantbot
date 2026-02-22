@@ -1,0 +1,31 @@
+# Paper Trading Configuration
+# Simulated trading settings for testing strategies with virtual money
+
+# Portfolio settings
+portfolio:
+  initial_cash: 100000000.0 # Initial cash (100M CNY)
+  currency: "CNY"
+
+# Strategy settings
+strategy:
+  topk: 50 # Number of stocks to hold
+  n_drop: 5 # Number of stocks to drop each day
+  # Turnover rate = 2 * n_drop / topk = 20%
+
+# Order settings
+order:
+  # Price buffer for limit orders (percentage above/below reference price)
+  limit_price_buffer: 0.01 # 1% buffer
+
+# Risk management
+risk:
+  # Maximum position size as percentage of total assets
+  max_position_pct: 0.10 # 10% max per stock
+  # Minimum cash reserve
+  min_cash_reserve: 0.05 # Keep 5% cash
+
+# Trading costs (same as backtest for consistency)
+costs:
+  open_cost: 0.0003 # Buy commission rate
+  close_cost: 0.0013 # Sell commission rate (includes stamp duty)
+  min_cost: 5 # Minimum commission per trade

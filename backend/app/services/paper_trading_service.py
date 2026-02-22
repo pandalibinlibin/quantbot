@@ -24,13 +24,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 import json
 
-from app.core.config import settings
+from app.config.qlib import qlib_config
 from app.services.online_serving_service import get_online_serving_service
 
 logger = logging.getLogger(__name__)
 
 # Paper trading state file path
-PAPER_TRADING_DIR = Path(settings.QLIB_DATA_PATH).parent / "paper_trading"
+PAPER_TRADING_DIR = Path(qlib_config.qlib_data_path).parent / "paper_trading"
 PORTFOLIO_FILE = PAPER_TRADING_DIR / "portfolio.json"
 TRADES_FILE = PAPER_TRADING_DIR / "trades.json"
 DAILY_RECORDS_FILE = PAPER_TRADING_DIR / "daily_records.json"
@@ -63,7 +63,7 @@ class PaperTradingService:
 
         # Default portfolio
         return {
-            "cash": settings.PAPER_TRADING_INITIAL_CASH,
+            "cash": qlib_config.initial_cash,
             "positions": {},  # {instrument: {"shares": int, "avg_cost": float}}
             "created_at": datetime.now().isoformat(),
             "updated_at": datetime.now().isoformat(),
@@ -718,7 +718,7 @@ class PaperTradingService:
         daily_records = self._load_daily_records()
         trades = self._load_trades()
 
-        initial_cash = settings.PAPER_TRADING_INITIAL_CASH
+        initial_cash = qlib_config.initial_cash
         current_value = portfolio.get("cash", 0) + sum(
             p.get("shares", 0) * p.get("avg_cost", 0)
             for p in portfolio.get("positions", {}).values()

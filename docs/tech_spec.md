@@ -7482,3 +7482,155 @@ def _get_latest_prices(self, instruments: List[str]) -> Dict[str, float]:
 ```
 
 **Result**: Trading plan now shows real stock prices (e.g., SH600309: 84.96, SZ300750: 365.34)
+
+---
+
+## Configuration Refactoring (2026-02-22)
+
+### Overview
+
+Refactored the configuration system to centralize all Qlib-related configurations and improve maintainability.
+
+### Requirements Implemented
+
+#### Requirement 1: Data Configuration Centralization
+
+**Problem**: Data type (day/1min), data source (yahoo/tushare), and stock pool (csi300/csi500) configurations were scattered across multiple files and could be configured from frontend, leading to inconsistency.
+
+**Solution**: Created `system_config.yaml` as the single source of truth for data configuration.
+
+**Key Features**:
+
+- Configuration change detection: When `freq`, `source`, `stock_pool`, or `region` changes, existing data is automatically cleaned up
+- Download range based on freq: day data downloads 365 days, 1min data downloads 5 days
+- Frontend no longer configures these parameters
+
+**Configuration File**: `backend/app/config/qlib/system_config.yaml`
+
+```yaml
+data:
+  freq: "day" # "day" or "1min"
+  source: "yahoo" # "yahoo", "tushare", "akshare"
+  stock_pool: "csi300" # "csi300", "csi500", "csi800", "all", "sp500", "nasdaq100"
+  region: "cn" # "cn" or "us"
+  download_days:
+    day: 365
+    1min: 5
+```
+
+**Modified Files**:
+
+- `backend/app/config/qlib/__init__.py` - New QlibConfig class
+- `backend/app/config/qlib/system_config.yaml` - New config file
+- `backend/app/services/data_source_manager.py` - Uses qlib_config, detects config changes
+- `backend/app/services/online_serving_service.py` - Uses qlib_config instead of settings
+- `backend/app/services/paper_trading_service.py` - Uses qlib_config instead of settings
+- `backend/app/core/config.py` - Removed migrated Qlib settings
+
+#### Requirement 2: Factor Computation from Bin Data
+
+**Problem**: When adding a new factor, need to compute factor values from existing bin data and save to bin files. When updating a factor, need to delete old bin files and recompute.
+
+**Solution**: Added methods to `FactorStorage` and `FactorService` for factor computation and cleanup.
+
+**New Methods in `FactorStorage`**:
+
+```python
+def delete_factor_bin_files(self, factor_name: str) -> Dict[str, Any]:
+    """Delete all bin files for a specific factor across all symbols."""
+
+def compute_factor_from_expression(self, factor_name: str, expression: str, ...) -> pd.DataFrame:
+    """Compute factor values from expression using existing bin data via D.features()."""
+
+def compute_and_save_factor(self, factor_name: str, expression: str, ...) -> Dict[str, Any]:
+    """Compute factor from expression and save to bin files."""
+```
+
+**New Methods in `FactorService`**:
+
+```python
+def compute_and_save_factor(self, factor_id: uuid.UUID, freq: str = "day") -> Dict[str, Any]:
+    """Compute factor from its expression and save to bin files."""
+
+def update_factor_with_recompute(self, factor_id: uuid.UUID, factor_data: FactorUpdate, ...) -> Dict[str, Any]:
+    """Update factor and recompute if expression changed."""
+
+def delete_factor_with_cleanup(self, factor_id: uuid.UUID, freq: str = "day") -> Dict[str, Any]:
+    """Delete factor from database and clean up bin files."""
+```
+
+**Test Result**:
+
+```
+Computing factor 'test_ma5' from expression: Mean($close, 5)
+Found 300 instruments
+Computed factor 'test_ma5': shape=(74987, 1), non-null=74987
+Factor 'test_ma5' written to 300 symbol directories
+Deleted 300 bin files for factor 'test_ma5' (failed: 0)
+```
+
+#### Requirement 3: Reorganize Config Files
+
+**Problem**: Configuration files were scattered in `config/` directory. Need to organize all Qlib-related configs into a dedicated folder.
+
+**Solution**: Moved all Qlib config files to `backend/app/config/qlib/` directory.
+
+**New Directory Structure**:
+
+```
+backend/app/config/qlib/
+├── __init__.py              # QlibConfig class - loads all configs
+├── system_config.yaml       # Data source, stock pool, freq, region, MongoDB, Online Serving
+├── training_config.yaml     # Model configuration, dataset configuration, training parameters
+├── backtest_config.yaml     # Strategy configuration, backtest parameters, trading costs
+└── paper_trading_config.yaml # Portfolio settings, strategy settings, risk management
+```
+
+**QlibConfig Class Features**:
+
+- Singleton pattern for global access
+- Loads all 4 config files on initialization
+- Provides property accessors for all configuration values
+- `to_dict()` method returns all configurations
+
+**Usage Example**:
+
+```python
+from app.config.qlib import qlib_config
+
+# System config
+print(qlib_config.freq)        # "day"
+print(qlib_config.stock_pool)  # "csi300"
+
+# Training config
+print(qlib_config.task_config)
+
+# Backtest config
+print(qlib_config.backtest_strategy)
+
+# Paper trading config
+print(qlib_config.initial_cash)  # 100000000.0
+print(qlib_config.topk)          # 50
+```
+
+#### Requirement 4: Clean Up Unused Code
+
+**Problem**: Some code files were not being used and cluttered the codebase.
+
+**Solution**: Identified and removed unused files.
+
+**Deleted Files**:
+
+- `backend/app/services/factor_expression_validator.py` - Not referenced by any other file
+- `backend/app/config/training_config.yaml` - Moved to qlib/ folder
+- `backend/app/config/backtest_config.yaml` - Moved to qlib/ folder
+
+### Lessons Learned
+
+1. **PowerShell and `$` in strings**: When testing Qlib expressions in PowerShell, `$close` is interpreted as a variable. Solution: Use test script files instead of inline commands.
+
+2. **Qlib instrument format**: Qlib uses lowercase instrument names (e.g., `sh600000`) in `features/` directories, but uppercase in `instruments/all.txt`. Always convert to lowercase when querying data.
+
+3. **Configuration change detection**: Use a hash of key configuration values to detect changes and trigger data cleanup.
+
+4. **Singleton pattern for config**: Using singleton pattern ensures consistent configuration access across the application.
