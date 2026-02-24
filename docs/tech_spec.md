@@ -8735,3 +8735,214 @@ Current model metrics indicate weak predictive power:
 4. Use more training data
 
 ---
+
+## Backtest Page Implementation
+
+**Date**: 2026-02-24
+
+### Overview
+
+The Backtest page provides comprehensive strategy backtesting functionality with risk analysis and visualization. It allows users to evaluate trading strategy performance using historical data.
+
+### Architecture
+
+```
+Frontend (backtest.tsx)
+    ↓ API Calls
+Backend API (/api/v1/backtest/*)
+    ↓
+OnlineServingService.execute_backtest()
+    ↓
+Qlib backtest_func() + risk_analysis()
+    ↓
+Results with Risk Metrics + Chart Data
+```
+
+### Backend Implementation
+
+#### New Router: `backend/app/api/routes/backtest.py`
+
+Dedicated backtest router with 4 endpoints:
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/config` | GET | Get backtest configuration from YAML |
+| `/status` | GET | Check if backtest is ready (predictions available) |
+| `/latest-result` | GET | Get persisted latest backtest result |
+| `/run` | POST | Execute backtest and return results |
+
+#### Pydantic Models
+
+```python
+class RiskMetrics(BaseModel):
+    annualized_return: Optional[float]  # Annualized return rate
+    max_drawdown: Optional[float]       # Maximum drawdown
+    sharpe_ratio: Optional[float]       # Risk-adjusted return (Information Ratio)
+    volatility: Optional[float]         # Standard deviation of returns
+    calmar_ratio: Optional[float]       # Annualized Return / Max Drawdown
+    win_rate: Optional[float]           # Percentage of profitable days
+    profit_loss_ratio: Optional[float]  # Avg gain / Avg loss
+
+class BacktestRunResponse(BaseModel):
+    status: str
+    # Basic metrics
+    total_return: Optional[float]
+    net_return: Optional[float]
+    total_cost: Optional[float]
+    # Enhanced metrics
+    risk_metrics: Optional[RiskMetrics]
+    charts: Optional[Dict[str, Any]]
+```
+
+#### Risk Metrics Calculation (`online_serving_service.py`)
+
+```python
+def _calculate_risk_metrics(self, report_df, freq):
+    # Use Qlib's risk_analysis - returns DataFrame with 'risk' column
+    analysis_df = risk_analysis(returns, freq=freq)
+    
+    metrics = {
+        "annualized_return": analysis_df.loc["annualized_return", "risk"],
+        "max_drawdown": analysis_df.loc["max_drawdown", "risk"],
+        "sharpe_ratio": analysis_df.loc["information_ratio", "risk"],
+        "volatility": analysis_df.loc["std", "risk"],
+    }
+    
+    # Additional calculated metrics
+    metrics["calmar_ratio"] = annualized_return / |max_drawdown|
+    metrics["win_rate"] = positive_days / total_days
+    metrics["profit_loss_ratio"] = avg_gain / avg_loss
+```
+
+#### Chart Data Generation
+
+```python
+def _generate_backtest_charts(self, report_df, benchmark):
+    charts = {
+        "cumulative_returns": [...],  # Strategy vs Benchmark
+        "return_distribution": [...],  # Histogram bins
+        "max_drawdown_info": {
+            "max_drawdown": float,
+            "peak_date": str,
+            "max_drawdown_date": str,
+            "peak_value": float,
+            "trough_value": float,
+        }
+    }
+```
+
+### Frontend Implementation
+
+#### File: `frontend/src/routes/_layout/backtest.tsx`
+
+**Key Components**:
+
+1. **Strategy Configuration Card**: Displays backtest config from YAML
+2. **Backtest Status Card**: Shows readiness and mutation status
+3. **Backtest Results Card**: Basic metrics (trading days, returns, costs)
+4. **Risk Metrics Card**: 7 risk indicators with tooltip explanations
+5. **Cumulative Returns Chart**: AreaChart with max drawdown annotation
+6. **Return Distribution Chart**: BarChart histogram
+
+**MetricTooltip Component**:
+
+```tsx
+function MetricTooltip({ content }: { content: string }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help ml-1" />
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[250px]">
+          <p className="text-xs">{content}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+```
+
+**Max Drawdown Visualization**:
+
+- Orange vertical line: Peak date (start of drawdown)
+- Red vertical line: Trough date (bottom of drawdown)
+- Summary box below chart with drawdown details
+
+### Risk Metrics Explained
+
+| Metric | Description | Good Value |
+|--------|-------------|------------|
+| **Annualized Return** | Yearly return rate | > 0% |
+| **Max Drawdown** | Largest peak-to-trough decline | > -30% |
+| **Sharpe Ratio** | Risk-adjusted return | > 1.0 (excellent > 2.0) |
+| **Volatility** | Return standard deviation | Lower is more stable |
+| **Calmar Ratio** | Return / Drawdown | > 1.0 |
+| **Win Rate** | % of profitable days | > 50% |
+| **Profit/Loss Ratio** | Avg win / Avg loss | > 1.0 |
+
+### Problems Encountered and Solutions
+
+#### Problem 1: Risk Metrics All Zero
+
+**Symptom**: All risk metrics displayed as 0.00%
+**Root Cause**: Qlib's `risk_analysis()` returns a DataFrame, not a dict
+**Solution**: 
+```python
+# Wrong: analysis.get("annualized_return", 0)
+# Correct: analysis_df.loc["annualized_return", "risk"]
+```
+
+**Debugging Command**:
+```powershell
+docker exec quantbot-backend-1 python -c "from qlib.contrib.evaluate import risk_analysis; import pandas as pd; import numpy as np; returns = pd.Series(np.random.randn(100) * 0.01); result = risk_analysis(returns, freq='day'); print(type(result)); print(result)"
+```
+
+#### Problem 2: Confusing Drawdown Chart
+
+**Symptom**: Separate drawdown chart showed every day as "losing"
+**Root Cause**: Drawdown chart shows distance from historical high, not daily P&L
+**Solution**: Removed separate drawdown chart, integrated max drawdown annotation into cumulative returns chart
+
+**Best Practice for Drawdown Visualization**:
+- Show drawdown on cumulative returns chart
+- Mark peak (start) and trough (bottom) with vertical lines
+- Display summary box with key dates and values
+
+#### Problem 3: Trading Costs Display Precision
+
+**Symptom**: `open_cost: 0.0003` displayed as `0`
+**Root Cause**: `toLocaleString()` rounds small decimals
+**Solution**: 
+```tsx
+{value < 0.01 && value > 0 ? value.toFixed(4) : value.toLocaleString()}
+```
+
+#### Problem 4: 404 Errors on Backtest API
+
+**Symptom**: Frontend called `/api/v1/backtest/*` but got 404
+**Root Cause**: Backend only had `/api/v1/online/backtest` endpoint
+**Solution**: Created dedicated `/api/v1/backtest` router matching frontend expectations
+
+### Lessons Learned
+
+1. **Qlib API Return Types**: Always verify return types with test commands before assuming dict/DataFrame
+2. **Drawdown Visualization**: Professional approach is to annotate on cumulative returns chart, not separate chart
+3. **Tooltip for Complex Metrics**: Non-finance users need explanations; use hover tooltips
+4. **API Design**: Frontend-first approach - design backend endpoints to match frontend needs
+5. **Precision Display**: Small decimal values need special formatting (toFixed vs toLocaleString)
+
+### Files Modified
+
+**Backend**:
+- `backend/app/api/routes/backtest.py` (new)
+- `backend/app/api/main.py` (register router)
+- `backend/app/services/online_serving_service.py` (add risk metrics + charts)
+- `backend/app/api/routes/online.py` (remove redundant backtest endpoint)
+
+**Frontend**:
+- `frontend/src/routes/_layout/backtest.tsx` (complete rewrite)
+- `frontend/src/components/Sidebar/AppSidebar.tsx` (rename Models → Model)
+- `frontend/src/routes/_layout/models.tsx` (rename page title)
+
+---

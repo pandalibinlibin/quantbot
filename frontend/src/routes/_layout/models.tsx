@@ -42,7 +42,7 @@ import {
 
 export const Route = createFileRoute("/_layout/models")({
   component: ModelsPage,
-  head: () => ({ meta: [{ title: "Models - Qlib Quantbot" }] }),
+  head: () => ({ meta: [{ title: "Model - Qlib Quantbot" }] }),
 });
 
 // Helper function to format date
@@ -245,7 +245,7 @@ function ModelsPage() {
         <div className="space-y-6">
           {/* Page Header */}
           <div>
-            <h1 className="text-2xl font-bold">Models</h1>
+            <h1 className="text-2xl font-bold">Model</h1>
             <p className="text-muted-foreground">
               Rolling Ensemble model performance analysis
             </p>

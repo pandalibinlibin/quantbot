@@ -12,6 +12,7 @@ from app.api.routes import (
     online,
     paper_trading,
     models,
+    backtest,
 )
 from app.core.config import settings
 
@@ -32,6 +33,7 @@ api_router.include_router(online.router, prefix="/online", tags=["Online Serving
 api_router.include_router(
     paper_trading.router, prefix="/paper-trading", tags=["Paper Trading"]
 )
+api_router.include_router(backtest.router, prefix="/backtest", tags=["Backtest"])
 
 if settings.ENVIRONMENT == "local":
     api_router.include_router(private.router)

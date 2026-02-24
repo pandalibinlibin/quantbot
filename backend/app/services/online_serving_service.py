@@ -847,11 +847,17 @@ class OnlineServingService:
             analysis_freq = "{0}{1}".format(*Freq.parse(freq))
             report_df, positions = portfolio_metric_dict.get(analysis_freq)
 
-            # Calculate metrics
+            # Calculate basic metrics
             total_return = (
                 report_df["return"].sum() if "return" in report_df.columns else 0
             )
             total_cost = report_df["cost"].sum() if "cost" in report_df.columns else 0
+
+            # Calculate risk metrics using Qlib's risk_analysis
+            risk_metrics = self._calculate_risk_metrics(report_df, freq)
+
+            # Generate chart data
+            chart_data = self._generate_backtest_charts(report_df, benchmark)
 
             result = {
                 "status": "success",
@@ -871,6 +877,10 @@ class OnlineServingService:
                 "topk": topk,
                 "n_drop": n_drop,
                 "benchmark": benchmark,
+                # Risk metrics
+                "risk_metrics": risk_metrics,
+                # Chart data
+                "charts": chart_data,
             }
 
             self.logger.info(
@@ -1105,6 +1115,219 @@ class OnlineServingService:
         except Exception as e:
             self.logger.error(f"Failed to calculate model metrics: {e}")
             return {"success": False, "error": str(e)}
+
+    def _calculate_risk_metrics(
+        self, report_df: pd.DataFrame, freq: str
+    ) -> Dict[str, Any]:
+        """
+        Calculate risk metrics from backtest report.
+
+        Uses Qlib's risk_analysis for standard metrics:
+        - Annualized Return
+        - Max Drawdown
+        - Sharpe Ratio (Information Ratio)
+        - Volatility (Std)
+
+        Args:
+            report_df: Backtest report DataFrame with 'return' column
+            freq: Data frequency ('day' or '1min')
+
+        Returns:
+            Dictionary of risk metrics
+        """
+        try:
+            from qlib.contrib.evaluate import risk_analysis
+
+            if "return" not in report_df.columns:
+                return {}
+
+            returns = report_df["return"]
+
+            # Use Qlib's risk_analysis - returns a DataFrame with 'risk' column
+            analysis_df = risk_analysis(returns, freq=freq)
+
+            # Extract key metrics from the DataFrame
+            # The result is a DataFrame with index: mean, std, annualized_return, information_ratio, max_drawdown
+            # and column: 'risk'
+            metrics = {
+                "annualized_return": float(
+                    analysis_df.loc["annualized_return", "risk"]
+                ),
+                "max_drawdown": float(analysis_df.loc["max_drawdown", "risk"]),
+                "sharpe_ratio": float(analysis_df.loc["information_ratio", "risk"]),
+                "volatility": float(analysis_df.loc["std", "risk"]),
+            }
+
+            # Calculate additional metrics
+            # Calmar Ratio = Annualized Return / |Max Drawdown|
+            if metrics["max_drawdown"] != 0:
+                metrics["calmar_ratio"] = abs(
+                    metrics["annualized_return"] / metrics["max_drawdown"]
+                )
+            else:
+                metrics["calmar_ratio"] = 0
+
+            # Win rate
+            positive_days = (returns > 0).sum()
+            total_days = len(returns)
+            metrics["win_rate"] = (
+                float(positive_days / total_days) if total_days > 0 else 0
+            )
+
+            # Profit/Loss ratio
+            gains = returns[returns > 0]
+            losses = returns[returns < 0]
+            avg_gain = gains.mean() if len(gains) > 0 else 0
+            avg_loss = abs(losses.mean()) if len(losses) > 0 else 0
+            metrics["profit_loss_ratio"] = (
+                float(avg_gain / avg_loss) if avg_loss > 0 else 0
+            )
+
+            self.logger.info(f"Risk metrics calculated: {metrics}")
+            return metrics
+
+        except Exception as e:
+            self.logger.error(f"Failed to calculate risk metrics: {e}")
+            import traceback
+
+            self.logger.error(traceback.format_exc())
+            return {}
+
+    def _generate_backtest_charts(
+        self, report_df: pd.DataFrame, benchmark: str
+    ) -> Dict[str, Any]:
+        """
+        Generate chart data for backtest visualization.
+
+        Charts:
+        - Cumulative returns curve (strategy vs benchmark)
+        - Daily returns distribution
+        - Drawdown curve
+
+        Args:
+            report_df: Backtest report DataFrame
+            benchmark: Benchmark symbol
+
+        Returns:
+            Dictionary of chart data
+        """
+        try:
+            charts = {}
+
+            # 1. Cumulative Returns Chart
+            if "return" in report_df.columns:
+                cumulative = (1 + report_df["return"]).cumprod() - 1
+                cumulative_data = []
+                for date, value in cumulative.items():
+                    cumulative_data.append(
+                        {
+                            "date": str(date)[:10],
+                            "strategy": float(value),
+                        }
+                    )
+
+                # Add benchmark if available
+                if "bench" in report_df.columns:
+                    bench_cumulative = (1 + report_df["bench"]).cumprod() - 1
+                    for i, (date, value) in enumerate(bench_cumulative.items()):
+                        if i < len(cumulative_data):
+                            cumulative_data[i]["benchmark"] = float(value)
+
+                charts["cumulative_returns"] = cumulative_data
+
+            # 2. Daily Returns Distribution
+            if "return" in report_df.columns:
+                returns = report_df["return"].dropna()
+                # Create histogram bins
+                import numpy as np
+
+                hist, bin_edges = np.histogram(returns, bins=30)
+                distribution_data = []
+                for i in range(len(hist)):
+                    distribution_data.append(
+                        {
+                            "bin_start": float(bin_edges[i]),
+                            "bin_end": float(bin_edges[i + 1]),
+                            "bin_center": float((bin_edges[i] + bin_edges[i + 1]) / 2),
+                            "count": int(hist[i]),
+                        }
+                    )
+                charts["return_distribution"] = distribution_data
+
+            # 3. Max Drawdown Analysis (for annotation on cumulative returns chart)
+            if "return" in report_df.columns:
+                cumulative = (
+                    1 + report_df["return"]
+                ).cumprod() - 1  # Convert to percentage
+                running_max = (1 + report_df["return"]).cumprod().cummax()
+                drawdown = (
+                    (1 + report_df["return"]).cumprod() - running_max
+                ) / running_max
+
+                # Find max drawdown point (trough)
+                max_dd_idx = drawdown.idxmin()
+                max_dd_value = float(drawdown.min())
+
+                # Find the peak before max drawdown (start of drawdown period)
+                dd_before_max = drawdown.loc[:max_dd_idx]
+                peak_candidates = dd_before_max[dd_before_max == 0]
+                if len(peak_candidates) > 0:
+                    peak_date = peak_candidates.index[-1]
+                else:
+                    peak_date = drawdown.index[0]
+
+                # Get cumulative return values at peak and trough for annotation
+                peak_value = (
+                    float(cumulative.loc[peak_date])
+                    if peak_date in cumulative.index
+                    else 0
+                )
+                trough_value = float(cumulative.loc[max_dd_idx])
+
+                # Find recovery date (when cumulative returns exceed peak value again)
+                after_trough = cumulative.loc[max_dd_idx:]
+                recovery_candidates = after_trough[after_trough >= peak_value]
+                recovery_date = (
+                    str(recovery_candidates.index[0])[:10]
+                    if len(recovery_candidates) > 0
+                    else None
+                )
+
+                # Calculate drawdown duration
+                drawdown_days = (
+                    (max_dd_idx - peak_date).days
+                    if hasattr(max_dd_idx - peak_date, "days")
+                    else 0
+                )
+
+                charts["max_drawdown_info"] = {
+                    "max_drawdown": max_dd_value,
+                    "max_drawdown_date": str(max_dd_idx)[:10],
+                    "peak_date": str(peak_date)[:10],
+                    "peak_value": peak_value,
+                    "trough_value": trough_value,
+                    "recovery_date": recovery_date,
+                    "drawdown_days": drawdown_days,
+                }
+
+            # 4. Daily Returns Time Series
+            if "return" in report_df.columns:
+                daily_returns = []
+                for date, value in report_df["return"].items():
+                    daily_returns.append(
+                        {
+                            "date": str(date)[:10],
+                            "return": float(value),
+                        }
+                    )
+                charts["daily_returns"] = daily_returns
+
+            self.logger.info(f"Generated {len(charts)} chart datasets for backtest")
+            return charts
+
+        except Exception as e:
+            self.logger.error(f"Failed to generate backtest charts: {e}")
+            return {}
 
     def reset(self) -> Dict[str, Any]:
         """

@@ -5,11 +5,12 @@ This module provides REST API endpoints for Qlib Online Serving operations:
 - POST /routine: Execute daily routine (main entry point)
 - GET /status: Get current status
 - GET /signals: Get latest trading signals
-- POST /backtest: Execute backtest using Online Serving signals
 - POST /reset: Reset state (for debugging)
 
 The routine endpoint is the main entry point that should be called
 by a scheduled task (e.g., cron job) after market close each day.
+
+Note: Backtest functionality has been moved to /api/v1/backtest router.
 """
 
 from fastapi import APIRouter, HTTPException
@@ -229,110 +230,3 @@ def reset_state():
     except Exception as e:
         logger.error(f"Failed to reset state: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to reset state: {str(e)}")
-
-
-# Backtest Models
-
-
-class BacktestRequest(BaseModel):
-    """Request model for backtest endpoint."""
-
-    benchmark: Optional[str] = Field(
-        None,
-        description="Benchmark symbol for comparison (default: SH000300)",
-        example="SH000300",
-    )
-    topk: Optional[int] = Field(
-        None,
-        description="Number of stocks to hold (default: 50)",
-        example=50,
-    )
-    n_drop: Optional[int] = Field(
-        None,
-        description="Number of stocks to drop each day (default: 5)",
-        example=5,
-    )
-    account: Optional[float] = Field(
-        None,
-        description="Initial account value (default: 100000000)",
-        example=100000000,
-    )
-
-
-class BacktestResponse(BaseModel):
-    """Response model for backtest endpoint."""
-
-    status: str
-    start_time: Optional[str] = None
-    end_time: Optional[str] = None
-    freq: Optional[str] = None
-    trading_days: Optional[int] = None
-    signal_count: Optional[int] = None
-    total_return: Optional[float] = None
-    total_cost: Optional[float] = None
-    net_return: Optional[float] = None
-    final_account: Optional[float] = None
-    topk: Optional[int] = None
-    n_drop: Optional[int] = None
-    benchmark: Optional[str] = None
-    error: Optional[str] = None
-
-
-@router.post("/backtest", response_model=BacktestResponse)
-def execute_backtest(request: Optional[BacktestRequest] = None):
-    """
-    Execute backtest using trained model on full historical data.
-
-    This endpoint:
-    1. Loads the latest trained model from Online Serving or MLflow
-    2. Creates a dataset with full historical data
-    3. Uses the model to generate predictions (signals) for all days
-    4. Executes backtest using the predictions with TopkDropout strategy
-
-    This is independent of /routine - it only requires a trained model to exist.
-
-    Args:
-        request: Backtest configuration (all fields optional with defaults)
-
-    Returns:
-        Backtest results including returns, metrics, and configuration
-    """
-    try:
-        service = get_online_serving_service()
-
-        # Use default values if no request body provided
-        if request is None:
-            request = BacktestRequest()
-
-        result = service.execute_backtest(
-            benchmark=request.benchmark,
-            topk=request.topk,
-            n_drop=request.n_drop,
-            account=request.account,
-        )
-
-        if result.get("status") == "error":
-            return BacktestResponse(
-                status="error",
-                error=result.get("error"),
-            )
-
-        return BacktestResponse(
-            status="success",
-            start_time=result.get("start_time"),
-            end_time=result.get("end_time"),
-            freq=result.get("freq"),
-            trading_days=result.get("trading_days"),
-            signal_count=result.get("signal_count"),
-            total_return=result.get("total_return"),
-            total_cost=result.get("total_cost"),
-            net_return=result.get("net_return"),
-            final_account=result.get("final_account"),
-            topk=result.get("topk"),
-            n_drop=result.get("n_drop"),
-            benchmark=result.get("benchmark"),
-        )
-
-    except Exception as e:
-        logger.error(f"Backtest failed: {e}")
-        raise HTTPException(status_code=500, detail=f"Backtest failed: {str(e)}")
