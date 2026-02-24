@@ -13,6 +13,7 @@ from app.api.routes import (
     paper_trading,
     models,
     backtest,
+    dashboard,
 )
 from app.core.config import settings
 
@@ -34,6 +35,7 @@ api_router.include_router(
     paper_trading.router, prefix="/paper-trading", tags=["Paper Trading"]
 )
 api_router.include_router(backtest.router, prefix="/backtest", tags=["Backtest"])
+api_router.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
 
 if settings.ENVIRONMENT == "local":
     api_router.include_router(private.router)

@@ -1,6 +1,6 @@
 # QuantBot 技术规格文档
 
-**版本**: 3.2 (Email Notification 完成版)  
+**版本**: 3.4 (Dashboard 实现版)  
 **最后更新**: 2026-02-24
 
 ---
@@ -9327,3 +9327,143 @@ INFO:app.api.routes.paper_trading:Trading plan email sent: Trading plan sent to 
 ```
 
 ---
+
+## Dashboard Page Design (2026-02-24)
+
+### Overview
+
+Dashboard serves as the portal page for QuantBot, providing users with a quick overview of system status and key metrics.
+
+### Design Goals
+
+1. Show system health and operational status at a glance
+2. Display portfolio performance and key investment metrics
+3. Highlight model quality indicators
+4. Surface alerts and required actions
+
+### Page Layout
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  📊 Dashboard                                          [Refresh]    │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐   │
+│  │ 💰 Portfolio│ │ 📈 Return   │ │ 🎯 Model IC │ │ ⚡ System   │   │
+│  │   Value     │ │   Rate      │ │             │ │   Status    │   │
+│  │ ¥10,120,986 │ │   +1.21%    │ │   0.045     │ │   Online    │   │
+│  │ ↑ +120,986  │ │ Ann: +15.2% │ │ ICIR: 0.32  │ │ Signals: 75K│   │
+│  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘   │
+│                                                                     │
+│  ┌───────────────────────────────┐ ┌───────────────────────────────┐│
+│  │ 📊 Portfolio Performance      │ │ 🏆 Top Holdings               ││
+│  │   [Return curve - 30 days]    │ │  1. SH600519  ¥195,603  2.0% ││
+│  │                               │ │  2. SH600346  ¥199,216  2.0% ││
+│  │                               │ │  ...                         ││
+│  └───────────────────────────────┘ └───────────────────────────────┘│
+│                                                                     │
+│  ┌───────────────────────────────┐ ┌───────────────────────────────┐│
+│  │ 📅 Recent Activity            │ │ ⚠️ Alerts & Actions           ││
+│  │ • 2026-02-24 Routine ✅       │ │ • Routine not run today       ││
+│  │ • 2026-02-24 Execute 50 buys  │ │ • Model IC below threshold    ││
+│  └───────────────────────────────┘ └───────────────────────────────┘│
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Module Details
+
+#### 1. KPI Cards (Top Row)
+
+| Card            | Data Source   | Content                                    |
+| --------------- | ------------- | ------------------------------------------ |
+| Portfolio Value | Paper Trading | Total assets, P&L amount, color-coded      |
+| Return Rate     | Paper Trading | Cumulative return, annualized return       |
+| Model IC        | Models        | IC value, ICIR value, evaluation grade     |
+| System Status   | Routine       | Online status, signal count, last run time |
+
+#### 2. Portfolio Performance Chart
+
+- **Source**: Paper Trading daily records
+- **Type**: Line chart (Recharts)
+- **Content**: 30-day cumulative return curve with baseline
+
+#### 3. Top Holdings
+
+- **Source**: Paper Trading Portfolio
+- **Content**: Top 5 holdings with code, value, weight
+
+#### 4. Recent Activity
+
+- **Source**: Aggregated from all modules
+- **Content**: Last 5 system activities (routine, trades, emails)
+
+#### 5. Alerts & Actions
+
+- **Source**: Aggregated status checks
+- **Content**: Warnings requiring attention, quick action buttons
+
+### Backend API
+
+**Endpoint**: `GET /api/v1/dashboard/summary`
+
+**Response**:
+
+```json
+{
+  "success": true,
+  "portfolio": {
+    "total_value": 10120986.0,
+    "initial_cash": 10000000.0,
+    "total_return": 120986.0,
+    "total_return_pct": "1.21%",
+    "annualized_return_pct": "15.2%",
+    "position_count": 50
+  },
+  "model": {
+    "ic": 0.045,
+    "icir": 0.32,
+    "evaluation": "Good"
+  },
+  "system": {
+    "is_initialized": true,
+    "signal_count": 74987,
+    "last_routine_time": "2026-02-24T11:19:40",
+    "data_range": {"start": "2025-02-10", "end": "2026-02-13"}
+  },
+  "top_holdings": [...],
+  "recent_activities": [...],
+  "alerts": [...]
+}
+```
+
+### Files
+
+- `backend/app/api/routes/dashboard.py` - Dashboard API
+- `frontend/src/routes/_layout/index.tsx` - Dashboard page
+
+### Implementation Summary (v3.4)
+
+**Completed Features**:
+
+1. **Backend API** (`/api/v1/dashboard/summary`):
+
+   - Aggregates data from Paper Trading, Model Metrics, and Online Serving
+   - Reads model metrics from persisted JSON file (`active_metrics.json`)
+   - Detects system initialization status from metrics file existence
+   - Returns portfolio summary, model IC/ICIR, system status, top holdings, recent activities, and alerts
+
+2. **Frontend Dashboard**:
+
+   - 4 KPI cards: Portfolio Value, Return Rate, Model IC, System Status
+   - Portfolio performance line chart (Recharts)
+   - Top 5 holdings list with value and weight
+   - Recent activity feed (last 5 activities)
+   - Alerts section with action buttons
+   - Auto-refresh every 30 seconds
+   - Currency display: Full number format (e.g., ¥10,000,000.00)
+
+3. **Data Sources**:
+   - Portfolio data: `PaperTradingService.get_portfolio()`
+   - Model metrics: `/app/mlruns/model_metrics/active_metrics.json`
+   - System status: Derived from metrics file existence + `OnlineServingService.get_status()`
+   - Trade history: `PaperTradingService.get_trade_history()`
