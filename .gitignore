@@ -10,3 +10,5 @@ qlib-source/
 
 # Temporary scripts and test results - exclude from git
 temp_scripts/
+
+.env

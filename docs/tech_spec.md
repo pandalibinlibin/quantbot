@@ -1,6 +1,6 @@
 # QuantBot 技术规格文档
 
-**版本**: 3.1 (Paper Trading 完成版)  
+**版本**: 3.2 (Email Notification 完成版)  
 **最后更新**: 2026-02-24
 
 ---
@@ -9234,5 +9234,96 @@ Note: If trading days < 30, display warning "Insufficient data, metrics for refe
 **Frontend**:
 
 - `frontend/src/routes/_layout/paper-trading.tsx` - Paper Trading page component
+
+---
+
+## Email Notification Feature (2026-02-24)
+
+### Overview
+
+Implemented email notification system for Paper Trading that automatically sends trading plan emails after successful trade execution.
+
+### Features
+
+1. **Notification Configuration API**
+
+   - GET/PUT `/api/v1/paper-trading/notification/config` - Manage notification settings
+   - POST `/api/v1/paper-trading/notification/recipient` - Add email recipient
+   - DELETE `/api/v1/paper-trading/notification/recipient` - Remove recipient
+   - POST `/api/v1/paper-trading/notification/test` - Send test email
+
+2. **Automatic Email on Execute**
+
+   - Trading plan email sent automatically after successful trade execution
+   - Only sent for non-dry-run executions
+   - Includes detailed buy/sell orders with target weights and reference prices
+
+3. **Email Content**
+   - Subject: `QuantBot: Trading Plan {date}`
+   - HTML formatted with styled tables
+   - Sell orders with sell percentage and reason
+   - Buy orders with target weight (%), reference price, and score
+   - Portfolio summary (total value, cash)
+   - Execution summary (sells/buys executed count)
+
+### SMTP Configuration
+
+Configured via `.env` file (gitignored for security):
+
+```env
+SMTP_HOST=smtp.qq.com
+SMTP_PORT=465
+SMTP_USER=your_email@qq.com
+SMTP_PASSWORD=your_authorization_code
+SMTP_SSL=True
+EMAILS_FROM_EMAIL=your_email@qq.com
+```
+
+### Docker Compose Configuration
+
+Updated `docker-compose.override.yml`:
+
+- Uses environment variable substitution for SMTP settings
+- Added DNS servers (223.5.5.5, 114.114.114.114) for container DNS resolution
+- Added `smtp.qq.com` to `NO_PROXY` to bypass proxy for SMTP connections
+
+### Files Modified
+
+**Backend**:
+
+- `backend/app/services/notification_service.py` - NotificationService with email sending logic
+- `backend/app/api/routes/paper_trading.py` - Added notification endpoints and execute integration
+
+**Configuration**:
+
+- `.env` - SMTP configuration (gitignored)
+- `docker-compose.override.yml` - Docker environment variables and DNS settings
+
+### API Response Examples
+
+**Get Notification Config**:
+
+```json
+{
+  "success": true,
+  "config": {
+    "enabled": true,
+    "recipients": ["user@example.com"],
+    "smtp_host": "smtp.qq.com",
+    "smtp_port": 465,
+    "smtp_user": "sender@qq.com",
+    "smtp_tls": false,
+    "from_email": "sender@qq.com",
+    "from_name": "QuantBot"
+  }
+}
+```
+
+**Execute Response with Email**:
+
+```
+INFO:app.utils:send email result: <emails.backend.SMTPResponse status_code=250 status_text=b'OK: queued as.'>
+INFO:app.api.routes.paper_trading:Trading plan email sent: Trading plan sent to 1 recipients
+```
 
 ---

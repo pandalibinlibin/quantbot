@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Optional
 import logging
 
 from app.services.paper_trading_service import get_paper_trading_service
+from app.services.notification_service import get_notification_service
 
 logger = logging.getLogger(__name__)
 
@@ -462,7 +463,7 @@ def execute_trades(request: ExecuteRequest = None):
                 summary=trading_plan_data.get("summary", {}),
             )
 
-        return ExecuteResponse(
+        response = ExecuteResponse(
             success=result.get("success", False),
             date=result.get("date"),
             dry_run=result.get("dry_run", False),
@@ -476,6 +477,48 @@ def execute_trades(request: ExecuteRequest = None):
             trading_plan=trading_plan,
             error=result.get("error"),
         )
+
+        # Send email notification if execution was successful and not dry run
+        if result.get("success") and not dry_run:
+            try:
+                notification_service = get_notification_service()
+                # Build email data from result
+                email_data = {
+                    "date": result.get("date"),
+                    "strategy": "TopkDropout",
+                    "sells_executed": result.get("sells_executed", 0),
+                    "buys_executed": result.get("buys_executed", 0),
+                    "sell_orders": (
+                        trading_plan_data.get("sell_orders", [])
+                        if trading_plan_data
+                        else []
+                    ),
+                    "buy_orders": (
+                        trading_plan_data.get("buy_orders", [])
+                        if trading_plan_data
+                        else []
+                    ),
+                    "portfolio": {
+                        "total_value": result.get("final_cash", 0)
+                        + sum(
+                            t.get("value", 0) for t in result.get("executed_buys", [])
+                        ),
+                        "cash": result.get("final_cash", 0),
+                    },
+                }
+                email_result = notification_service.send_trading_plan_email(email_data)
+                if email_result.get("success"):
+                    logger.info(
+                        f"Trading plan email sent: {email_result.get('message')}"
+                    )
+                else:
+                    logger.warning(
+                        f"Failed to send trading plan email: {email_result.get('error')}"
+                    )
+            except Exception as email_error:
+                logger.warning(f"Email notification failed: {email_error}")
+
+        return response
 
     except Exception as e:
         logger.error(f"Failed to execute trades: {e}")
@@ -573,4 +616,209 @@ def reset_paper_trading():
         logger.error(f"Failed to reset paper trading: {e}")
         raise HTTPException(
             status_code=500, detail=f"Failed to reset paper trading: {str(e)}"
+        )
+
+
+# ============== Notification API ==============
+
+
+class NotificationConfig(BaseModel):
+    """Notification configuration model."""
+
+    enabled: bool = False
+    recipients: List[str] = []
+    smtp_host: Optional[str] = None
+    smtp_port: Optional[int] = 587
+    smtp_user: Optional[str] = None
+    smtp_tls: Optional[bool] = True
+    from_email: Optional[str] = None
+    from_name: Optional[str] = "QuantBot"
+    updated_at: Optional[str] = None
+
+
+class NotificationConfigResponse(BaseModel):
+    """Response model for notification config."""
+
+    success: bool
+    config: Optional[NotificationConfig] = None
+    error: Optional[str] = None
+
+
+class UpdateNotificationConfigRequest(BaseModel):
+    """Request model for updating notification config."""
+
+    enabled: Optional[bool] = None
+    recipients: Optional[List[str]] = None
+    smtp_host: Optional[str] = None
+    smtp_port: Optional[int] = None
+    smtp_user: Optional[str] = None
+    smtp_password: Optional[str] = None
+    smtp_tls: Optional[bool] = None
+    from_email: Optional[str] = None
+    from_name: Optional[str] = None
+
+
+class AddRecipientRequest(BaseModel):
+    """Request model for adding a recipient."""
+
+    email: str
+
+
+class RecipientResponse(BaseModel):
+    """Response model for recipient operations."""
+
+    success: bool
+    message: Optional[str] = None
+    recipients: Optional[List[str]] = None
+    error: Optional[str] = None
+
+
+class TestEmailRequest(BaseModel):
+    """Request model for sending test email."""
+
+    recipient: Optional[str] = None
+
+
+class TestEmailResponse(BaseModel):
+    """Response model for test email."""
+
+    success: bool
+    message: Optional[str] = None
+    error: Optional[str] = None
+
+
+@router.get("/notification/config", response_model=NotificationConfigResponse)
+def get_notification_config():
+    """
+    Get current notification configuration.
+
+    Returns notification settings including enabled status, recipients, and SMTP config.
+    """
+    try:
+        service = get_notification_service()
+        result = service.get_config()
+
+        config = None
+        if result.get("config"):
+            config = NotificationConfig(**result["config"])
+
+        return NotificationConfigResponse(
+            success=result.get("success", False),
+            config=config,
+            error=result.get("error"),
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get notification config: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get notification config: {str(e)}"
+        )
+
+
+@router.put("/notification/config", response_model=NotificationConfigResponse)
+def update_notification_config(request: UpdateNotificationConfigRequest):
+    """
+    Update notification configuration.
+
+    Allows updating enabled status, recipients, and SMTP settings.
+    """
+    try:
+        service = get_notification_service()
+        result = service.update_config(
+            enabled=request.enabled,
+            recipients=request.recipients,
+            smtp_host=request.smtp_host,
+            smtp_port=request.smtp_port,
+            smtp_user=request.smtp_user,
+            smtp_password=request.smtp_password,
+            smtp_tls=request.smtp_tls,
+            from_email=request.from_email,
+            from_name=request.from_name,
+        )
+
+        config = None
+        if result.get("config"):
+            config = NotificationConfig(**result["config"])
+
+        return NotificationConfigResponse(
+            success=result.get("success", False),
+            config=config,
+            error=result.get("error"),
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to update notification config: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to update notification config: {str(e)}"
+        )
+
+
+@router.post("/notification/recipient", response_model=RecipientResponse)
+def add_recipient(request: AddRecipientRequest):
+    """
+    Add a recipient email address.
+    """
+    try:
+        service = get_notification_service()
+        result = service.add_recipient(request.email)
+
+        return RecipientResponse(
+            success=result.get("success", False),
+            message=result.get("message"),
+            recipients=result.get("recipients"),
+            error=result.get("error"),
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to add recipient: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to add recipient: {str(e)}"
+        )
+
+
+@router.delete("/notification/recipient/{email}", response_model=RecipientResponse)
+def remove_recipient(email: str):
+    """
+    Remove a recipient email address.
+    """
+    try:
+        service = get_notification_service()
+        result = service.remove_recipient(email)
+
+        return RecipientResponse(
+            success=result.get("success", False),
+            message=result.get("message"),
+            recipients=result.get("recipients"),
+            error=result.get("error"),
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to remove recipient: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to remove recipient: {str(e)}"
+        )
+
+
+@router.post("/notification/test", response_model=TestEmailResponse)
+def send_test_email(request: TestEmailRequest = None):
+    """
+    Send a test email to verify notification configuration.
+
+    Optionally specify a recipient, otherwise uses the first configured recipient.
+    """
+    try:
+        service = get_notification_service()
+        recipient = request.recipient if request else None
+        result = service.send_test_email(recipient=recipient)
+
+        return TestEmailResponse(
+            success=result.get("success", False),
+            message=result.get("message"),
+            error=result.get("error"),
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to send test email: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to send test email: {str(e)}"
         )
