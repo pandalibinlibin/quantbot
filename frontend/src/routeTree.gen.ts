@@ -17,6 +17,7 @@ import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutRoutineRouteImport } from './routes/_layout/routine'
+import { Route as LayoutPaperTradingRouteImport } from './routes/_layout/paper-trading'
 import { Route as LayoutModelsRouteImport } from './routes/_layout/models'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutFactorsRouteImport } from './routes/_layout/factors'
@@ -63,6 +64,11 @@ const LayoutRoutineRoute = LayoutRoutineRouteImport.update({
   path: '/routine',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutPaperTradingRoute = LayoutPaperTradingRouteImport.update({
+  id: '/paper-trading',
+  path: '/paper-trading',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutModelsRoute = LayoutModelsRouteImport.update({
   id: '/models',
   path: '/models',
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/factors': typeof LayoutFactorsRoute
   '/items': typeof LayoutItemsRoute
   '/models': typeof LayoutModelsRoute
+  '/paper-trading': typeof LayoutPaperTradingRoute
   '/routine': typeof LayoutRoutineRoute
   '/settings': typeof LayoutSettingsRoute
   '/': typeof LayoutIndexRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByTo {
   '/factors': typeof LayoutFactorsRoute
   '/items': typeof LayoutItemsRoute
   '/models': typeof LayoutModelsRoute
+  '/paper-trading': typeof LayoutPaperTradingRoute
   '/routine': typeof LayoutRoutineRoute
   '/settings': typeof LayoutSettingsRoute
   '/': typeof LayoutIndexRoute
@@ -137,6 +145,7 @@ export interface FileRoutesById {
   '/_layout/factors': typeof LayoutFactorsRoute
   '/_layout/items': typeof LayoutItemsRoute
   '/_layout/models': typeof LayoutModelsRoute
+  '/_layout/paper-trading': typeof LayoutPaperTradingRoute
   '/_layout/routine': typeof LayoutRoutineRoute
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/': typeof LayoutIndexRoute
@@ -154,6 +163,7 @@ export interface FileRouteTypes {
     | '/factors'
     | '/items'
     | '/models'
+    | '/paper-trading'
     | '/routine'
     | '/settings'
     | '/'
@@ -169,6 +179,7 @@ export interface FileRouteTypes {
     | '/factors'
     | '/items'
     | '/models'
+    | '/paper-trading'
     | '/routine'
     | '/settings'
     | '/'
@@ -185,6 +196,7 @@ export interface FileRouteTypes {
     | '/_layout/factors'
     | '/_layout/items'
     | '/_layout/models'
+    | '/_layout/paper-trading'
     | '/_layout/routine'
     | '/_layout/settings'
     | '/_layout/'
@@ -256,6 +268,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutRoutineRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/paper-trading': {
+      id: '/_layout/paper-trading'
+      path: '/paper-trading'
+      fullPath: '/paper-trading'
+      preLoaderRoute: typeof LayoutPaperTradingRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/models': {
       id: '/_layout/models'
       path: '/models'
@@ -308,6 +327,7 @@ interface LayoutRouteChildren {
   LayoutFactorsRoute: typeof LayoutFactorsRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
   LayoutModelsRoute: typeof LayoutModelsRoute
+  LayoutPaperTradingRoute: typeof LayoutPaperTradingRoute
   LayoutRoutineRoute: typeof LayoutRoutineRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
@@ -320,6 +340,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutFactorsRoute: LayoutFactorsRoute,
   LayoutItemsRoute: LayoutItemsRoute,
   LayoutModelsRoute: LayoutModelsRoute,
+  LayoutPaperTradingRoute: LayoutPaperTradingRoute,
   LayoutRoutineRoute: LayoutRoutineRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutIndexRoute: LayoutIndexRoute,

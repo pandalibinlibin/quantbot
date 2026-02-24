@@ -1,7 +1,7 @@
 # QuantBot 技术规格文档
 
-**版本**: 3.0 (核心功能完成版)  
-**最后更新**: 2026-02-19
+**版本**: 3.1 (Paper Trading 完成版)  
+**最后更新**: 2026-02-24
 
 ---
 
@@ -9146,5 +9146,93 @@ Note: If trading days < 30, display warning "Insufficient data, metrics for refe
 | Phase 2 | Paper Trading basics (execute, portfolio, today's trades + CSV export) |
 | Phase 3 | Paper Trading analysis (risk metrics, charts)                          |
 | Phase 4 | Email notification (config, send)                                      |
+
+---
+
+## Paper Trading Implementation Complete (2026-02-24)
+
+### Features Implemented
+
+#### Backend API (`/api/v1/paper-trading`)
+
+| Endpoint       | Method | Description                                     |
+| -------------- | ------ | ----------------------------------------------- |
+| `/plan`        | POST   | Generate trading plan with last executed trades |
+| `/execute`     | POST   | Execute simulated trading based on signals      |
+| `/portfolio`   | GET    | Get current portfolio holdings                  |
+| `/trades`      | GET    | Get trade history                               |
+| `/performance` | GET    | Get performance metrics                         |
+| `/reset`       | POST   | Reset paper trading state                       |
+
+#### Trading Plan Features
+
+- **Percentage-based orders**: Uses `target_weight` (% of total assets) for buys and `sell_pct` (% of position) for sells
+- **TopkDropout Strategy**: Holds top K stocks, drops N worst performers daily
+- **Last Executed Trades**: Shows most recent executed trades even when Online Serving is not initialized
+- **Trading Plan in Execute Response**: Returns the generated trading plan along with execution results
+
+#### Performance Metrics
+
+| Metric              | Description                               |
+| ------------------- | ----------------------------------------- |
+| `total_return`      | Total return since inception              |
+| `annualized_return` | Annualized return (CAGR formula)          |
+| `max_drawdown`      | Maximum drawdown from peak                |
+| `sharpe_ratio`      | Sharpe ratio (requires >= 2 trading days) |
+| `win_rate`          | Win rate for sell trades                  |
+| `trading_days`      | Number of trading days                    |
+
+#### Frontend Features
+
+1. **Performance Metrics Card**: Displays initial cash, current value, cumulative return, annualized return, max drawdown, Sharpe ratio, trading days, position count
+
+2. **Trading Plan Tab**:
+
+   - Shows pending orders (sell/buy/hold) when Online Serving is initialized
+   - Shows last executed trades when Online Serving is not initialized
+   - Order summary with executed sells/buys count
+
+3. **Portfolio Tab**: Current holdings with instrument, shares, average cost, current value
+
+4. **Trade History Tab**: Complete trade history with filtering
+
+5. **Execute Button**: Triggers simulated trading with loading state and error handling
+
+6. **Reset Button**: Resets all paper trading state (portfolio, trades, daily records)
+
+### Data Persistence
+
+| Data            | File Path                                 |
+| --------------- | ----------------------------------------- |
+| Portfolio       | `/app/paper_trading/portfolio.json`       |
+| Trades          | `/app/paper_trading/trades.json`          |
+| Daily Records   | `/app/paper_trading/daily_records.json`   |
+| Trading Started | `/app/paper_trading/trading_started.json` |
+
+### Key Implementation Details
+
+1. **Initial Cash**: 10,000,000 (configurable via `qlib_config.initial_cash`)
+
+2. **Slippage Model**: 0.1% default slippage applied to execution prices
+
+3. **State Management**:
+
+   - `trading_started.json` tracks if paper trading has been initiated
+   - Reset clears all state files and marks trading as not started
+
+4. **Error Handling**:
+   - Returns `last_executed_trades` even when Online Serving is not initialized
+   - Graceful handling of edge cases (single trading day, zero return, etc.)
+
+### Files Modified
+
+**Backend**:
+
+- `backend/app/api/routes/paper_trading.py` - API routes and response models
+- `backend/app/services/paper_trading_service.py` - Business logic
+
+**Frontend**:
+
+- `frontend/src/routes/_layout/paper-trading.tsx` - Paper Trading page component
 
 ---

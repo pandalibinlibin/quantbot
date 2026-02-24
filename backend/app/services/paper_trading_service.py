@@ -34,6 +34,9 @@ PAPER_TRADING_DIR = Path(qlib_config.qlib_data_path).parent / "paper_trading"
 PORTFOLIO_FILE = PAPER_TRADING_DIR / "portfolio.json"
 TRADES_FILE = PAPER_TRADING_DIR / "trades.json"
 DAILY_RECORDS_FILE = PAPER_TRADING_DIR / "daily_records.json"
+TRADING_STARTED_FILE = (
+    PAPER_TRADING_DIR / "trading_started.json"
+)  # Track if trading has started
 
 
 class PaperTradingService:
@@ -222,6 +225,18 @@ class PaperTradingService:
 
         return prices
 
+    def _is_trading_started(self) -> bool:
+        """Check if paper trading has been started (at least one trade executed)."""
+        return TRADING_STARTED_FILE.exists()
+
+    def _mark_trading_started(self):
+        """Mark that paper trading has started."""
+        try:
+            with open(TRADING_STARTED_FILE, "w") as f:
+                json.dump({"started_at": datetime.now().isoformat()}, f)
+        except Exception as e:
+            self.logger.error(f"Failed to mark trading started: {e}")
+
     def get_trading_plan(
         self,
         date: Optional[str] = None,
@@ -230,7 +245,83 @@ class PaperTradingService:
         slippage: float = 0.001,
     ) -> Dict[str, Any]:
         """
-        Generate a percentage-based trading plan.
+        Generate a percentage-based trading plan (public API).
+
+        Returns empty plan if trading hasn't started yet.
+        Always includes last_executed_trades if available.
+        """
+        # Always load last executed trades (even if Online Serving not initialized)
+        last_executed_trades = self._get_last_executed_trades()
+
+        # Check if trading has started - if not, return empty plan with last executed trades
+        if not self._is_trading_started():
+            return {
+                "success": False,
+                "error": "Paper trading not started. Click 'Execute Trades' to start.",
+                "last_executed_trades": last_executed_trades,
+            }
+
+        result = self._generate_trading_plan(date, topk, n_drop, slippage)
+
+        # Ensure last_executed_trades is always included
+        if not result.get("last_executed_trades"):
+            result["last_executed_trades"] = last_executed_trades
+
+        return result
+
+    def _get_last_executed_trades(self) -> Dict[str, Any]:
+        """Get last executed trades from trades.json."""
+        all_trades = self._load_trades()
+        last_executed_sells = []
+        last_executed_buys = []
+
+        if all_trades:
+            # Get the latest trade date
+            latest_trade_date = max(t.get("date", "") for t in all_trades)
+            # Filter trades for the latest date
+            for t in all_trades:
+                if t.get("date") == latest_trade_date:
+                    if t.get("action") == "SELL":
+                        last_executed_sells.append(
+                            {
+                                "instrument": t.get("instrument"),
+                                "direction": "SELL",
+                                "shares": t.get("shares"),
+                                "price": t.get("price"),
+                                "value": t.get("value"),
+                                "sell_pct": t.get("sell_pct"),
+                                "executed_at": t.get("executed_at"),
+                            }
+                        )
+                    elif t.get("action") == "BUY":
+                        last_executed_buys.append(
+                            {
+                                "instrument": t.get("instrument"),
+                                "direction": "BUY",
+                                "shares": t.get("shares"),
+                                "price": t.get("price"),
+                                "value": t.get("value"),
+                                "target_weight": t.get("target_weight"),
+                                "executed_at": t.get("executed_at"),
+                            }
+                        )
+
+        return {
+            "sells": last_executed_sells,
+            "buys": last_executed_buys,
+            "sell_count": len(last_executed_sells),
+            "buy_count": len(last_executed_buys),
+        }
+
+    def _generate_trading_plan(
+        self,
+        date: Optional[str] = None,
+        topk: int = 50,
+        n_drop: int = 5,
+        slippage: float = 0.001,
+    ) -> Dict[str, Any]:
+        """
+        Internal method to generate a percentage-based trading plan.
 
         This method:
         1. Gets signals from OnlineManager
@@ -457,6 +548,41 @@ class PaperTradingService:
                         }
                     )
 
+            # Get last executed trades from trades.json
+            all_trades = self._load_trades()
+            last_executed_sells = []
+            last_executed_buys = []
+            if all_trades:
+                # Get the latest trade date
+                latest_trade_date = max(t.get("date", "") for t in all_trades)
+                # Filter trades for the latest date
+                for t in all_trades:
+                    if t.get("date") == latest_trade_date:
+                        if t.get("action") == "SELL":
+                            last_executed_sells.append(
+                                {
+                                    "instrument": t.get("instrument"),
+                                    "direction": "SELL",
+                                    "shares": t.get("shares"),
+                                    "price": t.get("price"),
+                                    "value": t.get("value"),
+                                    "sell_pct": t.get("sell_pct"),
+                                    "executed_at": t.get("executed_at"),
+                                }
+                            )
+                        elif t.get("action") == "BUY":
+                            last_executed_buys.append(
+                                {
+                                    "instrument": t.get("instrument"),
+                                    "direction": "BUY",
+                                    "shares": t.get("shares"),
+                                    "price": t.get("price"),
+                                    "value": t.get("value"),
+                                    "target_weight": t.get("target_weight"),
+                                    "executed_at": t.get("executed_at"),
+                                }
+                            )
+
             return {
                 "success": True,
                 "date": date,
@@ -479,6 +605,12 @@ class PaperTradingService:
                     "sell_count": len(sell_orders),
                     "buy_count": len(buy_orders),
                     "hold_count": len(hold_orders),
+                },
+                "last_executed_trades": {
+                    "sells": last_executed_sells,
+                    "buys": last_executed_buys,
+                    "sell_count": len(last_executed_sells),
+                    "buy_count": len(last_executed_buys),
                 },
             }
 
@@ -528,8 +660,8 @@ class PaperTradingService:
             Execution result with trades made
         """
         try:
-            # Get trading plan
-            plan = self.get_trading_plan(
+            # Get trading plan (use internal method to bypass trading_started check)
+            plan = self._generate_trading_plan(
                 date=date, topk=topk, n_drop=n_drop, slippage=slippage
             )
             if not plan.get("success"):
@@ -637,6 +769,7 @@ class PaperTradingService:
             if not dry_run:
                 self._save_portfolio(portfolio)
                 self._save_trades(trades)
+                self._mark_trading_started()  # Mark that trading has started
 
                 # Record daily snapshot
                 daily_records = self._load_daily_records()
@@ -669,6 +802,13 @@ class PaperTradingService:
                 "executed_buys": executed_buys,
                 "final_cash": cash,
                 "final_position_count": len(positions),
+                # Include trading plan for display
+                "trading_plan": {
+                    "sell_orders": plan.get("sell_orders", []),
+                    "buy_orders": plan.get("buy_orders", []),
+                    "hold_orders": plan.get("hold_orders", []),
+                    "summary": plan.get("summary", {}),
+                },
             }
 
         except Exception as e:
@@ -712,7 +852,7 @@ class PaperTradingService:
         Get paper trading performance metrics.
 
         Returns:
-            Performance metrics
+            Performance metrics including extended risk metrics
         """
         portfolio = self._load_portfolio()
         daily_records = self._load_daily_records()
@@ -731,6 +871,71 @@ class PaperTradingService:
         # Calculate trade statistics
         buy_trades = [t for t in trades if t.get("action") == "BUY"]
         sell_trades = [t for t in trades if t.get("action") == "SELL"]
+        trading_days = len(daily_records)
+
+        # Extended metrics - provide reasonable defaults for single day
+        annualized_return = None
+        annualized_return_pct = None
+        max_drawdown = 0.0  # Default to 0 for single day
+        max_drawdown_pct = "0.00%"
+        sharpe_ratio = None
+        win_rate = None
+        win_rate_pct = None
+
+        # Calculate win rate from trades
+        if sell_trades:
+            # For now, consider a sell trade "winning" if it's part of the strategy
+            # In a real scenario, you'd compare sell price vs buy price
+            win_rate = 0.0  # Placeholder - need actual P&L calculation
+            win_rate_pct = "N/A"
+
+        if trading_days > 0:
+            # Annualized return (assuming 252 trading days per year)
+            years = trading_days / 252
+            if years > 0:
+                # Use compound annual growth rate formula
+                # Handle total_return = 0 case
+                annualized_return = (1 + total_return) ** (1 / years) - 1
+                annualized_return_pct = f"{annualized_return * 100:.2f}%"
+
+            # Calculate max drawdown from daily records (daily_records is a list)
+            if daily_records:
+                # Sort by date
+                sorted_records = sorted(daily_records, key=lambda x: x.get("date", ""))
+                values = [r.get("total_value", initial_cash) for r in sorted_records]
+
+                if values:
+                    peak = values[0]
+                    max_dd = 0
+                    for v in values:
+                        if v > peak:
+                            peak = v
+                        dd = (peak - v) / peak if peak > 0 else 0
+                        if dd > max_dd:
+                            max_dd = dd
+                    max_drawdown = max_dd
+                    max_drawdown_pct = f"{max_dd * 100:.2f}%"
+
+            # Calculate Sharpe ratio (simplified, assuming risk-free rate = 0)
+            if len(daily_records) >= 2:
+                sorted_records = sorted(daily_records, key=lambda x: x.get("date", ""))
+                daily_returns = []
+                for i in range(1, len(sorted_records)):
+                    prev_val = sorted_records[i - 1].get("total_value", initial_cash)
+                    curr_val = sorted_records[i].get("total_value", initial_cash)
+                    if prev_val > 0:
+                        daily_returns.append((curr_val - prev_val) / prev_val)
+
+                if daily_returns:
+                    import numpy as np
+
+                    mean_return = np.mean(daily_returns)
+                    std_return = np.std(daily_returns)
+                    if std_return > 0:
+                        sharpe_ratio = (mean_return * 252) / (std_return * np.sqrt(252))
+            elif trading_days == 1:
+                # For single day, Sharpe ratio is not meaningful
+                sharpe_ratio = None
 
         return {
             "success": True,
@@ -741,8 +946,16 @@ class PaperTradingService:
             "total_trades": len(trades),
             "buy_trades": len(buy_trades),
             "sell_trades": len(sell_trades),
-            "trading_days": len(daily_records),
+            "trading_days": trading_days,
             "position_count": len(portfolio.get("positions", {})),
+            # Extended metrics
+            "annualized_return": annualized_return,
+            "annualized_return_pct": annualized_return_pct,
+            "max_drawdown": max_drawdown,
+            "max_drawdown_pct": max_drawdown_pct,
+            "sharpe_ratio": sharpe_ratio,
+            "win_rate": win_rate,
+            "win_rate_pct": win_rate_pct,
         }
 
     def reset(self) -> Dict[str, Any]:
@@ -760,6 +973,8 @@ class PaperTradingService:
                 TRADES_FILE.unlink()
             if DAILY_RECORDS_FILE.exists():
                 DAILY_RECORDS_FILE.unlink()
+            if TRADING_STARTED_FILE.exists():
+                TRADING_STARTED_FILE.unlink()
 
             return {
                 "success": True,

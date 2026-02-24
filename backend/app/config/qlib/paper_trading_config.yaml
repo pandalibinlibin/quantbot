@@ -3,7 +3,7 @@
 
 # Portfolio settings
 portfolio:
-  initial_cash: 100000000.0 # Initial cash (100M CNY)
+  initial_cash: 10000000.0 # Initial cash (10M CNY)
   currency: "CNY"
 
 # Strategy settings

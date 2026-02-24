@@ -109,6 +109,28 @@ class PlanSummary(BaseModel):
     hold_count: int
 
 
+class ExecutedTrade(BaseModel):
+    """Executed trade item."""
+
+    instrument: str
+    direction: str
+    shares: Optional[int] = None
+    price: Optional[float] = None
+    value: Optional[float] = None
+    sell_pct: Optional[float] = None
+    target_weight: Optional[float] = None
+    executed_at: Optional[str] = None
+
+
+class LastExecutedTrades(BaseModel):
+    """Last executed trades summary."""
+
+    sells: List[ExecutedTrade] = []
+    buys: List[ExecutedTrade] = []
+    sell_count: int = 0
+    buy_count: int = 0
+
+
 class TradingPlanRequest(BaseModel):
     """Request model for trading plan endpoint."""
 
@@ -153,6 +175,7 @@ class TradingPlanResponse(BaseModel):
     buy_orders: List[BuyOrder] = []
     hold_orders: List[HoldOrder] = []
     summary: Optional[PlanSummary] = None
+    last_executed_trades: Optional[LastExecutedTrades] = None
     error: Optional[str] = None
 
 
@@ -202,6 +225,15 @@ class TradeItem(BaseModel):
     executed_at: str
 
 
+class TradingPlanSummary(BaseModel):
+    """Trading plan summary included in execute response."""
+
+    sell_orders: List[Dict[str, Any]] = []
+    buy_orders: List[Dict[str, Any]] = []
+    hold_orders: List[Dict[str, Any]] = []
+    summary: Dict[str, Any] = {}
+
+
 class ExecuteResponse(BaseModel):
     """Response model for execute endpoint."""
 
@@ -215,6 +247,7 @@ class ExecuteResponse(BaseModel):
     executed_buys: List[TradeItem] = []
     final_cash: float = 0.0
     final_position_count: int = 0
+    trading_plan: Optional[TradingPlanSummary] = None
     error: Optional[str] = None
 
 
@@ -255,6 +288,14 @@ class PerformanceResponse(BaseModel):
     sell_trades: int = 0
     trading_days: int = 0
     position_count: int = 0
+    # Extended metrics
+    annualized_return: Optional[float] = None
+    annualized_return_pct: Optional[str] = None
+    max_drawdown: Optional[float] = None
+    max_drawdown_pct: Optional[str] = None
+    sharpe_ratio: Optional[float] = None
+    win_rate: Optional[float] = None
+    win_rate_pct: Optional[str] = None
     error: Optional[str] = None
 
 
@@ -327,10 +368,22 @@ def get_trading_plan(request: TradingPlanRequest = None):
             date=date, topk=topk, n_drop=n_drop, slippage=slippage
         )
 
+        # Convert last_executed_trades even for error responses
+        last_executed_trades = None
+        if result.get("last_executed_trades"):
+            let_data = result["last_executed_trades"]
+            last_executed_trades = LastExecutedTrades(
+                sells=[ExecutedTrade(**s) for s in let_data.get("sells", [])],
+                buys=[ExecutedTrade(**b) for b in let_data.get("buys", [])],
+                sell_count=let_data.get("sell_count", 0),
+                buy_count=let_data.get("buy_count", 0),
+            )
+
         if not result.get("success"):
             return TradingPlanResponse(
                 success=False,
                 error=result.get("error"),
+                last_executed_trades=last_executed_trades,
             )
 
         # Convert to response format
@@ -360,6 +413,7 @@ def get_trading_plan(request: TradingPlanRequest = None):
             buy_orders=buy_orders,
             hold_orders=hold_orders,
             summary=summary,
+            last_executed_trades=last_executed_trades,
         )
 
     except Exception as e:
@@ -397,6 +451,17 @@ def execute_trades(request: ExecuteRequest = None):
         executed_sells = [TradeItem(**t) for t in result.get("executed_sells", [])]
         executed_buys = [TradeItem(**t) for t in result.get("executed_buys", [])]
 
+        # Convert trading plan to response format
+        trading_plan_data = result.get("trading_plan")
+        trading_plan = None
+        if trading_plan_data:
+            trading_plan = TradingPlanSummary(
+                sell_orders=trading_plan_data.get("sell_orders", []),
+                buy_orders=trading_plan_data.get("buy_orders", []),
+                hold_orders=trading_plan_data.get("hold_orders", []),
+                summary=trading_plan_data.get("summary", {}),
+            )
+
         return ExecuteResponse(
             success=result.get("success", False),
             date=result.get("date"),
@@ -408,6 +473,7 @@ def execute_trades(request: ExecuteRequest = None):
             executed_buys=executed_buys,
             final_cash=result.get("final_cash", 0.0),
             final_position_count=result.get("final_position_count", 0),
+            trading_plan=trading_plan,
             error=result.get("error"),
         )
 
@@ -468,6 +534,13 @@ def get_performance():
             sell_trades=result.get("sell_trades", 0),
             trading_days=result.get("trading_days", 0),
             position_count=result.get("position_count", 0),
+            annualized_return=result.get("annualized_return"),
+            annualized_return_pct=result.get("annualized_return_pct"),
+            max_drawdown=result.get("max_drawdown"),
+            max_drawdown_pct=result.get("max_drawdown_pct"),
+            sharpe_ratio=result.get("sharpe_ratio"),
+            win_rate=result.get("win_rate"),
+            win_rate_pct=result.get("win_rate_pct"),
             error=result.get("error"),
         )
 

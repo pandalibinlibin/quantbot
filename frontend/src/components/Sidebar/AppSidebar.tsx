@@ -6,6 +6,7 @@ import {
   FlaskConical,
   TrendingUp,
   RefreshCw,
+  LineChart,
 } from "lucide-react";
 
 import { SidebarAppearance } from "@/components/Common/Appearance";
@@ -27,6 +28,7 @@ const baseItems: Item[] = [
   { icon: Brain, title: "Model", path: "/models" },
   { icon: TrendingUp, title: "Backtest", path: "/backtest" },
   { icon: RefreshCw, title: "Routine", path: "/routine" },
+  { icon: LineChart, title: "Paper Trading", path: "/paper-trading" },
 ];
 
 export function AppSidebar() {
