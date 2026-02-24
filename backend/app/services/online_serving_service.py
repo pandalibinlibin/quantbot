@@ -922,24 +922,57 @@ class OnlineServingService:
             },
         }
 
-        # Add online models info if initialized
+        # Add data range info
+        try:
+            data_range = self._get_data_range()
+            if data_range:
+                status["data_range"] = data_range
+        except Exception as e:
+            self.logger.warning(f"Failed to get data range: {e}")
+
+        # Add signal count if available
         if self.is_initialized and self._online_manager is not None:
             try:
-                # Get online models from strategy
-                strategies = self._online_manager.strategies
-                if strategies:
-                    strategy = (
-                        strategies[0] if isinstance(strategies, list) else strategies
-                    )
-                    if hasattr(strategy, "tool") and strategy.tool is not None:
-                        online_models = strategy.tool.online_models()
-                        status["online_models_count"] = (
-                            len(online_models) if online_models else 0
-                        )
+                signals = self._online_manager.get_signals()
+                status["signal_count"] = len(signals) if signals is not None else 0
             except Exception as e:
-                status["online_models_error"] = str(e)
+                status["signal_count"] = 0
 
         return status
+
+    def _get_data_range(self) -> Optional[Dict[str, str]]:
+        """
+        Get the date range of available Qlib data.
+
+        Returns:
+            Dictionary with start_date and end_date, or None if not available
+        """
+        try:
+            from qlib.data import D
+
+            # Get calendar (trading days)
+            calendar = D.calendar(freq=self._freq)
+            if calendar is not None and len(calendar) > 0:
+                start_date = calendar[0]
+                end_date = calendar[-1]
+
+                # Convert to string format
+                start_str = (
+                    start_date.strftime("%Y-%m-%d")
+                    if hasattr(start_date, "strftime")
+                    else str(start_date)[:10]
+                )
+                end_str = (
+                    end_date.strftime("%Y-%m-%d")
+                    if hasattr(end_date, "strftime")
+                    else str(end_date)[:10]
+                )
+
+                return {"start_date": start_str, "end_date": end_str}
+            return None
+        except Exception as e:
+            self.logger.warning(f"Failed to get data range: {e}")
+            return None
 
     def _calculate_model_metrics(self, signals: pd.Series) -> Dict[str, Any]:
         """

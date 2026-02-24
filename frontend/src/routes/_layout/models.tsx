@@ -214,10 +214,11 @@ function ModelsPage() {
 
   // Prepare IC series chart data
   const icChartData = (() => {
-    const icData = icSeriesData?.data?.ic as
+    const rawData = icSeriesData?.data as Record<string, unknown> | undefined;
+    const icData = rawData?.ic as
       | Array<{ datetime?: string; ic?: number }>
       | undefined;
-    const rankIcData = icSeriesData?.data?.rank_ic as
+    const rankIcData = rawData?.rank_ic as
       | Array<{ datetime?: string; rank_ic?: number; ic?: number }>
       | undefined;
     if (!icData) return [];
@@ -670,8 +671,8 @@ function ModelsPage() {
                           tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
                         />
                         <RechartsTooltip
-                          formatter={(value: number) =>
-                            `${(value * 100).toFixed(2)}%`
+                          formatter={(value) =>
+                            `${((value as number) * 100).toFixed(2)}%`
                           }
                         />
                         <Legend />
@@ -796,26 +797,29 @@ function ModelsPage() {
           )}
 
           {/* Monthly IC Heatmap */}
-          {ic_metrics?.monthly_ic && ic_metrics.monthly_ic.length > 0 && (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-blue-500" />
-                  <CardTitle>Monthly IC Heatmap</CardTitle>
-                  <InfoTooltip content="Shows IC values aggregated by month. Helps identify seasonal patterns or periods of strong/weak predictive power." />
-                </div>
-                <CardDescription>Average IC by year and month</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <MonthlyICHeatmap data={ic_metrics.monthly_ic} />
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {(ic_metrics as any)?.monthly_ic &&
+            (ic_metrics as any).monthly_ic.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-blue-500" />
+                    <CardTitle>Monthly IC Heatmap</CardTitle>
+                    <InfoTooltip content="Shows IC values aggregated by month. Helps identify seasonal patterns or periods of strong/weak predictive power." />
+                  </div>
+                  <CardDescription>
+                    Average IC by year and month
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <MonthlyICHeatmap data={(ic_metrics as any).monthly_ic} />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
           {/* IC Distribution */}
-          {ic_metrics?.ic_distribution && (
+          {(ic_metrics as any)?.ic_distribution && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* IC Histogram */}
               <Card>
@@ -832,7 +836,9 @@ function ModelsPage() {
                 <CardContent>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={ic_metrics.ic_distribution.histogram}>
+                      <BarChart
+                        data={(ic_metrics as any).ic_distribution.histogram}
+                      >
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
                           dataKey="bin_center"
@@ -841,9 +847,9 @@ function ModelsPage() {
                         />
                         <YAxis tick={{ fontSize: 10 }} />
                         <RechartsTooltip
-                          formatter={(value: number) => [value, "Count"]}
-                          labelFormatter={(label: number) =>
-                            `IC: ${label.toFixed(3)}`
+                          formatter={(value) => [value, "Count"]}
+                          labelFormatter={(label) =>
+                            `IC: ${(label as number).toFixed(3)}`
                           }
                         />
                         <Bar dataKey="count" fill="#6366f1" name="Frequency" />
@@ -859,15 +865,17 @@ function ModelsPage() {
                     <div className="bg-muted/50 rounded p-2">
                       <span className="text-muted-foreground">Skewness:</span>
                       <span className="ml-2 font-medium">
-                        {ic_metrics.ic_distribution.skewness?.toFixed(3) ||
-                          "N/A"}
+                        {(ic_metrics as any).ic_distribution.skewness?.toFixed(
+                          3,
+                        ) || "N/A"}
                       </span>
                     </div>
                     <div className="bg-muted/50 rounded p-2">
                       <span className="text-muted-foreground">Kurtosis:</span>
                       <span className="ml-2 font-medium">
-                        {ic_metrics.ic_distribution.kurtosis?.toFixed(3) ||
-                          "N/A"}
+                        {(ic_metrics as any).ic_distribution.kurtosis?.toFixed(
+                          3,
+                        ) || "N/A"}
                       </span>
                     </div>
                   </div>
@@ -889,7 +897,9 @@ function ModelsPage() {
                 <CardContent>
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={ic_metrics.ic_distribution.qq_plot}>
+                      <LineChart
+                        data={(ic_metrics as any).ic_distribution.qq_plot}
+                      >
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
                           dataKey="theoretical"
@@ -911,8 +921,8 @@ function ModelsPage() {
                           }}
                         />
                         <RechartsTooltip
-                          formatter={(value: number, name: string) => [
-                            value.toFixed(4),
+                          formatter={(value, name) => [
+                            (value as number).toFixed(4),
                             name === "sample" ? "Sample" : "Theoretical",
                           ]}
                         />
@@ -928,14 +938,18 @@ function ModelsPage() {
                             {
                               x: -3,
                               y:
-                                -3 * (ic_metrics.ic_distribution.std || 0.05) +
-                                (ic_metrics.ic_distribution.mean || 0),
+                                -3 *
+                                  ((ic_metrics as any).ic_distribution.std ||
+                                    0.05) +
+                                ((ic_metrics as any).ic_distribution.mean || 0),
                             },
                             {
                               x: 3,
                               y:
-                                3 * (ic_metrics.ic_distribution.std || 0.05) +
-                                (ic_metrics.ic_distribution.mean || 0),
+                                3 *
+                                  ((ic_metrics as any).ic_distribution.std ||
+                                    0.05) +
+                                ((ic_metrics as any).ic_distribution.mean || 0),
                             },
                           ]}
                           stroke="#ef4444"
@@ -953,8 +967,8 @@ function ModelsPage() {
           {long_short_metrics && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Cumulative Returns */}
-              {long_short_metrics.cumulative_returns &&
-                long_short_metrics.cumulative_returns.length > 0 && (
+              {(long_short_metrics as any).cumulative_returns &&
+                (long_short_metrics as any).cumulative_returns.length > 0 && (
                   <Card>
                     <CardHeader>
                       <div className="flex items-center gap-2">
@@ -970,7 +984,9 @@ function ModelsPage() {
                       <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart
-                            data={long_short_metrics.cumulative_returns}
+                            data={
+                              (long_short_metrics as any).cumulative_returns
+                            }
                           >
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis
@@ -983,11 +999,13 @@ function ModelsPage() {
                               tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
                             />
                             <RechartsTooltip
-                              formatter={(value: number) => [
-                                `${(value * 100).toFixed(2)}%`,
+                              formatter={(value) => [
+                                `${((value as number) * 100).toFixed(2)}%`,
                                 "Cumulative Return",
                               ]}
-                              labelFormatter={(label) => label.substring(0, 10)}
+                              labelFormatter={(label) =>
+                                String(label).substring(0, 10)
+                              }
                             />
                             <ReferenceLine
                               y={0}
@@ -1010,8 +1028,8 @@ function ModelsPage() {
                 )}
 
               {/* Return Distribution */}
-              {long_short_metrics.return_distribution &&
-                long_short_metrics.return_distribution.length > 0 && (
+              {(long_short_metrics as any).return_distribution &&
+                (long_short_metrics as any).return_distribution.length > 0 && (
                   <Card>
                     <CardHeader>
                       <div className="flex items-center gap-2">
@@ -1027,7 +1045,9 @@ function ModelsPage() {
                       <div className="h-64">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
-                            data={long_short_metrics.return_distribution}
+                            data={
+                              (long_short_metrics as any).return_distribution
+                            }
                           >
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis
@@ -1037,9 +1057,9 @@ function ModelsPage() {
                             />
                             <YAxis tick={{ fontSize: 10 }} />
                             <RechartsTooltip
-                              formatter={(value: number) => [value, "Count"]}
-                              labelFormatter={(label: number) =>
-                                `Return: ${(label * 100).toFixed(2)}%`
+                              formatter={(value) => [value, "Count"]}
+                              labelFormatter={(label) =>
+                                `Return: ${((label as number) * 100).toFixed(2)}%`
                               }
                             />
                             <Bar
@@ -1062,7 +1082,7 @@ function ModelsPage() {
           )}
 
           {/* Turnover Analysis */}
-          {quality_metrics?.turnover && (
+          {(quality_metrics as any)?.turnover && (
             <Card>
               <CardHeader>
                 <div className="flex items-center gap-2">
@@ -1072,11 +1092,13 @@ function ModelsPage() {
                 </div>
                 <CardDescription>
                   Top/Bottom stock selection stability (Avg Top:{" "}
-                  {(quality_metrics.turnover.avg_top_turnover * 100).toFixed(1)}
+                  {(
+                    (quality_metrics as any).turnover.avg_top_turnover * 100
+                  ).toFixed(1)}
                   %, Avg Bottom:{" "}
-                  {(quality_metrics.turnover.avg_bottom_turnover * 100).toFixed(
-                    1,
-                  )}
+                  {(
+                    (quality_metrics as any).turnover.avg_bottom_turnover * 100
+                  ).toFixed(1)}
                   %)
                 </CardDescription>
               </CardHeader>
@@ -1085,14 +1107,15 @@ function ModelsPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
                       data={
-                        quality_metrics.turnover.top_turnover_series?.map(
+                        (
+                          quality_metrics as any
+                        ).turnover.top_turnover_series?.map(
                           (item: any, idx: number) => ({
                             datetime: item.datetime,
                             top: item.turnover,
                             bottom:
-                              quality_metrics.turnover.bottom_turnover_series?.[
-                                idx
-                              ]?.turnover || 0,
+                              (quality_metrics as any).turnover
+                                .bottom_turnover_series?.[idx]?.turnover || 0,
                           }),
                         ) || []
                       }
@@ -1108,11 +1131,13 @@ function ModelsPage() {
                         tickFormatter={(v) => `${(v * 100).toFixed(0)}%`}
                       />
                       <RechartsTooltip
-                        formatter={(value: number, name: string) => [
-                          `${(value * 100).toFixed(1)}%`,
+                        formatter={(value, name) => [
+                          `${((value as number) * 100).toFixed(1)}%`,
                           name === "top" ? "Top Turnover" : "Bottom Turnover",
                         ]}
-                        labelFormatter={(label) => label.substring(0, 10)}
+                        labelFormatter={(label) =>
+                          String(label).substring(0, 10)
+                        }
                       />
                       <Legend />
                       <Line

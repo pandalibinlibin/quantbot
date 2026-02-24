@@ -8764,12 +8764,12 @@ Results with Risk Metrics + Chart Data
 
 Dedicated backtest router with 4 endpoints:
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/config` | GET | Get backtest configuration from YAML |
-| `/status` | GET | Check if backtest is ready (predictions available) |
-| `/latest-result` | GET | Get persisted latest backtest result |
-| `/run` | POST | Execute backtest and return results |
+| Endpoint         | Method | Description                                        |
+| ---------------- | ------ | -------------------------------------------------- |
+| `/config`        | GET    | Get backtest configuration from YAML               |
+| `/status`        | GET    | Check if backtest is ready (predictions available) |
+| `/latest-result` | GET    | Get persisted latest backtest result               |
+| `/run`           | POST   | Execute backtest and return results                |
 
 #### Pydantic Models
 
@@ -8800,14 +8800,14 @@ class BacktestRunResponse(BaseModel):
 def _calculate_risk_metrics(self, report_df, freq):
     # Use Qlib's risk_analysis - returns DataFrame with 'risk' column
     analysis_df = risk_analysis(returns, freq=freq)
-    
+
     metrics = {
         "annualized_return": analysis_df.loc["annualized_return", "risk"],
         "max_drawdown": analysis_df.loc["max_drawdown", "risk"],
         "sharpe_ratio": analysis_df.loc["information_ratio", "risk"],
         "volatility": analysis_df.loc["std", "risk"],
     }
-    
+
     # Additional calculated metrics
     metrics["calmar_ratio"] = annualized_return / |max_drawdown|
     metrics["win_rate"] = positive_days / total_days
@@ -8871,15 +8871,15 @@ function MetricTooltip({ content }: { content: string }) {
 
 ### Risk Metrics Explained
 
-| Metric | Description | Good Value |
-|--------|-------------|------------|
-| **Annualized Return** | Yearly return rate | > 0% |
-| **Max Drawdown** | Largest peak-to-trough decline | > -30% |
-| **Sharpe Ratio** | Risk-adjusted return | > 1.0 (excellent > 2.0) |
-| **Volatility** | Return standard deviation | Lower is more stable |
-| **Calmar Ratio** | Return / Drawdown | > 1.0 |
-| **Win Rate** | % of profitable days | > 50% |
-| **Profit/Loss Ratio** | Avg win / Avg loss | > 1.0 |
+| Metric                | Description                    | Good Value              |
+| --------------------- | ------------------------------ | ----------------------- |
+| **Annualized Return** | Yearly return rate             | > 0%                    |
+| **Max Drawdown**      | Largest peak-to-trough decline | > -30%                  |
+| **Sharpe Ratio**      | Risk-adjusted return           | > 1.0 (excellent > 2.0) |
+| **Volatility**        | Return standard deviation      | Lower is more stable    |
+| **Calmar Ratio**      | Return / Drawdown              | > 1.0                   |
+| **Win Rate**          | % of profitable days           | > 50%                   |
+| **Profit/Loss Ratio** | Avg win / Avg loss             | > 1.0                   |
 
 ### Problems Encountered and Solutions
 
@@ -8887,13 +8887,15 @@ function MetricTooltip({ content }: { content: string }) {
 
 **Symptom**: All risk metrics displayed as 0.00%
 **Root Cause**: Qlib's `risk_analysis()` returns a DataFrame, not a dict
-**Solution**: 
+**Solution**:
+
 ```python
 # Wrong: analysis.get("annualized_return", 0)
 # Correct: analysis_df.loc["annualized_return", "risk"]
 ```
 
 **Debugging Command**:
+
 ```powershell
 docker exec quantbot-backend-1 python -c "from qlib.contrib.evaluate import risk_analysis; import pandas as pd; import numpy as np; returns = pd.Series(np.random.randn(100) * 0.01); result = risk_analysis(returns, freq='day'); print(type(result)); print(result)"
 ```
@@ -8905,6 +8907,7 @@ docker exec quantbot-backend-1 python -c "from qlib.contrib.evaluate import risk
 **Solution**: Removed separate drawdown chart, integrated max drawdown annotation into cumulative returns chart
 
 **Best Practice for Drawdown Visualization**:
+
 - Show drawdown on cumulative returns chart
 - Mark peak (start) and trough (bottom) with vertical lines
 - Display summary box with key dates and values
@@ -8913,9 +8916,12 @@ docker exec quantbot-backend-1 python -c "from qlib.contrib.evaluate import risk
 
 **Symptom**: `open_cost: 0.0003` displayed as `0`
 **Root Cause**: `toLocaleString()` rounds small decimals
-**Solution**: 
+**Solution**:
+
 ```tsx
-{value < 0.01 && value > 0 ? value.toFixed(4) : value.toLocaleString()}
+{
+  value < 0.01 && value > 0 ? value.toFixed(4) : value.toLocaleString();
+}
 ```
 
 #### Problem 4: 404 Errors on Backtest API
@@ -8935,14 +8941,210 @@ docker exec quantbot-backend-1 python -c "from qlib.contrib.evaluate import risk
 ### Files Modified
 
 **Backend**:
+
 - `backend/app/api/routes/backtest.py` (new)
 - `backend/app/api/main.py` (register router)
 - `backend/app/services/online_serving_service.py` (add risk metrics + charts)
 - `backend/app/api/routes/online.py` (remove redundant backtest endpoint)
 
 **Frontend**:
+
 - `frontend/src/routes/_layout/backtest.tsx` (complete rewrite)
 - `frontend/src/components/Sidebar/AppSidebar.tsx` (rename Models → Model)
 - `frontend/src/routes/_layout/models.tsx` (rename page title)
+
+---
+
+## Routine Page Implementation
+
+### Overview
+
+The Routine page provides a manual trigger for the daily routine task and displays execution status. The routine is typically executed after market close via scheduled tasks, but a manual trigger button is provided for testing and debugging.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Routine Page                                                │
+├─────────────────────────────────────────────────────────────┤
+│  [Run Routine Button]                                        │
+├─────────────────────────────────────────────────────────────┤
+│  Routine Execution Status                                    │
+│  - Status: Completed / Running / Failed                      │
+│  - Last Executed: timestamp                                  │
+│  - Data Range: start_date ~ end_date                         │
+│  - Signal Count: number                                      │
+│  - Total Duration: seconds                                   │
+│  - Step Details (table with duration and status)             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Backend API
+
+Uses existing `/api/v1/online` endpoints:
+
+- `POST /api/v1/online/routine` - Execute routine
+- `GET /api/v1/online/status` - Get status
+
+### Frontend Route
+
+- Path: `/routine`
+- File: `frontend/src/routes/_layout/routine.tsx`
+
+### Implementation Status: COMPLETED
+
+**Date**: 2026-02-24
+
+**Features Implemented**:
+
+1. **Status Overview Cards**:
+
+   - Initialization status (Initialized/Not Initialized)
+   - Last execution timestamp
+   - Data range (start_date ~ end_date)
+   - Signal count
+
+2. **Run Routine Button**:
+
+   - Manual trigger for routine execution
+   - Loading state during execution
+   - Success/error toast notifications
+
+3. **Last Routine Result**:
+
+   - Execution timestamp and total duration
+   - Step-by-step results table with:
+     - Step name (initialization, data_update, online_manager_routine, signal_generation, model_metrics_calculation)
+     - Status badge (Success/Failed)
+     - Duration in seconds
+     - Details/error message
+
+4. **Configuration Display**:
+   - Shows current online serving configuration (experiment_name, rolling_step, rolling_type, etc.)
+
+**Files Modified**:
+
+- `frontend/src/routes/_layout/routine.tsx` (new)
+- `frontend/src/components/Sidebar/AppSidebar.tsx` (add Routine menu item)
+- `backend/app/api/routes/online.py` (add DataRange model, update StatusResponse)
+- `backend/app/services/online_serving_service.py` (add data_range and signal_count to status)
+
+**Bug Fixes**:
+
+- Fixed recharts formatter type errors in `backtest.tsx` and `models.tsx` caused by stricter TypeScript types in recharts@3.7.0
+
+---
+
+## Paper Trading Page Implementation
+
+### Overview
+
+The Paper Trading page provides complete simulated trading functionality:
+
+1. **Portfolio & Trades**: Execute trading, view holdings, today's trades
+2. **Performance Analysis**: Risk metrics and charts based on paper trading history
+3. **Notification Settings**: Email notification configuration
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Paper Trading Page                                          │
+├─────────────────────────────────────────────────────────────┤
+│  Part 1: Portfolio & Trades                                  │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │ [Execute Trading Button]                             │    │
+│  │                                                      │    │
+│  │ Portfolio Summary                                    │    │
+│  │ - Total Value, Cash, Positions Count                 │    │
+│  │ - Total P/L, Today P/L, Total Cost                   │    │
+│  │                                                      │    │
+│  │ Current Holdings (table)                             │    │
+│  │ - Stock, Shares, Cost, Current, P/L                  │    │
+│  │                                                      │    │
+│  │ Today's Trades (table with Export CSV)               │    │
+│  │ - Stock, Action, Shares, Price, Weight               │    │
+│  └─────────────────────────────────────────────────────┘    │
+├─────────────────────────────────────────────────────────────┤
+│  Part 2: Performance Analysis                                │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │ Paper Trading Period: start ~ end                    │    │
+│  │ Trading Days: count                                  │    │
+│  │ Warning if < 30 days                                 │    │
+│  │                                                      │    │
+│  │ Risk Metrics (based on paper trading period)         │    │
+│  │ - Annualized Return, Max Drawdown, Sharpe Ratio      │    │
+│  │                                                      │    │
+│  │ Cumulative Returns Chart (Strategy vs Benchmark)     │    │
+│  │ Turnover Chart                                       │    │
+│  └─────────────────────────────────────────────────────┘    │
+├─────────────────────────────────────────────────────────────┤
+│  Part 3: Notification Settings                               │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │ Enable Email Notification (toggle)                   │    │
+│  │ Recipients (list with add/remove)                    │    │
+│  │ [Test Email] [Save Settings]                         │    │
+│  └─────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Backend API Design
+
+New router: `/api/v1/paper-trading`
+
+| Endpoint               | Method | Description                |
+| ---------------------- | ------ | -------------------------- |
+| `/status`              | GET    | Get paper trading status   |
+| `/execute`             | POST   | Execute simulated trading  |
+| `/portfolio`           | GET    | Get current holdings       |
+| `/trades`              | GET    | Get trade history          |
+| `/trades/export`       | GET    | Export trades as CSV       |
+| `/performance`         | GET    | Get performance analysis   |
+| `/notification/config` | GET    | Get notification config    |
+| `/notification/config` | PUT    | Update notification config |
+| `/notification/test`   | POST   | Send test email            |
+
+### Data Persistence
+
+| Data                | Location                                       | Format |
+| ------------------- | ---------------------------------------------- | ------ |
+| Portfolio state     | `mlruns/paper_trading/portfolio.json`          | JSON   |
+| Trade history       | `mlruns/paper_trading/trades.json`             | JSON   |
+| Daily reports       | `mlruns/paper_trading/reports/YYYY-MM-DD.json` | JSON   |
+| Notification config | `config/notification.yaml`                     | YAML   |
+
+### Today's Trades Fields
+
+| Field  | Description      | Example                                             |
+| ------ | ---------------- | --------------------------------------------------- |
+| Stock  | Stock code       | SH600519                                            |
+| Action | Trade action     | BUY / SELL / HOLD                                   |
+| Shares | Number of shares | 100                                                 |
+| Price  | Execution price  | 1850.0                                              |
+| Weight | Target weight    | → 2.00% (buy to), = 2.00% (hold), → 0.00% (sell to) |
+
+### Risk Metrics (Qlib-based)
+
+| Metric      | Calculation Basis    | Description            |
+| ----------- | -------------------- | ---------------------- |
+| Ann. Return | Paper trading period | Annualized return rate |
+| Max DD      | Paper trading period | Maximum drawdown       |
+| Sharpe      | Paper trading period | Sharpe ratio           |
+
+Note: If trading days < 30, display warning "Insufficient data, metrics for reference only"
+
+### Frontend Route
+
+- Path: `/paper-trading`
+- File: `frontend/src/routes/_layout/paper-trading.tsx`
+
+### Implementation Phases
+
+| Phase   | Features                                                               |
+| ------- | ---------------------------------------------------------------------- |
+| Phase 1 | Routine page (execution status display)                                |
+| Phase 2 | Paper Trading basics (execute, portfolio, today's trades + CSV export) |
+| Phase 3 | Paper Trading analysis (risk metrics, charts)                          |
+| Phase 4 | Email notification (config, send)                                      |
 
 ---

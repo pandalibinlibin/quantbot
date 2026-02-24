@@ -59,6 +59,13 @@ class RoutineResponse(BaseModel):
     error: Optional[str] = None
 
 
+class DataRange(BaseModel):
+    """Data range information."""
+
+    start_date: str
+    end_date: str
+
+
 class StatusResponse(BaseModel):
     """Response model for status endpoint."""
 
@@ -67,8 +74,8 @@ class StatusResponse(BaseModel):
     last_routine_time: Optional[str] = None
     initialization_error: Optional[str] = None
     config: Dict[str, Any] = {}
-    online_models_count: Optional[int] = None
-    online_models_error: Optional[str] = None
+    data_range: Optional[DataRange] = None
+    signal_count: Optional[int] = None
 
 
 class SignalItem(BaseModel):

@@ -759,8 +759,8 @@ function BacktestPage() {
                               }
                             />
                             <RechartsTooltip
-                              formatter={(value: number, name: string) => [
-                                formatPercent(value),
+                              formatter={(value, name) => [
+                                formatPercent(value as number),
                                 name === "strategy" ? "Strategy" : "Benchmark",
                               ]}
                               labelFormatter={(label) => `Date: ${label}`}
@@ -904,9 +904,9 @@ function BacktestPage() {
                             />
                             <YAxis tick={{ fontSize: 11 }} />
                             <RechartsTooltip
-                              formatter={(value: number) => [value, "Count"]}
-                              labelFormatter={(label: number) =>
-                                `Return: ${(label * 100).toFixed(2)}%`
+                              formatter={(value) => [value, "Count"]}
+                              labelFormatter={(label) =>
+                                `Return: ${((label as number) * 100).toFixed(2)}%`
                               }
                             />
                             <Bar dataKey="count" fill="#8b5cf6" name="Count" />
