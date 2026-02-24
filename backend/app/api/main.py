@@ -14,6 +14,7 @@ from app.api.routes import (
     models,
     backtest,
     dashboard,
+    scheduler,
 )
 from app.core.config import settings
 
@@ -36,6 +37,7 @@ api_router.include_router(
 )
 api_router.include_router(backtest.router, prefix="/backtest", tags=["Backtest"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
+api_router.include_router(scheduler.router, prefix="/scheduler", tags=["Scheduler"])
 
 if settings.ENVIRONMENT == "local":
     api_router.include_router(private.router)

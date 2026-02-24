@@ -54,6 +54,25 @@ online_serving:
 
 # NOTE: Paper Trading configuration has been moved to paper_trading_config.yaml
 
+# Scheduled Tasks Configuration
+# The scheduler checks for config changes every 60 seconds
+scheduler:
+  # Routine task (data update + model training + signal generation)
+  routine:
+    enabled: false # Whether to enable scheduled routine
+    time: "23:00" # Execution time (HH:MM format, 24-hour)
+
+  # Execute trades task (paper trading execution)
+  execute_trades:
+    enabled: false # Whether to enable scheduled trading
+    time: "09:35" # Execution time (HH:MM format, 24-hour)
+
+  # Timezone for all scheduled tasks
+  timezone: "Asia/Shanghai"
+
+  # Config check interval in seconds
+  config_check_interval: 60
+
 # Data Quality Check Configuration
 data_quality:
   # Threshold for detecting large step changes in price columns (OHLC)

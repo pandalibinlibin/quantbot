@@ -1,6 +1,6 @@
 # QuantBot 技术规格文档
 
-**版本**: 3.4 (Dashboard 实现版)  
+**版本**: 3.5 (Scheduled Tasks 实现版)  
 **最后更新**: 2026-02-24
 
 ---
@@ -9467,3 +9467,62 @@ Dashboard serves as the portal page for QuantBot, providing users with a quick o
    - Model metrics: `/app/mlruns/model_metrics/active_metrics.json`
    - System status: Derived from metrics file existence + `OnlineServingService.get_status()`
    - Trade history: `PaperTradingService.get_trade_history()`
+
+---
+
+## Scheduled Tasks Feature (v3.5)
+
+### Overview
+
+Automated scheduling for routine and paper trading execution tasks.
+
+### Configuration
+
+Located in `backend/app/config/qlib/system_config.yaml`:
+
+```yaml
+scheduler:
+  routine:
+    enabled: false # Enable/disable scheduled routine
+    time: "23:00" # Execution time (HH:MM, 24-hour)
+
+  execute_trades:
+    enabled: false # Enable/disable scheduled trading
+    time: "09:35" # Execution time (HH:MM, 24-hour)
+
+  timezone: "Asia/Shanghai"
+  config_check_interval: 60 # Seconds between config checks
+```
+
+### Architecture
+
+- **APScheduler**: Background scheduler library for Python
+- **Config Watcher**: Checks for config changes every 60 seconds
+- **Lifespan Integration**: Scheduler starts/stops with FastAPI app
+
+### Tasks
+
+| Task                  | Default Time | Description                                      |
+| --------------------- | ------------ | ------------------------------------------------ |
+| `routine_task`        | 23:00        | Data update + model training + signal generation |
+| `execute_trades_task` | 09:35        | Paper trading execution + email notification     |
+
+### API Endpoint
+
+**GET** `/api/v1/scheduler/status`
+
+Returns scheduler status, configuration, and scheduled jobs.
+
+### Files
+
+- `backend/app/config/qlib/system_config.yaml` - Scheduler configuration
+- `backend/app/services/scheduler_service.py` - SchedulerService implementation
+- `backend/app/api/routes/scheduler.py` - Scheduler API endpoint
+- `backend/app/main.py` - Lifespan integration
+
+### Usage
+
+1. Edit `system_config.yaml` to enable tasks
+2. Wait up to 60 seconds for config change detection
+3. Check status via `/api/v1/scheduler/status`
+4. Tasks execute automatically at configured times
