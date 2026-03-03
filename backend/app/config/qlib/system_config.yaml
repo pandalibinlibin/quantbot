@@ -86,3 +86,22 @@ data_quality:
   # Maximum allowed missing values per column
   # A value of 0 means no missing values are allowed
   missing_data_threshold: 0
+
+# Enhanced Indexing Strategy Configuration
+enhanced_indexing:
+  # Whether to enable enhanced indexing strategy in routine
+  enabled: true
+
+  # Maximum deviation from benchmark weight per stock (default 2%)
+  # e.g., if benchmark weight is 6%, target weight will be in [4%, 8%]
+  max_deviation: 0.02
+
+  # Minimum weight threshold (weights below this are set to 0)
+  min_weight: 0.001
+
+  # Benchmark index selection
+  # Options: "auto" (detect from data), "csi300", "csi500", "sp500", "nasdaq100"
+  benchmark: "auto"
+
+  # Output directory for target portfolio files
+  output_dir: "/app/data/target_portfolio"
