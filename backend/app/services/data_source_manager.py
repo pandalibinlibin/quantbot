@@ -40,6 +40,10 @@ class DataSourceManager:
             "config_hash": qlib_config.get_data_config_hash(),
         }
 
+    def get_current_source(self) -> str:
+        """Get the current data source from system_config.yaml."""
+        return qlib_config.source
+
     def check_and_handle_config_change(self) -> bool:
         """
         Check if data configuration has changed and handle cleanup if needed.

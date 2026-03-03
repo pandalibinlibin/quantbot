@@ -88,9 +88,9 @@ def execute_data_pipeline(request: DownloadDataRequest) -> DownloadTaskResponse:
         )
 
         # Step 0: Check data source configuration and handle changes
-        source_changed = data_source_manager.check_and_handle_source_change()
-        if source_changed:
-            logger.info("Data source changed, existing data was cleaned up")
+        config_changed = data_source_manager.check_and_handle_config_change()
+        if config_changed:
+            logger.info("Data configuration changed, existing data was cleaned up")
             # Force full refresh if source changed
             request.incremental = False
 

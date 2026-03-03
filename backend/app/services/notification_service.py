@@ -56,9 +56,14 @@ class NotificationService:
 
     def _get_default_config(self) -> Dict[str, Any]:
         """Get default notification configuration using FastAPI template settings."""
+        # Default recipients: use EMAILS_FROM_EMAIL if available
+        default_recipients = []
+        if settings.EMAILS_FROM_EMAIL:
+            default_recipients = [settings.EMAILS_FROM_EMAIL]
+
         return {
-            "enabled": False,
-            "recipients": [],
+            "enabled": settings.emails_enabled,  # Auto-enable if SMTP is configured
+            "recipients": default_recipients,
             "smtp_host": settings.SMTP_HOST,
             "smtp_port": settings.SMTP_PORT,
             "smtp_user": settings.SMTP_USER,
@@ -326,7 +331,7 @@ class NotificationService:
             try:
                 send_email(
                     email_to=recipient,
-                    subject=f"{settings.PROJECT_NAME} - {subject}",
+                    subject=subject,
                     html_content=html_content,
                 )
                 sent_count += 1
@@ -711,29 +716,103 @@ class NotificationService:
         """
 
     def _build_trading_report_html(self, report_data: Dict[str, Any]) -> str:
-        """Build HTML email body for trading report."""
-        date = report_data.get("date", datetime.now().strftime("%Y-%m-%d"))
-        sells = report_data.get("sells_executed", 0)
-        buys = report_data.get("buys_executed", 0)
-        total_value = report_data.get("total_value", 0)
-        total_return = report_data.get("total_return", 0)
+        """Build HTML email body for trading report with target portfolio."""
+        target_date = report_data.get(
+            "target_date", datetime.now().strftime("%Y-%m-%d")
+        )
+        executed_at = report_data.get("executed_at", "")
+        signal_count = report_data.get("signal_count", 0)
+        total_duration = report_data.get("total_duration_seconds", 0)
+
+        # Portfolio summary
+        portfolio_summary = report_data.get("portfolio_summary", {})
+        benchmark_name = portfolio_summary.get("benchmark_name", "Enhanced Indexing")
+        total_stocks = portfolio_summary.get("total_stocks", 0)
+        overweight_count = portfolio_summary.get("overweight_count", 0)
+        underweight_count = portfolio_summary.get("underweight_count", 0)
+        neutral_count = portfolio_summary.get("neutral_count", 0)
+
+        # Build target portfolio table (all stocks, sorted by rank)
+        target_portfolio = report_data.get("target_portfolio", [])
+        portfolio_rows = ""
+
+        # Sort by rank and include all stocks
+        sorted_portfolio = sorted(target_portfolio, key=lambda x: x.get("rank", 999))
+
+        for item in sorted_portfolio:
+            deviation = item.get("deviation", 0)
+            deviation_pct = item.get("deviation_pct", "0%")
+            if deviation > 0:
+                color = "green"
+            elif deviation < 0:
+                color = "red"
+            else:
+                color = "#666"
+            portfolio_rows += f"""
+            <tr>
+                <td style="text-align:center">{item.get('rank', '')}</td>
+                <td>{item.get('instrument', '')}</td>
+                <td style="text-align:right">{item.get('score', 0):.4f}</td>
+                <td style="text-align:right">{item.get('benchmark_weight', 0):.2%}</td>
+                <td style="text-align:right">{item.get('target_weight', 0):.2%}</td>
+                <td style="text-align:right;color:{color}">{deviation_pct}</td>
+                <td style="text-align:center">{item.get('action', '')}</td>
+            </tr>
+            """
 
         return f"""
         <html>
-        <body style="font-family: Arial, sans-serif;">
-        <h2>QuantBot Daily Trading Report</h2>
-        <p><strong>Date:</strong> {date}</p>
+        <body style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
+        <h2 style="color: #333;">QuantBot Daily Report</h2>
+        <p><strong>Target Date:</strong> {target_date}</p>
+        <p><strong>Executed At:</strong> {executed_at}</p>
+        <p><strong>Duration:</strong> {total_duration:.1f}s</p>
 
-        <h3>Trading Summary</h3>
-        <table border="1" cellpadding="8" cellspacing="0">
-            <tr><td>Sells Executed</td><td>{sells}</td></tr>
-            <tr><td>Buys Executed</td><td>{buys}</td></tr>
-            <tr><td>Portfolio Value</td><td>¥{total_value:,.2f}</td></tr>
-            <tr><td>Total Return</td><td>{total_return:.2%}</td></tr>
+        <h3 style="color: #555;">Portfolio Summary</h3>
+        <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+            <tr style="background-color: #f5f5f5;">
+                <td><strong>Benchmark</strong></td>
+                <td>{benchmark_name}</td>
+            </tr>
+            <tr>
+                <td><strong>Total Stocks</strong></td>
+                <td>{total_stocks}</td>
+            </tr>
+            <tr>
+                <td><strong>Overweight</strong></td>
+                <td style="color: green;">{overweight_count}</td>
+            </tr>
+            <tr>
+                <td><strong>Underweight</strong></td>
+                <td style="color: red;">{underweight_count}</td>
+            </tr>
+            <tr>
+                <td><strong>Neutral</strong></td>
+                <td>{neutral_count}</td>
+            </tr>
         </table>
 
+        <h3 style="color: #555;">Target Portfolio (Top Deviations)</h3>
+        <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse; width: 100%; font-size: 12px;">
+            <thead style="background-color: #f5f5f5;">
+                <tr>
+                    <th>Rank</th>
+                    <th>Instrument</th>
+                    <th>Score</th>
+                    <th>Bench Wt</th>
+                    <th>Target Wt</th>
+                    <th>Deviation</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {portfolio_rows}
+            </tbody>
+        </table>
+        <p style="color: #888; font-size: 11px;">Showing all {total_stocks} positions in the target portfolio.</p>
+
         <hr>
-        <p><small>This is an automated email from QuantBot Paper Trading system.</small></p>
+        <p><small style="color: #888;">This is an automated email from QuantBot Enhanced Indexing system.</small></p>
         </body>
         </html>
         """

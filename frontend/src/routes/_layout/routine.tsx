@@ -83,6 +83,29 @@ interface StepResult {
   error?: string;
 }
 
+interface PortfolioItem {
+  rank: number;
+  instrument: string;
+  benchmark_weight: number;
+  score: number;
+  target_weight: number;
+  deviation: number;
+  deviation_pct: string;
+  action: string;
+}
+
+interface PortfolioSummary {
+  benchmark: string;
+  benchmark_name: string;
+  total_stocks: number;
+  overweight_count: number;
+  underweight_count: number;
+  neutral_count: number;
+  max_deviation: number;
+  generated_at: string;
+  target_date: string;
+}
+
 interface RoutineResult {
   success: boolean;
   cur_time?: string;
@@ -91,6 +114,8 @@ interface RoutineResult {
   total_duration_seconds?: number;
   signal_count?: number;
   error?: string;
+  target_portfolio?: PortfolioItem[];
+  portfolio_summary?: PortfolioSummary;
 }
 
 const ROUTINE_RESULT_KEY = "quantbot_last_routine_result";
@@ -107,7 +132,6 @@ function RoutinePage() {
         return null;
       }
     });
-
   // Save to localStorage when result changes
   useEffect(() => {
     if (lastRoutineResult) {
@@ -199,236 +223,258 @@ function RoutinePage() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Routine</h1>
-          <p className="text-muted-foreground">
-            Daily routine execution and status monitoring
-          </p>
-        </div>
-        <Button
-          onClick={handleRunRoutine}
-          disabled={routineMutation.isPending}
-          size="lg"
-        >
-          {routineMutation.isPending ? (
-            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-          ) : (
-            <Play className="mr-2 h-5 w-5" />
-          )}
-          Run Routine
-        </Button>
-      </div>
-
-      {/* Status Overview */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Status</CardTitle>
-            {status?.is_initialized ? (
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-            ) : (
-              <XCircle className="h-4 w-4 text-red-500" />
-            )}
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {statusLoading ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
-              ) : status?.is_initialized ? (
-                <Badge variant="default" className="bg-green-500">
-                  Initialized
-                </Badge>
-              ) : (
-                <Badge variant="destructive">Not Initialized</Badge>
-              )}
-            </div>
-            {status?.initialization_error && (
-              <p className="text-xs text-destructive mt-1">
-                {status.initialization_error}
+    <div className="flex flex-col overflow-hidden -m-6 md:-m-8 h-[calc(100vh-8rem)]">
+      <div className="h-full overflow-y-auto p-6 md:p-8">
+        <div className="space-y-6">
+          {/* Page Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Routine</h1>
+              <p className="text-muted-foreground">
+                Daily routine execution and status monitoring
               </p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Last Executed</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-semibold">
-              {statusLoading ? "-" : formatDateTime(status?.last_routine_time)}
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Data Range</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-lg font-semibold">
-              {statusLoading
-                ? "-"
-                : status?.data_range
-                  ? `${status.data_range.start_date} ~ ${status.data_range.end_date}`
-                  : "N/A"}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Signal Count</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {statusLoading
-                ? "-"
-                : status?.signal_count?.toLocaleString() || "0"}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Error Display */}
-      {statusError && (
-        <Card className="border-destructive">
-          <CardHeader>
-            <CardTitle className="text-destructive">Error</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-destructive">
-              {statusError instanceof Error
-                ? statusError.message
-                : "Failed to fetch status"}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Last Routine Result */}
-      {lastRoutineResult && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  {lastRoutineResult.success ? (
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                  ) : (
-                    <XCircle className="h-5 w-5 text-red-500" />
-                  )}
-                  Last Routine Result
-                </CardTitle>
-                <CardDescription>
-                  Executed at {formatDateTime(lastRoutineResult.executed_at)} |
-                  Duration:{" "}
-                  {lastRoutineResult.total_duration_seconds?.toFixed(2)}s
-                </CardDescription>
-              </div>
-              {lastRoutineResult.signal_count !== undefined && (
-                <Badge variant="secondary">
-                  {lastRoutineResult.signal_count} signals
-                </Badge>
+            <Button
+              onClick={handleRunRoutine}
+              disabled={routineMutation.isPending}
+              size="lg"
+            >
+              {routineMutation.isPending ? (
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              ) : (
+                <Play className="mr-2 h-5 w-5" />
               )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            {lastRoutineResult.error ? (
-              <div className="p-4 bg-destructive/10 text-destructive rounded-md">
-                {lastRoutineResult.error}
-              </div>
-            ) : lastRoutineResult.steps &&
-              lastRoutineResult.steps.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Step</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Duration</TableHead>
-                    <TableHead>Details</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {lastRoutineResult.steps.map((step, index) => (
-                    <TableRow key={index}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getStepIcon(step.step)}
-                          <span className="font-medium">
-                            {getStepName(step.step)}
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {step.success ? (
-                          <Badge variant="default" className="bg-green-500">
-                            Success
-                          </Badge>
-                        ) : (
-                          <Badge variant="destructive">Failed</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {step.duration_seconds.toFixed(2)}s
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        {step.error ? (
-                          <span className="text-destructive">{step.error}</span>
-                        ) : step.details ? (
-                          <span className="text-muted-foreground text-sm">
-                            {JSON.stringify(step.details).substring(0, 50)}...
-                          </span>
-                        ) : (
-                          "-"
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <p className="text-muted-foreground">No step details available</p>
-            )}
-          </CardContent>
-        </Card>
-      )}
+              Run Routine
+            </Button>
+          </div>
 
-      {/* Configuration */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Configuration</CardTitle>
-          <CardDescription>
-            Current online serving configuration
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {statusLoading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin" />
-            </div>
-          ) : status?.config ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {Object.entries(status.config).map(([key, value]) => (
-                <div key={key} className="bg-muted/50 rounded-lg p-3">
-                  <div className="text-sm text-muted-foreground">{key}</div>
-                  <div className="font-medium truncate" title={String(value)}>
-                    {String(value) || "-"}
-                  </div>
+          {/* Status Overview */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Status</CardTitle>
+                {status?.is_initialized ? (
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-red-500" />
+                )}
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {statusLoading ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : status?.is_initialized ? (
+                    <Badge variant="default" className="bg-green-500">
+                      Initialized
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive">Not Initialized</Badge>
+                  )}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-muted-foreground">No configuration available</p>
+                {status?.initialization_error && (
+                  <p className="text-xs text-destructive mt-1">
+                    {status.initialization_error}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Last Executed
+                </CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg font-semibold">
+                  {statusLoading
+                    ? "-"
+                    : formatDateTime(status?.last_routine_time)}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Data Range
+                </CardTitle>
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg font-semibold">
+                  {statusLoading
+                    ? "-"
+                    : status?.data_range
+                      ? `${status.data_range.start_date} ~ ${status.data_range.end_date}`
+                      : "N/A"}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Portfolio Stocks
+                </CardTitle>
+                <Activity className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {lastRoutineResult?.portfolio_summary?.total_stocks?.toLocaleString() ||
+                    "0"}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Error Display */}
+          {statusError && (
+            <Card className="border-destructive">
+              <CardHeader>
+                <CardTitle className="text-destructive">Error</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-destructive">
+                  {statusError instanceof Error
+                    ? statusError.message
+                    : "Failed to fetch status"}
+                </p>
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
+
+          {/* Last Routine Result */}
+          {lastRoutineResult && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      {lastRoutineResult.success ? (
+                        <CheckCircle2 className="h-5 w-5 text-green-500" />
+                      ) : (
+                        <XCircle className="h-5 w-5 text-red-500" />
+                      )}
+                      Last Routine Result
+                    </CardTitle>
+                    <CardDescription>
+                      Executed at{" "}
+                      {formatDateTime(lastRoutineResult.executed_at)} |
+                      Duration:{" "}
+                      {lastRoutineResult.total_duration_seconds?.toFixed(2)}s
+                    </CardDescription>
+                  </div>
+                  {lastRoutineResult.signal_count !== undefined && (
+                    <Badge variant="secondary">
+                      {lastRoutineResult.signal_count} signals
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {lastRoutineResult.error ? (
+                  <div className="p-4 bg-destructive/10 text-destructive rounded-md">
+                    {lastRoutineResult.error}
+                  </div>
+                ) : lastRoutineResult.steps &&
+                  lastRoutineResult.steps.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Step</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Duration</TableHead>
+                        <TableHead>Details</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {lastRoutineResult.steps.map((step, index) => (
+                        <TableRow key={index}>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              {getStepIcon(step.step)}
+                              <span className="font-medium">
+                                {getStepName(step.step)}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {step.success ? (
+                              <Badge variant="default" className="bg-green-500">
+                                Success
+                              </Badge>
+                            ) : (
+                              <Badge variant="destructive">Failed</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {step.duration_seconds.toFixed(2)}s
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate">
+                            {step.error ? (
+                              <span className="text-destructive">
+                                {step.error}
+                              </span>
+                            ) : step.details ? (
+                              <span className="text-muted-foreground text-sm">
+                                {JSON.stringify(step.details).substring(0, 50)}
+                                ...
+                              </span>
+                            ) : (
+                              "-"
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-muted-foreground">
+                    No step details available
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Configuration */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Configuration</CardTitle>
+              <CardDescription>
+                Current online serving configuration
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {statusLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              ) : status?.config ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {Object.entries(status.config).map(([key, value]) => (
+                    <div key={key} className="bg-muted/50 rounded-lg p-3">
+                      <div className="text-sm text-muted-foreground">{key}</div>
+                      <div
+                        className="font-medium truncate"
+                        title={String(value)}
+                      >
+                        {String(value) || "-"}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground">
+                  No configuration available
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

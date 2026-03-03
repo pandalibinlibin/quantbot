@@ -97,7 +97,8 @@ enhanced_indexing:
   max_deviation: 0.02
 
   # Minimum weight threshold (weights below this are set to 0)
-  min_weight: 0.001
+  # Set to 0 to include all stocks in the portfolio
+  min_weight: 0
 
   # Benchmark index selection
   # Options: "auto" (detect from data), "csi300", "csi500", "sp500", "nasdaq100"

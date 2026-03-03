@@ -9862,7 +9862,7 @@ Task 6 (集成文档)
 | Task 3 | 实现指数增强策略服务          | ✅ 完成   | 2026-03-03 |
 | Task 4 | 修改 Routine API 集成指数增强 | ✅ 完成   | 2026-03-03 |
 | Task 5 | 更新邮件通知发送持仓表        | ✅ 完成   | 2026-03-03 |
-| Task 6 | 前端 Routine 页面显示目标持仓 | 🔲 待开始 | -          |
+| Task 6 | 前端 Routine 页面显示目标持仓 | ✅ 完成   | 2026-03-03 |
 | Task 7 | 移除分钟数据支持              | 🔲 待开始 | -          |
 | Task 8 | 创建 VeighNa 集成文档         | 🔲 待开始 | -          |
 | Task 9 | 创建 LEAN 集成文档            | 🔲 待开始 | -          |
@@ -9914,3 +9914,73 @@ Qlib 提供了强化学习（RL）功能用于订单执行优化，包括 PPO、
 ### 实施优先级
 
 **低优先级** - 当前先使用 VeighNa/LEAN 内置执行算法，未来有需要再考虑 RL 优化。
+
+---
+
+## ✅ 数据更新问题解决 (2026-03-03)
+
+### 📋 问题描述
+
+邮件通知显示数据停留在 2026-02-13，无法进行增量更新，影响策略运行和邮件发送。
+
+### 🔍 根本原因
+
+`yahoo_collector.py` 中出现 `ValueError: Cannot mix tz-aware with tz-naive values` 错误。yahooquery 库返回的数据包含混合的日期时间类型：
+
+- 闭市日期：`datetime.date` 类型
+- 开市日期：`datetime.datetime` 类型
+- 时区信息不一致导致 pandas 索引比较失败
+
+### 🛠️ 解决方案
+
+**修改文件**: `backend/app/services/data_collectors/yahoo_collector.py`
+
+**修改位置**: Lines 644-661
+
+**核心修复**:
+
+```python
+# 立即标准化索引处理混合 datetime.date/datetime.datetime 类型
+if isinstance(data.index, pd.MultiIndex):
+    data = data.reset_index()
+    if "date" in data.columns:
+        # 处理混合时区感知和时区无关值
+        # 先转换为字符串标准化，再转回 datetime
+        data["date"] = data["date"].apply(
+            lambda x: x.strftime("%Y-%m-%d") if hasattr(x, "strftime") else str(x)
+        )
+        data["date"] = pd.to_datetime(data["date"])
+    data = data.set_index("date")
+else:
+    # 单索引情况 - 同样通过字符串转换标准化
+    data.index = pd.to_datetime(
+        [x.strftime("%Y-%m-%d") if hasattr(x, "strftime") else str(x) for x in data.index]
+    )
+```
+
+### 📊 验证结果
+
+**创建验证脚本**: `temp_scripts/verify_data_update.py`
+
+**验证项目**:
+
+- ✅ 日历文件更新至 2026-03-03
+- ✅ OHLCV bin 文件：259 条记录/特征
+- ✅ 因子 bin 文件：259 条记录/因子
+- ✅ Qlib API 可访问最新数据
+- ✅ 目标组合生成：300 只持仓
+  - 98 只超配股票 (score > 0)
+  - 186 只低配股票 (score < 0)
+  - 16 只持平股票 (score = 0)
+- ✅ 邮件通知正常发送
+
+### 🎯 状态
+
+**完全解决** - 所有数据更新和验证任务已完成，系统恢复正常运行。
+
+### 📝 经验总结
+
+1. **时区处理**: yahooquery 返回数据需要立即标准化时区信息
+2. **混合类型**: 通过字符串转换统一处理 date/datetime 混合类型
+3. **验证重要性**: 创建综合验证脚本确保修复有效性
+4. **索引一致性**: pandas 索引操作前必须确保类型一致性

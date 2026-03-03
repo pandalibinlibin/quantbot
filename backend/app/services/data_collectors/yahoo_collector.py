@@ -578,24 +578,47 @@ class YahooDataCollector(BaseCollector):
             try:
                 # Yahoo Finance API's end parameter is exclusive, so we need to add 1 day
                 # to include the end_datetime in the results
-                from datetime import datetime, timedelta
+                from datetime import datetime, timedelta, date
 
                 # Convert end_datetime to datetime object and add 1 day
                 if isinstance(end_datetime, str):
                     end_dt = datetime.strptime(end_datetime, "%Y-%m-%d")
+                elif isinstance(end_datetime, date) and not isinstance(
+                    end_datetime, datetime
+                ):
+                    # Convert date to datetime
+                    end_dt = datetime.combine(end_datetime, datetime.min.time())
+                elif isinstance(end_datetime, pd.Timestamp):
+                    end_dt = end_datetime.to_pydatetime()
                 else:
                     end_dt = end_datetime
 
                 # Add 1 day to make the end date inclusive
                 adjusted_end = (end_dt + timedelta(days=1)).strftime("%Y-%m-%d")
 
+                # Also convert start_datetime to string format for consistency
+                if isinstance(start_datetime, str):
+                    adjusted_start = start_datetime
+                elif isinstance(start_datetime, date) and not isinstance(
+                    start_datetime, datetime
+                ):
+                    adjusted_start = start_datetime.strftime("%Y-%m-%d")
+                elif isinstance(start_datetime, pd.Timestamp):
+                    adjusted_start = start_datetime.strftime("%Y-%m-%d")
+                else:
+                    adjusted_start = (
+                        start_datetime.strftime("%Y-%m-%d")
+                        if hasattr(start_datetime, "strftime")
+                        else str(start_datetime)
+                    )
+
                 if interval == "1d":
                     data = ticker.history(
-                        start=start_datetime, end=adjusted_end, interval="1d"
+                        start=adjusted_start, end=adjusted_end, interval="1d"
                     )
                 elif interval == "1m":
                     data = ticker.history(
-                        start=start_datetime, end=adjusted_end, interval="1m"
+                        start=adjusted_start, end=adjusted_end, interval="1m"
                     )
                 else:
                     raise ValueError(f"Unsupported interval: {interval}")
@@ -611,21 +634,42 @@ class YahooDataCollector(BaseCollector):
                     )
                     return pd.DataFrame()
 
-                if data.empty:
+                # Check if DataFrame using len() to avoid potential type comparison issues
+                if len(data) == 0:
                     logger.warning(
                         f"Yahoo Finance returned empty DataFrame for {symbol} - possible reasons: no trading in date range, delisted stock, or suspended trading"
                     )
-                    logger.debug(
-                        f"Empty DataFrame details for {symbol}: columns={list(data.columns)}, index={data.index}"
-                    )
                     return pd.DataFrame()
+
+                # Normalize index IMMEDIATELY to handle mixed datetime.date/datetime.datetime types
+                # yahooquery returns datetime.date for closed sessions and datetime.datetime for open sessions
+                # This MUST be done before any index comparison operations
+                if isinstance(data.index, pd.MultiIndex):
+                    data = data.reset_index()
+                    if "date" in data.columns:
+                        # Handle mixed tz-aware and tz-naive values
+                        # First convert to string to normalize, then back to datetime
+                        data["date"] = data["date"].apply(
+                            lambda x: (
+                                x.strftime("%Y-%m-%d")
+                                if hasattr(x, "strftime")
+                                else str(x)
+                            )
+                        )
+                        data["date"] = pd.to_datetime(data["date"])
+                    data = data.set_index("date")
+                else:
+                    # Single index case - also normalize via string conversion
+                    data.index = pd.to_datetime(
+                        [
+                            x.strftime("%Y-%m-%d") if hasattr(x, "strftime") else str(x)
+                            for x in data.index
+                        ]
+                    )
 
                 # Log successful data retrieval details
                 logger.debug(
                     f"Successfully retrieved data for {symbol}: {len(data)} rows, columns={list(data.columns)}"
-                )
-                logger.debug(
-                    f"Data date range for {symbol}: {data.index.min()} to {data.index.max()}"
                 )
 
             except Exception as api_error:
@@ -634,11 +678,6 @@ class YahooDataCollector(BaseCollector):
                 )
                 logger.debug(f"Full API error details for {symbol}", exc_info=True)
                 return pd.DataFrame()
-
-            # Reset index to get date as column, then set it back as index
-            if isinstance(data.index, pd.MultiIndex):
-                data = data.reset_index()
-                data = data.set_index("date")
 
             # Get required columns from BaseCollector's field metadata
             required_columns = list(self._field_metadata.keys())

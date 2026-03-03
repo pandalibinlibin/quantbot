@@ -410,14 +410,27 @@ class OnlineServingService:
             self.logger.info("Updating data incrementally...")
             data_update_result = self._update_data_incrementally()
             step_duration = time.time() - step_start
+            data_update_success = data_update_result.get("success", False)
             result["steps"].append(
                 {
                     "step": "data_update",
-                    "success": data_update_result.get("success", False),
+                    "success": data_update_success,
                     "duration_seconds": round(step_duration, 2),
                     "details": data_update_result,
                 }
             )
+
+            # Warn if data update failed - routine will continue with existing data
+            if not data_update_success:
+                error_msg = data_update_result.get("error", "Unknown error")
+                self.logger.warning(
+                    f"Data update failed: {error_msg}. "
+                    f"Continuing with existing data. "
+                    f"Please check network connectivity and try again later."
+                )
+                result["data_update_warning"] = (
+                    f"Data update failed: {error_msg}. Using existing data."
+                )
 
             # Step 3: Execute OnlineManager routine
             step_start = time.time()
@@ -832,16 +845,22 @@ class OnlineServingService:
             Dictionary with backtest results
         """
         import pandas as pd
-        from qlib.contrib.strategy import TopkDropoutStrategy
         from qlib.backtest import backtest as backtest_func
         from qlib.backtest.executor import SimulatorExecutor
         from qlib.utils.time import Freq
+        from app.services.enhanced_indexing_service import (
+            create_enhanced_indexing_strategy,
+            get_enhanced_indexing_service,
+        )
 
         # Default values
         benchmark = benchmark or "SH000300"
-        topk = topk or 50
-        n_drop = n_drop or 5
         account = account or 100000000
+
+        # Get enhanced indexing config
+        ei_service = get_enhanced_indexing_service()
+        max_deviation = ei_service.max_deviation
+        min_weight = ei_service.min_weight
 
         try:
             # Ensure Qlib is initialized
@@ -898,11 +917,11 @@ class OnlineServingService:
 
             self.logger.info(f"Backtest period: {bt_start_time} to {bt_end_time}")
 
-            # Step 4: Create strategy with predictions as signals
-            strategy = TopkDropoutStrategy(
+            # Step 4: Create enhanced indexing strategy with predictions as signals
+            strategy = create_enhanced_indexing_strategy(
                 signal=pred,
-                topk=topk,
-                n_drop=n_drop,
+                max_deviation=max_deviation,
+                min_weight=min_weight,
             )
 
             # Exchange configuration
@@ -964,9 +983,11 @@ class OnlineServingService:
                     if "account" in report_df.columns
                     else account
                 ),
-                "topk": topk,
-                "n_drop": n_drop,
+                "topk": None,  # Not used in enhanced indexing strategy
+                "n_drop": None,  # Not used in enhanced indexing strategy
                 "benchmark": benchmark,
+                "strategy": "enhanced_indexing",
+                "max_deviation": max_deviation,
                 # Risk metrics
                 "risk_metrics": risk_metrics,
                 # Chart data

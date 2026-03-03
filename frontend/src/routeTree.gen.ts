@@ -15,9 +15,11 @@ import { Route as RecoverPasswordRouteImport } from './routes/recover-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LayoutRouteImport } from './routes/_layout'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
+import { Route as LayoutTargetPortfolioRouteImport } from './routes/_layout/target-portfolio'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutRoutineRouteImport } from './routes/_layout/routine'
 import { Route as LayoutPaperTradingRouteImport } from './routes/_layout/paper-trading'
+import { Route as LayoutNotificationsRouteImport } from './routes/_layout/notifications'
 import { Route as LayoutModelsRouteImport } from './routes/_layout/models'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
 import { Route as LayoutFactorsRouteImport } from './routes/_layout/factors'
@@ -54,6 +56,11 @@ const LayoutIndexRoute = LayoutIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutTargetPortfolioRoute = LayoutTargetPortfolioRouteImport.update({
+  id: '/target-portfolio',
+  path: '/target-portfolio',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -67,6 +74,11 @@ const LayoutRoutineRoute = LayoutRoutineRouteImport.update({
 const LayoutPaperTradingRoute = LayoutPaperTradingRouteImport.update({
   id: '/paper-trading',
   path: '/paper-trading',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutNotificationsRoute = LayoutNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutModelsRoute = LayoutModelsRouteImport.update({
@@ -111,9 +123,11 @@ export interface FileRoutesByFullPath {
   '/factors': typeof LayoutFactorsRoute
   '/items': typeof LayoutItemsRoute
   '/models': typeof LayoutModelsRoute
+  '/notifications': typeof LayoutNotificationsRoute
   '/paper-trading': typeof LayoutPaperTradingRoute
   '/routine': typeof LayoutRoutineRoute
   '/settings': typeof LayoutSettingsRoute
+  '/target-portfolio': typeof LayoutTargetPortfolioRoute
   '/': typeof LayoutIndexRoute
 }
 export interface FileRoutesByTo {
@@ -127,9 +141,11 @@ export interface FileRoutesByTo {
   '/factors': typeof LayoutFactorsRoute
   '/items': typeof LayoutItemsRoute
   '/models': typeof LayoutModelsRoute
+  '/notifications': typeof LayoutNotificationsRoute
   '/paper-trading': typeof LayoutPaperTradingRoute
   '/routine': typeof LayoutRoutineRoute
   '/settings': typeof LayoutSettingsRoute
+  '/target-portfolio': typeof LayoutTargetPortfolioRoute
   '/': typeof LayoutIndexRoute
 }
 export interface FileRoutesById {
@@ -145,9 +161,11 @@ export interface FileRoutesById {
   '/_layout/factors': typeof LayoutFactorsRoute
   '/_layout/items': typeof LayoutItemsRoute
   '/_layout/models': typeof LayoutModelsRoute
+  '/_layout/notifications': typeof LayoutNotificationsRoute
   '/_layout/paper-trading': typeof LayoutPaperTradingRoute
   '/_layout/routine': typeof LayoutRoutineRoute
   '/_layout/settings': typeof LayoutSettingsRoute
+  '/_layout/target-portfolio': typeof LayoutTargetPortfolioRoute
   '/_layout/': typeof LayoutIndexRoute
 }
 export interface FileRouteTypes {
@@ -163,9 +181,11 @@ export interface FileRouteTypes {
     | '/factors'
     | '/items'
     | '/models'
+    | '/notifications'
     | '/paper-trading'
     | '/routine'
     | '/settings'
+    | '/target-portfolio'
     | '/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -179,9 +199,11 @@ export interface FileRouteTypes {
     | '/factors'
     | '/items'
     | '/models'
+    | '/notifications'
     | '/paper-trading'
     | '/routine'
     | '/settings'
+    | '/target-portfolio'
     | '/'
   id:
     | '__root__'
@@ -196,9 +218,11 @@ export interface FileRouteTypes {
     | '/_layout/factors'
     | '/_layout/items'
     | '/_layout/models'
+    | '/_layout/notifications'
     | '/_layout/paper-trading'
     | '/_layout/routine'
     | '/_layout/settings'
+    | '/_layout/target-portfolio'
     | '/_layout/'
   fileRoutesById: FileRoutesById
 }
@@ -254,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutIndexRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/target-portfolio': {
+      id: '/_layout/target-portfolio'
+      path: '/target-portfolio'
+      fullPath: '/target-portfolio'
+      preLoaderRoute: typeof LayoutTargetPortfolioRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/settings': {
       id: '/_layout/settings'
       path: '/settings'
@@ -273,6 +304,13 @@ declare module '@tanstack/react-router' {
       path: '/paper-trading'
       fullPath: '/paper-trading'
       preLoaderRoute: typeof LayoutPaperTradingRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/notifications': {
+      id: '/_layout/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof LayoutNotificationsRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/models': {
@@ -327,9 +365,11 @@ interface LayoutRouteChildren {
   LayoutFactorsRoute: typeof LayoutFactorsRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
   LayoutModelsRoute: typeof LayoutModelsRoute
+  LayoutNotificationsRoute: typeof LayoutNotificationsRoute
   LayoutPaperTradingRoute: typeof LayoutPaperTradingRoute
   LayoutRoutineRoute: typeof LayoutRoutineRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
+  LayoutTargetPortfolioRoute: typeof LayoutTargetPortfolioRoute
   LayoutIndexRoute: typeof LayoutIndexRoute
 }
 
@@ -340,9 +380,11 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutFactorsRoute: LayoutFactorsRoute,
   LayoutItemsRoute: LayoutItemsRoute,
   LayoutModelsRoute: LayoutModelsRoute,
+  LayoutNotificationsRoute: LayoutNotificationsRoute,
   LayoutPaperTradingRoute: LayoutPaperTradingRoute,
   LayoutRoutineRoute: LayoutRoutineRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
+  LayoutTargetPortfolioRoute: LayoutTargetPortfolioRoute,
   LayoutIndexRoute: LayoutIndexRoute,
 }
 

@@ -4,8 +4,8 @@ import {
   Brain,
   Database,
   FlaskConical,
-  TrendingUp,
   RefreshCw,
+  Bell,
 } from "lucide-react";
 
 import { SidebarAppearance } from "@/components/Common/Appearance";
@@ -25,9 +25,9 @@ const baseItems: Item[] = [
   { icon: FlaskConical, title: "Factors", path: "/factors" },
   { icon: Database, title: "Data Sources", path: "/data-sources" },
   { icon: Brain, title: "Model", path: "/models" },
-  { icon: TrendingUp, title: "Backtest", path: "/backtest" },
   { icon: RefreshCw, title: "Routine", path: "/routine" },
-  // Paper Trading 已移除 - 执行层委托给 VeighNa/LEAN
+  { icon: Bell, title: "Target Portfolio", path: "/target-portfolio" },
+  // Backtest 和 Paper Trading 已移除 - 回测和执行层委托给 VeighNa/LEAN
 ];
 
 export function AppSidebar() {

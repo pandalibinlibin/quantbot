@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional
 import logging
 
 from app.services.online_serving_service import get_online_serving_service
+from app.services.notification_service import get_notification_service
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,34 @@ class StepResult(BaseModel):
     details: Dict[str, Any] = {}
 
 
+class PortfolioItem(BaseModel):
+    """Single item in target portfolio."""
+
+    rank: int
+    instrument: str
+    benchmark_weight: float
+    score: float
+    target_weight: float
+    deviation: float
+    deviation_pct: str
+    action: str
+
+
+class PortfolioSummary(BaseModel):
+    """Summary of target portfolio."""
+
+    benchmark: str
+    benchmark_name: str
+    total_stocks: int
+    total_weight: float
+    overweight_count: int
+    underweight_count: int
+    neutral_count: int
+    max_deviation: float
+    generated_at: str
+    target_date: str
+
+
 class RoutineResponse(BaseModel):
     """Response model for routine endpoint."""
 
@@ -57,6 +86,8 @@ class RoutineResponse(BaseModel):
     steps: List[StepResult] = []
     total_duration_seconds: Optional[float] = None
     error: Optional[str] = None
+    target_portfolio: Optional[List[PortfolioItem]] = None
+    portfolio_summary: Optional[PortfolioSummary] = None
 
 
 class DataRange(BaseModel):
@@ -139,7 +170,41 @@ def execute_routine(request: RoutineRequest = None):
             for s in result.get("steps", [])
         ]
 
-        return RoutineResponse(
+        # Build portfolio items if available
+        target_portfolio = None
+        if result.get("target_portfolio"):
+            target_portfolio = [
+                PortfolioItem(
+                    rank=item["rank"],
+                    instrument=item["instrument"],
+                    benchmark_weight=item["benchmark_weight"],
+                    score=item["score"],
+                    target_weight=item["target_weight"],
+                    deviation=item["deviation"],
+                    deviation_pct=item["deviation_pct"],
+                    action=item["action"],
+                )
+                for item in result["target_portfolio"]
+            ]
+
+        # Build portfolio summary if available
+        portfolio_summary = None
+        if result.get("portfolio_summary"):
+            ps = result["portfolio_summary"]
+            portfolio_summary = PortfolioSummary(
+                benchmark=ps.get("benchmark", ""),
+                benchmark_name=ps.get("benchmark_name", ""),
+                total_stocks=ps.get("total_stocks", 0),
+                total_weight=float(ps.get("total_weight", 0)),
+                overweight_count=ps.get("overweight_count", 0),
+                underweight_count=ps.get("underweight_count", 0),
+                neutral_count=ps.get("neutral_count", 0),
+                max_deviation=ps.get("max_deviation", 0),
+                generated_at=ps.get("generated_at", ""),
+                target_date=ps.get("target_date", ""),
+            )
+
+        response = RoutineResponse(
             success=result.get("success", False),
             message=result.get("message"),
             cur_time=result.get("cur_time"),
@@ -147,7 +212,39 @@ def execute_routine(request: RoutineRequest = None):
             steps=steps,
             total_duration_seconds=result.get("total_duration_seconds"),
             error=result.get("error"),
+            target_portfolio=target_portfolio,
+            portfolio_summary=portfolio_summary,
         )
+
+        # Send email notification if routine was successful
+        if result.get("success") and target_portfolio:
+            try:
+                notification_service = get_notification_service()
+                report_data = {
+                    "executed_at": result.get("executed_at", ""),
+                    "target_date": result.get("portfolio_summary", {}).get(
+                        "target_date", ""
+                    ),
+                    "signal_count": len(target_portfolio),
+                    "steps": result.get("steps", []),
+                    "total_duration_seconds": result.get("total_duration_seconds"),
+                    "target_portfolio": result.get("target_portfolio", []),
+                    "portfolio_summary": result.get("portfolio_summary", {}),
+                }
+                email_result = notification_service.send_trading_report(
+                    subject=f"QuantBot Daily Report - {result.get('portfolio_summary', {}).get('target_date', 'N/A')}",
+                    report_data=report_data,
+                )
+                if email_result.get("success"):
+                    logger.info("Trading report email sent successfully")
+                else:
+                    logger.warning(
+                        f"Failed to send trading report email: {email_result.get('error')}"
+                    )
+            except Exception as email_error:
+                logger.warning(f"Failed to send trading report email: {email_error}")
+
+        return response
 
     except Exception as e:
         logger.error(f"Routine execution failed: {e}")
