@@ -524,6 +524,192 @@ class NotificationService:
         </html>
         """
 
+    def send_target_portfolio_email(
+        self,
+        portfolio_data: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Send target portfolio email after routine execution.
+
+        Args:
+            portfolio_data: Target portfolio data including:
+                - target_portfolio: List of portfolio items
+                - summary: Portfolio summary statistics
+
+        Returns:
+            Result of sending emails
+        """
+        # Check if emails are enabled in settings
+        if not settings.emails_enabled:
+            return {
+                "success": False,
+                "error": "Email sending is not configured.",
+            }
+
+        config = self._load_config()
+
+        if not config.get("enabled"):
+            return {
+                "success": False,
+                "error": "Notifications are disabled",
+            }
+
+        if not config.get("recipients"):
+            return {
+                "success": False,
+                "error": "No recipients configured",
+            }
+
+        # Build email content
+        html_content = self._build_target_portfolio_html(portfolio_data)
+        summary = portfolio_data.get("summary", {})
+        date = summary.get("target_date", datetime.now().strftime("%Y-%m-%d"))
+
+        sent_count = 0
+        errors = []
+
+        for recipient in config["recipients"]:
+            try:
+                send_email(
+                    email_to=recipient,
+                    subject=f"QuantBot: Target Portfolio {date}",
+                    html_content=html_content,
+                )
+                sent_count += 1
+            except Exception as e:
+                errors.append(f"{recipient}: {str(e)}")
+
+        if sent_count == len(config["recipients"]):
+            return {
+                "success": True,
+                "message": f"Target portfolio sent to {sent_count} recipients",
+            }
+        elif sent_count > 0:
+            return {
+                "success": True,
+                "message": f"Target portfolio sent to {sent_count}/{len(config['recipients'])} recipients",
+                "errors": errors,
+            }
+        else:
+            return {
+                "success": False,
+                "error": "Failed to send to any recipients",
+                "errors": errors,
+            }
+
+    def _build_target_portfolio_html(self, portfolio_data: Dict[str, Any]) -> str:
+        """Build HTML email body for target portfolio."""
+        summary = portfolio_data.get("summary", {})
+        portfolio = portfolio_data.get("target_portfolio", [])
+
+        benchmark = summary.get("benchmark", "unknown")
+        benchmark_name = summary.get("benchmark_name", benchmark)
+        generated_at = summary.get("generated_at", datetime.now().isoformat())
+        target_date = summary.get("target_date", datetime.now().strftime("%Y-%m-%d"))
+        total_stocks = summary.get("total_stocks", 0)
+        overweight_count = summary.get("overweight_count", 0)
+        underweight_count = summary.get("underweight_count", 0)
+        neutral_count = summary.get("neutral_count", 0)
+        max_deviation = summary.get("max_deviation", 0.02)
+
+        # Build portfolio table rows (all stocks)
+        portfolio_rows = ""
+        for item in portfolio:
+            deviation = item.get("deviation", 0)
+            action = item.get("action", "")
+
+            # Color coding for deviation
+            if action == "超配":
+                color = "#27ae60"  # Green
+            elif action == "低配":
+                color = "#e74c3c"  # Red
+            else:
+                color = "#666"  # Gray
+
+            portfolio_rows += f"""
+            <tr>
+                <td style="text-align: center;">{item.get('rank', '')}</td>
+                <td>{item.get('instrument', '')}</td>
+                <td style="text-align: right;">{item.get('benchmark_weight', 0):.2%}</td>
+                <td style="text-align: right;">{item.get('score', 0):.4f}</td>
+                <td style="text-align: right;">{item.get('target_weight', 0):.2%}</td>
+                <td style="text-align: right; color: {color};">{item.get('deviation_pct', '')}</td>
+                <td style="text-align: center; color: {color};">{action}</td>
+            </tr>
+            """
+
+        return f"""
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                h2 {{ color: #333; }}
+                h3 {{ color: #666; margin-top: 20px; }}
+                table {{ border-collapse: collapse; width: 100%; margin: 10px 0; }}
+                th, td {{ border: 1px solid #ddd; padding: 8px; }}
+                th {{ background-color: #2c3e50; color: white; text-align: left; }}
+                tr:nth-child(even) {{ background-color: #f9f9f9; }}
+                tr:hover {{ background-color: #f5f5f5; }}
+                .info-box {{ background-color: #ecf0f1; padding: 15px; border-radius: 5px; margin: 10px 0; }}
+                .stats-grid {{ display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0; }}
+                .stat-item {{ background-color: #fff; padding: 10px; border-radius: 5px; border: 1px solid #ddd; text-align: center; }}
+                .stat-value {{ font-size: 24px; font-weight: bold; color: #2c3e50; }}
+                .stat-label {{ font-size: 12px; color: #666; }}
+                .overweight {{ color: #27ae60; }}
+                .underweight {{ color: #e74c3c; }}
+            </style>
+        </head>
+        <body>
+            <h2>📊 QuantBot Target Portfolio</h2>
+            
+            <div class="info-box">
+                <p><strong>Benchmark:</strong> {benchmark_name} ({benchmark})</p>
+                <p><strong>Target Date:</strong> {target_date}</p>
+                <p><strong>Generated At:</strong> {generated_at}</p>
+                <p><strong>Max Deviation:</strong> {max_deviation:.1%}</p>
+            </div>
+            
+            <h3>📈 Statistics</h3>
+            <table style="width: 50%;">
+                <tr>
+                    <td>Total Stocks</td>
+                    <td style="text-align: right;"><strong>{total_stocks}</strong></td>
+                </tr>
+                <tr>
+                    <td>Overweight (<span class="overweight">超配</span>)</td>
+                    <td style="text-align: right;"><strong class="overweight">{overweight_count}</strong></td>
+                </tr>
+                <tr>
+                    <td>Underweight (<span class="underweight">低配</span>)</td>
+                    <td style="text-align: right;"><strong class="underweight">{underweight_count}</strong></td>
+                </tr>
+                <tr>
+                    <td>Neutral (持平)</td>
+                    <td style="text-align: right;"><strong>{neutral_count}</strong></td>
+                </tr>
+            </table>
+            
+            <h3>📋 Target Portfolio</h3>
+            <table>
+                <tr>
+                    <th style="width: 50px;">Rank</th>
+                    <th>Stock</th>
+                    <th style="width: 100px;">Benchmark</th>
+                    <th style="width: 80px;">Score</th>
+                    <th style="width: 100px;">Target</th>
+                    <th style="width: 80px;">Deviation</th>
+                    <th style="width: 80px;">Action</th>
+                </tr>
+                {portfolio_rows}
+            </table>
+            
+            
+            <hr>
+            <p><small>This is an automated email from QuantBot Enhanced Indexing system.</small></p>
+        </body>
+        </html>
+        """
+
     def _build_trading_report_html(self, report_data: Dict[str, Any]) -> str:
         """Build HTML email body for trading report."""
         date = report_data.get("date", datetime.now().strftime("%Y-%m-%d"))
