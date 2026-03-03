@@ -28,6 +28,7 @@ import pandas as pd
 
 from app.config.qlib import qlib_config
 from app.services.qlib_init_service import get_qlib_init_service
+from app.services.enhanced_indexing_service import get_enhanced_indexing_service
 
 logger = logging.getLogger(__name__)
 
@@ -485,6 +486,30 @@ class OnlineServingService:
                 }
             )
 
+            # Step 6: Enhanced Indexing Strategy - Calculate target portfolio
+            step_start = time.time()
+            enhanced_indexing_result = self._calculate_enhanced_indexing(
+                signals, effective_cur_time
+            )
+            step_duration = time.time() - step_start
+            result["steps"].append(
+                {
+                    "step": "enhanced_indexing",
+                    "success": enhanced_indexing_result.get("success", False),
+                    "duration_seconds": round(step_duration, 2),
+                    "details": enhanced_indexing_result.get("summary", {}),
+                }
+            )
+
+            # Add target portfolio to result
+            if enhanced_indexing_result.get("success"):
+                result["target_portfolio"] = enhanced_indexing_result.get(
+                    "target_portfolio", []
+                )
+                result["portfolio_summary"] = enhanced_indexing_result.get(
+                    "summary", {}
+                )
+
             self._last_routine_time = datetime.now()
             result["success"] = True
             result["message"] = "Routine completed successfully"
@@ -501,6 +526,71 @@ class OnlineServingService:
             self.logger.error(f"Routine failed: {e}")
 
         return result
+
+    def _calculate_enhanced_indexing(
+        self, signals: pd.DataFrame, cur_time: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Calculate target portfolio using enhanced indexing strategy.
+
+        Args:
+            signals: Model prediction signals DataFrame
+            cur_time: Current time string for date reference
+
+        Returns:
+            Dict containing target_portfolio, summary, and success status
+        """
+        try:
+            enhanced_indexing_service = get_enhanced_indexing_service()
+
+            # Check if enhanced indexing is enabled
+            if not enhanced_indexing_service.enabled:
+                self.logger.info("Enhanced indexing is disabled, skipping")
+                return {
+                    "success": True,
+                    "target_portfolio": [],
+                    "summary": {
+                        "enabled": False,
+                        "message": "Enhanced indexing is disabled",
+                    },
+                }
+
+            # Calculate target portfolio
+            self.logger.info(
+                "Calculating target portfolio using enhanced indexing strategy..."
+            )
+            portfolio_data = enhanced_indexing_service.calculate_target_portfolio(
+                signals=signals,
+                date=cur_time,
+            )
+
+            # Save portfolio to file
+            if portfolio_data.get("target_portfolio"):
+                date_str = cur_time if cur_time else datetime.now().strftime("%Y-%m-%d")
+                saved_path = enhanced_indexing_service.save_portfolio(
+                    portfolio_data, date_str
+                )
+                self.logger.info(f"Target portfolio saved to {saved_path}")
+
+            portfolio_count = len(portfolio_data.get("target_portfolio", []))
+            self.logger.info(
+                f"Enhanced indexing completed: {portfolio_count} positions"
+            )
+
+            return {
+                "success": True,
+                "target_portfolio": portfolio_data.get("target_portfolio", []),
+                "summary": portfolio_data.get("summary", {}),
+            }
+
+        except Exception as e:
+            self.logger.error(f"Enhanced indexing calculation failed: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "target_portfolio": [],
+                "summary": {},
+            }
 
     def _update_data_incrementally(self) -> Dict[str, Any]:
         """
