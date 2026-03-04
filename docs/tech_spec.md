@@ -9855,17 +9855,18 @@ Task 6 (集成文档)
 
 ### 实施进度
 
-| Task   | 描述                          | 状态      | 完成日期   |
-| ------ | ----------------------------- | --------- | ---------- |
-| Task 1 | 隐藏 Paper Trading 入口       | ✅ 完成   | 2026-03-03 |
-| Task 2 | 添加指数增强配置              | ✅ 完成   | 2026-03-03 |
-| Task 3 | 实现指数增强策略服务          | ✅ 完成   | 2026-03-03 |
-| Task 4 | 修改 Routine API 集成指数增强 | ✅ 完成   | 2026-03-03 |
-| Task 5 | 更新邮件通知发送持仓表        | ✅ 完成   | 2026-03-03 |
-| Task 6 | 前端 Routine 页面显示目标持仓 | ✅ 完成   | 2026-03-03 |
-| Task 7 | 移除分钟数据支持              | 🔲 待开始 | -          |
-| Task 8 | 创建 VeighNa 集成文档         | 🔲 待开始 | -          |
-| Task 9 | 创建 LEAN 集成文档            | 🔲 待开始 | -          |
+| Task    | 描述                          | 状态      | 完成日期   |
+| ------- | ----------------------------- | --------- | ---------- |
+| Task 1  | 隐藏 Paper Trading 入口       | ✅ 完成   | 2026-03-03 |
+| Task 2  | 添加指数增强配置              | ✅ 完成   | 2026-03-03 |
+| Task 3  | 实现指数增强策略服务          | ✅ 完成   | 2026-03-03 |
+| Task 4  | 修改 Routine API 集成指数增强 | ✅ 完成   | 2026-03-03 |
+| Task 5  | 更新邮件通知发送持仓表        | ✅ 完成   | 2026-03-03 |
+| Task 6  | 前端 Routine 页面显示目标持仓 | ✅ 完成   | 2026-03-03 |
+| Task 7  | 移除分钟数据支持              | ✅ 完成   | 2026-03-04 |
+| Task 8  | 创建 VeighNa 集成文档         | 🔲 待开始 | -          |
+| Task 9  | 创建 LEAN 集成文档            | 🔲 待开始 | -          |
+| Task 10 | 代码整理和重构                | 🔲 待开始 | -          |
 
 ---
 
@@ -9984,3 +9985,68 @@ else:
 2. **混合类型**: 通过字符串转换统一处理 date/datetime 混合类型
 3. **验证重要性**: 创建综合验证脚本确保修复有效性
 4. **索引一致性**: pandas 索引操作前必须确保类型一致性
+
+---
+
+## ✅ Task 7: 移除分钟数据支持 (2026-03-04)
+
+### 📋 背景
+
+选股系统只需要日线数据，分钟数据应由独立的择时/执行系统处理。移除分钟数据支持可以：
+
+- 简化系统架构
+- 减少代码复杂度
+- 为未来的择时系统留出清晰边界
+
+### 🛠️ 修改文件清单
+
+| 文件                                                       | 修改内容                               |
+| ---------------------------------------------------------- | -------------------------------------- |
+| `backend/app/core/config.py`                               | 移除 `QLIB_DATA_PATH_1MIN` 配置        |
+| `backend/app/core/qlib_config.py`                          | 移除 `QLIB_DATA_DIR_1MIN` 配置         |
+| `backend/app/config/qlib/__init__.py`                      | 简化 `freq`、`qlib_data_path` 属性     |
+| `backend/app/config/qlib/system_config.yaml`               | 更新配置说明，移除 1min 选项           |
+| `backend/app/services/qlib_init_service.py`                | 简化 Qlib 初始化为单一日频路径         |
+| `backend/app/services/qlib_workflow_service.py`            | 移除 `_detect_data_frequency()` 方法   |
+| `backend/app/services/online_serving_service.py`           | 重命名为 `_get_data_frequency()`       |
+| `backend/app/services/data_utils.py`                       | 简化多处分钟数据相关逻辑               |
+| `backend/app/services/data_health_service.py`              | 移除分钟数据路径选择                   |
+| `backend/app/services/data_source_manager.py`              | 移除分钟数据目录清理                   |
+| `backend/app/services/factor_processor.py`                 | 移除分钟级时间扩展逻辑                 |
+| `backend/app/services/factor_storage.py`                   | 简化目录选择逻辑                       |
+| `backend/app/services/data_collectors/pipeline/service.py` | 移除分钟数据相关逻辑                   |
+| `backend/app/services/data_collectors/normalize.py`        | 移除 `generate_1min_from_daily()` 方法 |
+
+### 📊 修改统计
+
+- **删除代码**: ~200 行
+- **简化代码**: ~50 行
+- **更新注释**: 全部改为英文
+
+### 🎯 设计原则
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    系统分离设计                              │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  [选股系统 - 当前]                                          │
+│       │ 日线数据                                            │
+│       ▼                                                     │
+│  目标持仓 (300只股票权重)                                    │
+│       │                                                     │
+│       ▼                                                     │
+│  [择时系统 - 未来独立开发]                                   │
+│       │ 分钟数据                                            │
+│       ▼                                                     │
+│  执行订单 (最优执行时机)                                     │
+│       │                                                     │
+│       ▼                                                     │
+│  [VeighNa/LEAN] 实际交易                                    │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### ✅ 状态
+
+**已完成** - 所有分钟数据相关代码已移除，系统专注于日线数据选股功能。

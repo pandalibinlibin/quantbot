@@ -66,22 +66,17 @@ class QlibInitService:
                 # Map region string to Qlib constant
                 region = REG_CN if self.settings.QLIB_REGION == "cn" else REG_US
 
-                # Build provider_uri dict for multi-frequency support
-                # Qlib official recommendation: use separate directories for different frequencies
-                provider_uri = {
-                    "day": self.settings.QLIB_DATA_DIR,
-                    "1min": self.settings.QLIB_DATA_DIR_1MIN,
-                }
+                # Use day-level data directory only
+                # Minute data is handled by separate timing/execution system
+                provider_uri = self.settings.QLIB_DATA_DIR
 
                 logger.info(
                     f"Initializing Qlib with region: {self.settings.QLIB_REGION}"
                 )
-                logger.info(
-                    f"Data directories: day={self.settings.QLIB_DATA_DIR}, 1min={self.settings.QLIB_DATA_DIR_1MIN}"
-                )
+                logger.info(f"Data directory: {self.settings.QLIB_DATA_DIR}")
                 logger.info(f"MLflow directory: {self.settings.QLIB_MLRUNS_DIR}")
 
-                # Initialize Qlib with multi-frequency provider_uri
+                # Initialize Qlib with day-level provider_uri
                 qlib.init(
                     provider_uri=provider_uri,
                     region=region,

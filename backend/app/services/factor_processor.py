@@ -140,63 +140,13 @@ class FactorProcessor:
             start_time = start_time or "2020-01-01"
             end_time = end_time or "2023-12-31"
 
-            # For minute-level frequencies, expand date-only format to include full trading hours
-            # This is necessary because Qlib's 1min calendar starts at market open, not 00:00:00
-            if self.freq in ["1min", "5min", "15min", "30min", "60min"]:
-                # Convert to string if needed
-                start_str = str(start_time)
-                end_str = str(end_time)
-
-                # Determine market trading hours based on region
-                # Read metadata to get stock_pool and infer region
-                from app.core.config import settings
-                import json
-
-                region = "cn"  # Default to China
-                try:
-                    metadata_file = Path(settings.QLIB_DATA_PATH_1MIN) / "metadata.json"
-                    if metadata_file.exists():
-                        with open(metadata_file, "r") as f:
-                            metadata = json.load(f)
-                            stock_pool = metadata.get("stock_pool", "").lower()
-                            if stock_pool in ["sp500", "nasdaq100", "dow30"]:
-                                region = "us"
-                except Exception:
-                    pass
-
-                # Set trading hours based on region
-                if region == "us":
-                    # US market: 09:30 - 16:00 EST
-                    market_open = "09:30:00"
-                    market_close = "16:00:00"
-                else:
-                    # China A-share market: 09:30 - 15:00 (with lunch break 11:30-13:00)
-                    market_open = "09:30:00"
-                    market_close = "15:00:00"
-
-                # If only date is provided (no time component), add trading hours
-                if len(start_str) == 10:  # Format: YYYY-MM-DD
-                    start_time = f"{start_str} {market_open}"
-                    logger.info(
-                        f"Expanded start_time for minute freq ({region} market): {start_time}"
-                    )
-                if len(end_str) == 10:  # Format: YYYY-MM-DD
-                    end_time = f"{end_str} {market_close}"
-                    logger.info(
-                        f"Expanded end_time for minute freq ({region} market): {end_time}"
-                    )
-
             # Get instruments list if not provided
+            # Note: Only day-level data is supported in this stock selection system
             if instruments is None:
                 # Read instruments directly from file to bypass Qlib's case-sensitive matching issue
-                # Select correct directory based on frequency
                 from app.core.config import settings
 
-                if self.freq in ["1min", "5min", "15min", "30min", "60min"]:
-                    qlib_data_dir = settings.QLIB_DATA_PATH_1MIN
-                else:
-                    qlib_data_dir = settings.QLIB_DATA_PATH
-
+                qlib_data_dir = settings.QLIB_DATA_PATH
                 instruments_file = Path(qlib_data_dir) / "instruments" / "all.txt"
                 logger.info(
                     f"Looking for instruments file at: {instruments_file} (freq={self.freq})"
@@ -221,15 +171,10 @@ class FactorProcessor:
             elif isinstance(instruments, str):
                 # If instruments is a string (like market name), get instruments for that market
                 if instruments in ["csi300", "csi500", "all"]:
-                    # Same fix for market-based instrument loading
-                    # Select correct directory based on frequency
+                    # Load instruments from file (day-level data only)
                     from app.core.config import settings
 
-                    if self.freq in ["1min", "5min", "15min", "30min", "60min"]:
-                        qlib_data_dir = settings.QLIB_DATA_PATH_1MIN
-                    else:
-                        qlib_data_dir = settings.QLIB_DATA_PATH
-
+                    qlib_data_dir = settings.QLIB_DATA_PATH
                     instruments_file = Path(qlib_data_dir) / "instruments" / "all.txt"
                     if instruments_file.exists():
                         with open(instruments_file, "r") as f:

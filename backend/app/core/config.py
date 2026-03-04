@@ -57,10 +57,8 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = ""
 
     # Data paths configuration
-    # Day-level data directory (default frequency)
+    # Day-level data directory (minute data handled by separate timing system)
     QLIB_DATA_PATH: str = "/app/qlib_data"
-    # Minute-level data directory (separate directory per Qlib official recommendation)
-    QLIB_DATA_PATH_1MIN: str = "/app/qlib_data_1min"
     CSV_DATA_PATH: str = "/app/csv_data"
     DEFAULT_CSV_FILE_NAME: str = "csv_data_cn.zip"
     # MLflow runs directory for model artifacts and metrics

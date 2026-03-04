@@ -146,8 +146,8 @@ class QlibWorkflowService:
         experiment_name = config.get("experiment_name", "default")
         model_name = config.get("model_name", None)
 
-        # Detect freq dynamically from available data
-        freq = self._detect_data_frequency()
+        # Use day frequency (only day-level data supported in stock selection system)
+        freq = "day"
 
         # Execute training workflow
         return self.execute_training_workflow(
@@ -157,46 +157,17 @@ class QlibWorkflowService:
             freq=freq,
         )
 
-    def _detect_data_frequency(self) -> str:
+    def get_provider_uri(self) -> str:
         """
-        Detect available data frequency by checking which data directories exist.
+        Get the provider_uri for day-level data.
 
-        Priority: day > 1min (prefer day data if both exist)
-
-        Returns:
-            Detected frequency ("day" or "1min")
-        """
-        day_path = Path(settings.QLIB_DATA_PATH)
-        min_path = Path(settings.QLIB_DATA_PATH_1MIN)
-
-        day_exists = day_path.exists() and (day_path / "features").exists()
-        min_exists = min_path.exists() and (min_path / "features").exists()
-
-        if day_exists:
-            self.logger.info("Detected day frequency data")
-            return "day"
-        elif min_exists:
-            self.logger.info("Detected 1min frequency data")
-            return "1min"
-        else:
-            # Default to day if no data found (will fail later with proper error)
-            self.logger.warning("No data detected, defaulting to day frequency")
-            return "day"
-
-    def get_provider_uri(self, freq: str = "day") -> str:
-        """
-        Get the correct provider_uri based on data frequency.
-
-        Args:
-            freq: Data frequency ("day", "1d", "1min", "1m")
+        Note: Only day-level data is supported in this stock selection system.
+        Minute-level data should be handled by a separate timing/execution system.
 
         Returns:
             Path to the Qlib data directory
         """
-        if freq in ("1min", "1m"):
-            return str(settings.QLIB_DATA_PATH_1MIN)
-        else:
-            return str(settings.QLIB_DATA_PATH)
+        return str(settings.QLIB_DATA_PATH)
 
     def check_data_exists(self, freq: str = "day") -> Dict[str, Any]:
         """
@@ -919,8 +890,8 @@ class QlibWorkflowService:
             },
         )
 
-        # Detect freq dynamically
-        freq = self._detect_data_frequency()
+        # Use day frequency (only day-level data supported in stock selection system)
+        freq = "day"
         self.logger.info(f"Backtest using freq: {freq}")
 
         # Initialize Qlib

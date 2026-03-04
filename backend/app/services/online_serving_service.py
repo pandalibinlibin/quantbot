@@ -59,17 +59,17 @@ class OnlineServingService:
         """Check if OnlineManager is initialized."""
         return self._is_initialized and self._online_manager is not None
 
-    def _detect_data_frequency(self) -> str:
+    def _get_data_frequency(self) -> str:
         """
-        Detect data frequency based on available bin data.
+        Get data frequency for stock selection system.
+
+        Note: Only day-level data is supported in this stock selection system.
+        Minute-level data should be handled by a separate timing/execution system.
 
         Returns:
-            "day" or "1min" based on available data
+            "day" frequency
         """
-        # Use frequency from configuration
-        freq = qlib_config.freq
-        self.logger.info(f"Using frequency from config: freq='{freq}'")
-        return freq
+        return "day"
 
     def _ensure_qlib_initialized(self) -> bool:
         """
@@ -121,8 +121,8 @@ class OnlineServingService:
         Returns:
             Task template dictionary
         """
-        # Detect frequency
-        self._freq = self._detect_data_frequency()
+        # Get frequency (only day-level data supported)
+        self._freq = self._get_data_frequency()
 
         # Get actual data time range
         start_time, end_time = self._get_data_time_range()
@@ -398,10 +398,13 @@ class OnlineServingService:
                 step_duration = time.time() - step_start
                 result["steps"].append(
                     {
-                        "step": "initialization",
+                        "step": "System Initialization",
                         "success": True,
                         "duration_seconds": round(step_duration, 2),
-                        "details": init_result,
+                        "details": {
+                            "description": "Initialize Qlib engine and load trained models",
+                            **init_result,
+                        },
                     }
                 )
 
@@ -413,10 +416,13 @@ class OnlineServingService:
             data_update_success = data_update_result.get("success", False)
             result["steps"].append(
                 {
-                    "step": "data_update",
+                    "step": "Data Update",
                     "success": data_update_success,
                     "duration_seconds": round(step_duration, 2),
-                    "details": data_update_result,
+                    "details": {
+                        "description": "Download latest market data and calculate factors",
+                        **data_update_result,
+                    },
                 }
             )
 
@@ -465,10 +471,13 @@ class OnlineServingService:
             step_duration = time.time() - step_start
             result["steps"].append(
                 {
-                    "step": "online_manager_routine",
+                    "step": "Online Model Training",
                     "success": True,
                     "duration_seconds": round(step_duration, 2),
-                    "details": {"message": "OnlineManager routine completed"},
+                    "details": {
+                        "description": "Incrementally train models with new data (rolling update)",
+                        "message": "Online model training completed",
+                    },
                 }
             )
 
@@ -479,10 +488,13 @@ class OnlineServingService:
             step_duration = time.time() - step_start
             result["steps"].append(
                 {
-                    "step": "signal_generation",
+                    "step": "Signal Generation",
                     "success": True,
                     "duration_seconds": round(step_duration, 2),
-                    "details": {"signal_count": signal_count},
+                    "details": {
+                        "description": "Run model inference on latest data to generate trading signals",
+                        "signal_count": signal_count,
+                    },
                 }
             )
 
@@ -492,10 +504,13 @@ class OnlineServingService:
             step_duration = time.time() - step_start
             result["steps"].append(
                 {
-                    "step": "model_metrics_calculation",
+                    "step": "Performance Evaluation",
                     "success": metrics_result.get("success", False),
                     "duration_seconds": round(step_duration, 2),
-                    "details": metrics_result,
+                    "details": {
+                        "description": "Calculate model accuracy, IC, and other performance metrics",
+                        **metrics_result,
+                    },
                 }
             )
 
@@ -507,10 +522,13 @@ class OnlineServingService:
             step_duration = time.time() - step_start
             result["steps"].append(
                 {
-                    "step": "enhanced_indexing",
+                    "step": "Portfolio Optimization",
                     "success": enhanced_indexing_result.get("success", False),
                     "duration_seconds": round(step_duration, 2),
-                    "details": enhanced_indexing_result.get("summary", {}),
+                    "details": {
+                        "description": "Generate target portfolio weights using enhanced indexing strategy",
+                        **enhanced_indexing_result.get("summary", {}),
+                    },
                 }
             )
 
@@ -870,8 +888,8 @@ class OnlineServingService:
                     "error": "Failed to initialize Qlib",
                 }
 
-            # Detect frequency
-            freq = self._detect_data_frequency()
+            # Get frequency (only day-level data supported)
+            freq = self._get_data_frequency()
             self.logger.info(f"Backtest using freq: {freq}")
 
             # Step 1: Auto-initialize OnlineManager if not initialized

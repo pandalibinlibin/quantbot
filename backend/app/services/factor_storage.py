@@ -4,11 +4,8 @@ Factor Storage Manager for bin file operations
 This module implements the storage layer for computed factor data,
 writing factor bin files directly to each symbol's directory.
 
-Educational Notes:
-- FactorStorage writes bin files directly to features/{symbol}/ directories
-- This avoids using dump_bin.py which would overwrite calendar/instruments
-- Ensures complete compatibility with Qlib's bin format
-- Supports both day and 1min frequencies with correct directory selection
+Note: Only day-level data is supported in this stock selection system.
+Minute-level data should be handled by a separate timing/execution system.
 """
 
 import logging
@@ -34,11 +31,7 @@ class FactorStorage:
     This class handles the storage and retrieval of computed factor data
     by writing bin files directly to each symbol's directory.
 
-    Educational Notes:
-    - Writes bin files directly to features/{symbol}/ directories
-    - Avoids dump_bin.py to prevent overwriting calendar/instruments
-    - Supports both day and 1min frequencies with correct directory selection
-    - Fully compatible with Qlib's data format
+    Note: Only day-level data is supported in this stock selection system.
     """
 
     def __init__(self, freq: str = "day"):
@@ -46,12 +39,11 @@ class FactorStorage:
         Initialize Factor Storage Manager
 
         Args:
-            freq: Data frequency (day, 1min, etc.)
+            freq: Data frequency (only 'day' is supported)
         """
         self.freq = freq
 
-        # Determine storage directory based on frequency
-        # day data -> qlib_data, 1min data -> qlib_data_1min
+        # Determine storage directory (day-level data only)
         self.storage_dir = self._get_storage_dir_for_freq(freq)
 
         # Create directory structure following Qlib convention
@@ -69,10 +61,13 @@ class FactorStorage:
 
     def _get_storage_dir_for_freq(self, freq: str) -> Path:
         """
-        Get the correct storage directory based on frequency.
+        Get the storage directory for day-level data.
+
+        Note: Only day-level data is supported in this stock selection system.
+        Minute-level data should be handled by a separate timing/execution system.
 
         Args:
-            freq: Data frequency (day, 1min, etc.)
+            freq: Data frequency (only 'day' is supported)
 
         Returns:
             Path to the storage directory
@@ -81,19 +76,12 @@ class FactorStorage:
             # Use qlib_config to get the correct path
             from app.config.qlib import qlib_config
 
-            if freq == "1min":
-                qlib_data_dir = qlib_config.qlib_data_path_1min
-            else:
-                qlib_data_dir = qlib_config.qlib_data_path_day
-
+            qlib_data_dir = qlib_config.qlib_data_path_day
             logger.info(f"Using qlib_data_dir from qlib_config: {qlib_data_dir}")
             return Path(qlib_data_dir)
 
         except Exception as e:
             logger.warning(f"Failed to get Qlib data directory, using default: {e}")
-            # Default based on frequency
-            if freq == "1min":
-                return Path("qlib_data_1min")
             return Path("qlib_data")
 
     def save_factor_data(

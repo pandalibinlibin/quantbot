@@ -17,22 +17,16 @@ from app.services.data_source_manager import data_source_manager
 
 def clear_qlib_data_impl(
     qlib_data_path: str = "/app/qlib_data",
-    qlib_data_path_1min: str = "/app/qlib_data_1min",
     csv_data_path: str = "/app/csv_data",
 ) -> Tuple[bool, str, float]:
     """
-    Clear all qlib_data directories (day and 1min) and csv_data for complete data source switching.
+    Clear qlib_data and csv_data directories for complete data source switching.
 
-    Educational Notes:
-    - Clears both day-level and minute-level qlib data directories
-    - Clears intermediate CSV data
-    - Ensures complete clean state when switching data sources
-    - Calculates total freed space from all directories
-    - Implements safety checks for all paths
+    Note: Only day-level data is supported in this stock selection system.
+    Minute-level data should be handled by a separate timing/execution system.
 
     Args:
         qlib_data_path: Path to day-level qlib data directory
-        qlib_data_path_1min: Path to minute-level qlib data directory
         csv_data_path: Path to CSV data directory
 
     Returns:
@@ -64,13 +58,11 @@ def clear_qlib_data_impl(
 
     try:
         qlib_dir = Path(qlib_data_path)
-        qlib_dir_1min = Path(qlib_data_path_1min)
         csv_dir = Path(csv_data_path)
 
         # Calculate total size before clearing
         total_size_bytes = 0.0
         total_size_bytes += calculate_dir_size(qlib_dir)
-        total_size_bytes += calculate_dir_size(qlib_dir_1min)
         total_size_bytes += calculate_dir_size(csv_dir)
 
         # Convert to MB
@@ -80,17 +72,11 @@ def clear_qlib_data_impl(
         if not qlib_data_path.endswith("qlib_data"):
             return False, "Invalid qlib_data path for safety", 0.0
 
-        if not qlib_data_path_1min.endswith("qlib_data_1min"):
-            return False, "Invalid qlib_data_1min path for safety", 0.0
-
         if not csv_data_path.endswith("csv_data"):
             return False, "Invalid csv_data path for safety", 0.0
 
         # Clear qlib_data directory contents (day-level data)
         clear_dir_contents(qlib_dir)
-
-        # Clear qlib_data_1min directory contents (minute-level data)
-        clear_dir_contents(qlib_dir_1min)
 
         # Clear csv_data directory contents
         if csv_dir.exists():
@@ -101,7 +87,7 @@ def clear_qlib_data_impl(
 
         return (
             True,
-            f"Successfully cleared {total_size_mb} MB from qlib_data, qlib_data_1min, and csv_data directories",
+            f"Successfully cleared {total_size_mb} MB from qlib_data and csv_data directories",
             total_size_mb,
         )
 
@@ -185,10 +171,9 @@ def execute_yahoo_data_collector_impl(
 
 
 def clear_qlib_data() -> Tuple[bool, str, float]:
-    """Clear all qlib_data directories (day and 1min) and csv_data using configuration."""
+    """Clear qlib_data and csv_data directories using configuration."""
     return clear_qlib_data_impl(
         qlib_data_path=settings.QLIB_DATA_PATH,
-        qlib_data_path_1min=settings.QLIB_DATA_PATH_1MIN,
         csv_data_path=settings.CSV_DATA_PATH,
     )
 
@@ -210,25 +195,20 @@ def execute_yahoo_data_collector(
     )
 
 
-def get_qlib_dir_for_freq(freq: str) -> str:
+def get_qlib_dir_for_freq(freq: str = "day") -> str:
     """
-    Get the appropriate Qlib data directory based on frequency.
+    Get the Qlib data directory.
 
-    Educational Notes:
-    - Qlib recommends using separate directories for different frequencies
-    - Day-level data goes to QLIB_DATA_PATH
-    - Minute-level data goes to QLIB_DATA_PATH_1MIN
+    Note: Only day-level data is supported in this stock selection system.
+    Minute-level data should be handled by a separate timing/execution system.
 
     Args:
-        freq: Data frequency ('day' or '1min')
+        freq: Data frequency (only 'day' is supported)
 
     Returns:
-        Path to the appropriate Qlib data directory
+        Path to the Qlib data directory
     """
-    if freq == "1min":
-        return settings.QLIB_DATA_PATH_1MIN
-    else:
-        return settings.QLIB_DATA_PATH
+    return settings.QLIB_DATA_PATH
 
 
 def _remove_benchmarks_from_instruments(qlib_path: Path) -> None:
@@ -295,16 +275,13 @@ def convert_csv_to_qlib_format_impl(
     """
     Convert CSV data to Qlib .bin format using Qlib's dump_bin utility.
 
-    Educational Notes:
-    - Automatically selects the correct output directory based on frequency
-    - Day data goes to QLIB_DATA_PATH, minute data goes to QLIB_DATA_PATH_1MIN
-    - This follows Qlib's official recommendation for multi-frequency data
-    - In incremental mode, existing data is preserved and merged with new data
+    Note: Only day-level data is supported in this stock selection system.
+    Minute-level data should be handled by a separate timing/execution system.
 
     Args:
         csv_dir: Directory containing CSV files
         qlib_dir: Target directory for Qlib .bin data (auto-selected if None)
-        freq: Data frequency ('day' or '1min')
+        freq: Data frequency (only 'day' is supported)
         incremental: If True, preserve existing data and merge with new data
 
     Returns:
@@ -416,15 +393,14 @@ def get_data_source_status_impl() -> dict:
     """
     import pickle
 
+    # Use day-level data directory only (minute data handled by separate timing system)
     qlib_data_path = Path(settings.QLIB_DATA_PATH)
-    qlib_data_path_1min = Path(settings.QLIB_DATA_PATH_1MIN)
 
     # Get current data source from configuration
     current_config = data_source_manager.get_current_config()
     current_source = current_config.get("source", "yahoo")
 
-    # Check if either qlib_data directory has complete data structure
-    # A directory is considered valid only if it has calendars, instruments, and features subdirectories
+    # Check if qlib_data directory has complete data structure
     def has_complete_data_structure(path: Path) -> bool:
         if not path.exists():
             return False
@@ -434,9 +410,8 @@ def get_data_source_status_impl() -> dict:
         return calendars.exists() and instruments.exists() and features.exists()
 
     day_exists = has_complete_data_structure(qlib_data_path)
-    min_exists = has_complete_data_structure(qlib_data_path_1min)
 
-    if not day_exists and not min_exists:
+    if not day_exists:
         return {
             "source_name": current_source,
             "data_exists": False,
@@ -450,28 +425,21 @@ def get_data_source_status_impl() -> dict:
             "last_updated": None,
         }
 
-    # Calculate directory size for both directories
+    # Calculate directory size
     total_size = 0
-    for data_path in [qlib_data_path, qlib_data_path_1min]:
-        if data_path.exists():
-            for dirpath, dirnames, filenames in os.walk(data_path):
-                for filename in filenames:
-                    filepath = os.path.join(dirpath, filename)
-                    if os.path.exists(filepath):
-                        total_size += os.path.getsize(filepath)
+    if qlib_data_path.exists():
+        for dirpath, dirnames, filenames in os.walk(qlib_data_path):
+            for filename in filenames:
+                filepath = os.path.join(dirpath, filename)
+                if os.path.exists(filepath):
+                    total_size += os.path.getsize(filepath)
 
     data_size_mb = round(total_size / (1024 * 1024), 2) if total_size > 0 else 0
 
-    # Check for Qlib standard directories - prefer 1min data if available
-    # (since 1min data is more recent and has complete structure)
-    if min_exists:
-        calendars_dir = qlib_data_path_1min / "calendars"
-        instruments_dir = qlib_data_path_1min / "instruments"
-        features_dir = qlib_data_path_1min / "features"
-    else:
-        calendars_dir = qlib_data_path / "calendars"
-        instruments_dir = qlib_data_path / "instruments"
-        features_dir = qlib_data_path / "features"
+    # Check for Qlib standard directories
+    calendars_dir = qlib_data_path / "calendars"
+    instruments_dir = qlib_data_path / "instruments"
+    features_dir = qlib_data_path / "features"
 
     data_exists = all(
         [calendars_dir.exists(), instruments_dir.exists(), features_dir.exists()]
@@ -589,30 +557,19 @@ def get_data_source_status_impl() -> dict:
         except Exception:
             pass
 
-        # Parse features from both day and 1min directories
+        # Parse features from day-level data directory
         try:
             features = []
-            features_dirs_to_check = []
-
-            # Add 1min features directory if exists
-            features_dir_1min = qlib_data_path_1min / "features"
-            if features_dir_1min.exists():
-                features_dirs_to_check.append(features_dir_1min)
-
-            # Add day features directory if exists
             features_dir_day = qlib_data_path / "features"
             if features_dir_day.exists():
-                features_dirs_to_check.append(features_dir_day)
-
-            for feat_dir in features_dirs_to_check:
-                symbol_dirs = [d for d in feat_dir.iterdir() if d.is_dir()]
+                symbol_dirs = [d for d in features_dir_day.iterdir() if d.is_dir()]
                 if symbol_dirs:
                     first_symbol_dir = symbol_dirs[0]
                     feature_files = list(first_symbol_dir.glob("*.bin"))
                     for f in feature_files:
                         # Extract feature name with frequency suffix
-                        # e.g., "close.1min.bin" -> "close.1min", "close.day.bin" -> "close.day"
-                        feature_name = f.stem  # "close.1min" or "close.day"
+                        # e.g., "close.day.bin" -> "close.day"
+                        feature_name = f.stem
                         features.append(feature_name)
 
             features = list(set(features))  # Remove duplicates

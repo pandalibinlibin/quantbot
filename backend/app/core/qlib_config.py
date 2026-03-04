@@ -16,11 +16,9 @@ class QlibSettings(BaseSettings):
 
     # Qlib data directory for day-level data
     # This is where Qlib stores daily market data in binary format
+    # Note: Only day-level data is supported in this stock selection system
+    # Minute-level data should be handled by a separate timing/execution system
     QLIB_DATA_DIR: str = "/app/qlib_data"
-
-    # Qlib data directory for minute-level data
-    # Separate directory per Qlib official recommendation for multi-frequency data
-    QLIB_DATA_DIR_1MIN: str = "/app/qlib_data_1min"
 
     # Qlib region: "cn" for China market, "us" for US market
     QLIB_REGION: str = "cn"

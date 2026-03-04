@@ -55,16 +55,13 @@ class DataHealthService:
 
         Args:
             qlib_data_path: Path to qlib data directory (default: from settings)
-            freq: Data frequency ("day" or "1min")
+            freq: Data frequency (only 'day' is supported)
 
         Returns:
             Dictionary containing health metrics and details
         """
         if qlib_data_path is None:
-            if freq == "1min":
-                qlib_data_path = settings.QLIB_DATA_PATH_1MIN
-            else:
-                qlib_data_path = settings.QLIB_DATA_PATH
+            qlib_data_path = settings.QLIB_DATA_PATH
 
         qlib_dir = Path(qlib_data_path)
 

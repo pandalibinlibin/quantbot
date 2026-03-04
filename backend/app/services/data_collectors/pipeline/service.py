@@ -175,11 +175,9 @@ def execute_data_pipeline(request: DownloadDataRequest) -> DownloadTaskResponse:
             logger.info(f"Active factors found: {factor_names}")
 
             if factor_names:
-                # Convert interval to factor engine frequency format
-                factor_freq = "1min" if request.interval == "1m" else "day"
-                logger.info(
-                    f"Factor frequency: {factor_freq} (from interval: {request.interval})"
-                )
+                # Use day frequency (only day-level data supported in stock selection system)
+                factor_freq = "day"
+                logger.info(f"Factor frequency: {factor_freq}")
 
                 # Initialize factor pipeline with correct frequency
                 factor_pipeline = FactorPipeline(freq=factor_freq, max_workers=4)
@@ -200,17 +198,10 @@ def execute_data_pipeline(request: DownloadDataRequest) -> DownloadTaskResponse:
                     qlib_service.reinitialize()
                     logger.info("Qlib re-initialized after incremental data update")
 
-                    # Read calendar to get full data date range
-                    if factor_freq == "1min":
-                        calendar_file = (
-                            Path(settings.QLIB_DATA_PATH_1MIN)
-                            / "calendars"
-                            / "1min.txt"
-                        )
-                    else:
-                        calendar_file = (
-                            Path(settings.QLIB_DATA_PATH) / "calendars" / "day.txt"
-                        )
+                    # Read calendar to get full data date range (day-level data only)
+                    calendar_file = (
+                        Path(settings.QLIB_DATA_PATH) / "calendars" / "day.txt"
+                    )
 
                     if calendar_file.exists():
                         with open(calendar_file, "r") as f:
@@ -299,14 +290,9 @@ def _get_missing_date_ranges(
     try:
         from app.services.qlib_init_service import get_qlib_init_service
 
-        # Determine which data directory and calendar to use based on interval
-        is_minute_data = interval == "1m"
-        if is_minute_data:
-            qlib_data_path = Path(settings.QLIB_DATA_PATH_1MIN)
-            calendar_file = qlib_data_path / "calendars" / "1min.txt"
-        else:
-            qlib_data_path = Path(settings.QLIB_DATA_PATH)
-            calendar_file = qlib_data_path / "calendars" / "day.txt"
+        # Use day-level data directory (minute data handled by separate timing system)
+        qlib_data_path = Path(settings.QLIB_DATA_PATH)
+        calendar_file = qlib_data_path / "calendars" / "day.txt"
 
         if not qlib_data_path.exists():
             logger.info(

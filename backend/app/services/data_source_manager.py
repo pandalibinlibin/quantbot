@@ -107,17 +107,8 @@ class DataSourceManager:
                             item.unlink()
                             logger.info(f"Removed file: {item}")
 
-            # Clean up minute-level Qlib data directory
-            qlib_data_1min = Path(qlib_config.qlib_data_path_1min)
-            if qlib_data_1min.exists():
-                for item in qlib_data_1min.iterdir():
-                    if item.name != ".data_config_state.json":
-                        if item.is_dir():
-                            shutil.rmtree(item)
-                            logger.info(f"Removed directory: {item}")
-                        else:
-                            item.unlink()
-                            logger.info(f"Removed file: {item}")
+            # NOTE: Minute-level data cleanup removed
+            # Minute data is handled by separate timing/execution system
 
             # Clean up CSV data directory
             csv_data_path = Path(qlib_config.csv_data_path)

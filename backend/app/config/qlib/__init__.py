@@ -98,8 +98,8 @@ class QlibConfig:
 
     @property
     def freq(self) -> str:
-        """Get data frequency: 'day' or '1min'."""
-        return self.data.get("freq", "day")
+        """Get data frequency (only 'day' is supported in stock selection system)."""
+        return "day"
 
     @property
     def source(self) -> str:
@@ -118,19 +118,15 @@ class QlibConfig:
 
     @property
     def download_days(self) -> int:
-        """Get download range in days based on current freq."""
+        """Get download range in days."""
         download_days_config = self.data.get("download_days", {})
-        if self.freq == "1min":
-            return download_days_config.get("1min", 5)
         return download_days_config.get("day", 365)
 
     @property
     def qlib_data_path(self) -> str:
-        """Get Qlib data path based on current freq (from environment settings)."""
+        """Get Qlib data path (from environment settings)."""
         from app.core.config import settings
 
-        if self.freq == "1min":
-            return settings.QLIB_DATA_PATH_1MIN
         return settings.QLIB_DATA_PATH
 
     @property
@@ -142,10 +138,8 @@ class QlibConfig:
 
     @property
     def qlib_data_path_1min(self) -> str:
-        """Get minute-level Qlib data path (from environment settings)."""
-        from app.core.config import settings
-
-        return settings.QLIB_DATA_PATH_1MIN
+        """Deprecated: Minute data handled by separate timing system."""
+        return self.qlib_data_path_day
 
     @property
     def csv_data_path(self) -> str:
