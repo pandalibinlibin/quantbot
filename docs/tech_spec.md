@@ -10050,3 +10050,36 @@ else:
 ### ✅ 状态
 
 **已完成** - 所有分钟数据相关代码已移除，系统专注于日线数据选股功能。
+
+---
+
+## ✅ UI Enhancement: Routine Step Descriptions (2026-03-04)
+
+### 📋 Background
+
+Improve the routine execution UI to display more user-friendly step names and detailed descriptions, making it easier for users to understand what each step does.
+
+### 🛠️ Changes
+
+#### Backend (`backend/app/services/online_serving_service.py`)
+
+Updated routine step names and added description field:
+
+| Step Name                  | Description                                                        |
+| -------------------------- | ------------------------------------------------------------------ |
+| **System Initialization**  | Initialize Qlib engine and load trained models                     |
+| **Data Update**            | Download latest market data and calculate factors                  |
+| **Online Model Training**  | Incrementally train models with new data (rolling update)          |
+| **Signal Generation**      | Run model inference on latest data to generate trading signals     |
+| **Performance Evaluation** | Calculate model accuracy, IC, and other performance metrics        |
+| **Portfolio Optimization** | Generate target portfolio weights using enhanced indexing strategy |
+
+#### Frontend (`frontend/src/routes/_layout/routine.tsx`)
+
+- Updated DETAILS column to display `description` field instead of raw JSON
+- Updated `getStepIcon()` to match new step names using keyword matching
+- Simplified `getStepName()` since backend now returns readable names
+
+### ✅ Status
+
+**Completed** - Routine UI now displays clear, user-friendly step descriptions.

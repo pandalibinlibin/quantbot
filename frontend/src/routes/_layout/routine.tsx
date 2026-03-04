@@ -197,29 +197,25 @@ function RoutinePage() {
   };
 
   const getStepIcon = (step: string) => {
-    switch (step) {
-      case "data_update":
-        return <Database className="h-4 w-4" />;
-      case "model_update":
-        return <Activity className="h-4 w-4" />;
-      case "signal_generation":
-        return <RefreshCw className="h-4 w-4" />;
-      default:
-        return <Clock className="h-4 w-4" />;
+    // Match new readable step names from backend
+    const stepLower = step.toLowerCase();
+    if (stepLower.includes("data")) {
+      return <Database className="h-4 w-4" />;
+    } else if (stepLower.includes("model") || stepLower.includes("training")) {
+      return <Activity className="h-4 w-4" />;
+    } else if (
+      stepLower.includes("signal") ||
+      stepLower.includes("portfolio")
+    ) {
+      return <RefreshCw className="h-4 w-4" />;
+    } else {
+      return <Clock className="h-4 w-4" />;
     }
   };
 
   const getStepName = (step: string) => {
-    switch (step) {
-      case "data_update":
-        return "Data Update";
-      case "model_update":
-        return "Model Update";
-      case "signal_generation":
-        return "Signal Generation";
-      default:
-        return step;
-    }
+    // Backend now returns readable step names directly
+    return step;
   };
 
   return (
@@ -412,15 +408,16 @@ function RoutinePage() {
                           <TableCell className="text-right">
                             {step.duration_seconds.toFixed(2)}s
                           </TableCell>
-                          <TableCell className="max-w-xs truncate">
+                          <TableCell className="max-w-md">
                             {step.error ? (
                               <span className="text-destructive">
                                 {step.error}
                               </span>
                             ) : step.details ? (
                               <span className="text-muted-foreground text-sm">
-                                {JSON.stringify(step.details).substring(0, 50)}
-                                ...
+                                {(step.details as { description?: string })
+                                  .description ||
+                                  JSON.stringify(step.details).substring(0, 80)}
                               </span>
                             ) : (
                               "-"
