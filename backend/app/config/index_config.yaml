@@ -1,0 +1,44 @@
+# Index Configuration for QuantBot
+# This file defines available indices and their properties
+# VeighNa will also read this file to ensure consistency
+
+# Currently active index for stock selection
+active_index: csi300
+
+# Index definitions
+indexes:
+  csi300:
+    name: 沪深300
+    name_en: CSI 300
+    benchmark_code: SH000300
+    etf_code: SH510300
+    # Components data source: yfiua_api, akshare, tushare, file
+    components_source: yfiua_api
+    # API key for yfiua.github.io (CSI300, CSI500, SP500, NASDAQ100)
+    components_api_key: CSI300
+
+  csi500:
+    name: 中证500
+    name_en: CSI 500
+    benchmark_code: SH000905
+    etf_code: SH510500
+    components_source: yfiua_api
+    components_api_key: CSI500
+
+  dividend:
+    name: 上证红利
+    name_en: SSE Dividend
+    benchmark_code: SH000015
+    etf_code: SH510880
+    # Use AKShare for dividend index components
+    components_source: akshare
+    # Index code for AKShare query
+    components_index_code: "000015"
+
+  csi1000:
+    name: 中证1000
+    name_en: CSI 1000
+    benchmark_code: SH000852
+    etf_code: SH512100
+    components_source: akshare
+    components_index_code: "000852"

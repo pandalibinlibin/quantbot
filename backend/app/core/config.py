@@ -63,6 +63,11 @@ class Settings(BaseSettings):
     DEFAULT_CSV_FILE_NAME: str = "csv_data_cn.zip"
     # MLflow runs directory for model artifacts and metrics
     MLRUNS_PATH: str = "/app/mlruns"
+    
+    # Index configuration for VeighNa integration
+    INDEX_CONFIG_PATH: str = "/app/app/config/index_config.yaml"
+    # Signal output directory for VeighNa to read
+    SIGNAL_OUTPUT_DIR: str = "/app/data/signals"
 
     @computed_field  # type: ignore[prop-decorator]
     @property
