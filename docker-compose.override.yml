@@ -91,6 +91,8 @@ services:
       - mlruns-data:/app/mlruns
       - ./backend/scripts:/app/scripts:cached
       - ./temp_scripts:/app/temp_scripts:cached
+      - ./data/signals:/app/data/signals
+      - ./data/target_portfolio:/app/data/target_portfolio
     environment:
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}

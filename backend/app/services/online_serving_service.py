@@ -541,6 +541,24 @@ class OnlineServingService:
                     "summary", {}
                 )
 
+            # Step 7: Export Trading Signals (only if Portfolio Optimization succeeded)
+            step_start = time.time()
+            signal_export_result = self._export_trading_signals(
+                enhanced_indexing_result, effective_cur_time
+            )
+            step_duration = time.time() - step_start
+            result["steps"].append(
+                {
+                    "step": "Signal Export",
+                    "success": signal_export_result.get("success", False),
+                    "duration_seconds": round(step_duration, 2),
+                    "details": {
+                        "description": "Export trading signals for VeighNa (ETF + Alpha stocks)",
+                        **signal_export_result,
+                    },
+                }
+            )
+
             self._last_routine_time = datetime.now()
             result["success"] = True
             result["message"] = "Routine completed successfully"
@@ -621,6 +639,101 @@ class OnlineServingService:
                 "error": str(e),
                 "target_portfolio": [],
                 "summary": {},
+            }
+
+    def _export_trading_signals(
+        self, enhanced_indexing_result: Dict[str, Any], cur_time: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Export trading signals for VeighNa consumption.
+
+        Args:
+            enhanced_indexing_result: Result from enhanced indexing calculation
+            cur_time: Current time string for trade date
+
+        Returns:
+            Dict containing export result and summary
+        """
+        try:
+            # Skip export if enhanced indexing failed
+            if not enhanced_indexing_result.get("success", False):
+                self.logger.info("Enhanced indexing failed, skipping signal export")
+                return {
+                    "success": False,
+                    "message": "Skipped due to portfolio optimization failure",
+                    "signal_file": None,
+                }
+
+            from app.services.signal_export_service import get_signal_export_service
+
+            # Get signal export service
+            signal_service = get_signal_export_service()
+
+            # Prepare portfolio data for export
+            # Note: enhanced_indexing_result contains target_portfolio and summary
+            # but signal_export_service expects portfolio data in the format saved by EnhancedIndexingService
+            portfolio_data = {
+                "portfolio": enhanced_indexing_result.get("target_portfolio", []),
+                "summary": enhanced_indexing_result.get("summary", {}),
+            }
+
+            # Determine trade date
+            trade_date = cur_time if cur_time else datetime.now().strftime("%Y-%m-%d")
+
+            # Export signals
+            self.logger.info(f"Exporting trading signals for date: {trade_date}")
+            signal_file = signal_service.export_signals(
+                portfolio_data=portfolio_data,
+                trade_date=trade_date,
+            )
+
+            # Get signal summary for logging
+            import json
+
+            try:
+                with open(signal_file, "r", encoding="utf-8") as f:
+                    signal_data = json.load(f)
+
+                summary = signal_data.get("summary", {})
+                total_positions = summary.get("total_positions", 0)
+                etf_positions = summary.get("etf_positions", 0)
+                stock_positions = summary.get("stock_positions", 0)
+                total_weight = summary.get("total_weight", 0)
+
+                self.logger.info(
+                    f"Signal export completed: {total_positions} positions "
+                    f"({etf_positions} ETF + {stock_positions} stocks), "
+                    f"total_weight={total_weight:.4f}"
+                )
+
+                return {
+                    "success": True,
+                    "message": "Trading signals exported successfully",
+                    "signal_file": signal_file,
+                    "total_positions": total_positions,
+                    "etf_positions": etf_positions,
+                    "stock_positions": stock_positions,
+                    "total_weight": round(total_weight, 4),
+                }
+
+            except Exception as read_error:
+                # Signal file created but couldn't read summary
+                self.logger.warning(
+                    f"Signal exported but couldn't read summary: {read_error}"
+                )
+                return {
+                    "success": True,
+                    "message": "Trading signals exported successfully",
+                    "signal_file": signal_file,
+                    "warning": f"Couldn't read signal summary: {read_error}",
+                }
+
+        except Exception as e:
+            self.logger.error(f"Signal export failed: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "signal_file": None,
             }
 
     def _update_data_incrementally(self) -> Dict[str, Any]:
