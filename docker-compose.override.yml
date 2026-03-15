@@ -99,8 +99,8 @@ services:
       SMTP_TLS: ${SMTP_TLS}
       SMTP_SSL: ${SMTP_SSL}
       EMAILS_FROM_EMAIL: ${EMAILS_FROM_EMAIL}
-      HTTP_PROXY: "http://192.168.110.152:7890"
-      HTTPS_PROXY: "http://192.168.110.152:7890"
+      HTTP_PROXY: "http://192.168.0.107:7890"
+      HTTPS_PROXY: "http://192.168.0.107:7890"
       NO_PROXY: "localhost,127.0.0.1,db"
 
   mailcatcher:
