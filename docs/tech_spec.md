@@ -10083,3 +10083,295 @@ Updated routine step names and added description field:
 ### ✅ Status
 
 **Completed** - Routine UI now displays clear, user-friendly step descriptions.
+
+---
+
+## ✅ Task 8: VeighNa 集成文档 (2026-03-04)
+
+### 📋 背景
+
+为零基础用户创建详细的 VeighNa 集成指南，涵盖安装、回测、模拟盘、实盘交易及与 QuantBot 的集成方案。
+
+### 📄 文档内容
+
+创建 `docs/veighna_integration.md`，包含：
+
+1. **VeighNa 简介**
+
+   - 功能概述
+   - 交易模式说明（自动交易 vs 信号提示）
+
+2. **安装指南**
+
+   - VeighNa Studio 一键安装
+   - 手动安装方案
+
+3. **核心概念**
+
+   - 交易接口（Gateway）
+   - 合约代码格式
+   - 数据结构
+
+4. **回测功能**
+
+   - CTA 回测模块使用
+   - 回测参数配置
+   - 结果分析
+
+5. **模拟盘交易**
+
+   - PaperAccount 模块
+   - 撮合规则
+
+6. **实盘交易**
+
+   - 交易流程
+   - A 股接口开通
+   - 风险管理
+
+7. **与 QuantBot 集成**
+
+   - 集成架构
+   - 数据交换格式
+   - 符号转换
+   - 调仓脚本示例
+   - 信号提示模式
+
+8. **常见问题**
+
+### ✅ 状态
+
+**已完成** - 详细文档已创建：`docs/veighna_integration.md`
+
+---
+
+## 🚧 Task 9: QuantBot + VeighNa Trading System Integration (2026-03-15)
+
+### 📋 Overview
+
+Design and implement a complete trading system integrating QuantBot's AI-driven stock selection with VeighNa's trading execution capabilities.
+
+### 🎯 Objectives
+
+1. **Stock Selection Strategy**: ETF (70%) + Top-N Alpha Stocks (30%)
+2. **Flexible Index Support**: CSI300, CSI500, Dividend Index, etc. via configuration
+3. **Automated Signal Export**: QuantBot exports signals as JSON for VeighNa
+4. **VeighNa Strategy**: Read signals, calculate rebalancing, execute trades
+5. **Notification**: WeChat Work Robot for trade signals
+
+### 📐 Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         System Architecture                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  QuantBot (Docker on Server)                                                │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  Routine Execution                                                   │   │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────────────┐ │   │
+│  │  │ Data     │→ │ Model    │→ │ Signal   │→ │ Signal Export        │ │   │
+│  │  │ Update   │  │ Inference│  │ Generate │  │ (JSON files)         │ │   │
+│  │  └──────────┘  └──────────┘  └──────────┘  └──────────────────────┘ │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                        │                                    │
+│                                        ▼ Docker Volume                      │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  Shared Files                                                        │   │
+│  │  ├── /app/config/index_config.yaml    (Index configuration)         │   │
+│  │  └── /app/data/signals/latest.json    (Trading signals)             │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                        │                                    │
+│                                        ▼ Local File Access                  │
+│  VeighNa (Local Windows with GUI)                                           │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │  QuantBotStrategy                                                    │   │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────────────┐ │   │
+│  │  │ Load     │→ │ Calculate│→ │ Generate │→ │ Execute Orders       │ │   │
+│  │  │ Signals  │  │ Top-N    │  │ Trades   │  │ (Paper/Live)         │ │   │
+│  │  └──────────┘  └──────────┘  └──────────┘  └──────────────────────┘ │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 📊 Trading Strategy Design
+
+#### Position Allocation
+
+- **ETF Position**: 70% of total capital (e.g., 510300 for CSI300)
+- **Alpha Stocks**: 30% of total capital, distributed among Top-N stocks
+- **Max Holdings**: 10 stocks (configurable)
+- **Sell Threshold**: 15 (if stock drops out of Top-15, sell)
+
+#### Rebalancing Logic
+
+```
+Weekly Rebalancing (Friday close or before holidays):
+1. Load latest signals from QuantBot
+2. Get Top-N stocks by score
+3. Compare with current holdings
+4. Generate buy/sell orders:
+   - SELL: Holdings not in Top-{sell_threshold}
+   - BUY: Top-N stocks not in holdings (if slots available)
+5. Execute orders with opponent price + timeout fallback
+```
+
+#### Execution Rules
+
+- **Execution Window**: 09:45 - 14:45
+- **Order Type**: Opponent price (对手价)
+- **Order Timeout**: 5 minutes, then cancel and retry with latest price
+- **Cancel Time**: 14:55 (cancel all pending orders)
+
+### 📁 Signal File Format
+
+```json
+{
+  "version": "1.0",
+  "date": "2026-03-15",
+  "generated_at": "2026-03-15T09:30:00+08:00",
+  "index": {
+    "name": "csi300",
+    "benchmark_code": "SH000300",
+    "etf_code": "SH510300"
+  },
+  "signals": [
+    {
+      "rank": 1,
+      "instrument": "SH600519",
+      "name": "贵州茅台",
+      "score": 0.8523,
+      "last_close": 1850.0
+    },
+    {
+      "rank": 2,
+      "instrument": "SZ000858",
+      "name": "五粮液",
+      "score": 0.8234,
+      "last_close": 168.5
+    }
+  ]
+}
+```
+
+### 📂 Index Configuration Design
+
+VeighNa reads QuantBot's configuration to ensure consistency:
+
+```yaml
+# backend/config/index_config.yaml
+
+active_index: csi300
+
+indexes:
+  csi300:
+    name: 沪深300
+    benchmark_code: SH000300
+    etf_code: SH510300
+    components_source: yfiua_api
+    components_api_key: CSI300
+
+  csi500:
+    name: 中证500
+    benchmark_code: SH000905
+    etf_code: SH510500
+    components_source: yfiua_api
+    components_api_key: CSI500
+
+  dividend:
+    name: 上证红利
+    benchmark_code: SH000015
+    etf_code: SH510880
+    components_source: akshare
+    components_index_code: "000015"
+```
+
+### 🗓️ Implementation Plan
+
+#### Phase 1: QuantBot Backend Changes (2-3 days)
+
+| Step | Description                                            | Status  |
+| ---- | ------------------------------------------------------ | ------- |
+| 1.1  | Create index configuration file (`index_config.yaml`)  | Pending |
+| 1.2  | Create index components service (multi-source support) | Pending |
+| 1.3  | Create signal export service (JSON output)             | Pending |
+| 1.4  | Integrate signal export into Routine                   | Pending |
+| 1.5  | Configure Docker Volume for file sharing               | Pending |
+
+#### Phase 2: VeighNa Installation & Learning (1-2 days)
+
+| Step | Description                    | Reference                                                                                    |
+| ---- | ------------------------------ | -------------------------------------------------------------------------------------------- |
+| 2.1  | Install VeighNa Studio         | [Windows Install Guide](https://www.vnpy.com/docs/cn/community/install/windows_install.html) |
+| 2.2  | Learn VeighNa basics           | [Introduction](https://www.vnpy.com/docs/cn/community/info/introduction.html)                |
+| 2.3  | Learn CTA strategy development | [CTA Strategy](https://www.vnpy.com/docs/cn/community/app/cta_strategy.html)                 |
+| 2.4  | Learn backtesting module       | [CTA Backtester](https://www.vnpy.com/docs/cn/community/app/cta_backtester.html)             |
+| 2.5  | Learn paper trading module     | [Paper Account](https://www.vnpy.com/docs/cn/community/app/paper_account.html)               |
+
+#### Phase 3: VeighNa Strategy Development (2-3 days)
+
+| Step | Description                                  | Status  |
+| ---- | -------------------------------------------- | ------- |
+| 3.1  | Create project directory structure           | Pending |
+| 3.2  | Create signal loader (read QuantBot signals) | Pending |
+| 3.3  | Create config loader (read QuantBot config)  | Pending |
+| 3.4  | Create QuantBotStrategy class                | Pending |
+| 3.5  | Create notification module                   | Pending |
+| 3.6  | Setup Windsurf multi-root workspace          | Pending |
+
+#### Phase 4: Backtest Verification (1-2 days)
+
+| Step | Description                      | Status  |
+| ---- | -------------------------------- | ------- |
+| 4.1  | Generate historical signals      | Pending |
+| 4.2  | Download historical market data  | Pending |
+| 4.3  | Run backtest and analyze results | Pending |
+
+#### Phase 5: Paper Trading Test (1-2 days)
+
+| Step | Description                  | Status  |
+| ---- | ---------------------------- | ------- |
+| 5.1  | Configure PaperAccount       | Pending |
+| 5.2  | Load strategy and test       | Pending |
+| 5.3  | Verify notification function | Pending |
+
+#### Phase 6: Documentation & Finalization (1 day)
+
+| Step | Description                   | Status  |
+| ---- | ----------------------------- | ------- |
+| 6.1  | Update tech_spec.md           | Pending |
+| 6.2  | Create VeighNa project README | Pending |
+| 6.3  | Code commit                   | Pending |
+
+### 🔄 Workflow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         Implementation Workflow                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  For each step:                                                             │
+│                                                                             │
+│  1. Cascade outputs detailed plan and approach                              │
+│                 ↓                                                           │
+│  2. User reviews and approves                                               │
+│                 ↓                                                           │
+│  3. Cascade implements code changes                                         │
+│                 ↓                                                           │
+│  4. Cascade provides test commands                                          │
+│                 ↓                                                           │
+│  5. User executes tests and reports results                                 │
+│                 ↓                                                           │
+│  6. Cascade verifies success → Next step                                    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 📝 Current Progress
+
+- [x] Task 9.1: Design discussion - ETF+TopN, holding rules, execution
+- [x] Task 9.2: Clarify interface, calendar, notification methods
+- [x] Task 9.3: Output detailed solution
+- [x] Task 9.4: Output implementation plan
+- [ ] Task 9.5: Step-by-step implementation (Starting Step 1.1)
