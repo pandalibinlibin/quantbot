@@ -95,103 +95,11 @@ def clear_qlib_data_impl(
         return False, f"Failed to clear data directories: {str(e)}", 0.0
 
 
-def execute_yahoo_data_collector_impl(
-    target_dir: str = "/app/csv_data/cn_data",
-    stock_pool: str = "csi300",
-    start_date: str = "2020-01-01",
-    end_date: str = "2023-12-31",
-    incremental: bool = False,
-    period: str = None,
-    region: str = "cn",
-) -> Tuple[bool, str]:
-    """
-    Execute Yahoo data collector using get_data_yahoo_realtime.py script with enhanced parameters.
-
-    Educational Notes:
-    - Uses the new get_data_yahoo_realtime.py script with flexible parameters
-    - Supports stock pool selection (csi300, csi500) via dynamic API
-    - Supports incremental updates to avoid re-downloading existing data
-    - Compatible with existing API interface while providing enhanced functionality
-
-    Args:
-        target_dir: Directory to store downloaded CSV data
-        stock_pool: Stock pool selection (csi300, csi500, or all)
-        start_date: Start date for data collection (YYYY-MM-DD format)
-        end_date: End date for data collection (YYYY-MM-DD format)
-        incremental: Whether to perform incremental update (append new data only)
-        period: Time period (1y, 6m, 3m) - optional, conflicts with start_date/end_date
-        region: Market region (cn supported)
-
-    Returns:
-        Tuple of (success, message)
-    """
-    import subprocess
-
-    try:
-        # Ensure target directory exists
-        target_path = Path(target_dir)
-        target_path.mkdir(parents=True, exist_ok=True)
-
-        # Command to execute Yahoo data collector via get_data_yahoo_realtime.py
-        cmd = [
-            "python",
-            "/app/scripts/get_data_yahoo_realtime.py",
-            "download_data",
-            "--stock_pool",
-            stock_pool,
-            "--start_date",
-            start_date,
-            "--end_date",
-            end_date,
-            "--target_dir",
-            target_dir,
-        ]
-
-        # Add period parameter if specified (conflicts with start_date/end_date)
-        if period:
-            cmd.extend(["--period", period])
-
-        # Add incremental flag if required
-        if incremental:
-            cmd.append("--incremental")
-
-        # Execute the collector command
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd="/app")
-
-        if result.returncode == 0:
-            return (
-                True,
-                f"Yahoo data collector executed successfully: {stock_pool} stocks ({start_date} to {end_date}) → {target_dir}",
-            )
-        else:
-            return False, f"Yahoo data collector failed: {result.stderr}"
-
-    except Exception as e:
-        return False, f"Error executing Yahoo data collector: {str(e)}"
-
-
 def clear_qlib_data() -> Tuple[bool, str, float]:
     """Clear qlib_data and csv_data directories using configuration."""
     return clear_qlib_data_impl(
         qlib_data_path=settings.QLIB_DATA_PATH,
         csv_data_path=settings.CSV_DATA_PATH,
-    )
-
-
-def execute_yahoo_data_collector(
-    stock_pool: str = "csi300",
-    start_date: str = "2020-01-01",
-    end_date: str = "2023-12-31",
-    incremental: bool = False,
-    period: str = None,
-) -> Tuple[bool, str]:
-    return execute_yahoo_data_collector_impl(
-        target_dir=f"{settings.CSV_DATA_PATH}/cn_data",
-        stock_pool=stock_pool,
-        start_date=start_date,
-        end_date=end_date,
-        incremental=incremental,
-        period=period,
     )
 
 
@@ -222,16 +130,26 @@ def _remove_benchmarks_from_instruments(qlib_path: Path) -> None:
     Args:
         qlib_path: Path to the Qlib data directory
     """
-    from app.services.data_collectors.yahoo_collector import BENCHMARK_CONFIG
+    # Benchmark symbols for both A-shares and US stocks
+    BENCHMARK_SYMBOLS = {
+        # A-share benchmarks (Tushare)
+        "SH510300",  # CSI300 ETF
+        "SH510500",  # CSI500 ETF
+        "SH510800",  # CSI800 ETF
+        "SH512100",  # CSI1000 ETF
+        "SH510880",  # Dividend ETF
+        # US stock benchmarks (EOD)
+        "SPY",  # S&P 500 ETF
+        "QQQ",  # NASDAQ 100 ETF
+        "DIA",  # Dow Jones ETF
+    }
 
     instruments_file = qlib_path / "instruments" / "all.txt"
     if not instruments_file.exists():
         return
 
     # Get all benchmark qlib symbols
-    benchmark_symbols = set()
-    for config in BENCHMARK_CONFIG.values():
-        benchmark_symbols.add(config["qlib_symbol"])
+    benchmark_symbols = BENCHMARK_SYMBOLS
 
     try:
         # Read current instruments
@@ -398,7 +316,7 @@ def get_data_source_status_impl() -> dict:
 
     # Get current data source from configuration
     current_config = data_source_manager.get_current_config()
-    current_source = current_config.get("source", "yahoo")
+    current_source = current_config.get("source", "tushare")
 
     # Check if qlib_data directory has complete data structure
     def has_complete_data_structure(path: Path) -> bool:
@@ -551,7 +469,7 @@ def get_data_source_status_impl() -> dict:
                             elif instruments_count <= 600:
                                 stock_pool = "csi500"
                             elif instruments_count > 1000:
-                                stock_pool = "yahoo_cn_full"
+                                stock_pool = "csi1000"
                             else:
                                 stock_pool = "all"
         except Exception:

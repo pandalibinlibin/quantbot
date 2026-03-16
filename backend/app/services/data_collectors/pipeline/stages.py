@@ -1,6 +1,10 @@
 """
 Pipeline stage implementations.
 
+Supported data sources:
+- Tushare: A-share (China) market data
+- EOD Historical Data: US stock market data
+
 Educational Notes:
 - Implement the three core stages: collect, normalize, dump
 - Integrates with existing services and collectors
@@ -8,7 +12,6 @@ Educational Notes:
 """
 
 import logging
-from mailbox import Message
 from pathlib import Path
 from typing import List
 from app.models import PipelineStage, PipelineStageResult, PipelineWorkspace
@@ -18,12 +21,11 @@ logger = logging.getLogger(__name__)
 
 class CollectStage:
     """
-    Data collection stage following Qlib Yahoo collector pattern.
+    Data collection stage following Qlib collector pattern.
 
-    Educational Notes:
-    - Follows Qlib's proven Yahoo collector implementation
-    - Simple and direct approach without over-engineering
-    - Supports multiple collectors through direct instantiation
+    Supported data sources:
+    - tushare: A-share (China) market data
+    - eod: US stock market data (EOD Historical Data)
     """
 
     @staticmethod
@@ -41,28 +43,36 @@ class CollectStage:
                 f"Starting collection stage: {len(symbols)} symbols from {source}"
             )
 
-            # Simple collector selection (following Qlib's direct approach)
-            if source.lower() == "yahoo":
-                from app.services.data_collectors.yahoo_collector import (
-                    YahooDataCollector,
+            # Collector selection based on data source
+            if source.lower() == "tushare":
+                from app.services.data_collectors.tushare_collector import (
+                    TushareDataCollector,
                 )
 
-                collector = YahooDataCollector(
+                collector = TushareDataCollector(
                     save_dir=str(workspace.temp_csv_dir),
                     start=start_date,
                     end=end_date,
-                    interval=interval,
-                    max_workers=1,
+                )
+            elif source.lower() == "eod":
+                from app.services.data_collectors.eod_collector import (
+                    EODDataCollector,
+                )
+
+                collector = EODDataCollector(
+                    save_dir=str(workspace.temp_csv_dir),
+                    start=start_date,
+                    end=end_date,
                 )
             else:
                 return PipelineStageResult(
                     stage=PipelineStage.COLLECT,
                     success=False,
                     message=f"Unsupported data source: {source}",
-                    error=f"Currently only 'yahoo' is supported",
+                    error="Supported sources: 'tushare' (A-shares), 'eod' (US stocks)",
                 )
 
-            # Execute collection (same as Qlib Yahoo collector)
+            # Execute collection
             collector.instrument_list = symbols
             collector.collector_data()
 

@@ -69,6 +69,10 @@ class Settings(BaseSettings):
     # Signal output directory for VeighNa to read
     SIGNAL_OUTPUT_DIR: str = "/app/data/signals"
 
+    # Data Source API Keys
+    TUSHARE_TOKEN: str = ""
+    EOD_API_KEY: str = ""
+
     @computed_field  # type: ignore[prop-decorator]
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:

@@ -101,9 +101,13 @@ services:
       SMTP_TLS: ${SMTP_TLS}
       SMTP_SSL: ${SMTP_SSL}
       EMAILS_FROM_EMAIL: ${EMAILS_FROM_EMAIL}
-      HTTP_PROXY: "http://192.168.0.107:7890"
-      HTTPS_PROXY: "http://192.168.0.107:7890"
-      NO_PROXY: "localhost,127.0.0.1,db"
+      # Proxy configuration (commented out - Tushare doesn't need proxy)
+      # HTTP_PROXY: "http://192.168.0.107:7890"
+      # HTTPS_PROXY: "http://192.168.0.107:7890"
+      # NO_PROXY: "localhost,127.0.0.1,db"
+      # Data Source API Keys
+      TUSHARE_TOKEN: ${TUSHARE_TOKEN}
+      EOD_API_KEY: ${EOD_API_KEY}
 
   mailcatcher:
     image: schickling/mailcatcher

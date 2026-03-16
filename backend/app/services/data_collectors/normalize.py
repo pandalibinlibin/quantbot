@@ -89,8 +89,11 @@ class UniversalNormalize(BaseNormalize):
     """
     Universal normalize class for all data sources.
 
+    Supported data sources:
+    - tushare: A-share (China) market data
+    - eod: US stock market data (EOD Historical Data)
+
     Educational Notes:
-    - Based on Qlib's YahooNormalize but adapted for universal use
     - Processes standard OHLCV fields: open, high, low, close, volume
     - Uses source_type for data source specific logic when needed
     - Implements complete data normalization pipeline from Qlib
@@ -111,14 +114,14 @@ class UniversalNormalize(BaseNormalize):
     # Class-level calendar cache to avoid repeated API calls
     _calendar_cache = {}
 
-    def __init__(self, source_type: str = "yahoo", market: str = "US", **kwargs):
+    def __init__(self, source_type: str = "tushare", market: str = "CN", **kwargs):
         """
         Initialize UniversalNormalize.
 
         Parameters
         ----------
         source_type: str
-            Data source identifier for branch logic ("yahoo", "tushare", etc.)
+            Data source identifier for branch logic ("tushare", "eod", etc.)
         market: str
             Market identifier for trading calendar ("CN", "US")
         **kwargs: dict
@@ -140,7 +143,7 @@ class UniversalNormalize(BaseNormalize):
         Calculate price change series for anomaly detection.
 
         Educational Notes:
-        - Based on Qlib's YahooNormalize.calc_change method
+        - Based on Qlib's normalize pattern for price change calculation
         - Calculates price change series for anomaly detection
         - Handles both daily and minute-level data
         - Uses forward fill to handle missing values
@@ -174,8 +177,8 @@ class UniversalNormalize(BaseNormalize):
 
         Educational Notes:
         - Uses class-level cache to avoid repeated API calls for same market
-        - Directly uses Yahoo Finance API for reliable trading calendar
-        - Falls back to pandas business days if Yahoo Finance fails
+        - Uses Tushare API for CN market trading calendar
+        - Falls back to pandas business days for US market or if API fails
         - Supports both CN and US market calendars
         - Market-specific trading hours handled in generate_1min_from_daily
 
@@ -202,13 +205,12 @@ class UniversalNormalize(BaseNormalize):
 
     def _get_pandas_trading_calendar(self) -> Iterable[pd.Timestamp]:
         """
-        Get trading calendar using Yahoo Finance API and pandas fallback.
+        Get trading calendar using Tushare (CN) or pandas fallback (US).
 
         Educational Notes:
-        - First tries Yahoo Finance API for real market trading days
-        - Falls back to pandas business day calendar if Yahoo fails
+        - For CN market: uses Tushare trade_cal API for accurate A-share trading days
+        - For US market: uses pandas business days as fallback
         - Provides real trading days for data alignment
-        - More accurate than empty calendar fallback
 
         Returns
         -------
@@ -216,13 +218,13 @@ class UniversalNormalize(BaseNormalize):
             Real trading calendar timestamps
         """
         try:
-            # Try Yahoo Finance API first for real trading calendar
-            yahoo_calendar = self._get_yahoo_trading_calendar(market=self.market)
-            if yahoo_calendar is not None and len(yahoo_calendar) > 0:
-                return yahoo_calendar
-
+            if self.market == "CN":
+                # Try Tushare for A-share trading calendar
+                tushare_calendar = self._get_tushare_trading_calendar()
+                if tushare_calendar is not None and len(tushare_calendar) > 0:
+                    return tushare_calendar
         except Exception as e:
-            logger.warning(f"Failed to get Yahoo Finance trading calendar: {e}")
+            logger.warning(f"Failed to get Tushare trading calendar: {e}")
 
         try:
             import pandas as pd
@@ -246,69 +248,57 @@ class UniversalNormalize(BaseNormalize):
             logger.warning("Using empty calendar as final fallback")
             return []
 
-    def _get_yahoo_trading_calendar(self, market: str = "US") -> Iterable[pd.Timestamp]:
+    def _get_tushare_trading_calendar(self) -> Iterable[pd.Timestamp]:
         """
-        Get real trading calendar from Yahoo Finance API.
+        Get A-share trading calendar from Tushare Pro API.
 
         Educational Notes:
-        - Uses Yahoo Finance to get actual trading days
-        - Automatically excludes weekends and holidays
-        - Market-specific (CN/US) trading calendars using representative indices
-        - More accurate than business day approximation
-
-        Parameters
-        ----------
-        market: str
-            Market identifier: "CN" or "US"
+        - Uses Tushare trade_cal API for accurate A-share trading days
+        - Automatically excludes weekends and Chinese holidays
+        - More accurate than business day approximation for A-share market
 
         Returns
         -------
         Iterable[pd.Timestamp]
-            Yahoo Finance trading calendar timestamps
+            Tushare trading calendar timestamps
         """
         try:
-            from yahooquery import Ticker
-            import pandas as pd
+            import tushare as ts
             from datetime import datetime, timedelta
+            from app.core.config import settings
 
-            # Use market-specific representative indices for trading calendar
-            if market == "CN":
-                representative_symbol = "000001.SS"  # SSE Composite Index
-            else:
-                representative_symbol = "SPY"  # S&P 500 ETF for US market
+            token = settings.TUSHARE_TOKEN
+            if not token:
+                logger.warning("TUSHARE_TOKEN not configured, using pandas fallback")
+                return None
 
-            # Create date range for calendar
-            start_date = datetime(2020, 1, 1)  # Reasonable range for calendar
-            end_date = datetime.now() + timedelta(days=30)
+            ts.set_token(token)
+            pro = ts.pro_api()
 
-            logger.debug(
-                f"Getting {market} trading calendar using {representative_symbol}"
+            # Get trading calendar for SSE (Shanghai Stock Exchange)
+            start_date = "20200101"
+            end_date = (datetime.now() + timedelta(days=30)).strftime("%Y%m%d")
+
+            df = pro.trade_cal(
+                exchange="SSE",
+                start_date=start_date,
+                end_date=end_date,
+                is_open="1",
             )
 
-            # Get historical data to extract trading dates
-            ticker = Ticker(representative_symbol)
-            data = ticker.history(start=start_date, end=end_date, interval="1d")
-
-            if data is not None and not data.empty:
-                # Extract trading dates from the index
-                trading_dates = (
-                    data.index.get_level_values("date")
-                    if isinstance(data.index, pd.MultiIndex)
-                    else data.index
-                )
-                trading_dates = pd.to_datetime(trading_dates).unique()
+            if df is not None and not df.empty:
+                # Convert to datetime
+                trading_dates = pd.to_datetime(df["cal_date"])
                 trading_dates = sorted(trading_dates)
 
                 logger.info(
-                    f"Retrieved {market} Yahoo Finance trading calendar with {len(trading_dates)} trading days from {trading_dates[0].date()} to {trading_dates[-1].date()}"
+                    f"Retrieved A-share trading calendar with {len(trading_dates)} trading days"
                 )
 
                 return trading_dates
 
         except Exception as e:
-            logger.warning(
-                f"Failed to get {market} Yahoo Finance trading calendar: {e}"
-            )
+            logger.warning(f"Failed to get Tushare trading calendar: {e}")
 
         return None
 
@@ -363,7 +353,7 @@ class UniversalNormalize(BaseNormalize):
         Universal normalize method for OHLCV data.
 
         Educational Notes:
-        - Based on YahooNormalize.normalize_yahoo static method
+        - Based on Qlib's normalize pattern for OHLCV data
         - Handles time index processing, calendar alignment, and anomaly detection
         - Supports both daily and minute-level data
         - Processes standard OHLCV fields with data cleaning
@@ -428,7 +418,7 @@ class UniversalNormalize(BaseNormalize):
         change_series = UniversalNormalize.calc_change(df, last_close)
 
         # Anomaly detection and correction
-        # Based on YahooNormalize logic for detecting price splits/errors
+        # Based on Qlib's logic for detecting price splits/errors
         _count = 0
         while True:
             change_series = UniversalNormalize.calc_change(df, last_close)

@@ -15,12 +15,12 @@ data:
   freq: "day"
 
   # Data source
-  # Options: "yahoo" (Yahoo Finance), "tushare", "akshare"
-  source: "yahoo"
+  # Options: "tushare" (A-shares), "eod" (US stocks via EOD Historical Data)
+  source: "tushare"
 
   # Stock pool
-  # China: "csi300", "csi500", "csi800", "all"
-  # US: "sp500", "nasdaq100"
+  # China (tushare): "csi300", "csi500", "csi800", "csi1000", "dividend", "all"
+  # US (eod): "sp500", "nasdaq100", "djia"
   stock_pool: "csi300"
 
   # Market region
@@ -29,7 +29,7 @@ data:
 
   # Download range in days
   download_days:
-    day: 365
+    day: 1095 # 3 years for better model training data
 
 # NOTE: Data path (QLIB_DATA_PATH, CSV_DATA_PATH) are
 # configured via environment variables in .env file, not here.

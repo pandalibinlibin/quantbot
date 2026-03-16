@@ -141,13 +141,16 @@ from enum import Enum
 
 
 class DataSourceType(str, Enum):
-    """Enumeration of supported data source type"""
+    """Enumeration of supported data source types.
 
-    YAHOO_FINANCE = "yahoo_finance"
+    - TUSHARE: A-share (China) market data
+    - EOD: US stock market data (EOD Historical Data)
+    - LOCAL_FILE: Local file data source
+    """
+
     TUSHARE = "tushare"
-    AKSHARE = "akshare"
+    EOD = "eod"
     LOCAL_FILE = "local_file"
-    CUSTOM_API = "custom_api"
 
 
 class DataSourceStatus(str, Enum):
@@ -728,7 +731,7 @@ class DataCollectionRequest(SQLModel):
     """
 
     collector_name: str = Field(
-        description="Name of the data collector (e.g., 'yahoo')"
+        description="Name of the data collector (e.g., 'tushare', 'eod')"
     )
     instruments: list[str] = Field(
         description="List of instrument codes to collect",

@@ -1,6 +1,10 @@
 """
 Data Pipeline Service - Complete incremental update logic.
 
+Supported data sources:
+- Tushare: A-share (China) market data
+- EOD Historical Data: US stock market data
+
 Educational Notes:
 - Detects all missing data segments (beginning, middle, end)
 - Downloads only missing time periods
@@ -14,7 +18,6 @@ from pathlib import Path
 from typing import Tuple, Optional, List
 from datetime import datetime, timedelta
 import pandas as pd
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 
 from app.core.config import settings
@@ -26,8 +29,8 @@ def _filter_anomalous_timestamps(
     """
     Filter out anomalous timestamps that are outside the expected date range.
 
-    This function addresses Yahoo Finance API issues where it sometimes returns
-    data outside the requested date range, causing incorrect Qlib calendar generation.
+    This function filters data to ensure only records within the expected
+    date range are included, preventing incorrect Qlib calendar generation.
 
     Parameters
     ----------
@@ -129,19 +132,25 @@ def execute_data_pipeline(request: DownloadDataRequest) -> DownloadTaskResponse:
         success = False
         message = ""
         current_source = data_source_manager.get_current_source()
-        if current_source.lower() == "yahoo":
-            success, message = _execute_yahoo_pipeline(
+        if current_source.lower() == "tushare":
+            success, message = _execute_tushare_pipeline(
                 stock_pool=request.stock_pool,
                 download_ranges=download_ranges,
                 incremental=request.incremental,
-                interval=request.interval or "1d",  # 添加这行
+                interval=request.interval or "1d",
             )
-
-            # Yahoo pipeline completed, continue to factor computation
-
+        elif current_source.lower() == "eod":
+            success, message = _execute_eod_pipeline(
+                stock_pool=request.stock_pool,
+                download_ranges=download_ranges,
+                incremental=request.incremental,
+                interval=request.interval or "1d",
+            )
         else:
             success = False
-            message = f"Unsupported data source: {current_source}"
+            message = (
+                f"Unsupported data source: {current_source}. Supported: tushare, eod"
+            )
 
         # Check if data collection failed
         if not success:
@@ -151,7 +160,7 @@ def execute_data_pipeline(request: DownloadDataRequest) -> DownloadTaskResponse:
                 message=f"Pipeline execution failed: {message}",
             )
 
-        # Note: metadata.json is saved inside _execute_yahoo_pipeline after successful conversion
+        # Note: metadata.json is saved inside pipeline execution after successful conversion
 
         # Step 3: Trigger factor computation after successful data collection
         try:
@@ -391,149 +400,60 @@ def _get_missing_date_ranges(
         return [(requested_start, requested_end)]
 
 
-def _download_benchmark_index(
+def _execute_tushare_pipeline(
     stock_pool: str,
-    collector,
-    csv_dir: Path,
     download_ranges: List[Tuple[str, str]],
+    incremental: bool = False,
     interval: str = "1d",
-) -> bool:
+) -> Tuple[bool, str]:
     """
-    Download benchmark index data for backtest comparison.
-
-    This function downloads the benchmark index corresponding to the stock_pool:
-    - CSI300 -> SH000300 (000300.SS)
-    - CSI500 -> SH000905 (000905.SS)
-    - SP500 -> SPY
-    - NASDAQ100 -> QQQ
+    Execute Tushare data pipeline for A-share market.
 
     Parameters
     ----------
     stock_pool : str
-        Stock pool name (csi300, csi500, sp500, nasdaq100)
-    collector : YahooDataCollector
-        Initialized collector instance for downloading data
-    csv_dir : Path
-        Directory to save CSV files
+        Stock pool name (csi300, csi500, csi800, csi1000, dividend)
     download_ranges : List[Tuple[str, str]]
         List of (start_date, end_date) tuples
+    incremental : bool
+        Whether to perform incremental update
     interval : str
-        Data interval ("1d" or "1min")
+        Data interval (only "1d" supported for Tushare)
 
     Returns
     -------
-    bool
-        True if benchmark download succeeded, False otherwise
-    """
-    from app.services.data_collectors.yahoo_collector import BENCHMARK_CONFIG
-
-    index_upper = stock_pool.upper()
-    if index_upper not in BENCHMARK_CONFIG:
-        logger.warning(f"No benchmark config for stock_pool: {stock_pool}")
-        return False
-
-    benchmark_info = BENCHMARK_CONFIG[index_upper]
-    yahoo_symbol = benchmark_info["yahoo_symbol"]
-    qlib_symbol = benchmark_info["qlib_symbol"]
-
-    logger.info(f"Downloading benchmark index: {yahoo_symbol} -> {qlib_symbol}")
-
-    try:
-        for range_start, range_end in download_ranges:
-            df = collector.get_data(
-                symbol=yahoo_symbol,
-                interval=interval,
-                start_datetime=range_start,
-                end_datetime=range_end,
-            )
-
-            if df is not None and not df.empty:
-                # Filter anomalous timestamps
-                df = _filter_anomalous_timestamps(df, range_start, range_end)
-
-                if df.empty:
-                    logger.warning(
-                        f"All benchmark data filtered out for {yahoo_symbol}"
-                    )
-                    continue
-
-                csv_file = csv_dir / f"{qlib_symbol}.csv"
-
-                if csv_file.exists():
-                    # Merge with existing data
-                    existing_df = pd.read_csv(csv_file, index_col=0, parse_dates=True)
-                    if not isinstance(existing_df.index, pd.DatetimeIndex):
-                        existing_df.index = pd.to_datetime(existing_df.index)
-                    if not isinstance(df.index, pd.DatetimeIndex):
-                        df.index = pd.to_datetime(df.index)
-
-                    combined_df = pd.concat([existing_df, df])
-                    combined_df = combined_df[
-                        ~combined_df.index.duplicated(keep="last")
-                    ]
-                    combined_df = combined_df.sort_index()
-                    combined_df.to_csv(csv_file, index=True)
-                else:
-                    df.to_csv(csv_file, index=True)
-
-                logger.info(
-                    f"Benchmark {qlib_symbol} downloaded: {len(df)} records "
-                    f"({range_start} to {range_end})"
-                )
-            else:
-                logger.warning(
-                    f"No data returned for benchmark {yahoo_symbol} "
-                    f"({range_start} to {range_end})"
-                )
-
-        return True
-
-    except Exception as e:
-        logger.error(f"Failed to download benchmark {yahoo_symbol}: {e}")
-        return False
-
-
-def _execute_yahoo_pipeline(
-    stock_pool: str,
-    download_ranges: List[Tuple[str, str]],
-    incremental: bool = False,
-    interval: str = "1d",  # 添加这个参数
-) -> Tuple[bool, str]:
-    """
-    Execute Yahoo data pipeline for multiple date ranges.
+    Tuple[bool, str]
+        (success, message)
     """
     try:
-        # Parse stock_pool to market and index parameters
-        if stock_pool.lower() == "csi300":
-            market, index = "CN", "CSI300"
-        elif stock_pool.lower() == "csi500":
-            market, index = "CN", "CSI500"
-        elif stock_pool.lower() == "sp500":
-            market, index = "US", "SP500"
-        elif stock_pool.lower() == "nasdaq100":
-            market, index = "US", "NASDAQ100"
-        else:
-            return False, f"Unsupported stock pool: {stock_pool}"
+        from app.services.data_collectors.tushare_collector import TushareDataCollector
+
+        # Map stock_pool to index name
+        index_map = {
+            "csi300": "CSI300",
+            "csi500": "CSI500",
+            "csi800": "CSI800",
+            "csi1000": "CSI1000",
+            "dividend": "DIVIDEND",
+        }
+
+        index_name = index_map.get(stock_pool.lower())
+        if not index_name:
+            return False, f"Unsupported stock pool for Tushare: {stock_pool}"
 
         # Setup directories
-        from app.services.data_collectors.yahoo_collector import YahooDataCollector
-
-        csv_dir = (
-            Path(settings.CSV_DATA_PATH) / "cn_data"
-            if market == "CN"
-            else Path(settings.CSV_DATA_PATH) / "us_data"
-        )
+        csv_dir = Path(settings.CSV_DATA_PATH) / "cn_data"
         csv_dir.mkdir(parents=True, exist_ok=True)
 
-        # Get instrument list (same for all ranges)
-        collector = YahooDataCollector(
+        # Initialize collector
+        collector = TushareDataCollector(
             save_dir=str(csv_dir),
-            market=market,
-            index_name=index,
-            start=download_ranges[0][0],  # Use first range for initialization
-            end=download_ranges[0][1],
+            index_name=index_name,
+            start=download_ranges[0][0],
+            end=download_ranges[-1][1],
         )
 
+        # Get instrument list
         instruments = collector.get_instrument_list()
         logger.info(f"Retrieved {len(instruments)} instruments for {stock_pool}")
 
@@ -543,16 +463,10 @@ def _execute_yahoo_pipeline(
         for range_start, range_end in download_ranges:
             logger.info(f"Downloading data for range: {range_start} to {range_end}")
 
-            # Update collector for this range
-            collector.start = range_start
-            collector.end = range_end
-
-            # Use concurrent processing for better performance
             range_collected = 0
             failed_instruments = []
 
-            def download_instrument_data(instrument):
-                """Download data for a single instrument"""
+            for i, instrument in enumerate(instruments):
                 try:
                     df = collector.get_data(
                         symbol=instrument,
@@ -562,16 +476,13 @@ def _execute_yahoo_pipeline(
                     )
 
                     if df is not None and not df.empty:
-                        # Filter out anomalous timestamps before saving to CSV
+                        # Filter anomalous timestamps
                         df = _filter_anomalous_timestamps(df, range_start, range_end)
 
                         if df.empty:
-                            logger.warning(
-                                f"All data filtered out for {instrument} due to anomalous timestamps"
-                            )
-                            return instrument, False, 0
+                            continue
 
-                        # Use normalized instrument format for consistency with Qlib
+                        # Use normalized instrument format
                         normalized_instrument = collector.normalize_symbol(instrument)
                         csv_file = csv_dir / f"{normalized_instrument}.csv"
 
@@ -580,97 +491,31 @@ def _execute_yahoo_pipeline(
                             existing_df = pd.read_csv(
                                 csv_file, index_col=0, parse_dates=True
                             )
-
-                            # Debug logging for incremental update
-                            logger.info(f"Incremental update for {instrument}:")
-                            logger.info(
-                                f"  New data shape: {df.shape}, dates: {df.index.min()} to {df.index.max()}"
-                            )
-                            logger.info(
-                                f"  Existing data shape: {existing_df.shape}, dates: {existing_df.index.min()} to {existing_df.index.max()}"
-                            )
-
-                            # Ensure both DataFrames have the same index type
                             if not isinstance(existing_df.index, pd.DatetimeIndex):
                                 existing_df.index = pd.to_datetime(existing_df.index)
                             if not isinstance(df.index, pd.DatetimeIndex):
                                 df.index = pd.to_datetime(df.index)
 
-                            # Merge and remove duplicates
                             combined_df = pd.concat([existing_df, df])
                             combined_df = combined_df[
                                 ~combined_df.index.duplicated(keep="last")
                             ]
                             combined_df = combined_df.sort_index()
-
-                            logger.info(
-                                f"  Combined data shape: {combined_df.shape}, dates: {combined_df.index.min()} to {combined_df.index.max()}"
-                            )
                             combined_df.to_csv(csv_file, index=True)
                         else:
-                            # Save new data or overwrite
-                            if csv_file.exists() and not incremental:
-                                # Full refresh mode - overwrite
-                                df.to_csv(csv_file, index=True)
-                            else:
-                                # First time or incremental - save/append
-                                df.to_csv(csv_file, index=True)
+                            df.to_csv(csv_file, index=True)
 
-                        return instrument, True, len(df)
-                    else:
-                        return instrument, False, 0
+                        range_collected += 1
+
+                    # Log progress
+                    if (i + 1) % 50 == 0 or (i + 1) == len(instruments):
+                        logger.info(
+                            f"Progress: {i + 1}/{len(instruments)} instruments processed"
+                        )
 
                 except Exception as e:
-                    logger.warning(
-                        f"Failed to collect data for {instrument} in range {range_start}-{range_end}: {str(e)}"
-                    )
-                    return instrument, False, 0
-
-            # Process instruments concurrently with limited workers
-            max_workers = min(8, len(instruments))  # Limit concurrent requests
-            start_time = time.time()
-
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                # Submit all tasks
-                future_to_instrument = {
-                    executor.submit(download_instrument_data, instrument): instrument
-                    for instrument in instruments
-                }
-
-                # Process completed tasks
-                for i, future in enumerate(as_completed(future_to_instrument), 1):
-                    instrument = future_to_instrument[future]
-                    try:
-                        instrument_name, success, records = future.result()
-                        if success:
-                            range_collected += 1
-                        else:
-                            failed_instruments.append(instrument_name)
-
-                        # Log progress every 50 instruments
-                        if i % 50 == 0 or i == len(instruments):
-                            elapsed = time.time() - start_time
-                            rate = i / elapsed if elapsed > 0 else 0
-                            logger.info(
-                                f"Progress: {i}/{len(instruments)} instruments processed "
-                                f"({range_collected} successful, {len(failed_instruments)} failed) "
-                                f"- Rate: {rate:.1f} instruments/sec"
-                            )
-
-                    except Exception as e:
-                        failed_instruments.append(instrument)
-                        logger.error(f"Unexpected error processing {instrument}: {e}")
-
-            # Log final results for this range
-            elapsed = time.time() - start_time
-            logger.info(
-                f"Range {range_start} to {range_end} completed: "
-                f"{range_collected}/{len(instruments)} successful in {elapsed:.1f}s"
-            )
-            if failed_instruments:
-                logger.warning(
-                    f"Failed instruments: {failed_instruments[:10]}{'...' if len(failed_instruments) > 10 else ''}"
-                )
+                    failed_instruments.append(instrument)
+                    logger.warning(f"Failed to collect data for {instrument}: {e}")
 
             total_collected += range_collected
             logger.info(
@@ -678,112 +523,54 @@ def _execute_yahoo_pipeline(
             )
 
         if total_collected == 0:
-            return False, "No data was collected for any range"
+            # For incremental updates, no new data is normal (weekends, holidays, or already up-to-date)
+            if incremental:
+                return (
+                    True,
+                    "No new data available (data is already up-to-date or market is closed)",
+                )
+            else:
+                return False, "No data was collected for any range"
 
-        success_rate = (
-            (total_collected / (len(instruments) * len(download_ranges))) * 100
-            if instruments
-            else 0
-        )
-        logger.info(
-            f"Yahoo pipeline completed: {total_collected}/{len(instruments) * len(download_ranges)} "
-            f"total downloads successful ({success_rate:.1f}% success rate)"
-        )
-
-        # Step 1.5: Download benchmark index data for backtest comparison
-        _download_benchmark_index(
-            stock_pool=stock_pool,
-            collector=collector,
-            csv_dir=csv_dir,
-            download_ranges=download_ranges,
-            interval=interval,
-        )
-
-        # Step 2: Data Normalization using UniversalNormalize
+        # Data Normalization
         from app.services.data_collectors.normalize import UniversalNormalize
-        import os
 
         normalized_dir = csv_dir.parent / "normalized"
         normalized_dir.mkdir(parents=True, exist_ok=True)
 
-        # Initialize Qlib using the centralized service (ensures single initialization)
-        try:
-            from app.services.qlib_init_service import get_qlib_init_service
+        normalizer = UniversalNormalize(source_type="tushare", market="CN")
 
-            qlib_service = get_qlib_init_service()
-            qlib_service.initialize()
-            logger.info("Qlib initialized via centralized service for calendar access")
-
-        except Exception as qlib_error:
-            logger.warning(
-                f"Failed to initialize Qlib: {qlib_error}. Normalization will use empty calendar."
-            )
-
-        # Determine market type from the first part of the pipeline
-        # This should match the market detection logic used earlier
-        if stock_pool.lower() in ["csi300", "csi500"]:
-            market_type = "CN"
-        elif stock_pool.lower() in ["sp500", "nasdaq100"]:
-            market_type = "US"
-        else:
-            market_type = "US"  # Default to US
-
-        normalizer = UniversalNormalize(market=market_type)
-
-        # Process each CSV file individually
         normalize_success_count = 0
         for csv_file in csv_dir.glob("*.csv"):
             try:
-                # Read CSV file
                 df = pd.read_csv(csv_file, index_col=0, parse_dates=True)
                 if df.empty:
                     continue
 
-                # Reset index to make 'date' a column (required by normalize)
                 df = df.reset_index()
                 if "index" in df.columns:
                     df = df.rename(columns={"index": "date"})
 
-                # Add symbol column if not present
                 if "symbol" not in df.columns:
-                    symbol = csv_file.stem  # filename without extension
-                    df["symbol"] = symbol
+                    df["symbol"] = csv_file.stem
 
-                # Normalize the data
                 normalized_df = normalizer.normalize(df)
-
-                # Save normalized data
                 output_file = normalized_dir / csv_file.name
                 normalized_df.to_csv(output_file, index=True)
                 normalize_success_count += 1
 
             except Exception as e:
                 logger.warning(f"Failed to normalize {csv_file.name}: {e}")
-                continue
 
         if normalize_success_count == 0:
-            return False, "Data normalization failed - no files processed successfully"
+            return False, "Data normalization failed"
 
         logger.info("Data normalization completed successfully")
 
-        # Step 3: Convert to Qlib format using dump_bin
+        # Convert to Qlib format
         from app.services.data_utils import convert_csv_to_qlib_format_impl
 
-        # Use the correct CSV directory based on market type
-        csv_dir = (
-            Path(settings.CSV_DATA_PATH) / "cn_data"
-            if market_type == "CN"
-            else Path(settings.CSV_DATA_PATH) / "us_data"
-        )
-
-        # Determine Qlib frequency based on interval parameter
-        qlib_freq = "1min" if interval == "1m" else "day"
-        logger.info(
-            f"Converting to Qlib format with frequency: {qlib_freq} (interval: {interval})"
-        )
-
-        # Let convert_csv_to_qlib_format_impl auto-select the correct directory based on frequency
-        # Pass incremental flag to preserve existing data during incremental updates
+        qlib_freq = "day"
         convert_success, convert_message = convert_csv_to_qlib_format_impl(
             csv_dir=str(csv_dir), freq=qlib_freq, incremental=incremental
         )
@@ -792,43 +579,254 @@ def _execute_yahoo_pipeline(
 
         logger.info("Qlib format conversion completed successfully")
 
-        # Step 4: Save metadata for accurate status reporting
+        # Save metadata
         try:
             import json
             from datetime import datetime
             from app.services.data_utils import get_qlib_dir_for_freq
 
             metadata = {
-                "source": "yahoo",
+                "source": "tushare",
                 "stock_pool": stock_pool,
-                "market": market_type,
-                "region": region,
+                "market": "CN",
+                "region": "cn",
                 "interval": interval,
                 "download_date": datetime.now().isoformat(),
                 "instruments_count": total_collected,
                 "date_ranges": [(start, end) for start, end in download_ranges],
             }
 
-            # Save metadata to the correct directory based on frequency
             qlib_data_dir = get_qlib_dir_for_freq(qlib_freq)
             metadata_file = Path(qlib_data_dir) / "metadata.json"
             with open(metadata_file, "w") as f:
                 json.dump(metadata, f, indent=2)
 
-            logger.info(
-                f"Saved metadata: stock_pool={stock_pool}, market={market_type}, dir={qlib_data_dir}"
-            )
+            logger.info(f"Saved metadata: stock_pool={stock_pool}, dir={qlib_data_dir}")
 
         except Exception as e:
             logger.warning(f"Failed to save metadata: {e}")
 
-        ranges_summary = f"{len(download_ranges)} ranges, {total_collected} instrument-range combinations"
         return (
             True,
-            f"Pipeline completed: downloaded {ranges_summary}, normalized and converted to Qlib format",
+            f"Tushare pipeline completed: {total_collected} instruments collected",
         )
 
     except Exception as e:
-        error_msg = f"Yahoo pipeline execution failed: {str(e)}"
+        error_msg = f"Tushare pipeline execution failed: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        return False, error_msg
+
+
+def _execute_eod_pipeline(
+    stock_pool: str,
+    download_ranges: List[Tuple[str, str]],
+    incremental: bool = False,
+    interval: str = "1d",
+) -> Tuple[bool, str]:
+    """
+    Execute EOD Historical Data pipeline for US market.
+
+    Parameters
+    ----------
+    stock_pool : str
+        Stock pool name (sp500, nasdaq100, djia)
+    download_ranges : List[Tuple[str, str]]
+        List of (start_date, end_date) tuples
+    incremental : bool
+        Whether to perform incremental update
+    interval : str
+        Data interval (only "1d" supported)
+
+    Returns
+    -------
+    Tuple[bool, str]
+        (success, message)
+    """
+    try:
+        from app.services.data_collectors.eod_collector import EODDataCollector
+
+        # Map stock_pool to index name
+        index_map = {
+            "sp500": "SP500",
+            "nasdaq100": "NASDAQ100",
+            "djia": "DJIA",
+        }
+
+        index_name = index_map.get(stock_pool.lower())
+        if not index_name:
+            return False, f"Unsupported stock pool for EOD: {stock_pool}"
+
+        # Setup directories
+        csv_dir = Path(settings.CSV_DATA_PATH) / "us_data"
+        csv_dir.mkdir(parents=True, exist_ok=True)
+
+        # Initialize collector
+        collector = EODDataCollector(
+            save_dir=str(csv_dir),
+            index_name=index_name,
+            start=download_ranges[0][0],
+            end=download_ranges[-1][1],
+        )
+
+        # Get instrument list
+        instruments = collector.get_instrument_list()
+        logger.info(f"Retrieved {len(instruments)} instruments for {stock_pool}")
+
+        total_collected = 0
+
+        # Download data for each missing range
+        for range_start, range_end in download_ranges:
+            logger.info(f"Downloading data for range: {range_start} to {range_end}")
+
+            range_collected = 0
+            failed_instruments = []
+
+            for i, instrument in enumerate(instruments):
+                try:
+                    df = collector.get_data(
+                        symbol=instrument,
+                        interval=interval,
+                        start_datetime=range_start,
+                        end_datetime=range_end,
+                    )
+
+                    if df is not None and not df.empty:
+                        # Filter anomalous timestamps
+                        df = _filter_anomalous_timestamps(df, range_start, range_end)
+
+                        if df.empty:
+                            continue
+
+                        # Use normalized instrument format
+                        normalized_instrument = collector.normalize_symbol(instrument)
+                        csv_file = csv_dir / f"{normalized_instrument}.csv"
+
+                        if incremental and csv_file.exists():
+                            # Merge with existing data
+                            existing_df = pd.read_csv(
+                                csv_file, index_col=0, parse_dates=True
+                            )
+                            if not isinstance(existing_df.index, pd.DatetimeIndex):
+                                existing_df.index = pd.to_datetime(existing_df.index)
+                            if not isinstance(df.index, pd.DatetimeIndex):
+                                df.index = pd.to_datetime(df.index)
+
+                            combined_df = pd.concat([existing_df, df])
+                            combined_df = combined_df[
+                                ~combined_df.index.duplicated(keep="last")
+                            ]
+                            combined_df = combined_df.sort_index()
+                            combined_df.to_csv(csv_file, index=True)
+                        else:
+                            df.to_csv(csv_file, index=True)
+
+                        range_collected += 1
+
+                    # Log progress
+                    if (i + 1) % 50 == 0 or (i + 1) == len(instruments):
+                        logger.info(
+                            f"Progress: {i + 1}/{len(instruments)} instruments processed"
+                        )
+
+                except Exception as e:
+                    failed_instruments.append(instrument)
+                    logger.warning(f"Failed to collect data for {instrument}: {e}")
+
+            total_collected += range_collected
+            logger.info(
+                f"Range {range_start} to {range_end}: collected {range_collected}/{len(instruments)} instruments"
+            )
+
+        if total_collected == 0:
+            # For incremental updates, no new data is normal (weekends, holidays, or already up-to-date)
+            if incremental:
+                return (
+                    True,
+                    "No new data available (data is already up-to-date or market is closed)",
+                )
+            else:
+                return False, "No data was collected for any range"
+
+        # Data Normalization
+        from app.services.data_collectors.normalize import UniversalNormalize
+
+        normalized_dir = csv_dir.parent / "normalized"
+        normalized_dir.mkdir(parents=True, exist_ok=True)
+
+        normalizer = UniversalNormalize(source_type="eod", market="US")
+
+        normalize_success_count = 0
+        for csv_file in csv_dir.glob("*.csv"):
+            try:
+                df = pd.read_csv(csv_file, index_col=0, parse_dates=True)
+                if df.empty:
+                    continue
+
+                df = df.reset_index()
+                if "index" in df.columns:
+                    df = df.rename(columns={"index": "date"})
+
+                if "symbol" not in df.columns:
+                    df["symbol"] = csv_file.stem
+
+                normalized_df = normalizer.normalize(df)
+                output_file = normalized_dir / csv_file.name
+                normalized_df.to_csv(output_file, index=True)
+                normalize_success_count += 1
+
+            except Exception as e:
+                logger.warning(f"Failed to normalize {csv_file.name}: {e}")
+
+        if normalize_success_count == 0:
+            return False, "Data normalization failed"
+
+        logger.info("Data normalization completed successfully")
+
+        # Convert to Qlib format
+        from app.services.data_utils import convert_csv_to_qlib_format_impl
+
+        qlib_freq = "day"
+        convert_success, convert_message = convert_csv_to_qlib_format_impl(
+            csv_dir=str(csv_dir), freq=qlib_freq, incremental=incremental
+        )
+        if not convert_success:
+            return False, f"Qlib format conversion failed: {convert_message}"
+
+        logger.info("Qlib format conversion completed successfully")
+
+        # Save metadata
+        try:
+            import json
+            from datetime import datetime
+            from app.services.data_utils import get_qlib_dir_for_freq
+
+            metadata = {
+                "source": "eod",
+                "stock_pool": stock_pool,
+                "market": "US",
+                "region": "us",
+                "interval": interval,
+                "download_date": datetime.now().isoformat(),
+                "instruments_count": total_collected,
+                "date_ranges": [(start, end) for start, end in download_ranges],
+            }
+
+            qlib_data_dir = get_qlib_dir_for_freq(qlib_freq)
+            metadata_file = Path(qlib_data_dir) / "metadata.json"
+            with open(metadata_file, "w") as f:
+                json.dump(metadata, f, indent=2)
+
+            logger.info(f"Saved metadata: stock_pool={stock_pool}, dir={qlib_data_dir}")
+
+        except Exception as e:
+            logger.warning(f"Failed to save metadata: {e}")
+
+        return (
+            True,
+            f"EOD pipeline completed: {total_collected} instruments collected",
+        )
+
+    except Exception as e:
+        error_msg = f"EOD pipeline execution failed: {str(e)}"
         logger.error(error_msg, exc_info=True)
         return False, error_msg

@@ -6,39 +6,55 @@
 active_index: csi300
 
 # Index definitions
+# Data sources: tushare (A-shares), eod (US stocks), file (local file)
 indexes:
+  # ========== A-Share Indices (via Tushare) ==========
   csi300:
-    name: 沪深300
+    name: CSI 300
     name_en: CSI 300
     benchmark_code: SH000300
     etf_code: SH510300
-    # Components data source: yfiua_api, akshare, tushare, file
-    components_source: yfiua_api
-    # API key for yfiua.github.io (CSI300, CSI500, SP500, NASDAQ100)
-    components_api_key: CSI300
+    components_source: tushare
+    # Tushare index code format: 000300.SH
+    components_index_code: "000300.SH"
 
   csi500:
-    name: 中证500
+    name: CSI 500
     name_en: CSI 500
     benchmark_code: SH000905
     etf_code: SH510500
-    components_source: yfiua_api
-    components_api_key: CSI500
+    components_source: tushare
+    components_index_code: "000905.SH"
 
   dividend:
-    name: 上证红利
+    name: SSE Dividend
     name_en: SSE Dividend
     benchmark_code: SH000015
     etf_code: SH510880
-    # Use AKShare for dividend index components
-    components_source: akshare
-    # Index code for AKShare query
-    components_index_code: "000015"
+    components_source: tushare
+    components_index_code: "000015.SH"
 
   csi1000:
-    name: 中证1000
+    name: CSI 1000
     name_en: CSI 1000
     benchmark_code: SH000852
     etf_code: SH512100
-    components_source: akshare
-    components_index_code: "000852"
+    components_source: tushare
+    components_index_code: "000852.SH"
+
+  # ========== US Stock Indices (via EOD Historical Data) ==========
+  sp500:
+    name: S&P 500
+    name_en: S&P 500
+    benchmark_code: SPY
+    etf_code: SPY
+    components_source: eod
+    components_index_code: "GSPC.INDX"
+
+  nasdaq100:
+    name: NASDAQ 100
+    name_en: NASDAQ 100
+    benchmark_code: QQQ
+    etf_code: QQQ
+    components_source: eod
+    components_index_code: "NDX.INDX"

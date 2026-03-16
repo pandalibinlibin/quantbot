@@ -1,22 +1,20 @@
 """
-Index Components Service - Multi-source stock components fetching
+Index Components Service - Multi-source stock components fetching.
 
 This service provides a unified interface to fetch index constituent stocks
 from multiple data sources:
-- yfiua_api: yfiua.github.io JSON API (CSI300, CSI500, SP500, NASDAQ100)
-- akshare: AKShare library (Dividend Index, CSI1000, etc.)
+- tushare: Tushare Pro API for A-share market (CSI300, CSI500, CSI800, CSI1000, Dividend)
+- eod: EOD Historical Data API for US market (SP500, NASDAQ100, DJIA)
 - file: Local text file (backup/custom indices)
 
 Educational Notes:
 - Reads configuration from index_config.yaml
-- Returns stock codes in Qlib standard format (SH600519, SZ000858)
+- Returns stock codes in Qlib standard format (SH600519, SZ000858 for A-shares, AAPL for US)
 - Supports caching to avoid frequent API calls
 - Provides clear error messages for debugging
 """
 
 import logging
-import json
-import requests
 from typing import List, Dict, Optional
 from pathlib import Path
 import yaml
@@ -25,33 +23,14 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-# Request headers for API calls
-REQUEST_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    "Accept": "application/json, text/plain, */*",
-    "Accept-Language": "en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7",
-    "Connection": "keep-alive",
-}
-
-# yfiua API configuration
-YFIUA_API_CONFIG = {
-    "base_url": "https://yfiua.github.io/index-constituents",
-    "endpoints": {
-        "CSI300": "/constituents-csi300.json",
-        "CSI500": "/constituents-csi500.json",
-        "SP500": "/constituents-sp500.json",
-        "NASDAQ100": "/constituents-nasdaq100.json",
-    },
-}
-
 
 class IndexComponentsService:
     """
     Service for fetching index constituent stocks from multiple sources.
 
-    Supports:
-    - yfiua_api: Fast, reliable API for major indices
-    - akshare: Python library for Chinese market data
+    Supported data sources:
+    - tushare: Tushare Pro API for A-share market
+    - eod: EOD Historical Data API for US market
     - file: Local file fallback
     """
 
@@ -141,17 +120,19 @@ class IndexComponentsService:
         logger.info(f"Fetching components for {index_name} from source: {source}")
 
         # Fetch from appropriate source
-        if source == "yfiua_api":
-            api_key = index_config.get("components_api_key")
-            components = self._get_from_yfiua(api_key)
-        elif source == "akshare":
+        if source == "tushare":
             index_code = index_config.get("components_index_code")
-            components = self._get_from_akshare(index_code)
+            components = self._get_from_tushare(index_code)
+        elif source == "eod":
+            index_code = index_config.get("components_index_code")
+            components = self._get_from_eod(index_code)
         elif source == "file":
             file_path = index_config.get("components_file")
             components = self._get_from_file(file_path)
         else:
-            raise ValueError(f"Unsupported components source: {source}")
+            raise ValueError(
+                f"Unsupported components source: {source}. Supported: tushare, eod, file"
+            )
 
         # Cache results
         self.cache[index_name] = components
@@ -159,122 +140,72 @@ class IndexComponentsService:
 
         return components
 
-    def _get_from_yfiua(self, api_key: str) -> List[str]:
+    def _get_from_tushare(self, index_code: str) -> List[str]:
         """
-        Fetch components from yfiua.github.io API.
+        Fetch components from Tushare Pro API.
 
         Args:
-            api_key: API endpoint key (e.g., 'CSI300', 'CSI500')
+            index_code: Tushare index code (e.g., '000300.SH' for CSI300)
 
         Returns:
-            List of stock codes in Qlib format
+            List of stock codes in Qlib format (e.g., ['SH600519', 'SZ000858'])
 
         Educational Notes:
-        - API returns symbols in Yahoo Finance format (e.g., '000001.SZ')
-        - Need to convert to Qlib format (e.g., 'SZ000001')
-        - API is fast and reliable for major indices
+        - Tushare is the primary data source for A-share market
+        - Requires TUSHARE_TOKEN environment variable
+        - Returns codes in Qlib format for consistency
         """
         try:
-            # Build API URL
-            endpoint = YFIUA_API_CONFIG["endpoints"].get(api_key)
-            if not endpoint:
-                raise ValueError(f"Unknown yfiua API key: {api_key}")
+            from app.services.data_collectors.tushare_collector import (
+                TushareDataCollector,
+            )
 
-            api_url = YFIUA_API_CONFIG["base_url"] + endpoint
-            logger.info(f"Fetching from yfiua API: {api_url}")
+            logger.info(f"Fetching components for index {index_code} from Tushare")
 
-            # Make API request
-            response = requests.get(api_url, headers=REQUEST_HEADERS, timeout=30)
-            response.raise_for_status()
+            # Use static method from TushareDataCollector
+            components = TushareDataCollector.get_index_components(index_code)
 
-            # Parse JSON response
-            data = response.json()
-            logger.info(f"yfiua API returned {len(data)} items")
+            logger.info(f"Tushare returned {len(components)} components")
+            if components:
+                logger.info(f"Sample: {components[:5]}")
 
-            # Extract and convert symbols
-            symbols = []
-            for item in data:
-                if isinstance(item, dict) and "Symbol" in item:
-                    yahoo_symbol = item["Symbol"].strip()
-                    if yahoo_symbol:
-                        # Convert Yahoo format to Qlib format
-                        qlib_symbol = self._convert_yahoo_to_qlib(yahoo_symbol)
-                        symbols.append(qlib_symbol)
+            return components
 
-            logger.info(f"Converted {len(symbols)} symbols to Qlib format")
-            logger.info(f"Sample: {symbols[:5]}")
-            return symbols
-
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Network error fetching from yfiua API: {e}")
-            raise
         except Exception as e:
-            logger.error(f"Error fetching from yfiua API: {e}")
+            logger.error(f"Error fetching from Tushare: {e}")
             raise
 
-    def _get_from_akshare(self, index_code: str) -> List[str]:
+    def _get_from_eod(self, index_code: str) -> List[str]:
         """
-        Fetch components from AKShare library.
+        Fetch components from EOD Historical Data API.
 
         Args:
-            index_code: Index code for AKShare (e.g., '000015' for dividend index)
+            index_code: EOD index code (e.g., 'GSPC.INDX' for S&P 500)
 
         Returns:
-            List of stock codes in Qlib format
+            List of stock codes in Qlib format (e.g., ['AAPL', 'MSFT'])
 
         Educational Notes:
-        - AKShare provides comprehensive Chinese market data
-        - Requires akshare package to be installed
-        - Need to add exchange prefix to match Qlib format
+        - EOD Historical Data is the primary source for US stocks
+        - Requires EOD_API_KEY environment variable
+        - Returns codes in Qlib format for consistency
         """
         try:
-            import akshare as ak
+            from app.services.data_collectors.eod_collector import EODDataCollector
 
-            logger.info(f"Fetching components for index {index_code} from AKShare")
+            logger.info(f"Fetching components for index {index_code} from EOD")
 
-            # Fetch index components
-            # AKShare function: index_stock_cons(symbol="000300")
-            df = ak.index_stock_cons(symbol=index_code)
+            # Use static method from EODDataCollector
+            components = EODDataCollector.get_index_components(index_code)
 
-            # Extract stock codes
-            # Column name might be '品种代码' or 'code' depending on AKShare version
-            if "品种代码" in df.columns:
-                raw_codes = df["品种代码"].tolist()
-            elif "code" in df.columns:
-                raw_codes = df["code"].tolist()
-            else:
-                raise ValueError(
-                    f"Unknown column format in AKShare response: {df.columns}"
-                )
+            logger.info(f"EOD returned {len(components)} components")
+            if components:
+                logger.info(f"Sample: {components[:5]}")
 
-            # Convert to Qlib format by adding exchange prefix
-            codes = []
-            for code in raw_codes:
-                code = str(code).strip()
-                if not code:
-                    continue
-                # Add exchange prefix based on code pattern
-                # Shanghai: 60xxxx, 688xxx (科创板)
-                # Shenzhen: 00xxxx, 30xxxx (创业板), 002xxx (中小板)
-                if code.startswith(("60", "688")):
-                    qlib_code = f"SH{code}"
-                elif code.startswith(("00", "30", "002")):
-                    qlib_code = f"SZ{code}"
-                else:
-                    # Unknown pattern, log warning and skip
-                    logger.warning(f"Unknown stock code pattern: {code}, skipping")
-                    continue
-                codes.append(qlib_code)
+            return components
 
-            logger.info(f"AKShare returned {len(codes)} components")
-            logger.info(f"Sample: {codes[:5]}")
-            return codes
-
-        except ImportError:
-            logger.error("AKShare not installed. Install with: pip install akshare")
-            raise
         except Exception as e:
-            logger.error(f"Error fetching from AKShare: {e}")
+            logger.error(f"Error fetching from EOD: {e}")
             raise
 
     def _get_from_file(self, file_path: str) -> List[str]:
@@ -306,34 +237,6 @@ class IndexComponentsService:
         except Exception as e:
             logger.error(f"Error reading components from file: {e}")
             raise
-
-    def _convert_yahoo_to_qlib(self, yahoo_symbol: str) -> str:
-        """
-        Convert Yahoo Finance symbol to Qlib format.
-
-        Args:
-            yahoo_symbol: Symbol in Yahoo format (e.g., '000001.SZ', '600519.SS')
-
-        Returns:
-            Symbol in Qlib format (e.g., 'SZ000001', 'SH600519')
-
-        Educational Notes:
-        - Yahoo uses suffix: .SZ for Shenzhen, .SS for Shanghai
-        - Qlib uses prefix: SZ for Shenzhen, SH for Shanghai
-        - US stocks remain unchanged (e.g., 'AAPL')
-        """
-        if "." in yahoo_symbol:
-            code, exchange = yahoo_symbol.split(".")
-            if exchange == "SZ":
-                return f"SZ{code}"
-            elif exchange == "SS":
-                return f"SH{code}"
-            else:
-                # Unknown exchange, return as-is
-                return yahoo_symbol
-        else:
-            # No exchange suffix (US stocks), return as-is
-            return yahoo_symbol
 
 
 # Singleton instance

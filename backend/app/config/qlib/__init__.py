@@ -103,8 +103,8 @@ class QlibConfig:
 
     @property
     def source(self) -> str:
-        """Get data source: 'yahoo', 'tushare', 'akshare'."""
-        return self.data.get("source", "yahoo")
+        """Get data source: 'tushare' (A-shares), 'eod' (US stocks via EOD Historical Data)."""
+        return self.data.get("source", "tushare")
 
     @property
     def stock_pool(self) -> str:
@@ -248,7 +248,7 @@ class QlibConfig:
         Get a hash string representing current data configuration.
         Used to detect configuration changes.
         """
-        return f"{self.freq}|{self.source}|{self.stock_pool}|{self.region}"
+        return f"{self.freq}|{self.source}|{self.stock_pool}|{self.region}|{self.download_days}"
 
     def to_dict(self) -> Dict[str, Any]:
         """Return all configurations as dictionary."""

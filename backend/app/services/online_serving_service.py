@@ -390,25 +390,7 @@ class OnlineServingService:
         }
 
         try:
-            # Step 1: Auto-initialize if needed
-            if not self.is_initialized:
-                step_start = time.time()
-                self.logger.info("Online Serving not initialized, auto-initializing...")
-                init_result = self._auto_init()
-                step_duration = time.time() - step_start
-                result["steps"].append(
-                    {
-                        "step": "System Initialization",
-                        "success": True,
-                        "duration_seconds": round(step_duration, 2),
-                        "details": {
-                            "description": "Initialize Qlib engine and load trained models",
-                            **init_result,
-                        },
-                    }
-                )
-
-            # Step 2: Update data incrementally
+            # Step 1: Update data first (before Qlib initialization)
             step_start = time.time()
             self.logger.info("Updating data incrementally...")
             data_update_result = self._update_data_incrementally()
@@ -436,6 +418,24 @@ class OnlineServingService:
                 )
                 result["data_update_warning"] = (
                     f"Data update failed: {error_msg}. Using existing data."
+                )
+
+            # Step 2: Auto-initialize if needed (after data is available)
+            if not self.is_initialized:
+                step_start = time.time()
+                self.logger.info("Online Serving not initialized, auto-initializing...")
+                init_result = self._auto_init()
+                step_duration = time.time() - step_start
+                result["steps"].append(
+                    {
+                        "step": "System Initialization",
+                        "success": True,
+                        "duration_seconds": round(step_duration, 2),
+                        "details": {
+                            "description": "Initialize Qlib engine and load trained models",
+                            **init_result,
+                        },
+                    }
                 )
 
             # Step 3: Execute OnlineManager routine
@@ -810,8 +810,20 @@ class OnlineServingService:
 
             result = execute_data_pipeline(request)
 
-            if result.status == "started":
-                self.logger.info(f"Data download started successfully")
+            # Log the actual status for debugging
+            self.logger.info(
+                f"Pipeline result: status='{result.status}', message='{result.message}'"
+            )
+
+            # Check for successful status (completed or started)
+            # Note: "completed" is returned for both successful data collection AND
+            # when no new data is available (weekends/holidays/already up-to-date)
+            is_success = result.status in ("completed", "started")
+
+            if is_success:
+                self.logger.info(
+                    f"Data download completed successfully: {result.message}"
+                )
                 return {
                     "success": True,
                     "message": f"Downloaded {qlib_config.stock_pool} {interval} data",
@@ -824,7 +836,7 @@ class OnlineServingService:
             else:
                 return {
                     "success": False,
-                    "error": f"Download failed: {result.message}",
+                    "error": f"Download failed (status={result.status}): {result.message}",
                 }
 
         except Exception as e:
@@ -866,14 +878,33 @@ class OnlineServingService:
 
             result = execute_data_pipeline(request)
 
-            return {
-                "success": True,
-                "message": "Incremental update completed",
-                "task_id": result.task_id,
-                "stock_pool": stock_pool,
-                "freq": qlib_config.freq,
-                "interval": interval,
-            }
+            # Log the actual status for debugging
+            self.logger.info(
+                f"Pipeline result: status='{result.status}', message='{result.message}'"
+            )
+
+            # Check for successful status (completed or started)
+            # Note: "completed" is returned for both successful data collection AND
+            # when no new data is available (weekends/holidays/already up-to-date)
+            is_success = result.status in ("completed", "started")
+
+            if is_success:
+                self.logger.info(
+                    f"Incremental update completed successfully: {result.message}"
+                )
+                return {
+                    "success": True,
+                    "message": result.message or "Incremental update completed",
+                    "task_id": result.task_id,
+                    "stock_pool": stock_pool,
+                    "freq": qlib_config.freq,
+                    "interval": interval,
+                }
+            else:
+                return {
+                    "success": False,
+                    "error": f"Incremental update failed (status={result.status}): {result.message}",
+                }
 
         except Exception as e:
             self.logger.error(f"Incremental update failed: {e}")

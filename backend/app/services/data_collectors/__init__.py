@@ -8,18 +8,21 @@ Educational Notes:
 - Follows Qlib's standard data collection workflow
 - Provides plugin-based architecture for easy extension
 - Full compatibility with Qlib's data processing pipeline
+
+Supported Data Sources:
+- Tushare: A-share (China) market data
+- EOD Historical Data: US stock market data
 """
 
 # Version information
-__version__ = "1.0.0"
+__version__ = "2.0.0"
 __author__ = "QuantBot Team"
 
 # Core exports - using lazy imports to avoid circular dependencies
 __all__ = [
     "BaseDataCollector",
-    "YahooDataCollector",
-    "DataCollectorService",
-    "CollectorRegistry",
+    "TushareDataCollector",
+    "EODDataCollector",
     "DataCollectionError",
     "CollectorNotFoundError",
 ]
@@ -32,18 +35,14 @@ def __getattr__(name: str):
         from .base import BaseDataCollector
 
         return BaseDataCollector
-    elif name == "YahooDataCollector":
-        from .yahoo_collector import YahooDataCollector
+    elif name == "TushareDataCollector":
+        from .tushare_collector import TushareDataCollector
 
-        return YahooDataCollector
-    elif name == "DataCollectorService":
-        from .service import DataCollectorService
+        return TushareDataCollector
+    elif name == "EODDataCollector":
+        from .eod_collector import EODDataCollector
 
-        return DataCollectorService
-    elif name == "CollectorRegistry":
-        from .registry import CollectorRegistry
-
-        return CollectorRegistry
+        return EODDataCollector
     elif name in ("DataCollectionError", "CollectorNotFoundError"):
         from .exceptions import DataCollectionError, CollectorNotFoundError
 

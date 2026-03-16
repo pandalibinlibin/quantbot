@@ -69,7 +69,7 @@ class BaseDataCollector(BaseCollector):
 
     This class inherits from Qlib's BaseCollector and provides a standardized
     interface for data collection operations. All specific data collectors
-    (Yahoo, Tushare, AKShare, etc.) should inherit from this class.
+    (Tushare, EOD Historical Data, etc.) should inherit from this class.
 
     Educational Notes:
     - Follows Qlib's BaseCollector interface requirements
@@ -151,7 +151,7 @@ class BaseDataCollector(BaseCollector):
         - This is a Qlib BaseCollector required method
         - Should return standardized instrument codes
         - Used by Qlib to determine available data scope
-        - Implementation varies by data source (Yahoo: ticker symbols, Tushare: ts_codes)
+        - Implementation varies by data source (Tushare: ts_codes, EOD: ticker symbols)
         """
         pass
 

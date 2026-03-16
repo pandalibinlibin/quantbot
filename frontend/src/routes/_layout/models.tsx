@@ -252,6 +252,361 @@ function ModelsPage() {
             </p>
           </div>
 
+          {/* Performance Summary Table */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-blue-500" />
+                <CardTitle>Performance Summary</CardTitle>
+                <InfoTooltip content="Comprehensive evaluation of model performance across different categories. Each metric is evaluated against industry benchmarks to provide clear performance assessment." />
+              </div>
+              <CardDescription>
+                Overall model performance evaluation and recommendations
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-3 px-4 font-medium">
+                        Category
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium">
+                        Key Metrics
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium">
+                        Current Value
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium">
+                        Benchmark
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium">
+                        Evaluation
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium">
+                        Recommendation
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {/* Predictive Ability Row */}
+                    <tr className="border-b hover:bg-muted/50">
+                      <td className="py-4 px-4 font-medium text-purple-600 dark:text-purple-400">
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4" />
+                          Predictive Ability
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="space-y-1">
+                          <div>IC Mean: {ic_metrics.ic_mean.toFixed(4)}</div>
+                          <div>
+                            Rank IC Mean: {ic_metrics.rank_ic_mean.toFixed(4)}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="space-y-1">
+                          <div className="font-mono text-sm">
+                            {ic_metrics.ic_mean.toFixed(4)}
+                          </div>
+                          <div className="font-mono text-sm text-muted-foreground">
+                            {ic_metrics.rank_ic_mean.toFixed(4)}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 text-sm text-muted-foreground">
+                        <div className="space-y-1">
+                          <div>Good: &gt; 0.01</div>
+                          <div>Excellent: &gt; 0.02</div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <Badge
+                          variant={
+                            getEvaluationBadge(ic_metrics.ic_mean, {
+                              good: 0.01,
+                              excellent: 0.02,
+                              outstanding: 0.03,
+                            }).variant
+                          }
+                        >
+                          {
+                            getEvaluationBadge(ic_metrics.ic_mean, {
+                              good: 0.01,
+                              excellent: 0.02,
+                              outstanding: 0.03,
+                            }).label
+                          }
+                        </Badge>
+                      </td>
+                      <td className="py-4 px-4 text-sm">
+                        {ic_metrics.ic_mean >= 0.02
+                          ? "Strong predictive power. Consider feature expansion."
+                          : ic_metrics.ic_mean >= 0.01
+                            ? "Good performance. Monitor stability over time."
+                            : "Consider feature engineering and model optimization."}
+                      </td>
+                    </tr>
+
+                    {/* Risk-Adjusted Returns Row */}
+                    <tr className="border-b hover:bg-muted/50">
+                      <td className="py-4 px-4 font-medium text-green-600 dark:text-green-400">
+                        <div className="flex items-center gap-2">
+                          <Activity className="h-4 w-4" />
+                          Risk-Adjusted Returns
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="space-y-1">
+                          <div>
+                            Sharpe Ratio:{" "}
+                            {long_short_metrics.long_short_ann_sharpe.toFixed(
+                              2,
+                            )}
+                          </div>
+                          <div>
+                            Annual Return:{" "}
+                            {formatPercent(
+                              long_short_metrics.long_short_ann_return,
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="space-y-1">
+                          <div className="font-mono text-sm">
+                            {long_short_metrics.long_short_ann_sharpe.toFixed(
+                              2,
+                            )}
+                          </div>
+                          <div className="font-mono text-sm text-muted-foreground">
+                            {formatPercent(
+                              long_short_metrics.long_short_ann_return,
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 text-sm text-muted-foreground">
+                        <div className="space-y-1">
+                          <div>Good: &gt; 1.0</div>
+                          <div>Excellent: &gt; 1.5</div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <Badge
+                          variant={
+                            getEvaluationBadge(
+                              long_short_metrics.long_short_ann_sharpe,
+                              { good: 1.0, excellent: 1.5, outstanding: 2.0 },
+                            ).variant
+                          }
+                        >
+                          {
+                            getEvaluationBadge(
+                              long_short_metrics.long_short_ann_sharpe,
+                              { good: 1.0, excellent: 1.5, outstanding: 2.0 },
+                            ).label
+                          }
+                        </Badge>
+                      </td>
+                      <td className="py-4 px-4 text-sm">
+                        {long_short_metrics.long_short_ann_sharpe >= 1.5
+                          ? "Excellent risk-adjusted performance. Ready for deployment."
+                          : long_short_metrics.long_short_ann_sharpe >= 1.0
+                            ? "Good performance. Consider risk management optimization."
+                            : "Focus on improving return consistency and risk control."}
+                      </td>
+                    </tr>
+
+                    {/* Prediction Stability Row */}
+                    <tr className="border-b hover:bg-muted/50">
+                      <td className="py-4 px-4 font-medium text-orange-600 dark:text-orange-400">
+                        <div className="flex items-center gap-2">
+                          <Target className="h-4 w-4" />
+                          Prediction Stability
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="space-y-1">
+                          <div>ICIR: {ic_metrics.icir.toFixed(3)}</div>
+                          <div>
+                            Rank ICIR: {ic_metrics.rank_icir.toFixed(3)}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="space-y-1">
+                          <div className="font-mono text-sm">
+                            {ic_metrics.icir.toFixed(3)}
+                          </div>
+                          <div className="font-mono text-sm text-muted-foreground">
+                            {ic_metrics.rank_icir.toFixed(3)}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 text-sm text-muted-foreground">
+                        <div className="space-y-1">
+                          <div>Good: &gt; 0.5</div>
+                          <div>Excellent: &gt; 1.0</div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <Badge
+                          variant={
+                            getEvaluationBadge(ic_metrics.icir, {
+                              good: 0.5,
+                              excellent: 1.0,
+                            }).variant
+                          }
+                        >
+                          {
+                            getEvaluationBadge(ic_metrics.icir, {
+                              good: 0.5,
+                              excellent: 1.0,
+                            }).label
+                          }
+                        </Badge>
+                      </td>
+                      <td className="py-4 px-4 text-sm">
+                        {ic_metrics.icir >= 1.0
+                          ? "Very stable predictions. Model is robust."
+                          : ic_metrics.icir >= 0.5
+                            ? "Acceptable stability. Monitor for regime changes."
+                            : "High volatility in predictions. Consider ensemble methods."}
+                      </td>
+                    </tr>
+
+                    {/* Prediction Accuracy Row */}
+                    <tr className="border-b hover:bg-muted/50">
+                      <td className="py-4 px-4 font-medium text-blue-600 dark:text-blue-400">
+                        <div className="flex items-center gap-2">
+                          <Layers className="h-4 w-4" />
+                          Prediction Accuracy
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="space-y-1">
+                          <div>
+                            Long Precision:{" "}
+                            {formatPercent(quality_metrics.long_precision)}
+                          </div>
+                          <div>
+                            Short Precision:{" "}
+                            {formatPercent(quality_metrics.short_precision)}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="space-y-1">
+                          <div className="font-mono text-sm">
+                            {formatPercent(quality_metrics.long_precision)}
+                          </div>
+                          <div className="font-mono text-sm text-muted-foreground">
+                            {formatPercent(quality_metrics.short_precision)}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4 text-sm text-muted-foreground">
+                        <div className="space-y-1">
+                          <div>Good: &gt; 55%</div>
+                          <div>Excellent: &gt; 60%</div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <Badge
+                          variant={
+                            getEvaluationBadge(
+                              Math.min(
+                                quality_metrics.long_precision,
+                                quality_metrics.short_precision,
+                              ),
+                              { good: 0.55, excellent: 0.6 },
+                            ).variant
+                          }
+                        >
+                          {
+                            getEvaluationBadge(
+                              Math.min(
+                                quality_metrics.long_precision,
+                                quality_metrics.short_precision,
+                              ),
+                              { good: 0.55, excellent: 0.6 },
+                            ).label
+                          }
+                        </Badge>
+                      </td>
+                      <td className="py-4 px-4 text-sm">
+                        {Math.min(
+                          quality_metrics.long_precision,
+                          quality_metrics.short_precision,
+                        ) >= 0.6
+                          ? "High directional accuracy. Model captures market trends well."
+                          : Math.min(
+                                quality_metrics.long_precision,
+                                quality_metrics.short_precision,
+                              ) >= 0.55
+                            ? "Good accuracy. Consider improving weaker direction."
+                            : "Focus on feature quality and model calibration."}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Overall Assessment */}
+              <div className="mt-6 p-4 bg-muted/30 rounded-lg">
+                <h4 className="font-medium mb-3 flex items-center gap-2">
+                  <Info className="h-4 w-4" />
+                  Overall Assessment
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="font-medium text-green-600 dark:text-green-400 mb-1">
+                      Strengths:
+                    </p>
+                    <ul className="space-y-1 text-muted-foreground">
+                      {ic_metrics.ic_mean >= 0.015 && (
+                        <li>• Strong predictive capability (IC &gt; 0.015)</li>
+                      )}
+                      {long_short_metrics.long_short_ann_sharpe >= 1.0 && (
+                        <li>• Good risk-adjusted returns (Sharpe &gt; 1.0)</li>
+                      )}
+                      {ic_metrics.rank_ic_mean > ic_metrics.ic_mean && (
+                        <li>• Robust to outliers (Rank IC &gt; IC)</li>
+                      )}
+                      {quality_metrics.long_precision >= 0.55 &&
+                        quality_metrics.short_precision >= 0.55 && (
+                          <li>• Balanced directional accuracy</li>
+                        )}
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="font-medium text-orange-600 dark:text-orange-400 mb-1">
+                      Areas for Improvement:
+                    </p>
+                    <ul className="space-y-1 text-muted-foreground">
+                      {ic_metrics.icir < 0.5 && (
+                        <li>• Prediction stability (ICIR &lt; 0.5)</li>
+                      )}
+                      {long_short_metrics.long_short_ann_sharpe < 1.0 && (
+                        <li>• Risk-adjusted returns (Sharpe &lt; 1.0)</li>
+                      )}
+                      {ic_metrics.ic_mean < 0.01 && (
+                        <li>• Overall predictive power (IC &lt; 0.01)</li>
+                      )}
+                      {Math.min(
+                        quality_metrics.long_precision,
+                        quality_metrics.short_precision,
+                      ) < 0.55 && <li>• Directional accuracy (&lt; 55%)</li>}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Model Type Card */}

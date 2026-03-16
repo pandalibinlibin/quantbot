@@ -2,9 +2,9 @@
 Data source management service for handling data source configuration and automatic cleanup.
 
 This service reads configuration from system_config.yaml and detects changes to:
-- freq (day/1min)
-- source (yahoo/tushare/akshare)
-- stock_pool (csi300/csi500/csi800/all/sp500/nasdaq100)
+- freq (day)
+- source (tushare/eod)
+- stock_pool (csi300/csi500/csi800/csi1000/dividend/sp500/nasdaq100/djia)
 - region (cn/us)
 
 When any of these change, existing data is cleaned up and will be re-downloaded

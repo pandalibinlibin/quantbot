@@ -26,8 +26,6 @@ from app.models import (
 )
 from app.services.data_utils import (
     clear_qlib_data,
-    execute_yahoo_data_collector,
-    execute_yahoo_data_collector_impl,
     convert_csv_to_qlib_format,
     get_data_source_status,
 )
