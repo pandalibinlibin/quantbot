@@ -10637,3 +10637,51 @@ docker compose exec backend python /app/temp_scripts/test_backtest_direct.py
 
 - 前端地址: `http://localhost:3000/backtest`
 - API文档: `http://localhost:8000/docs#/Backtest`
+
+### 📝 最终优化 (2026-03-18 补充)
+
+#### 7. 前端参数显示优化 (Frontend Parameter Display Optimization)
+
+**问题**: 前端仍显示过时的策略参数 `topk` 和 `n_drop`
+**解决方案**:
+
+- 从前端组件中移除硬编码的策略特定参数显示
+- 简化Strategy Parameters部分，只显示通用回测参数
+- 调整界面布局，从4列改为2列显示
+
+**修改文件**:
+
+- `frontend/src/routes/_layout/backtest.tsx` - 移除topk和n_drop参数显示
+
+**最终显示效果**:
+
+```
+Strategy Parameters:
+  account: ¥100,000,000    benchmark: auto
+```
+
+**设计理念**:
+
+- 策略参数由routine配置管理，前端不显示具体策略参数
+- 避免因策略变化导致前端显示不一致的问题
+- 保持界面简洁，只显示必要的回测配置信息
+
+### 🎯 完整功能验证
+
+**最终测试命令**:
+
+```bash
+# 验证策略配置显示
+docker compose exec backend python /app/temp_scripts/test_strategy_config_display.py
+
+# 验证回测功能
+docker compose exec backend python /app/temp_scripts/test_backtest_direct.py
+```
+
+**验证结果**:
+
+- ✅ Strategy Configuration: 只显示EnhancedIndexingStrategy和模块路径
+- ✅ Strategy Parameters: 只显示account和benchmark，无过时参数
+- ✅ Backtest Execution: API正常响应，功能完全可用
+- ✅ Frontend Navigation: Backtest入口正常工作
+- ✅ UI Optimization: 按钮位置正确，图表组件完整

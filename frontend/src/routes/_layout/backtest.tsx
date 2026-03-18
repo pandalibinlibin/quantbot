@@ -290,19 +290,7 @@ function BacktestPage() {
                     <Label className="text-muted-foreground mb-2 block">
                       Strategy Parameters
                     </Label>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      <div className="bg-muted/50 rounded-md p-2 text-sm">
-                        <span className="text-muted-foreground">topk:</span>{" "}
-                        <span className="font-medium">
-                          {strategyConfig?.kwargs?.topk || "N/A"}
-                        </span>
-                      </div>
-                      <div className="bg-muted/50 rounded-md p-2 text-sm">
-                        <span className="text-muted-foreground">n_drop:</span>{" "}
-                        <span className="font-medium">
-                          {strategyConfig?.kwargs?.n_drop || "N/A"}
-                        </span>
-                      </div>
+                    <div className="grid grid-cols-2 gap-3">
                       <div className="bg-muted/50 rounded-md p-2 text-sm">
                         <span className="text-muted-foreground">account:</span>{" "}
                         <span className="font-medium">

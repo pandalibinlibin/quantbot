@@ -151,18 +151,13 @@ def get_backtest_configuration():
         # Get Enhanced Indexing config from system config (same as routine)
         enhanced_indexing_config = qlib_config.enhanced_indexing_config
 
-        # Build unified config that shows actual strategy used
+        # Build unified config that shows actual strategy used (without specific parameters)
         unified_config = {
             "strategy": {
                 "class": "EnhancedIndexingStrategy",
                 "module_path": "app.services.enhanced_indexing_service",
-                "kwargs": {
-                    "max_deviation": enhanced_indexing_config.get(
-                        "max_deviation", 0.02
-                    ),
-                    "min_weight": enhanced_indexing_config.get("min_weight", 0.0),
-                    "benchmark": enhanced_indexing_config.get("benchmark", "auto"),
-                },
+                # Remove kwargs to avoid showing strategy-specific parameters
+                # Strategy parameters are managed in routine configuration
             },
             "backtest": backtest_config.get("backtest", {}),
         }
