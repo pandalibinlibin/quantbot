@@ -12,7 +12,7 @@ strategy:
 # Backtest parameters
 backtest:
   account: 100000000 # Initial account value (100 million)
-  benchmark: SH000300 # Benchmark index for comparison
+  benchmark: 000300.SH # Benchmark index for comparison (CSI 300)
 
   # A-share trading costs
   exchange_kwargs:

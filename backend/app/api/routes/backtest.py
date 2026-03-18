@@ -53,18 +53,8 @@ class BacktestRunRequest(BaseModel):
 
     benchmark: Optional[str] = Field(
         None,
-        description="Benchmark symbol for comparison (default: SH000300)",
-        example="SH000300",
-    )
-    topk: Optional[int] = Field(
-        None,
-        description="Number of stocks to hold (default: 50)",
-        example=50,
-    )
-    n_drop: Optional[int] = Field(
-        None,
-        description="Number of stocks to drop each day (default: 5)",
-        example=5,
+        description="Benchmark symbol for comparison (default: 000300.SH)",
+        example="000300.SH",
     )
     account: Optional[float] = Field(
         None,
@@ -100,8 +90,8 @@ class BacktestRunResponse(BaseModel):
     total_cost: Optional[float] = None
     net_return: Optional[float] = None
     final_account: Optional[float] = None
-    topk: Optional[int] = None
-    n_drop: Optional[int] = None
+    strategy: Optional[str] = None
+    max_deviation: Optional[float] = None
     benchmark: Optional[str] = None
     message: Optional[str] = None
     error: Optional[str] = None
@@ -249,7 +239,7 @@ def run_backtest(request: Optional[BacktestRunRequest] = None):
 
     This endpoint:
     1. Uses signals from Online Serving
-    2. Executes backtest using TopkDropout strategy
+    2. Executes backtest using Enhanced Indexing strategy
     3. Persists the result for later retrieval
 
     Args:
@@ -267,8 +257,6 @@ def run_backtest(request: Optional[BacktestRunRequest] = None):
 
         result = service.execute_backtest(
             benchmark=request.benchmark,
-            topk=request.topk,
-            n_drop=request.n_drop,
             account=request.account,
         )
 
@@ -292,8 +280,8 @@ def run_backtest(request: Optional[BacktestRunRequest] = None):
             "total_cost": result.get("total_cost"),
             "net_return": result.get("net_return"),
             "final_account": result.get("final_account"),
-            "topk": result.get("topk"),
-            "n_drop": result.get("n_drop"),
+            "strategy": result.get("strategy"),
+            "max_deviation": result.get("max_deviation"),
             "benchmark": result.get("benchmark"),
             "message": "Backtest completed successfully",
             # Enhanced metrics

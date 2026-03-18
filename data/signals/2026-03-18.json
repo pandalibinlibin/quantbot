@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-03-18T06:12:22.189516",
-  "trade_date": "2026-03-16",
+  "generated_at": "2026-03-18T10:01:05.819408",
+  "trade_date": "2026-03-18",
   "index": "csi300",
   "index_config": {
     "name": "CSI 300",
     "name_en": "CSI 300",
-    "benchmark_code": "SH000300",
+    "benchmark_code": "000300.SH",
     "etf_code": "SH510300"
   },
   "strategy": {
@@ -21,93 +21,93 @@
       "action": "buy"
     },
     {
-      "symbol": "SZ000617",
+      "symbol": "SH601872",
       "type": "stock",
       "weight": 0.03,
-      "score": 6.679257,
-      "rank": 57,
-      "original_weight": 0.007831,
-      "action": "buy"
-    },
-    {
-      "symbol": "SZ002625",
-      "type": "stock",
-      "weight": 0.03,
-      "score": 1.016068,
-      "rank": 1,
-      "original_weight": 0.007831,
-      "action": "buy"
-    },
-    {
-      "symbol": "SH603501",
-      "type": "stock",
-      "weight": 0.03,
-      "score": 1.016068,
+      "score": 5.331713,
       "rank": 2,
-      "original_weight": 0.007831,
+      "original_weight": 0.008795,
       "action": "buy"
     },
     {
-      "symbol": "SZ300394",
+      "symbol": "SH601808",
       "type": "stock",
       "weight": 0.03,
-      "score": 1.016068,
-      "rank": 3,
-      "original_weight": 0.007831,
+      "score": 1.638707,
+      "rank": 24,
+      "original_weight": 0.008795,
       "action": "buy"
     },
     {
-      "symbol": "SH600674",
+      "symbol": "SH600660",
       "type": "stock",
       "weight": 0.03,
-      "score": 1.016068,
+      "score": 1.615833,
+      "rank": 37,
+      "original_weight": 0.008795,
+      "action": "buy"
+    },
+    {
+      "symbol": "SZ002142",
+      "type": "stock",
+      "weight": 0.03,
+      "score": 1.52619,
+      "rank": 39,
+      "original_weight": 0.008795,
+      "action": "buy"
+    },
+    {
+      "symbol": "SH600515",
+      "type": "stock",
+      "weight": 0.03,
+      "score": 1.482724,
       "rank": 4,
-      "original_weight": 0.007831,
+      "original_weight": 0.008795,
       "action": "buy"
     },
     {
-      "symbol": "SH600372",
+      "symbol": "SZ000002",
       "type": "stock",
       "weight": 0.03,
-      "score": 1.016068,
-      "rank": 5,
-      "original_weight": 0.007831,
+      "score": 1.482724,
+      "rank": 29,
+      "original_weight": 0.008795,
       "action": "buy"
     },
     {
-      "symbol": "SH600188",
+      "symbol": "SZ002709",
       "type": "stock",
       "weight": 0.03,
-      "score": 1.016068,
-      "rank": 6,
-      "original_weight": 0.007831,
+      "score": 1.45971,
+      "rank": 36,
+      "original_weight": 0.008795,
       "action": "buy"
     },
     {
-      "symbol": "SZ002736",
+      "symbol": "SZ002466",
       "type": "stock",
       "weight": 0.03,
-      "score": 1.016068,
-      "rank": 7,
-      "original_weight": 0.007831,
+      "score": 1.452798,
+      "rank": 11,
+      "original_weight": 0.008795,
       "action": "buy"
     },
     {
-      "symbol": "SH600958",
+      "symbol": "SH603799",
       "type": "stock",
       "weight": 0.03,
-      "score": 1.016068,
-      "rank": 8,
-      "original_weight": 0.007831,
+      "score": 1.452339,
+      "rank": 28,
+      "original_weight": 0.008795,
       "action": "buy"
     },
     {
-      "symbol": "SH600522",
+      "symbol": "SH600018",
       "type": "stock",
       "weight": 0.03,
-      "score": 1.016068,
-      "rank": 9,
-      "original_weight": 0.007831,
+      "score": 1.452022,
+      "rank": 23,
+      "original_weight": 0.008795,
       "action": "buy"
     }
   ],
@@ -119,14 +119,14 @@
     "portfolio_summary": {
       "benchmark": "csi300",
       "benchmark_name": "沪深300",
-      "total_stocks": 300,
-      "total_weight": 0.999983,
-      "overweight_count": 120,
-      "underweight_count": 180,
-      "neutral_count": 0,
+      "total_stocks": 301,
+      "total_weight": 1.000007,
+      "overweight_count": 121,
+      "underweight_count": 175,
+      "neutral_count": 5,
       "max_deviation": 0.02,
-      "generated_at": "2026-03-18T06:12:22.131940",
-      "target_date": "2026-03-16"
+      "generated_at": "2026-03-18T10:01:05.810732",
+      "target_date": "2026-03-18"
     }
   }
 }

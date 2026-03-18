@@ -877,7 +877,7 @@ class QlibWorkflowService:
         benchmark = (
             benchmark
             if benchmark is not None
-            else backtest_config.get("benchmark", "SH000300")
+            else backtest_config.get("benchmark", "000300.SH")
         )
         exchange_kwargs = backtest_config.get(
             "exchange_kwargs",

@@ -76,7 +76,7 @@ class QlibInitService:
                 logger.info(f"Data directory: {self.settings.QLIB_DATA_DIR}")
                 logger.info(f"MLflow directory: {self.settings.QLIB_MLRUNS_DIR}")
 
-                # Initialize Qlib with day-level provider_uri
+                # Initialize Qlib with day-level provider_uri and enable caching
                 qlib.init(
                     provider_uri=provider_uri,
                     region=region,
@@ -90,8 +90,23 @@ class QlibInitService:
                     },
                     redis_host=self.settings.QLIB_REDIS_HOST,
                     redis_port=self.settings.QLIB_REDIS_PORT,
-                    expression_cache=None,
-                    dataset_cache=None,
+                    # Enable Qlib's built-in caching for massive performance improvement
+                    expression_cache=(
+                        {
+                            "class": "DiskExpressionCache",
+                            "module_path": "qlib.data.cache",
+                        }
+                        if self.settings.QLIB_EXPRESSION_CACHE
+                        else None
+                    ),
+                    dataset_cache=(
+                        {
+                            "class": "DiskDatasetCache",
+                            "module_path": "qlib.data.cache",
+                        }
+                        if self.settings.QLIB_DATASET_CACHE
+                        else None
+                    ),
                     logging_level=self.settings.QLIB_LOGGING_LEVEL,
                 )
 

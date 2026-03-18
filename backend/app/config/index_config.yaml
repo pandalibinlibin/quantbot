@@ -12,7 +12,7 @@ indexes:
   csi300:
     name: CSI 300
     name_en: CSI 300
-    benchmark_code: SH000300
+    benchmark_code: 000300.SH
     etf_code: SH510300
     components_source: tushare
     # Tushare index code format: 000300.SH

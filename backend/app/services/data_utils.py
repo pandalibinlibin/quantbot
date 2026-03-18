@@ -123,7 +123,7 @@ def _remove_benchmarks_from_instruments(qlib_path: Path) -> None:
     """
     Remove benchmark indices from instruments/all.txt file.
 
-    Benchmark indices (e.g., SH000300, SH000905, SPY, QQQ) should only be used
+    Benchmark indices (e.g., 000300.SH, 000905.SH, SPY, QQQ) should only be used
     for performance comparison, not for trading. This function removes them
     from the instruments list so they won't participate in training or trading.
 

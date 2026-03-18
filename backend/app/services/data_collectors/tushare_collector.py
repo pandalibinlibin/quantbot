@@ -178,14 +178,16 @@ class TushareDataCollector(BaseDataCollector):
     def get_instrument_list(self) -> List[str]:
         """
         Get list of constituent stocks for the specified index.
+        Also automatically includes the index itself for benchmark comparison.
 
         Returns
         -------
         List[str]
-            List of Tushare stock codes (e.g., ['000001.SZ', '600519.SH'])
+            List of Tushare stock codes including index (e.g., ['000001.SZ', '600519.SH', '000300.SH'])
 
         Educational Notes:
         - Uses Tushare index_weight API to get current index constituents
+        - Automatically adds the index code for benchmark data
         - Returns codes in Tushare format for data collection
         - Will be normalized to Qlib format later
         """
@@ -231,8 +233,14 @@ class TushareDataCollector(BaseDataCollector):
                     f"Unexpected column format: {df.columns.tolist()}"
                 )
 
-            logger.info(f"Retrieved {len(symbols)} constituent stocks for {self.index}")
-            logger.info(f"Sample: {symbols[:5]}")
+            # Add the index itself for benchmark comparison
+            symbols.append(index_code)
+
+            logger.info(
+                f"Retrieved {len(symbols)-1} constituent stocks for {self.index}"
+            )
+            logger.info(f"Added index {index_code} for benchmark data")
+            logger.info(f"Sample stocks: {symbols[:5]}")
 
             return symbols
 
@@ -276,12 +284,12 @@ class TushareDataCollector(BaseDataCollector):
         end_datetime: str = None,
     ) -> pd.DataFrame:
         """
-        Fetch daily OHLCV data for a single stock.
+        Fetch daily OHLCV data for a single stock or index.
 
         Parameters
         ----------
         symbol : str
-            Tushare format symbol (e.g., '000001.SZ')
+            Tushare format symbol (e.g., '000001.SZ' for stock, '000300.SH' for index)
         interval : str
             Data interval (only "1d" supported)
         start_datetime : str
@@ -296,7 +304,8 @@ class TushareDataCollector(BaseDataCollector):
 
         Educational Notes:
         - Uses Tushare daily API for stock data
-        - Automatically handles forward adjustment (qfq)
+        - Uses Tushare index_daily API for index data
+        - Automatically handles forward adjustment for stocks (qfq)
         - Returns data in standard OHLCV format for Qlib
         """
         try:
@@ -316,45 +325,74 @@ class TushareDataCollector(BaseDataCollector):
 
             logger.debug(f"Fetching data for {symbol}: {start_date} to {end_date}")
 
-            # Fetch daily data with forward adjustment
-            df = pro.daily(
-                ts_code=symbol,
-                start_date=start_date,
-                end_date=end_date,
-            )
+            # Check if this is an index (based on known index codes)
+            is_index = symbol in INDEX_CODE_MAP.values()
 
-            if df is None or df.empty:
-                logger.warning(f"No data returned for {symbol}")
-                return pd.DataFrame()
-
-            # Get adjustment factors for forward adjustment
-            adj_df = pro.adj_factor(
-                ts_code=symbol,
-                start_date=start_date,
-                end_date=end_date,
-            )
-
-            if adj_df is not None and not adj_df.empty:
-                # Merge adjustment factors
-                df = df.merge(
-                    adj_df[["trade_date", "adj_factor"]], on="trade_date", how="left"
+            if is_index:
+                # Fetch index data using index_daily API
+                logger.debug(f"Fetching index data for {symbol}")
+                df = pro.index_daily(
+                    ts_code=symbol,
+                    start_date=start_date,
+                    end_date=end_date,
                 )
 
-                # Apply forward adjustment to OHLC prices
-                if "adj_factor" in df.columns:
-                    latest_factor = df["adj_factor"].iloc[0]  # Most recent factor
-                    df["adj_ratio"] = df["adj_factor"] / latest_factor
+                if df is None or df.empty:
+                    logger.warning(f"No index data returned for {symbol}")
+                    return pd.DataFrame()
 
-                    for col in ["open", "high", "low", "close"]:
-                        df[col] = df[col] * df["adj_ratio"]
+                # Index data doesn't need adjustment factors
+                # Rename columns to standard format
+                df = df.rename(
+                    columns={
+                        "trade_date": "date",
+                        "vol": "volume",
+                    }
+                )
 
-            # Rename columns to standard format
-            df = df.rename(
-                columns={
-                    "trade_date": "date",
-                    "vol": "volume",
-                }
-            )
+            else:
+                # Fetch stock data using daily API
+                logger.debug(f"Fetching stock data for {symbol}")
+                df = pro.daily(
+                    ts_code=symbol,
+                    start_date=start_date,
+                    end_date=end_date,
+                )
+
+                if df is None or df.empty:
+                    logger.warning(f"No stock data returned for {symbol}")
+                    return pd.DataFrame()
+
+                # Get adjustment factors for forward adjustment (stocks only)
+                adj_df = pro.adj_factor(
+                    ts_code=symbol,
+                    start_date=start_date,
+                    end_date=end_date,
+                )
+
+                if adj_df is not None and not adj_df.empty:
+                    # Merge adjustment factors
+                    df = df.merge(
+                        adj_df[["trade_date", "adj_factor"]],
+                        on="trade_date",
+                        how="left",
+                    )
+
+                    # Apply forward adjustment to OHLC prices
+                    if "adj_factor" in df.columns:
+                        latest_factor = df["adj_factor"].iloc[0]  # Most recent factor
+                        df["adj_ratio"] = df["adj_factor"] / latest_factor
+
+                        for col in ["open", "high", "low", "close"]:
+                            df[col] = df[col] * df["adj_ratio"]
+
+                # Rename columns to standard format
+                df = df.rename(
+                    columns={
+                        "trade_date": "date",
+                        "vol": "volume",
+                    }
+                )
 
             # Select and order columns
             columns = ["date", "open", "high", "low", "close", "volume"]
@@ -367,10 +405,15 @@ class TushareDataCollector(BaseDataCollector):
 
             # Convert volume to int64
             if "volume" in df.columns:
-                # Tushare volume is in lots (手), convert to shares
-                df["volume"] = (df["volume"] * 100).astype(np.int64)
+                if is_index:
+                    # Index volume is already in correct units
+                    df["volume"] = df["volume"].astype(np.int64)
+                else:
+                    # Stock volume is in lots (手), convert to shares
+                    df["volume"] = (df["volume"] * 100).astype(np.int64)
 
-            logger.debug(f"Retrieved {len(df)} records for {symbol}")
+            data_type = "index" if is_index else "stock"
+            logger.debug(f"Retrieved {len(df)} records for {symbol} ({data_type})")
             return df
 
         except Exception as e:
