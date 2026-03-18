@@ -139,16 +139,37 @@ def _load_backtest_result() -> Optional[Dict[str, Any]]:
 @router.get("/config", response_model=BacktestConfigResponse)
 def get_backtest_configuration():
     """
-    Get backtest configuration from backtest_config.yaml.
+    Get backtest configuration that uses routine's Enhanced Indexing Strategy.
 
-    Returns the strategy configuration, backtest parameters,
-    and exchange settings used for backtesting.
+    Returns the strategy configuration from system_config.yaml enhanced_indexing section
+    and backtest parameters from backtest_config.yaml for consistency.
     """
     try:
-        config = qlib_config.backtest_config
+        # Get base backtest config
+        backtest_config = qlib_config.backtest_config
+
+        # Get Enhanced Indexing config from system config (same as routine)
+        enhanced_indexing_config = qlib_config.enhanced_indexing_config
+
+        # Build unified config that shows actual strategy used
+        unified_config = {
+            "strategy": {
+                "class": "EnhancedIndexingStrategy",
+                "module_path": "app.services.enhanced_indexing_service",
+                "kwargs": {
+                    "max_deviation": enhanced_indexing_config.get(
+                        "max_deviation", 0.02
+                    ),
+                    "min_weight": enhanced_indexing_config.get("min_weight", 0.0),
+                    "benchmark": enhanced_indexing_config.get("benchmark", "auto"),
+                },
+            },
+            "backtest": backtest_config.get("backtest", {}),
+        }
+
         return BacktestConfigResponse(
             status="success",
-            config=config,
+            config=unified_config,
         )
     except Exception as e:
         logger.error(f"Failed to get backtest config: {e}")

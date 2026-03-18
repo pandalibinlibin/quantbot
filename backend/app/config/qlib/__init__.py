@@ -243,6 +243,11 @@ class QlibConfig:
         """Get data quality check configuration."""
         return self._config.get("data_quality", {})
 
+    @property
+    def enhanced_indexing_config(self) -> Dict[str, Any]:
+        """Get enhanced indexing configuration."""
+        return self._config.get("enhanced_indexing", {})
+
     def get_data_config_hash(self) -> str:
         """
         Get a hash string representing current data configuration.

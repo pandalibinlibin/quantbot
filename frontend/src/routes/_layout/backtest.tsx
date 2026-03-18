@@ -20,6 +20,8 @@ import {
   Area,
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -115,6 +117,9 @@ async function executeBacktest() {
       Authorization: `Bearer ${localStorage.getItem("access_token")}`,
       "Content-Type": "application/json",
     },
+    body: JSON.stringify({
+      benchmark: "SH000300", // Use the correct benchmark format that works
+    }),
   });
   if (!response.ok) {
     throw new Error("Failed to execute backtest");
@@ -204,11 +209,31 @@ function BacktestPage() {
       <div className="h-full overflow-y-auto p-6 md:p-8">
         <div className="space-y-6">
           {/* Page Header */}
-          <div>
-            <h1 className="text-2xl font-bold">Backtest</h1>
-            <p className="text-muted-foreground">
-              Evaluate strategy performance using historical data
-            </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">Backtest</h1>
+              <p className="text-muted-foreground">
+                Evaluate strategy performance using historical data
+              </p>
+            </div>
+            <Button
+              size="lg"
+              onClick={() => runBacktestMutation.mutate()}
+              disabled={runBacktestMutation.isPending || !status?.ready}
+              className="px-8"
+            >
+              {runBacktestMutation.isPending ? (
+                <>
+                  <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                  Running...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-5 w-5" />
+                  Run Backtest
+                </>
+              )}
+            </Button>
           </div>
 
           {/* Strategy Configuration Card */}
@@ -916,30 +941,192 @@ function BacktestPage() {
                     </CardContent>
                   </Card>
                 )}
+
+              {/* Enhanced Charts - Cumulative Returns */}
+              {backtestResult?.status === "success" &&
+                backtestResult.charts?.cumulative_returns && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5 text-green-500" />
+                        <CardTitle className="text-lg">
+                          Cumulative Returns
+                        </CardTitle>
+                      </div>
+                      <CardDescription>
+                        Strategy performance over time
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart
+                            data={backtestResult.charts.cumulative_returns}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis
+                              dataKey="date"
+                              tick={{ fontSize: 11 }}
+                              tickFormatter={(value) => {
+                                const date = new Date(value);
+                                return `${date.getMonth() + 1}/${date.getDate()}`;
+                              }}
+                            />
+                            <YAxis
+                              tick={{ fontSize: 11 }}
+                              tickFormatter={(value: number) =>
+                                `${(value * 100).toFixed(1)}%`
+                              }
+                            />
+                            <RechartsTooltip
+                              formatter={(value: number) => [
+                                `${(value * 100).toFixed(2)}%`,
+                                "Cumulative Return",
+                              ]}
+                              labelFormatter={(label) => `Date: ${label}`}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="cumulative_return"
+                              stroke="#10b981"
+                              strokeWidth={2}
+                              dot={false}
+                              name="Strategy"
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+              {/* Enhanced Charts - Daily Returns */}
+              {backtestResult?.status === "success" &&
+                backtestResult.charts?.daily_returns && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <Activity className="h-5 w-5 text-blue-500" />
+                        <CardTitle className="text-lg">Daily Returns</CardTitle>
+                      </div>
+                      <CardDescription>
+                        Daily return volatility and patterns
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={backtestResult.charts.daily_returns}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis
+                              dataKey="date"
+                              tick={{ fontSize: 11 }}
+                              tickFormatter={(value) => {
+                                const date = new Date(value);
+                                return `${date.getMonth() + 1}/${date.getDate()}`;
+                              }}
+                            />
+                            <YAxis
+                              tick={{ fontSize: 11 }}
+                              tickFormatter={(value: number) =>
+                                `${(value * 100).toFixed(1)}%`
+                              }
+                            />
+                            <RechartsTooltip
+                              formatter={(value: number) => [
+                                `${(value * 100).toFixed(2)}%`,
+                                "Daily Return",
+                              ]}
+                              labelFormatter={(label) => `Date: ${label}`}
+                            />
+                            <ReferenceLine
+                              y={0}
+                              stroke="#666"
+                              strokeDasharray="2 2"
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="return"
+                              stroke="#3b82f6"
+                              strokeWidth={1}
+                              dot={false}
+                              name="Daily Return"
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+              {/* Enhanced Charts - Drawdown Analysis */}
+              {backtestResult?.status === "success" &&
+                backtestResult.charts?.max_drawdown_info && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <TrendingDown className="h-5 w-5 text-red-500" />
+                        <CardTitle className="text-lg">
+                          Drawdown Analysis
+                        </CardTitle>
+                      </div>
+                      <CardDescription>
+                        Maximum drawdown:{" "}
+                        {(
+                          backtestResult.charts.max_drawdown_info.max_drawdown *
+                          100
+                        ).toFixed(2)}
+                        %
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-3">
+                          <div className="text-sm text-muted-foreground">
+                            Peak Date
+                          </div>
+                          <div className="font-mono text-sm">
+                            {backtestResult.charts.max_drawdown_info.peak_date}
+                          </div>
+                        </div>
+                        <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-3">
+                          <div className="text-sm text-muted-foreground">
+                            Trough Date
+                          </div>
+                          <div className="font-mono text-sm">
+                            {
+                              backtestResult.charts.max_drawdown_info
+                                .max_drawdown_date
+                            }
+                          </div>
+                        </div>
+                        <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-3">
+                          <div className="text-sm text-muted-foreground">
+                            Drawdown Days
+                          </div>
+                          <div className="font-mono text-sm">
+                            {
+                              backtestResult.charts.max_drawdown_info
+                                .drawdown_days
+                            }{" "}
+                            days
+                          </div>
+                        </div>
+                        <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-3">
+                          <div className="text-sm text-muted-foreground">
+                            Recovery Date
+                          </div>
+                          <div className="font-mono text-sm">
+                            {backtestResult.charts.max_drawdown_info
+                              .recovery_date || "Not recovered"}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
             </>
           )}
-
-          {/* Run Backtest Button */}
-          <div className="flex justify-center pt-4">
-            <Button
-              size="lg"
-              onClick={() => runBacktestMutation.mutate()}
-              disabled={runBacktestMutation.isPending || !status?.ready}
-              className="px-8"
-            >
-              {runBacktestMutation.isPending ? (
-                <>
-                  <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-                  Running...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="mr-2 h-5 w-5" />
-                  Run Backtest
-                </>
-              )}
-            </Button>
-          </div>
         </div>
       </div>
     </div>

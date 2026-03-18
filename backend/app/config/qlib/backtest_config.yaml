@@ -1,18 +1,18 @@
 # Backtest Configuration
-# freq is automatically derived from actual data - no hardcoding needed.
+# This configuration uses the same Enhanced Indexing Strategy as the routine
+# to maintain consistency between routine execution and backtesting.
 
-# Strategy configuration
+# Strategy configuration (uses routine's Enhanced Indexing Strategy)
 strategy:
-  class: TopkDropoutStrategy
-  module_path: qlib.contrib.strategy
-  kwargs:
-    topk: 50 # Number of stocks to hold
-    n_drop: 5 # Number of stocks to drop each day
+  class: EnhancedIndexingStrategy
+  module_path: app.services.enhanced_indexing_service
+  # Strategy parameters are loaded from system_config.yaml enhanced_indexing section
+  # This ensures consistency with routine execution
 
 # Backtest parameters
 backtest:
   account: 100000000 # Initial account value (100 million)
-  benchmark: 000300.SH # Benchmark index for comparison (CSI 300)
+  benchmark: auto # Use auto-detection like routine (will resolve to SH000300 for CSI300)
 
   # A-share trading costs
   exchange_kwargs:

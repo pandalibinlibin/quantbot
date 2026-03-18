@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-18T10:01:05.811241",
+  "generated_at": "2026-03-18T11:50:11.008850",
   "config": {
     "max_deviation": 0.02,
     "min_weight": 0,
@@ -8,466 +8,6 @@
   "portfolio": [
     {
       "rank": 1,
-      "instrument": "SH601377",
-      "benchmark_weight": 0.003322,
-      "score": 1.017459,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 2,
-      "instrument": "SH601872",
-      "benchmark_weight": 0.003322,
-      "score": 5.331713,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 3,
-      "instrument": "SZ002459",
-      "benchmark_weight": 0.003322,
-      "score": 1.390681,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 4,
-      "instrument": "SH600515",
-      "benchmark_weight": 0.003322,
-      "score": 1.482724,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 5,
-      "instrument": "SH600029",
-      "benchmark_weight": 0.003322,
-      "score": 1.062959,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 6,
-      "instrument": "SH600362",
-      "benchmark_weight": 0.003322,
-      "score": 1.302717,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 7,
-      "instrument": "SH688303",
-      "benchmark_weight": 0.003322,
-      "score": 1.358658,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 8,
-      "instrument": "SZ000807",
-      "benchmark_weight": 0.003322,
-      "score": 1.364842,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 9,
-      "instrument": "SH601169",
-      "benchmark_weight": 0.003322,
-      "score": 1.006973,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 10,
-      "instrument": "SZ000166",
-      "benchmark_weight": 0.003322,
-      "score": 1.3942,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 11,
-      "instrument": "SZ002466",
-      "benchmark_weight": 0.003322,
-      "score": 1.452798,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 12,
-      "instrument": "SH600886",
-      "benchmark_weight": 0.003322,
-      "score": 1.18719,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 13,
-      "instrument": "SZ002594",
-      "benchmark_weight": 0.003322,
-      "score": 1.130216,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 14,
-      "instrument": "SH601077",
-      "benchmark_weight": 0.003322,
-      "score": 1.0702,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 15,
-      "instrument": "SZ000792",
-      "benchmark_weight": 0.003322,
-      "score": 1.102997,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 16,
-      "instrument": "SZ300122",
-      "benchmark_weight": 0.003322,
-      "score": 1.212261,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 17,
-      "instrument": "SH600415",
-      "benchmark_weight": 0.003322,
-      "score": 1.034201,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 18,
-      "instrument": "SH601211",
-      "benchmark_weight": 0.003322,
-      "score": 1.052954,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 19,
-      "instrument": "SZ000983",
-      "benchmark_weight": 0.003322,
-      "score": 1.271934,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 20,
-      "instrument": "SZ002736",
-      "benchmark_weight": 0.003322,
-      "score": 1.390681,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 21,
-      "instrument": "SH600489",
-      "benchmark_weight": 0.003322,
-      "score": 1.254821,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 22,
-      "instrument": "SZ300014",
-      "benchmark_weight": 0.003322,
-      "score": 1.13975,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 23,
-      "instrument": "SH600018",
-      "benchmark_weight": 0.003322,
-      "score": 1.452022,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 24,
-      "instrument": "SH601808",
-      "benchmark_weight": 0.003322,
-      "score": 1.638707,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 25,
-      "instrument": "SH601088",
-      "benchmark_weight": 0.003322,
-      "score": 1.302717,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 26,
-      "instrument": "SH601633",
-      "benchmark_weight": 0.003322,
-      "score": 1.222934,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 27,
-      "instrument": "SH601018",
-      "benchmark_weight": 0.003322,
-      "score": 1.366173,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 28,
-      "instrument": "SH603799",
-      "benchmark_weight": 0.003322,
-      "score": 1.452339,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 29,
-      "instrument": "SZ000002",
-      "benchmark_weight": 0.003322,
-      "score": 1.482724,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 30,
-      "instrument": "SH600690",
-      "benchmark_weight": 0.003322,
-      "score": 1.151183,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 31,
-      "instrument": "SH600547",
-      "benchmark_weight": 0.003322,
-      "score": 1.080942,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 32,
-      "instrument": "SH600938",
-      "benchmark_weight": 0.003322,
-      "score": 1.162273,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 33,
-      "instrument": "SZ002074",
-      "benchmark_weight": 0.003322,
-      "score": 1.182611,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 34,
-      "instrument": "SH600039",
-      "benchmark_weight": 0.003322,
-      "score": 1.085145,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 35,
-      "instrument": "SH601838",
-      "benchmark_weight": 0.003322,
-      "score": 1.212539,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 36,
-      "instrument": "SZ002709",
-      "benchmark_weight": 0.003322,
-      "score": 1.45971,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 37,
-      "instrument": "SH600660",
-      "benchmark_weight": 0.003322,
-      "score": 1.615833,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 38,
-      "instrument": "SZ300498",
-      "benchmark_weight": 0.003322,
-      "score": 1.044525,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 39,
-      "instrument": "SZ002142",
-      "benchmark_weight": 0.003322,
-      "score": 1.52619,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 40,
-      "instrument": "SZ001391",
-      "benchmark_weight": 0.003322,
-      "score": 1.219981,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 41,
-      "instrument": "SH600741",
-      "benchmark_weight": 0.003322,
-      "score": 1.185367,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 42,
-      "instrument": "SH600803",
-      "benchmark_weight": 0.003322,
-      "score": 1.257129,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 43,
-      "instrument": "SZ300124",
-      "benchmark_weight": 0.003322,
-      "score": 1.13975,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 44,
-      "instrument": "SZ002384",
-      "benchmark_weight": 0.003322,
-      "score": 1.149538,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 45,
-      "instrument": "SH600027",
-      "benchmark_weight": 0.003322,
-      "score": 1.268934,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 46,
-      "instrument": "SH601728",
-      "benchmark_weight": 0.003322,
-      "score": 1.028548,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 47,
       "instrument": "SZ002714",
       "benchmark_weight": 0.003322,
       "score": 1.262305,
@@ -477,47 +17,7 @@
       "action": "超配"
     },
     {
-      "rank": 48,
-      "instrument": "SZ300750",
-      "benchmark_weight": 0.003322,
-      "score": 1.095539,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 49,
-      "instrument": "SH600048",
-      "benchmark_weight": 0.003322,
-      "score": 1.10938,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 50,
-      "instrument": "SZ001979",
-      "benchmark_weight": 0.003322,
-      "score": 1.309365,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 51,
-      "instrument": "SZ002475",
-      "benchmark_weight": 0.003322,
-      "score": 1.275429,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 52,
+      "rank": 2,
       "instrument": "SH601816",
       "benchmark_weight": 0.003322,
       "score": 1.368458,
@@ -527,17 +27,7 @@
       "action": "超配"
     },
     {
-      "rank": 53,
-      "instrument": "SH600887",
-      "benchmark_weight": 0.003322,
-      "score": 1.147035,
-      "target_weight": 0.008795,
-      "deviation": 0.005473,
-      "deviation_pct": "+0.55%",
-      "action": "超配"
-    },
-    {
-      "rank": 54,
+      "rank": 3,
       "instrument": "SH600438",
       "benchmark_weight": 0.003322,
       "score": 1.052954,
@@ -547,7 +37,147 @@
       "action": "超配"
     },
     {
-      "rank": 55,
+      "rank": 4,
+      "instrument": "SH600938",
+      "benchmark_weight": 0.003322,
+      "score": 1.162273,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 5,
+      "instrument": "SH603799",
+      "benchmark_weight": 0.003322,
+      "score": 1.452339,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 6,
+      "instrument": "SZ002142",
+      "benchmark_weight": 0.003322,
+      "score": 1.52619,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 7,
+      "instrument": "SH600690",
+      "benchmark_weight": 0.003322,
+      "score": 1.151183,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 8,
+      "instrument": "SZ000983",
+      "benchmark_weight": 0.003322,
+      "score": 1.271934,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 9,
+      "instrument": "SZ002384",
+      "benchmark_weight": 0.003322,
+      "score": 1.149538,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 10,
+      "instrument": "SH600803",
+      "benchmark_weight": 0.003322,
+      "score": 1.257129,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 11,
+      "instrument": "SH601377",
+      "benchmark_weight": 0.003322,
+      "score": 1.017459,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 12,
+      "instrument": "SH600660",
+      "benchmark_weight": 0.003322,
+      "score": 1.615833,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 13,
+      "instrument": "SZ002736",
+      "benchmark_weight": 0.003322,
+      "score": 1.390681,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 14,
+      "instrument": "SH600415",
+      "benchmark_weight": 0.003322,
+      "score": 1.034201,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 15,
+      "instrument": "SZ300124",
+      "benchmark_weight": 0.003322,
+      "score": 1.13975,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 16,
+      "instrument": "SH601169",
+      "benchmark_weight": 0.003322,
+      "score": 1.006973,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 17,
+      "instrument": "SH601018",
+      "benchmark_weight": 0.003322,
+      "score": 1.366173,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 18,
       "instrument": "SH600585",
       "benchmark_weight": 0.003322,
       "score": 1.151183,
@@ -557,7 +187,317 @@
       "action": "超配"
     },
     {
-      "rank": 56,
+      "rank": 19,
+      "instrument": "SH600029",
+      "benchmark_weight": 0.003322,
+      "score": 1.062959,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 20,
+      "instrument": "SH601838",
+      "benchmark_weight": 0.003322,
+      "score": 1.212539,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 21,
+      "instrument": "SH600886",
+      "benchmark_weight": 0.003322,
+      "score": 1.18719,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 22,
+      "instrument": "SH601088",
+      "benchmark_weight": 0.003322,
+      "score": 1.302717,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 23,
+      "instrument": "SH601633",
+      "benchmark_weight": 0.003322,
+      "score": 1.222934,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 24,
+      "instrument": "SH601728",
+      "benchmark_weight": 0.003322,
+      "score": 1.028548,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 25,
+      "instrument": "SH600515",
+      "benchmark_weight": 0.003322,
+      "score": 1.482724,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 26,
+      "instrument": "SH601211",
+      "benchmark_weight": 0.003322,
+      "score": 1.052954,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 27,
+      "instrument": "SZ002475",
+      "benchmark_weight": 0.003322,
+      "score": 1.275429,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 28,
+      "instrument": "SH600039",
+      "benchmark_weight": 0.003322,
+      "score": 1.085145,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 29,
+      "instrument": "SZ000792",
+      "benchmark_weight": 0.003322,
+      "score": 1.102997,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 30,
+      "instrument": "SZ000807",
+      "benchmark_weight": 0.003322,
+      "score": 1.364842,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 31,
+      "instrument": "SH600027",
+      "benchmark_weight": 0.003322,
+      "score": 1.268934,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 32,
+      "instrument": "SZ002709",
+      "benchmark_weight": 0.003322,
+      "score": 1.45971,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 33,
+      "instrument": "SH600362",
+      "benchmark_weight": 0.003322,
+      "score": 1.302717,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 34,
+      "instrument": "SZ001979",
+      "benchmark_weight": 0.003322,
+      "score": 1.309365,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 35,
+      "instrument": "SH688303",
+      "benchmark_weight": 0.003322,
+      "score": 1.358658,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 36,
+      "instrument": "SZ300750",
+      "benchmark_weight": 0.003322,
+      "score": 1.095539,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 37,
+      "instrument": "SZ002460",
+      "benchmark_weight": 0.003322,
+      "score": 1.384534,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 38,
+      "instrument": "SH600887",
+      "benchmark_weight": 0.003322,
+      "score": 1.147035,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 39,
+      "instrument": "SZ300014",
+      "benchmark_weight": 0.003322,
+      "score": 1.13975,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 40,
+      "instrument": "SZ300122",
+      "benchmark_weight": 0.003322,
+      "score": 1.212261,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 41,
+      "instrument": "SH600489",
+      "benchmark_weight": 0.003322,
+      "score": 1.254821,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 42,
+      "instrument": "SZ001391",
+      "benchmark_weight": 0.003322,
+      "score": 1.219981,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 43,
+      "instrument": "SH600048",
+      "benchmark_weight": 0.003322,
+      "score": 1.10938,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 44,
+      "instrument": "SH601872",
+      "benchmark_weight": 0.003322,
+      "score": 5.331713,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 45,
+      "instrument": "SZ002459",
+      "benchmark_weight": 0.003322,
+      "score": 1.390681,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 46,
+      "instrument": "SZ002074",
+      "benchmark_weight": 0.003322,
+      "score": 1.182611,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 47,
+      "instrument": "SH600547",
+      "benchmark_weight": 0.003322,
+      "score": 1.080942,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 48,
+      "instrument": "SZ000002",
+      "benchmark_weight": 0.003322,
+      "score": 1.482724,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 49,
+      "instrument": "SH601808",
+      "benchmark_weight": 0.003322,
+      "score": 1.638707,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 50,
       "instrument": "SH600900",
       "benchmark_weight": 0.003322,
       "score": 1.113624,
@@ -567,10 +507,70 @@
       "action": "超配"
     },
     {
-      "rank": 57,
-      "instrument": "SZ002460",
+      "rank": 51,
+      "instrument": "SZ002466",
       "benchmark_weight": 0.003322,
-      "score": 1.384534,
+      "score": 1.452798,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 52,
+      "instrument": "SZ300498",
+      "benchmark_weight": 0.003322,
+      "score": 1.044525,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 53,
+      "instrument": "SH600741",
+      "benchmark_weight": 0.003322,
+      "score": 1.185367,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 54,
+      "instrument": "SH600018",
+      "benchmark_weight": 0.003322,
+      "score": 1.452022,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 55,
+      "instrument": "SH601077",
+      "benchmark_weight": 0.003322,
+      "score": 1.0702,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 56,
+      "instrument": "SZ000166",
+      "benchmark_weight": 0.003322,
+      "score": 1.3942,
+      "target_weight": 0.008795,
+      "deviation": 0.005473,
+      "deviation_pct": "+0.55%",
+      "action": "超配"
+    },
+    {
+      "rank": 57,
+      "instrument": "SZ002594",
+      "benchmark_weight": 0.003322,
+      "score": 1.130216,
       "target_weight": 0.008795,
       "deviation": 0.005473,
       "deviation_pct": "+0.55%",
@@ -1338,7 +1338,7 @@
     },
     {
       "rank": 134,
-      "instrument": "SZ300661",
+      "instrument": "SH601888",
       "benchmark_weight": 0.003322,
       "score": 0.206106,
       "target_weight": 0.00281,
@@ -1348,7 +1348,7 @@
     },
     {
       "rank": 135,
-      "instrument": "SH601888",
+      "instrument": "SZ300661",
       "benchmark_weight": 0.003322,
       "score": 0.206106,
       "target_weight": 0.00281,
@@ -1658,646 +1658,6 @@
     },
     {
       "rank": 166,
-      "instrument": "SH603296",
-      "benchmark_weight": 0.003322,
-      "score": -0.891431,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 167,
-      "instrument": "SZ000617",
-      "benchmark_weight": 0.003322,
-      "score": -1.137477,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 168,
-      "instrument": "SH600406",
-      "benchmark_weight": 0.003322,
-      "score": -0.645566,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 169,
-      "instrument": "SZ002049",
-      "benchmark_weight": 0.003322,
-      "score": -1.465809,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 170,
-      "instrument": "SH600026",
-      "benchmark_weight": 0.003322,
-      "score": -3.006622,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 171,
-      "instrument": "SH605499",
-      "benchmark_weight": 0.003322,
-      "score": -0.388607,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 172,
-      "instrument": "SH600426",
-      "benchmark_weight": 0.003322,
-      "score": -1.088354,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 173,
-      "instrument": "SZ002311",
-      "benchmark_weight": 0.003322,
-      "score": -0.321577,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 174,
-      "instrument": "SH600600",
-      "benchmark_weight": 0.003322,
-      "score": -0.912769,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 175,
-      "instrument": "SZ300628",
-      "benchmark_weight": 0.003322,
-      "score": -0.991997,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 176,
-      "instrument": "SZ300251",
-      "benchmark_weight": 0.003322,
-      "score": -0.320952,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 177,
-      "instrument": "SH600522",
-      "benchmark_weight": 0.003322,
-      "score": -2.034809,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 178,
-      "instrument": "SZ000938",
-      "benchmark_weight": 0.003322,
-      "score": -2.999234,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 179,
-      "instrument": "SH601669",
-      "benchmark_weight": 0.003322,
-      "score": -0.815844,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 180,
-      "instrument": "SZ002648",
-      "benchmark_weight": 0.003322,
-      "score": -0.476295,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 181,
-      "instrument": "SH601021",
-      "benchmark_weight": 0.003322,
-      "score": -0.875096,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 182,
-      "instrument": "SH688187",
-      "benchmark_weight": 0.003322,
-      "score": -0.638404,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 183,
-      "instrument": "SZ000568",
-      "benchmark_weight": 0.003322,
-      "score": -1.079052,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 184,
-      "instrument": "SZ300033",
-      "benchmark_weight": 0.003322,
-      "score": -0.363639,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 185,
-      "instrument": "SH603369",
-      "benchmark_weight": 0.003322,
-      "score": -0.372848,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 186,
-      "instrument": "SH600309",
-      "benchmark_weight": 0.003322,
-      "score": -0.95342,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 187,
-      "instrument": "SH688111",
-      "benchmark_weight": 0.003322,
-      "score": -0.835443,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 188,
-      "instrument": "SZ002050",
-      "benchmark_weight": 0.003322,
-      "score": -0.881672,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 189,
-      "instrument": "SH605117",
-      "benchmark_weight": 0.003322,
-      "score": -1.657744,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 190,
-      "instrument": "SH600160",
-      "benchmark_weight": 0.003322,
-      "score": -1.106822,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 191,
-      "instrument": "SH601628",
-      "benchmark_weight": 0.003322,
-      "score": -1.027626,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 192,
-      "instrument": "SH601288",
-      "benchmark_weight": 0.003322,
-      "score": -0.733194,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 193,
-      "instrument": "SH603259",
-      "benchmark_weight": 0.003322,
-      "score": -1.571413,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 194,
-      "instrument": "SH603019",
-      "benchmark_weight": 0.003322,
-      "score": -0.924064,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 195,
-      "instrument": "SH601398",
-      "benchmark_weight": 0.003322,
-      "score": -1.613675,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 196,
-      "instrument": "SZ300896",
-      "benchmark_weight": 0.003322,
-      "score": -1.079057,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 197,
-      "instrument": "SZ002241",
-      "benchmark_weight": 0.003322,
-      "score": -0.482257,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 198,
-      "instrument": "SH601988",
-      "benchmark_weight": 0.003322,
-      "score": -0.227856,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 199,
-      "instrument": "SH603993",
-      "benchmark_weight": 0.003322,
-      "score": -1.721459,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 200,
-      "instrument": "SH600930",
-      "benchmark_weight": 0.003322,
-      "score": -0.611772,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 201,
-      "instrument": "SH600570",
-      "benchmark_weight": 0.003322,
-      "score": -0.175771,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 202,
-      "instrument": "SH600460",
-      "benchmark_weight": 0.003322,
-      "score": -0.794798,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 203,
-      "instrument": "SZ300760",
-      "benchmark_weight": 0.003322,
-      "score": -0.432405,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 204,
-      "instrument": "SH600760",
-      "benchmark_weight": 0.003322,
-      "score": -0.860583,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 205,
-      "instrument": "SH601919",
-      "benchmark_weight": 0.003322,
-      "score": -0.643426,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 206,
-      "instrument": "SH600276",
-      "benchmark_weight": 0.003322,
-      "score": -0.62071,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 207,
-      "instrument": "SH603392",
-      "benchmark_weight": 0.003322,
-      "score": -0.520197,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 208,
-      "instrument": "SH600089",
-      "benchmark_weight": 0.003322,
-      "score": -2.740978,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 209,
-      "instrument": "SZ002920",
-      "benchmark_weight": 0.003322,
-      "score": -1.013965,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 210,
-      "instrument": "SZ301236",
-      "benchmark_weight": 0.003322,
-      "score": -1.191461,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 211,
-      "instrument": "SZ300866",
-      "benchmark_weight": 0.003322,
-      "score": -1.100422,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 212,
-      "instrument": "SH600233",
-      "benchmark_weight": 0.003322,
-      "score": -0.230041,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 213,
-      "instrument": "SH601899",
-      "benchmark_weight": 0.003322,
-      "score": -1.424287,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 214,
-      "instrument": "SZ300413",
-      "benchmark_weight": 0.003322,
-      "score": -0.477873,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 215,
-      "instrument": "SH601998",
-      "benchmark_weight": 0.003322,
-      "score": -0.401307,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 216,
-      "instrument": "SZ002422",
-      "benchmark_weight": 0.003322,
-      "score": -1.094366,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 217,
-      "instrument": "SH601225",
-      "benchmark_weight": 0.003322,
-      "score": -0.378851,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 218,
-      "instrument": "SH688271",
-      "benchmark_weight": 0.003322,
-      "score": -1.239443,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 219,
-      "instrument": "SH688396",
-      "benchmark_weight": 0.003322,
-      "score": -0.923251,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 220,
-      "instrument": "SH601857",
-      "benchmark_weight": 0.003322,
-      "score": -1.004783,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 221,
-      "instrument": "SH601898",
-      "benchmark_weight": 0.003322,
-      "score": -0.239801,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 222,
-      "instrument": "SZ300759",
-      "benchmark_weight": 0.003322,
-      "score": -0.650818,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 223,
-      "instrument": "SH601100",
-      "benchmark_weight": 0.003322,
-      "score": -0.936293,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 224,
-      "instrument": "SH600584",
-      "benchmark_weight": 0.003322,
-      "score": -0.87756,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 225,
-      "instrument": "SZ000963",
-      "benchmark_weight": 0.003322,
-      "score": -1.014542,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 226,
-      "instrument": "SZ000063",
-      "benchmark_weight": 0.003322,
-      "score": -1.261496,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 227,
-      "instrument": "SZ300433",
-      "benchmark_weight": 0.003322,
-      "score": -0.368124,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 228,
-      "instrument": "SH600066",
-      "benchmark_weight": 0.003322,
-      "score": -0.410055,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 229,
-      "instrument": "SH688169",
-      "benchmark_weight": 0.003322,
-      "score": -1.217439,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 230,
       "instrument": "SH600196",
       "benchmark_weight": 0.003322,
       "score": -0.639974,
@@ -2307,267 +1667,7 @@
       "action": "低配"
     },
     {
-      "rank": 231,
-      "instrument": "SZ000333",
-      "benchmark_weight": 0.003322,
-      "score": -1.432118,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 232,
-      "instrument": "SZ300408",
-      "benchmark_weight": 0.003322,
-      "score": -0.877048,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 233,
-      "instrument": "SZ301269",
-      "benchmark_weight": 0.003322,
-      "score": -0.826233,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 234,
-      "instrument": "SH601138",
-      "benchmark_weight": 0.003322,
-      "score": -2.044844,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 235,
-      "instrument": "SH688223",
-      "benchmark_weight": 0.003322,
-      "score": -0.930295,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 236,
-      "instrument": "SH600482",
-      "benchmark_weight": 0.003322,
-      "score": -1.215763,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 237,
-      "instrument": "SH688472",
-      "benchmark_weight": 0.003322,
-      "score": -1.212957,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 238,
-      "instrument": "SZ002304",
-      "benchmark_weight": 0.003322,
-      "score": -0.666621,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 239,
-      "instrument": "SH600009",
-      "benchmark_weight": 0.003322,
-      "score": -0.171284,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 240,
-      "instrument": "SH601066",
-      "benchmark_weight": 0.003322,
-      "score": -0.501621,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 241,
-      "instrument": "SH601012",
-      "benchmark_weight": 0.003322,
-      "score": -0.973613,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 242,
-      "instrument": "SH601059",
-      "benchmark_weight": 0.003322,
-      "score": -0.238541,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 243,
-      "instrument": "SH688012",
-      "benchmark_weight": 0.003322,
-      "score": -0.709686,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 244,
-      "instrument": "SH601689",
-      "benchmark_weight": 0.003322,
-      "score": -1.076361,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 245,
-      "instrument": "SZ002625",
-      "benchmark_weight": 0.003322,
-      "score": -1.408318,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 246,
-      "instrument": "SH603195",
-      "benchmark_weight": 0.003322,
-      "score": -0.490896,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 247,
-      "instrument": "SH600030",
-      "benchmark_weight": 0.003322,
-      "score": -0.44547,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 248,
-      "instrument": "SZ000538",
-      "benchmark_weight": 0.003322,
-      "score": -0.666621,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 249,
-      "instrument": "SH600111",
-      "benchmark_weight": 0.003322,
-      "score": -0.552631,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 250,
-      "instrument": "SH601877",
-      "benchmark_weight": 0.003322,
-      "score": -1.124695,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 251,
-      "instrument": "SH601995",
-      "benchmark_weight": 0.003322,
-      "score": -1.133529,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 252,
-      "instrument": "SH600875",
-      "benchmark_weight": 0.003322,
-      "score": -2.993161,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 253,
-      "instrument": "SZ002230",
-      "benchmark_weight": 0.003322,
-      "score": -0.68125,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 254,
-      "instrument": "SH600219",
-      "benchmark_weight": 0.003322,
-      "score": -0.506595,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 255,
-      "instrument": "SH601601",
-      "benchmark_weight": 0.003322,
-      "score": -0.933043,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 256,
-      "instrument": "SH600011",
-      "benchmark_weight": 0.003322,
-      "score": -0.234612,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 257,
+      "rank": 167,
       "instrument": "SH601688",
       "benchmark_weight": 0.003322,
       "score": -0.251063,
@@ -2577,357 +1677,7 @@
       "action": "低配"
     },
     {
-      "rank": 258,
-      "instrument": "SH600000",
-      "benchmark_weight": 0.003322,
-      "score": -0.280431,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 259,
-      "instrument": "SH601600",
-      "benchmark_weight": 0.003322,
-      "score": -0.953631,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 260,
-      "instrument": "SH601360",
-      "benchmark_weight": 0.003322,
-      "score": -1.461935,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 261,
-      "instrument": "SH688082",
-      "benchmark_weight": 0.003322,
-      "score": -1.142868,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 262,
-      "instrument": "SZ300347",
-      "benchmark_weight": 0.003322,
-      "score": -1.200373,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 263,
-      "instrument": "SZ000651",
-      "benchmark_weight": 0.003322,
-      "score": -0.865652,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 264,
-      "instrument": "SH600150",
-      "benchmark_weight": 0.003322,
-      "score": -1.159067,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 265,
-      "instrument": "SH601390",
-      "benchmark_weight": 0.003322,
-      "score": -0.66951,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 266,
-      "instrument": "SZ000661",
-      "benchmark_weight": 0.003322,
-      "score": -0.862623,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 267,
-      "instrument": "SH601985",
-      "benchmark_weight": 0.003322,
-      "score": -0.663189,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 268,
-      "instrument": "SH688047",
-      "benchmark_weight": 0.003322,
-      "score": -1.47835,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 269,
-      "instrument": "SZ300059",
-      "benchmark_weight": 0.003322,
-      "score": -1.432548,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 270,
-      "instrument": "SH688981",
-      "benchmark_weight": 0.003322,
-      "score": -0.860335,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 271,
-      "instrument": "SH688256",
-      "benchmark_weight": 0.003322,
-      "score": -0.455064,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 272,
-      "instrument": "SZ000895",
-      "benchmark_weight": 0.003322,
-      "score": -0.629677,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 273,
-      "instrument": "SZ300782",
-      "benchmark_weight": 0.003322,
-      "score": -1.090951,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 274,
-      "instrument": "SZ000596",
-      "benchmark_weight": 0.003322,
-      "score": -1.071466,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 275,
-      "instrument": "SH600183",
-      "benchmark_weight": 0.003322,
-      "score": -0.688481,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 276,
-      "instrument": "SZ000768",
-      "benchmark_weight": 0.003322,
-      "score": -0.602421,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 277,
-      "instrument": "SZ002463",
-      "benchmark_weight": 0.003322,
-      "score": -1.321233,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 278,
-      "instrument": "SH600436",
-      "benchmark_weight": 0.003322,
-      "score": -0.60083,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 279,
-      "instrument": "SZ002179",
-      "benchmark_weight": 0.003322,
-      "score": -1.096107,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 280,
-      "instrument": "SH600941",
-      "benchmark_weight": 0.003322,
-      "score": -1.395612,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 281,
-      "instrument": "SH600919",
-      "benchmark_weight": 0.003322,
-      "score": -0.280431,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 282,
-      "instrument": "SH603260",
-      "benchmark_weight": 0.003322,
-      "score": -0.360191,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 283,
-      "instrument": "SH600893",
-      "benchmark_weight": 0.003322,
-      "score": -1.033621,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 284,
-      "instrument": "SH688506",
-      "benchmark_weight": 0.003322,
-      "score": -0.584308,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 285,
-      "instrument": "SZ300832",
-      "benchmark_weight": 0.003322,
-      "score": -0.901361,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 286,
-      "instrument": "SH600809",
-      "benchmark_weight": 0.003322,
-      "score": -1.199491,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 287,
-      "instrument": "SH688041",
-      "benchmark_weight": 0.003322,
-      "score": -1.451468,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 288,
-      "instrument": "SZ000630",
-      "benchmark_weight": 0.003322,
-      "score": -0.557175,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 289,
-      "instrument": "SZ300274",
-      "benchmark_weight": 0.003322,
-      "score": -0.590771,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 290,
-      "instrument": "SH600519",
-      "benchmark_weight": 0.003322,
-      "score": -0.636396,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 291,
-      "instrument": "SZ002415",
-      "benchmark_weight": 0.003322,
-      "score": -1.086157,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 292,
-      "instrument": "SZ300418",
-      "benchmark_weight": 0.003322,
-      "score": -0.256798,
-      "target_weight": 0.0,
-      "deviation": -0.003322,
-      "deviation_pct": "-0.33%",
-      "action": "低配"
-    },
-    {
-      "rank": 293,
+      "rank": 168,
       "instrument": "SH600085",
       "benchmark_weight": 0.003322,
       "score": -0.301161,
@@ -2937,47 +1687,117 @@
       "action": "低配"
     },
     {
-      "rank": 294,
-      "instrument": "SH600989",
+      "rank": 169,
+      "instrument": "SH601998",
       "benchmark_weight": 0.003322,
-      "score": -0.176425,
+      "score": -0.401307,
       "target_weight": 0.0,
       "deviation": -0.003322,
       "deviation_pct": "-0.33%",
       "action": "低配"
     },
     {
-      "rank": 295,
-      "instrument": "SH603893",
+      "rank": 170,
+      "instrument": "SZ002463",
       "benchmark_weight": 0.003322,
-      "score": -0.861944,
+      "score": -1.321233,
       "target_weight": 0.0,
       "deviation": -0.003322,
       "deviation_pct": "-0.33%",
       "action": "低配"
     },
     {
-      "rank": 296,
-      "instrument": "SZ000786",
+      "rank": 171,
+      "instrument": "SH601988",
       "benchmark_weight": 0.003322,
-      "score": -0.62951,
+      "score": -0.227856,
       "target_weight": 0.0,
       "deviation": -0.003322,
       "deviation_pct": "-0.33%",
       "action": "低配"
     },
     {
-      "rank": 297,
-      "instrument": "SZ302132",
+      "rank": 172,
+      "instrument": "SH603259",
       "benchmark_weight": 0.003322,
-      "score": -1.105218,
+      "score": -1.571413,
       "target_weight": 0.0,
       "deviation": -0.003322,
       "deviation_pct": "-0.33%",
       "action": "低配"
     },
     {
-      "rank": 298,
+      "rank": 173,
+      "instrument": "SZ000630",
+      "benchmark_weight": 0.003322,
+      "score": -0.557175,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 174,
+      "instrument": "SH600000",
+      "benchmark_weight": 0.003322,
+      "score": -0.280431,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 175,
+      "instrument": "SH605117",
+      "benchmark_weight": 0.003322,
+      "score": -1.657744,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 176,
+      "instrument": "SZ002415",
+      "benchmark_weight": 0.003322,
+      "score": -1.086157,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 177,
+      "instrument": "SZ002648",
+      "benchmark_weight": 0.003322,
+      "score": -0.476295,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 178,
+      "instrument": "SZ300896",
+      "benchmark_weight": 0.003322,
+      "score": -1.079057,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 179,
+      "instrument": "SH688506",
+      "benchmark_weight": 0.003322,
+      "score": -0.584308,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 180,
       "instrument": "SH600028",
       "benchmark_weight": 0.003322,
       "score": -0.466828,
@@ -2987,17 +1807,67 @@
       "action": "低配"
     },
     {
-      "rank": 299,
-      "instrument": "SH601318",
+      "rank": 181,
+      "instrument": "SZ002625",
       "benchmark_weight": 0.003322,
-      "score": -0.594645,
+      "score": -1.408318,
       "target_weight": 0.0,
       "deviation": -0.003322,
       "deviation_pct": "-0.33%",
       "action": "低配"
     },
     {
-      "rank": 300,
+      "rank": 182,
+      "instrument": "SH603369",
+      "benchmark_weight": 0.003322,
+      "score": -0.372848,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 183,
+      "instrument": "SH600406",
+      "benchmark_weight": 0.003322,
+      "score": -0.645566,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 184,
+      "instrument": "SH600436",
+      "benchmark_weight": 0.003322,
+      "score": -0.60083,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 185,
+      "instrument": "SH601012",
+      "benchmark_weight": 0.003322,
+      "score": -0.973613,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 186,
+      "instrument": "SH601919",
+      "benchmark_weight": 0.003322,
+      "score": -0.643426,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 187,
       "instrument": "SH601336",
       "benchmark_weight": 0.003322,
       "score": -1.402403,
@@ -3007,10 +1877,1140 @@
       "action": "低配"
     },
     {
-      "rank": 301,
+      "rank": 188,
+      "instrument": "SH688256",
+      "benchmark_weight": 0.003322,
+      "score": -0.455064,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 189,
+      "instrument": "SH601898",
+      "benchmark_weight": 0.003322,
+      "score": -0.239801,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 190,
+      "instrument": "SH601985",
+      "benchmark_weight": 0.003322,
+      "score": -0.663189,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 191,
+      "instrument": "SZ002920",
+      "benchmark_weight": 0.003322,
+      "score": -1.013965,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 192,
+      "instrument": "SZ300433",
+      "benchmark_weight": 0.003322,
+      "score": -0.368124,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 193,
+      "instrument": "SZ002049",
+      "benchmark_weight": 0.003322,
+      "score": -1.465809,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 194,
+      "instrument": "SZ300413",
+      "benchmark_weight": 0.003322,
+      "score": -0.477873,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 195,
+      "instrument": "SH600030",
+      "benchmark_weight": 0.003322,
+      "score": -0.44547,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 196,
+      "instrument": "SH601390",
+      "benchmark_weight": 0.003322,
+      "score": -0.66951,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 197,
+      "instrument": "SH600150",
+      "benchmark_weight": 0.003322,
+      "score": -1.159067,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 198,
+      "instrument": "SZ000333",
+      "benchmark_weight": 0.003322,
+      "score": -1.432118,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 199,
+      "instrument": "SZ302132",
+      "benchmark_weight": 0.003322,
+      "score": -1.105218,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 200,
+      "instrument": "SH601225",
+      "benchmark_weight": 0.003322,
+      "score": -0.378851,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 201,
+      "instrument": "SH601857",
+      "benchmark_weight": 0.003322,
+      "score": -1.004783,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 202,
+      "instrument": "SH601601",
+      "benchmark_weight": 0.003322,
+      "score": -0.933043,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 203,
+      "instrument": "SH601138",
+      "benchmark_weight": 0.003322,
+      "score": -2.044844,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 204,
+      "instrument": "SZ000661",
+      "benchmark_weight": 0.003322,
+      "score": -0.862623,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 205,
+      "instrument": "SH600570",
+      "benchmark_weight": 0.003322,
+      "score": -0.175771,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 206,
+      "instrument": "SZ300408",
+      "benchmark_weight": 0.003322,
+      "score": -0.877048,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 207,
+      "instrument": "SH603993",
+      "benchmark_weight": 0.003322,
+      "score": -1.721459,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 208,
+      "instrument": "SH600600",
+      "benchmark_weight": 0.003322,
+      "score": -0.912769,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 209,
+      "instrument": "SZ300274",
+      "benchmark_weight": 0.003322,
+      "score": -0.590771,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 210,
+      "instrument": "SH601628",
+      "benchmark_weight": 0.003322,
+      "score": -1.027626,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 211,
+      "instrument": "SZ000895",
+      "benchmark_weight": 0.003322,
+      "score": -0.629677,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 212,
+      "instrument": "SH688981",
+      "benchmark_weight": 0.003322,
+      "score": -0.860335,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 213,
+      "instrument": "SH601600",
+      "benchmark_weight": 0.003322,
+      "score": -0.953631,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 214,
+      "instrument": "SH601899",
+      "benchmark_weight": 0.003322,
+      "score": -1.424287,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 215,
+      "instrument": "SZ300033",
+      "benchmark_weight": 0.003322,
+      "score": -0.363639,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 216,
+      "instrument": "SH600519",
+      "benchmark_weight": 0.003322,
+      "score": -0.636396,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 217,
+      "instrument": "SZ300866",
+      "benchmark_weight": 0.003322,
+      "score": -1.100422,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 218,
+      "instrument": "SH688041",
+      "benchmark_weight": 0.003322,
+      "score": -1.451468,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 219,
+      "instrument": "SH601021",
+      "benchmark_weight": 0.003322,
+      "score": -0.875096,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 220,
+      "instrument": "SZ300251",
+      "benchmark_weight": 0.003322,
+      "score": -0.320952,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 221,
+      "instrument": "SH601689",
+      "benchmark_weight": 0.003322,
+      "score": -1.076361,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 222,
+      "instrument": "SH688187",
+      "benchmark_weight": 0.003322,
+      "score": -0.638404,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 223,
+      "instrument": "SZ002179",
+      "benchmark_weight": 0.003322,
+      "score": -1.096107,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 224,
+      "instrument": "SZ000786",
+      "benchmark_weight": 0.003322,
+      "score": -0.62951,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 225,
+      "instrument": "SH600111",
+      "benchmark_weight": 0.003322,
+      "score": -0.552631,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 226,
+      "instrument": "SH600584",
+      "benchmark_weight": 0.003322,
+      "score": -0.87756,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 227,
+      "instrument": "SH600930",
+      "benchmark_weight": 0.003322,
+      "score": -0.611772,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 228,
+      "instrument": "SH601318",
+      "benchmark_weight": 0.003322,
+      "score": -0.594645,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 229,
+      "instrument": "SH603195",
+      "benchmark_weight": 0.003322,
+      "score": -0.490896,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 230,
+      "instrument": "SH600941",
+      "benchmark_weight": 0.003322,
+      "score": -1.395612,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 231,
+      "instrument": "SH600875",
+      "benchmark_weight": 0.003322,
+      "score": -2.993161,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 232,
+      "instrument": "SH603019",
+      "benchmark_weight": 0.003322,
+      "score": -0.924064,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 233,
+      "instrument": "SZ300832",
+      "benchmark_weight": 0.003322,
+      "score": -0.901361,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 234,
+      "instrument": "SH600011",
+      "benchmark_weight": 0.003322,
+      "score": -0.234612,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 235,
+      "instrument": "SH688082",
+      "benchmark_weight": 0.003322,
+      "score": -1.142868,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 236,
+      "instrument": "SH600522",
+      "benchmark_weight": 0.003322,
+      "score": -2.034809,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 237,
+      "instrument": "SZ002304",
+      "benchmark_weight": 0.003322,
+      "score": -0.666621,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 238,
+      "instrument": "SZ000063",
+      "benchmark_weight": 0.003322,
+      "score": -1.261496,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 239,
+      "instrument": "SH601288",
+      "benchmark_weight": 0.003322,
+      "score": -0.733194,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 240,
+      "instrument": "SH601669",
+      "benchmark_weight": 0.003322,
+      "score": -0.815844,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 241,
+      "instrument": "SH603260",
+      "benchmark_weight": 0.003322,
+      "score": -0.360191,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 242,
+      "instrument": "SH600276",
+      "benchmark_weight": 0.003322,
+      "score": -0.62071,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 243,
+      "instrument": "SH600760",
+      "benchmark_weight": 0.003322,
+      "score": -0.860583,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 244,
+      "instrument": "SZ002230",
+      "benchmark_weight": 0.003322,
+      "score": -0.68125,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 245,
+      "instrument": "SZ300418",
+      "benchmark_weight": 0.003322,
+      "score": -0.256798,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 246,
+      "instrument": "SH600066",
+      "benchmark_weight": 0.003322,
+      "score": -0.410055,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 247,
+      "instrument": "SH600893",
+      "benchmark_weight": 0.003322,
+      "score": -1.033621,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 248,
+      "instrument": "SH600026",
+      "benchmark_weight": 0.003322,
+      "score": -3.006622,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 249,
+      "instrument": "SZ002050",
+      "benchmark_weight": 0.003322,
+      "score": -0.881672,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 250,
+      "instrument": "SH688169",
+      "benchmark_weight": 0.003322,
+      "score": -1.217439,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 251,
+      "instrument": "SH600989",
+      "benchmark_weight": 0.003322,
+      "score": -0.176425,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 252,
+      "instrument": "SH600183",
+      "benchmark_weight": 0.003322,
+      "score": -0.688481,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 253,
+      "instrument": "SH600809",
+      "benchmark_weight": 0.003322,
+      "score": -1.199491,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 254,
+      "instrument": "SH601995",
+      "benchmark_weight": 0.003322,
+      "score": -1.133529,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 255,
+      "instrument": "SH688111",
+      "benchmark_weight": 0.003322,
+      "score": -0.835443,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 256,
+      "instrument": "SZ002241",
+      "benchmark_weight": 0.003322,
+      "score": -0.482257,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 257,
+      "instrument": "SZ301236",
+      "benchmark_weight": 0.003322,
+      "score": -1.191461,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 258,
+      "instrument": "SZ300782",
+      "benchmark_weight": 0.003322,
+      "score": -1.090951,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 259,
+      "instrument": "SZ000617",
+      "benchmark_weight": 0.003322,
+      "score": -1.137477,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 260,
+      "instrument": "SZ300759",
+      "benchmark_weight": 0.003322,
+      "score": -0.650818,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 261,
+      "instrument": "SZ000538",
+      "benchmark_weight": 0.003322,
+      "score": -0.666621,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 262,
+      "instrument": "SZ000963",
+      "benchmark_weight": 0.003322,
+      "score": -1.014542,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 263,
+      "instrument": "SH603392",
+      "benchmark_weight": 0.003322,
+      "score": -0.520197,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 264,
+      "instrument": "SH688271",
+      "benchmark_weight": 0.003322,
+      "score": -1.239443,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 265,
+      "instrument": "SZ300760",
+      "benchmark_weight": 0.003322,
+      "score": -0.432405,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 266,
+      "instrument": "SH605499",
+      "benchmark_weight": 0.003322,
+      "score": -0.388607,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 267,
+      "instrument": "SZ301269",
+      "benchmark_weight": 0.003322,
+      "score": -0.826233,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 268,
+      "instrument": "SH688012",
+      "benchmark_weight": 0.003322,
+      "score": -0.709686,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 269,
+      "instrument": "SH600482",
+      "benchmark_weight": 0.003322,
+      "score": -1.215763,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 270,
+      "instrument": "SH603296",
+      "benchmark_weight": 0.003322,
+      "score": -0.891431,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 271,
+      "instrument": "SH600219",
+      "benchmark_weight": 0.003322,
+      "score": -0.506595,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 272,
+      "instrument": "SH601066",
+      "benchmark_weight": 0.003322,
+      "score": -0.501621,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 273,
+      "instrument": "SH600233",
+      "benchmark_weight": 0.003322,
+      "score": -0.230041,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 274,
+      "instrument": "SH688396",
+      "benchmark_weight": 0.003322,
+      "score": -0.923251,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 275,
+      "instrument": "SZ300059",
+      "benchmark_weight": 0.003322,
+      "score": -1.432548,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 276,
+      "instrument": "SZ300347",
+      "benchmark_weight": 0.003322,
+      "score": -1.200373,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 277,
+      "instrument": "SZ000938",
+      "benchmark_weight": 0.003322,
+      "score": -2.999234,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 278,
       "instrument": "SZ000338",
       "benchmark_weight": 0.003322,
       "score": -1.175376,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 279,
+      "instrument": "SH603893",
+      "benchmark_weight": 0.003322,
+      "score": -0.861944,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 280,
+      "instrument": "SH601360",
+      "benchmark_weight": 0.003322,
+      "score": -1.461935,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 281,
+      "instrument": "SH601398",
+      "benchmark_weight": 0.003322,
+      "score": -1.613675,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 282,
+      "instrument": "SH600460",
+      "benchmark_weight": 0.003322,
+      "score": -0.794798,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 283,
+      "instrument": "SH600426",
+      "benchmark_weight": 0.003322,
+      "score": -1.088354,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 284,
+      "instrument": "SZ000651",
+      "benchmark_weight": 0.003322,
+      "score": -0.865652,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 285,
+      "instrument": "SH600089",
+      "benchmark_weight": 0.003322,
+      "score": -2.740978,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 286,
+      "instrument": "SH601059",
+      "benchmark_weight": 0.003322,
+      "score": -0.238541,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 287,
+      "instrument": "SZ000568",
+      "benchmark_weight": 0.003322,
+      "score": -1.079052,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 288,
+      "instrument": "SZ000768",
+      "benchmark_weight": 0.003322,
+      "score": -0.602421,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 289,
+      "instrument": "SH600160",
+      "benchmark_weight": 0.003322,
+      "score": -1.106822,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 290,
+      "instrument": "SH600009",
+      "benchmark_weight": 0.003322,
+      "score": -0.171284,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 291,
+      "instrument": "SH601100",
+      "benchmark_weight": 0.003322,
+      "score": -0.936293,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 292,
+      "instrument": "SH600919",
+      "benchmark_weight": 0.003322,
+      "score": -0.280431,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 293,
+      "instrument": "SH688472",
+      "benchmark_weight": 0.003322,
+      "score": -1.212957,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 294,
+      "instrument": "SZ002311",
+      "benchmark_weight": 0.003322,
+      "score": -0.321577,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 295,
+      "instrument": "SH601877",
+      "benchmark_weight": 0.003322,
+      "score": -1.124695,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 296,
+      "instrument": "SH688223",
+      "benchmark_weight": 0.003322,
+      "score": -0.930295,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 297,
+      "instrument": "SZ000596",
+      "benchmark_weight": 0.003322,
+      "score": -1.071466,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 298,
+      "instrument": "SZ300628",
+      "benchmark_weight": 0.003322,
+      "score": -0.991997,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 299,
+      "instrument": "SH600309",
+      "benchmark_weight": 0.003322,
+      "score": -0.95342,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 300,
+      "instrument": "SH688047",
+      "benchmark_weight": 0.003322,
+      "score": -1.47835,
+      "target_weight": 0.0,
+      "deviation": -0.003322,
+      "deviation_pct": "-0.33%",
+      "action": "低配"
+    },
+    {
+      "rank": 301,
+      "instrument": "SZ002422",
+      "benchmark_weight": 0.003322,
+      "score": -1.094366,
       "target_weight": 0.0,
       "deviation": -0.003322,
       "deviation_pct": "-0.33%",
@@ -3026,7 +3026,7 @@
     "underweight_count": 175,
     "neutral_count": 5,
     "max_deviation": 0.02,
-    "generated_at": "2026-03-18T10:01:05.810732",
+    "generated_at": "2026-03-18T11:50:11.008322",
     "target_date": "2026-03-18"
   }
 }

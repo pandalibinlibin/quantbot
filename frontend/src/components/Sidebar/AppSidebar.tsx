@@ -6,6 +6,7 @@ import {
   FlaskConical,
   RefreshCw,
   Bell,
+  BarChart3,
 } from "lucide-react";
 
 import { SidebarAppearance } from "@/components/Common/Appearance";
@@ -27,7 +28,7 @@ const baseItems: Item[] = [
   { icon: Brain, title: "Model", path: "/models" },
   { icon: RefreshCw, title: "Routine", path: "/routine" },
   { icon: Bell, title: "Target Portfolio", path: "/target-portfolio" },
-  // Backtest 和 Paper Trading 已移除 - 回测和执行层委托给 VeighNa/LEAN
+  { icon: BarChart3, title: "Backtest", path: "/backtest" },
 ];
 
 export function AppSidebar() {
