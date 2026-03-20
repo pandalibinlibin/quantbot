@@ -53,7 +53,7 @@ class FactorPipeline:
     - Maintains consistency between data updates and factor computation
     """
 
-    def __init__(self, freq: str = "day", max_workers: int = 4):
+    def __init__(self, freq: str = "day", max_workers: int = 1):
         """
         Initialize Simplified Factor Pipeline Manager
 
@@ -158,7 +158,7 @@ class FactorPipeline:
         end_time: Union[str, datetime, date],
         update_mode: UpdateMode,
         instruments: Optional[List[str]] = None,
-        parallel: bool = True,
+        parallel: bool = False,
     ) -> Dict[str, Any]:
         """
         Compute multiple factors following the specified update mode
@@ -207,7 +207,7 @@ class FactorPipeline:
                     end_time,
                     instruments,
                     overwrite,
-                    parallel=True,
+                    parallel=False,
                 )
 
                 # Process parallel results
@@ -272,7 +272,7 @@ class FactorPipeline:
         start_time: Union[str, datetime, date],
         end_time: Union[str, datetime, date],
         instruments: Optional[List[str]] = None,
-        parallel: bool = True,
+        parallel: bool = False,
     ) -> Dict[str, Any]:
         """
         Synchronize factor computation with data collector update mode

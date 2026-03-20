@@ -520,7 +520,7 @@ function BacktestPage() {
                       <span className="text-sm">Total Cost</span>
                     </div>
                     <div className="text-2xl font-bold text-orange-600">
-                      {formatPercent(backtestResult.total_cost || 0)}
+                      {formatCurrency(backtestResult.total_cost || 0)}
                     </div>
                   </div>
 
@@ -924,64 +924,6 @@ function BacktestPage() {
                             />
                             <Bar dataKey="count" fill="#8b5cf6" name="Count" />
                           </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-              {/* Enhanced Charts - Cumulative Returns */}
-              {backtestResult?.status === "success" &&
-                backtestResult.charts?.cumulative_returns && (
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="h-5 w-5 text-green-500" />
-                        <CardTitle className="text-lg">
-                          Cumulative Returns
-                        </CardTitle>
-                      </div>
-                      <CardDescription>
-                        Strategy performance over time
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart
-                            data={backtestResult.charts.cumulative_returns}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis
-                              dataKey="date"
-                              tick={{ fontSize: 11 }}
-                              tickFormatter={(value) => {
-                                const date = new Date(value);
-                                return `${date.getMonth() + 1}/${date.getDate()}`;
-                              }}
-                            />
-                            <YAxis
-                              tick={{ fontSize: 11 }}
-                              tickFormatter={(value: number) =>
-                                `${(value * 100).toFixed(1)}%`
-                              }
-                            />
-                            <RechartsTooltip
-                              formatter={(value: number) => [
-                                `${(value * 100).toFixed(2)}%`,
-                                "Cumulative Return",
-                              ]}
-                              labelFormatter={(label) => `Date: ${label}`}
-                            />
-                            <Line
-                              type="monotone"
-                              dataKey="cumulative_return"
-                              stroke="#10b981"
-                              strokeWidth={2}
-                              dot={false}
-                              name="Strategy"
-                            />
-                          </LineChart>
                         </ResponsiveContainer>
                       </div>
                     </CardContent>

@@ -227,9 +227,11 @@ class SignalExportService:
             # Fallback to equal weights
             stock_weight = self.alpha_weight / len(top_stocks)
             for item in top_stocks:
+                # Support both "instrument" (Enhanced Indexing) and "symbol" (ETF Enhanced Indexing)
+                symbol = item.get("symbol") or item.get("instrument")
                 positions.append(
                     {
-                        "symbol": item["instrument"],
+                        "symbol": symbol,
                         "type": "stock",
                         "weight": round(stock_weight, 6),
                         "score": round(item.get("score", 0), 6),
@@ -244,10 +246,12 @@ class SignalExportService:
             for item in top_stocks:
                 original_weight = item.get("target_weight", 0)
                 scaled_weight = original_weight * scaling_factor
+                # Support both "instrument" (Enhanced Indexing) and "symbol" (ETF Enhanced Indexing)
+                symbol = item.get("symbol") or item.get("instrument")
 
                 positions.append(
                     {
-                        "symbol": item["instrument"],
+                        "symbol": symbol,
                         "type": "stock",
                         "weight": round(scaled_weight, 6),
                         "score": round(item.get("score", 0), 6),

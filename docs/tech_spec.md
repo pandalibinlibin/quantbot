@@ -10685,3 +10685,438 @@ docker compose exec backend python /app/temp_scripts/test_backtest_direct.py
 - ✅ Backtest Execution: API正常响应，功能完全可用
 - ✅ Frontend Navigation: Backtest入口正常工作
 - ✅ UI Optimization: 按钮位置正确，图表组件完整
+
+---
+
+## ETFEnhancedIndexingService 策略设计 (2026-03-20)
+
+### 📋 需求背景
+
+#### 问题分析
+
+现有的`EnhancedIndexingService`策略存在资金密集型问题：
+
+- 需要调整每一个成分股的目标持仓
+- 对于沪深300这样的指数，需要持有300只股票
+- 需要大量资金才能实现有效的权重配置
+
+#### 解决方案
+
+设计新的`ETFEnhancedIndexingService`策略：
+
+- 使用指数对应的ETF作为基础持仓
+- 仅持有Top-9只Alpha股票进行增强
+- 总持仓数量：1只ETF + 9只股票 = 10个持仓
+- 大幅降低资金门槛，100万即可运作
+
+### 🎯 策略设计
+
+#### 核心参数
+
+| 参数          | 值                         | 说明            |
+| ------------- | -------------------------- | --------------- |
+| 策略名称      | ETFEnhancedIndexingService | ETF增强指数策略 |
+| ETF权重范围   | 50%-80%                    | 动态调整        |
+| Alpha权重范围 | 20%-50%                    | 动态调整        |
+| 最大股票数    | 9只                        | 固定值          |
+| 权重分配方式  | 按分数加权                 | score_weighted  |
+| 调仓频率      | 日调仓                     | daily           |
+| 回测金额      | 100万                      | 从1亿降低       |
+
+#### 动态权重算法
+
+ETF和Alpha股票的权重根据模型预测分数的离散度动态调整：
+
+```python
+def calculate_dynamic_weights(scores: Dict[str, float]) -> Tuple[float, float]:
+    """
+    Calculate ETF and Alpha weights based on score spread.
+
+    - High score spread → High alpha weight (model confident)
+    - Low score spread → Low alpha weight (model uncertain)
+    """
+    sorted_scores = sorted(scores.values(), reverse=True)
+
+    top_avg = np.mean(sorted_scores[:9])      # Top 9 average
+    bottom_avg = np.mean(sorted_scores[-9:])  # Bottom 9 average
+    score_spread = top_avg - bottom_avg
+
+    # Normalize spread to [0, 1]
+    normalized_spread = np.clip(score_spread / 2.0, 0, 1)
+
+    # Alpha weight: 20% ~ 50%
+    alpha_weight = 0.2 + normalized_spread * 0.3
+    etf_weight = 1.0 - alpha_weight
+
+    return etf_weight, alpha_weight
+```
+
+#### 交易单位规则
+
+| 市场       | 交易单位     | 配置值          |
+| ---------- | ------------ | --------------- |
+| A股（cn）  | 100股（1手） | `lot_size: 100` |
+| 美股（us） | 1股          | `lot_size: 1`   |
+
+根据`system_config.yaml`中的`region`配置自动确定：
+
+```python
+def get_lot_size(region: str) -> int:
+    """Get trading lot size based on market region."""
+    return 100 if region == "cn" else 1
+```
+
+#### 取整逻辑
+
+```python
+def round_to_lot(shares: float, lot_size: int) -> int:
+    """Round shares down to trading lot size."""
+    return (int(shares) // lot_size) * lot_size
+
+def calculate_action(target_shares: int, current_shares: int, lot_size: int) -> Tuple[str, int, int]:
+    """
+    Calculate trading action.
+
+    Returns:
+        (action, action_shares, action_lots)
+    """
+    diff = target_shares - current_shares
+
+    if diff > 0:
+        action_shares = round_to_lot(diff, lot_size)
+        action_lots = action_shares // lot_size
+        return ("buy", action_shares, action_lots) if action_shares > 0 else ("hold", 0, 0)
+    elif diff < 0:
+        action_shares = round_to_lot(abs(diff), lot_size)
+        action_lots = action_shares // lot_size
+        return ("sell", action_shares, action_lots) if action_shares > 0 else ("hold", 0, 0)
+    else:
+        return ("hold", 0, 0)
+```
+
+### 💰 交易成本配置
+
+#### A股交易成本
+
+| 费用项     | 比例             | 配置键               |
+| ---------- | ---------------- | -------------------- |
+| 买入佣金   | 0.03% (万分之三) | `open_cost: 0.0003`  |
+| 卖出佣金   | 0.03% (万分之三) | 包含在close_cost     |
+| 印花税     | 0.1% (千分之一)  | 仅卖出时收取         |
+| 卖出总成本 | 0.13%            | `close_cost: 0.0013` |
+| 最低佣金   | 5元              | `min_cost: 5`        |
+
+#### 配置文件 (backtest_config.yaml)
+
+```yaml
+backtest:
+  account: 1000000 # 100万
+  benchmark: auto
+
+  exchange_kwargs:
+    limit_threshold: 0.095 # 涨跌停限制
+    deal_price: close # 收盘价成交
+    open_cost: 0.0003 # 买入佣金 0.03%
+    close_cost: 0.0013 # 卖出佣金+印花税 0.13%
+    min_cost: 5 # 最低佣金 5元
+    trade_unit: auto # 根据region自动：cn=100, us=1
+```
+
+### 📤 输出格式
+
+#### JSON输出结构
+
+```json
+{
+  "generated_at": "2026-03-20T15:30:00",
+  "trade_date": "2026-03-20",
+  "signal_for_date": "2026-03-21",
+  "total_value": 1000000,
+  "region": "cn",
+  "lot_size": 100,
+
+  "weights": {
+    "etf_weight": 0.65,
+    "alpha_weight": 0.35,
+    "score_spread": 0.82,
+    "weight_mode": "dynamic"
+  },
+
+  "positions": [
+    {
+      "rank": 0,
+      "symbol": "SH510300",
+      "name": "沪深300ETF",
+      "type": "etf",
+      "weight": 0.65,
+      "target_value": 650000,
+      "reference_price": 4.125,
+      "target_shares": 157500,
+      "current_shares": 150000,
+      "action": "buy",
+      "action_shares": 7500,
+      "action_lots": 75
+    },
+    {
+      "rank": 1,
+      "symbol": "SH600519",
+      "name": "贵州茅台",
+      "type": "stock",
+      "weight": 0.08,
+      "score": 0.95,
+      "target_value": 80000,
+      "reference_price": 1800.5,
+      "target_shares": 100,
+      "current_shares": 0,
+      "action": "buy",
+      "action_shares": 100,
+      "action_lots": 1
+    }
+  ],
+
+  "summary": {
+    "total_positions": 10,
+    "etf_positions": 1,
+    "stock_positions": 9,
+    "buy_count": 3,
+    "sell_count": 2,
+    "hold_count": 5
+  }
+}
+```
+
+#### 邮件通知格式 (A股)
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 QuantBot 交易信号 - 2026-03-21
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📈 策略概览
+├── 总资产：¥1,000,000
+├── 市场：A股（交易单位：100股/手）
+├── ETF权重：65.0%（动态计算）
+├── Alpha权重：35.0%
+└── 分数离散度：0.82
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🏦 ETF持仓
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SH510300 沪深300ETF
+├── 目标权重：65.00%
+├── 目标金额：¥650,000
+├── 参考价格：¥4.125
+├── 目标股数：157,500股
+├── 当前持股：150,000股
+└── 操作：🟢 买入 75手 / 7,500股（约¥30,938）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 Alpha股票持仓（按分数排序）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+#1 SH600519 贵州茅台 [分数: 0.95]
+├── 目标权重：8.00%
+├── 目标金额：¥80,000
+├── 参考价格：¥1,800.50
+├── 目标股数：100股
+├── 当前持股：0股
+└── 操作：🟢 买入 1手 / 100股（约¥180,050）
+
+... (其他8只股票)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 操作汇总
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+├── 买入：3笔
+├── 卖出：2笔
+└── 持有：5笔
+
+生成时间：2026-03-20 15:30:00
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+### 📁 配置文件更新
+
+#### system_config.yaml 新增配置
+
+```yaml
+# ETF Enhanced Indexing Strategy Configuration
+etf_enhanced_indexing:
+  enabled: true
+
+  # Dynamic weight
+  weight_mode: "dynamic"
+  alpha_weight_min: 0.2
+  alpha_weight_max: 0.5
+
+  # Stock selection
+  max_stocks: 9
+  weight_method: "score_weighted"
+
+  # Trading rules (auto-detected from region)
+  # lot_size: auto  # cn=100, us=1
+
+  # Rebalancing
+  rebalance_frequency: "daily"
+
+  # Output
+  output_dir: "/app/data/target_portfolio"
+
+  # Email notification
+  email_notification:
+    enabled: true
+```
+
+### 🔧 实现计划
+
+| 阶段 | 任务                                       | 状态    |
+| ---- | ------------------------------------------ | ------- |
+| 1    | 创建`ETFEnhancedIndexingService`类         | ✅ 完成 |
+| 2    | 实现动态权重算法                           | ✅ 完成 |
+| 3    | 实现选股、权重计算、lot_size取整           | ✅ 完成 |
+| 4    | 实现股票名称获取服务                       | ✅ 完成 |
+| 5    | 实现增强输出格式（含action_lots）          | ✅ 完成 |
+| 6    | 扩展data collector支持ETF数据下载          | ✅ 完成 |
+| 7    | 更新配置文件                               | ✅ 完成 |
+| 8    | 集成到routine                              | ✅ 完成 |
+| 9    | 创建Qlib回测适配器                         | ✅ 完成 |
+| 10   | 实现邮件通知格式化（中英文）               | ✅ 完成 |
+| 11   | 调整前端Portfolio页面                      | ✅ 完成 |
+| 12   | 修改Backtest使用ETFEnhancedIndexingService | ✅ 完成 |
+| 13   | 测试验证                                   | ✅ 完成 |
+
+### 📊 产出物
+
+| 组件     | 文件路径                                                | 功能         |
+| -------- | ------------------------------------------------------- | ------------ |
+| 策略服务 | `backend/app/services/etf_enhanced_indexing_service.py` | 核心策略逻辑 |
+| 配置文件 | `backend/app/config/qlib/system_config.yaml`            | 策略参数配置 |
+| 回测配置 | `backend/app/config/qlib/backtest_config.yaml`          | 回测参数配置 |
+| 前端页面 | `frontend/src/routes/_layout/portfolio.tsx`             | 组合展示页面 |
+| 邮件服务 | `backend/app/services/email_service.py`                 | 邮件通知     |
+
+---
+
+## 📅 2026-03-20 更新：回测系统完善与邮件通知优化
+
+### 🎯 本次更新目标
+
+完善 ETF Enhanced Indexing 策略的回测系统，修复指标计算问题，优化邮件通知格式，确保前后端数据一致性。
+
+### 🔧 主要修改
+
+#### 1. 回测系统重构 (`online_serving_service.py`)
+
+**问题**：原回测系统依赖 `.pkl` 模型文件，但 Online Serving 模式下不生成此文件。
+
+**解决方案**：
+
+- 新增 `_execute_signal_based_backtest()` 方法，直接使用 Online Serving 的信号进行回测
+- 使用 Qlib 的 `risk_analysis` 函数计算风险指标，确保指标准确性
+- 保留自定义指标计算（Calmar Ratio、Win Rate、Profit/Loss Ratio）
+
+**关键代码变更**：
+
+```python
+# 使用 Qlib 的 risk_analysis 计算标准指标
+from qlib.contrib.evaluate import risk_analysis
+analysis_df = risk_analysis(returns_series, freq="day")
+
+# 提取 Qlib 计算的指标
+annual_return = float(analysis_df.loc["annualized_return", "risk"])
+max_drawdown = float(analysis_df.loc["max_drawdown", "risk"])
+sharpe_ratio = float(analysis_df.loc["information_ratio", "risk"])
+volatility = float(analysis_df.loc["std", "risk"])
+```
+
+#### 2. 修复 Qlib DataFrame 索引问题
+
+**问题**：`D.features()` 返回的 DataFrame 索引是 `(instrument, datetime)`，代码错误使用 `level=1`。
+
+**修复**：
+
+```python
+# 正确：instrument 在 level=0
+available_instruments = price_data.index.get_level_values(0).unique()
+symbol_prices = price_data.xs(symbol, level=0)
+```
+
+#### 3. Max Drawdown 信息修复
+
+**问题**：
+
+- `peak_date` 记录的是最后一个新高点，而非导致最大回撤的峰值
+- 两处 Max Drawdown 显示不一致（Risk Metrics vs Chart Annotation）
+
+**修复**：
+
+- 正确记录导致最大回撤的峰值日期 (`max_drawdown_peak_date`)
+- 统一使用 Qlib 计算的 `max_drawdown` 值
+- 添加 `drawdown_days` 和 `recovery_date` 计算
+
+```python
+def _generate_etf_backtest_charts(
+    self, daily_returns: list, qlib_max_drawdown: float = None
+) -> Dict[str, Any]:
+    # 使用 Qlib 的 max_drawdown 确保一致性
+    final_max_drawdown = qlib_max_drawdown if qlib_max_drawdown is not None else max_drawdown
+```
+
+#### 4. 邮件通知优化 (`notification_service.py`)
+
+**改进内容**：
+
+- 重新设计 HTML 邮件布局，提升可读性
+- 分离买入/卖出/持有操作，便于交易员快速定位
+- 添加快速统计摘要
+- 优化移动端显示
+
+#### 5. 前端修复 (`backtest.tsx`)
+
+**修改内容**：
+
+- 移除重复的 Cumulative Returns 图表
+- 修复 Total Cost 显示格式（使用 `formatCurrency` 而非 `formatPercent`）
+- 正确显示 Max Drawdown 信息（Peak Date、Trough Date、Drawdown Days、Recovery Date）
+
+#### 6. API 路由修复 (`online.py`)
+
+**修改内容**：
+
+- 移除重复的邮件发送逻辑
+- 保留原始数据格式，避免数据丢失
+
+### 📊 回测指标说明
+
+| 指标              | 来源                 | 说明                    |
+| ----------------- | -------------------- | ----------------------- |
+| Annualized Return | Qlib `risk_analysis` | 年化收益率              |
+| Max Drawdown      | Qlib `risk_analysis` | 最大回撤                |
+| Sharpe Ratio      | Qlib `risk_analysis` | 夏普比率（信息比率）    |
+| Volatility        | Qlib `risk_analysis` | 年化波动率              |
+| Calmar Ratio      | 自定义计算           | 年化收益 / \|最大回撤\| |
+| Win Rate          | 自定义计算           | 盈利天数 / 总交易天数   |
+| Profit/Loss Ratio | 自定义计算           | 平均盈利 / 平均亏损     |
+
+### 📁 修改文件清单
+
+| 文件                                             | 修改类型 | 说明                         |
+| ------------------------------------------------ | -------- | ---------------------------- |
+| `backend/app/services/online_serving_service.py` | 重构     | 回测逻辑、指标计算、图表生成 |
+| `backend/app/services/notification_service.py`   | 优化     | 邮件模板重新设计             |
+| `backend/app/api/routes/online.py`               | 修复     | 移除重复邮件发送             |
+| `backend/app/api/routes/backtest.py`             | 修复     | 策略名称修正                 |
+| `frontend/src/routes/_layout/backtest.tsx`       | 修复     | 移除重复图表、修复显示格式   |
+
+### ✅ 验证结果
+
+回测运行结果示例（725 交易日）：
+
+- **Total Return**: +390.39%
+- **Annualized Return**: +57.79%
+- **Max Drawdown**: -11.17%
+- **Sharpe Ratio**: 3.09
+- **Volatility**: 1.21%
+- **Calmar Ratio**: 5.17
+- **Win Rate**: 56.55%
+- **Profit/Loss Ratio**: 1.38

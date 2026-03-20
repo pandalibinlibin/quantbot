@@ -48,16 +48,17 @@ class FactorFullComputationManager:
     - Handles computation errors gracefully
     """
 
-    def __init__(self, freq: str = "day", max_workers: int = 4):
+    def __init__(self, freq: str = "day", max_workers: int = 1):
         """
         Initialize Full Computation Manager
 
         Args:
             freq: Data frequency (day, 1min, etc.)
-            max_workers: Maximum number of concurrent workers
+            max_workers: Maximum number of concurrent workers (set to 1 to avoid Redis lock conflicts)
         """
         self.freq = freq
-        self.max_workers = max_workers
+        # Force sequential processing to avoid Qlib Redis lock conflicts
+        self.max_workers = 1
 
         # Initialize components
         self.processor = FactorProcessor(freq=freq)
@@ -238,7 +239,7 @@ class FactorFullComputationManager:
         end_time: Union[str, datetime, date],
         instruments: Optional[List[str]] = None,
         overwrite: bool = True,
-        parallel: bool = True,
+        parallel: bool = False,
     ) -> Dict[str, Any]:
         """
         Perform full computation for multiple factors

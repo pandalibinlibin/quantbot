@@ -86,8 +86,21 @@ class RoutineResponse(BaseModel):
     steps: List[StepResult] = []
     total_duration_seconds: Optional[float] = None
     error: Optional[str] = None
-    target_portfolio: Optional[List[PortfolioItem]] = None
-    portfolio_summary: Optional[PortfolioSummary] = None
+    target_portfolio: Optional[List[Any]] = (
+        None  # Allow any structure to preserve all fields
+    )
+    portfolio_summary: Optional[Dict[str, Any]] = (
+        None  # Allow any structure for ETF Enhanced Indexing
+    )
+    # ETF Enhanced Indexing fields
+    generated_at: Optional[str] = None
+    trade_date: Optional[str] = None
+    signal_for_date: Optional[str] = None
+    total_value: Optional[float] = None
+    region: Optional[str] = None
+    lot_size: Optional[int] = None
+    weights: Optional[Dict[str, Any]] = None
+    strategy: Optional[str] = None
 
 
 class DataRange(BaseModel):
@@ -170,39 +183,11 @@ def execute_routine(request: RoutineRequest = None):
             for s in result.get("steps", [])
         ]
 
-        # Build portfolio items if available
-        target_portfolio = None
-        if result.get("target_portfolio"):
-            target_portfolio = [
-                PortfolioItem(
-                    rank=item["rank"],
-                    instrument=item["instrument"],
-                    benchmark_weight=item["benchmark_weight"],
-                    score=item["score"],
-                    target_weight=item["target_weight"],
-                    deviation=item["deviation"],
-                    deviation_pct=item["deviation_pct"],
-                    action=item["action"],
-                )
-                for item in result["target_portfolio"]
-            ]
+        # Pass through target_portfolio as-is to preserve all fields
+        target_portfolio = result.get("target_portfolio")
 
-        # Build portfolio summary if available
-        portfolio_summary = None
-        if result.get("portfolio_summary"):
-            ps = result["portfolio_summary"]
-            portfolio_summary = PortfolioSummary(
-                benchmark=ps.get("benchmark", ""),
-                benchmark_name=ps.get("benchmark_name", ""),
-                total_stocks=ps.get("total_stocks", 0),
-                total_weight=float(ps.get("total_weight", 0)),
-                overweight_count=ps.get("overweight_count", 0),
-                underweight_count=ps.get("underweight_count", 0),
-                neutral_count=ps.get("neutral_count", 0),
-                max_deviation=ps.get("max_deviation", 0),
-                generated_at=ps.get("generated_at", ""),
-                target_date=ps.get("target_date", ""),
-            )
+        # Pass through portfolio_summary as-is to preserve all fields (ETF Enhanced Indexing format)
+        portfolio_summary = result.get("portfolio_summary")
 
         response = RoutineResponse(
             success=result.get("success", False),
@@ -214,35 +199,19 @@ def execute_routine(request: RoutineRequest = None):
             error=result.get("error"),
             target_portfolio=target_portfolio,
             portfolio_summary=portfolio_summary,
+            # ETF Enhanced Indexing fields
+            generated_at=result.get("generated_at"),
+            trade_date=result.get("trade_date"),
+            signal_for_date=result.get("signal_for_date"),
+            total_value=result.get("total_value"),
+            region=result.get("region"),
+            lot_size=result.get("lot_size"),
+            weights=result.get("weights"),
+            strategy=result.get("strategy"),
         )
 
-        # Send email notification if routine was successful
-        if result.get("success") and target_portfolio:
-            try:
-                notification_service = get_notification_service()
-                report_data = {
-                    "executed_at": result.get("executed_at", ""),
-                    "target_date": result.get("portfolio_summary", {}).get(
-                        "target_date", ""
-                    ),
-                    "signal_count": len(target_portfolio),
-                    "steps": result.get("steps", []),
-                    "total_duration_seconds": result.get("total_duration_seconds"),
-                    "target_portfolio": result.get("target_portfolio", []),
-                    "portfolio_summary": result.get("portfolio_summary", {}),
-                }
-                email_result = notification_service.send_trading_report(
-                    subject=f"QuantBot Daily Report - {result.get('portfolio_summary', {}).get('target_date', 'N/A')}",
-                    report_data=report_data,
-                )
-                if email_result.get("success"):
-                    logger.info("Trading report email sent successfully")
-                else:
-                    logger.warning(
-                        f"Failed to send trading report email: {email_result.get('error')}"
-                    )
-            except Exception as email_error:
-                logger.warning(f"Failed to send trading report email: {email_error}")
+        # Note: Email notification is now handled in online_serving_service._send_etf_portfolio_email()
+        # which is called during _calculate_enhanced_indexing(). No need to send duplicate email here.
 
         return response
 

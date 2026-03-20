@@ -189,7 +189,7 @@ def execute_data_pipeline(request: DownloadDataRequest) -> DownloadTaskResponse:
                 logger.info(f"Factor frequency: {factor_freq}")
 
                 # Initialize factor pipeline with correct frequency
-                factor_pipeline = FactorPipeline(freq=factor_freq, max_workers=4)
+                factor_pipeline = FactorPipeline(freq=factor_freq, max_workers=1)
                 logger.info(f"FactorPipeline initialized with freq={factor_freq}")
 
                 # Determine update mode based on incremental flag
@@ -241,7 +241,7 @@ def execute_data_pipeline(request: DownloadDataRequest) -> DownloadTaskResponse:
                     data_collector_mode=data_collector_mode,
                     start_time=factor_start,
                     end_time=factor_end,
-                    parallel=True,
+                    parallel=False,
                 )
 
                 if factor_result.get("successful", 0) > 0:

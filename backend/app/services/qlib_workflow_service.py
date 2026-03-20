@@ -29,6 +29,7 @@ from qlib.model.base import Model
 from qlib.data.dataset import Dataset
 
 from app.services.qlib_init_service import get_qlib_init_service
+from app.services.etf_enhanced_indexing_service import get_etf_enhanced_indexing_service
 from app.core.timer import WorkflowTimer
 from app.core.config import settings
 
@@ -1059,6 +1060,334 @@ class QlibWorkflowService:
 
         except Exception as e:
             self.logger.error(f"Backtest failed: {str(e)}")
+            return {
+                "status": "error",
+                "error": str(e),
+            }
+
+    def execute_etf_backtest(
+        self,
+        account: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        """
+        Execute backtest using ETFEnhancedIndexingService strategy.
+
+        This method uses the same ETFEnhancedIndexingService that Routine uses,
+        ensuring consistency between backtest validation and live trading signals.
+
+        Workflow:
+        1. Load the latest trained model
+        2. Generate predictions (scores) for all available data
+        3. For each trading day, use ETFEnhancedIndexingService to calculate target portfolio
+        4. Simulate trading based on portfolio changes
+        5. Calculate returns and metrics
+
+        Args:
+            account: Initial account value (overrides config)
+
+        Returns:
+            Dictionary with backtest results including daily returns, metrics, and portfolio history
+        """
+        import pandas as pd
+        import numpy as np
+        from qlib.data.dataset import DatasetH
+
+        # Load config from file
+        config = self.load_backtest_config()
+        backtest_config = config.get("backtest", {})
+
+        # Get account value
+        account = (
+            account if account is not None else backtest_config.get("account", 1000000)
+        )
+
+        # Get exchange kwargs for cost calculation
+        exchange_kwargs = backtest_config.get(
+            "exchange_kwargs",
+            {
+                "open_cost": 0.0003,
+                "close_cost": 0.0013,
+                "min_cost": 5,
+            },
+        )
+
+        freq = "day"
+        self.logger.info(f"ETF Backtest using freq: {freq}, account: {account}")
+
+        # Initialize Qlib
+        qlib_service = get_qlib_init_service()
+        qlib_service.initialize()
+
+        # Step 1: Load the latest model
+        models = self.list_models()
+        if not models:
+            return {
+                "status": "error",
+                "error": "No trained model found. Please train a model first.",
+            }
+
+        latest_model_path = models[0]["path"]
+        self.logger.info(f"Loading model from: {latest_model_path}")
+
+        try:
+            with open(latest_model_path, "rb") as f:
+                model = pickle.load(f)
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to load model: {str(e)}",
+            }
+
+        # Step 2: Get data time range
+        time_range = self._get_data_time_range()
+        if not time_range:
+            return {
+                "status": "error",
+                "error": "Failed to get data time range.",
+            }
+
+        data_start_time = time_range["start_time"]
+        data_end_time = time_range["end_time"]
+        self.logger.info(f"Data time range: {data_start_time} to {data_end_time}")
+
+        # Step 3: Create dataset for inference
+        try:
+            from app.services.custom_factor_handler import CustomFactorHandler
+
+            handler = CustomFactorHandler(
+                instruments="all",
+                start_time=data_start_time,
+                end_time=data_end_time,
+                freq=freq,
+                infer_processors=[],
+            )
+
+            dataset = DatasetH(
+                handler=handler,
+                segments={
+                    "backtest": [data_start_time, data_end_time],
+                },
+            )
+
+            self.logger.info("Dataset created for ETF backtest")
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to create dataset: {str(e)}",
+            }
+
+        # Step 4: Generate predictions (scores)
+        try:
+            pred = model.predict(dataset, segment="backtest")
+            self.logger.info(f"Generated predictions: {len(pred)} records")
+
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": f"Failed to generate predictions: {str(e)}",
+            }
+
+        # Step 5: Get ETFEnhancedIndexingService
+        etf_service = get_etf_enhanced_indexing_service()
+        if not etf_service.enabled:
+            return {
+                "status": "error",
+                "error": "ETFEnhancedIndexingService is not enabled. Check system_config.yaml.",
+            }
+
+        # Override total_value with backtest account
+        original_total_value = etf_service.total_value
+        etf_service.total_value = account
+
+        # Step 6: Simulate trading day by day
+        try:
+            # Get unique trading dates
+            dates = pred.index.get_level_values("datetime").unique().sort_values()
+            self.logger.info(f"Simulating {len(dates)} trading days")
+
+            # Initialize tracking variables
+            daily_returns = []
+            portfolio_history = []
+            current_holdings = {}  # symbol -> shares
+            current_cash = account
+            prev_portfolio_value = account
+
+            open_cost = exchange_kwargs.get("open_cost", 0.0003)
+            close_cost = exchange_kwargs.get("close_cost", 0.0013)
+            min_cost = exchange_kwargs.get("min_cost", 5)
+
+            for i, date in enumerate(dates):
+                date_str = str(date)[:10]
+
+                # Get signals for this date
+                try:
+                    day_signals = pred.loc[date]
+                    if isinstance(day_signals, pd.Series):
+                        day_signals = day_signals.to_frame(name="score")
+
+                    # Create proper DataFrame with MultiIndex for ETFEnhancedIndexingService
+                    day_signals_df = pd.DataFrame(
+                        {
+                            "score": (
+                                day_signals["score"].values
+                                if "score" in day_signals.columns
+                                else day_signals.iloc[:, 0].values
+                            )
+                        },
+                        index=pd.MultiIndex.from_tuples(
+                            [(date, inst) for inst in day_signals.index],
+                            names=["datetime", "instrument"],
+                        ),
+                    )
+                except Exception as e:
+                    self.logger.warning(f"Skip date {date_str}: {e}")
+                    continue
+
+                # Calculate target portfolio using ETFEnhancedIndexingService
+                try:
+                    portfolio_data = etf_service.calculate_target_portfolio(
+                        signals=day_signals_df,
+                        trade_date=date_str,
+                        current_holdings=current_holdings,
+                    )
+                except Exception as e:
+                    self.logger.warning(
+                        f"Portfolio calculation failed for {date_str}: {e}"
+                    )
+                    continue
+
+                positions = portfolio_data.get("positions", [])
+                if not positions:
+                    continue
+
+                # Calculate trading costs and update holdings
+                total_cost = 0
+                for pos in positions:
+                    symbol = pos.get("symbol", "")
+                    action = pos.get("action", "hold")
+                    action_shares = pos.get("action_shares", 0)
+                    price = pos.get("reference_price", 0)
+
+                    if action == "buy" and action_shares > 0:
+                        trade_value = action_shares * price
+                        cost = max(trade_value * open_cost, min_cost)
+                        total_cost += cost
+                        current_holdings[symbol] = (
+                            current_holdings.get(symbol, 0) + action_shares
+                        )
+                        current_cash -= trade_value + cost
+
+                    elif action == "sell" and action_shares > 0:
+                        trade_value = action_shares * price
+                        cost = max(trade_value * close_cost, min_cost)
+                        total_cost += cost
+                        current_holdings[symbol] = (
+                            current_holdings.get(symbol, 0) - action_shares
+                        )
+                        current_cash += trade_value - cost
+                        if current_holdings[symbol] <= 0:
+                            del current_holdings[symbol]
+
+                # Calculate portfolio value
+                portfolio_value = current_cash
+                for pos in positions:
+                    symbol = pos.get("symbol", "")
+                    price = pos.get("reference_price", 0)
+                    shares = current_holdings.get(symbol, 0)
+                    portfolio_value += shares * price
+
+                # Calculate daily return
+                daily_return = (
+                    (portfolio_value - prev_portfolio_value) / prev_portfolio_value
+                    if prev_portfolio_value > 0
+                    else 0
+                )
+
+                daily_returns.append(
+                    {
+                        "date": date_str,
+                        "portfolio_value": portfolio_value,
+                        "daily_return": daily_return,
+                        "cost": total_cost,
+                        "cash": current_cash,
+                        "positions_count": len(
+                            [p for p in positions if p.get("target_shares", 0) > 0]
+                        ),
+                    }
+                )
+
+                prev_portfolio_value = portfolio_value
+
+                # Log progress every 50 days
+                if (i + 1) % 50 == 0:
+                    self.logger.info(
+                        f"Processed {i + 1}/{len(dates)} days, portfolio value: {portfolio_value:,.0f}"
+                    )
+
+            # Restore original total_value
+            etf_service.total_value = original_total_value
+
+            # Calculate summary metrics
+            if not daily_returns:
+                return {
+                    "status": "error",
+                    "error": "No valid trading days in backtest period.",
+                }
+
+            returns_df = pd.DataFrame(daily_returns)
+            total_return = (returns_df["portfolio_value"].iloc[-1] - account) / account
+            total_cost = returns_df["cost"].sum()
+            trading_days = len(returns_df)
+
+            # Calculate annualized metrics
+            annual_return = (
+                total_return * (252 / trading_days) if trading_days > 0 else 0
+            )
+            daily_returns_series = returns_df["daily_return"]
+            volatility = (
+                daily_returns_series.std() * np.sqrt(252)
+                if len(daily_returns_series) > 1
+                else 0
+            )
+            sharpe_ratio = annual_return / volatility if volatility > 0 else 0
+
+            # Calculate max drawdown
+            cumulative = (1 + daily_returns_series).cumprod()
+            rolling_max = cumulative.expanding().max()
+            drawdown = (cumulative - rolling_max) / rolling_max
+            max_drawdown = drawdown.min()
+
+            result = {
+                "status": "success",
+                "strategy": "etf_enhanced_indexing",
+                "start_time": returns_df["date"].iloc[0],
+                "end_time": returns_df["date"].iloc[-1],
+                "trading_days": trading_days,
+                "initial_account": account,
+                "final_account": float(returns_df["portfolio_value"].iloc[-1]),
+                "total_return": float(total_return),
+                "total_cost": float(total_cost),
+                "annual_return": float(annual_return),
+                "volatility": float(volatility),
+                "sharpe_ratio": float(sharpe_ratio),
+                "max_drawdown": float(max_drawdown),
+                "daily_returns": returns_df.to_dict(orient="records"),
+            }
+
+            self.logger.info(
+                f"ETF Backtest completed: {trading_days} days, "
+                f"return={total_return:.2%}, sharpe={sharpe_ratio:.2f}, max_dd={max_drawdown:.2%}"
+            )
+            return result
+
+        except Exception as e:
+            # Restore original total_value on error
+            etf_service.total_value = original_total_value
+            self.logger.error(f"ETF Backtest failed: {str(e)}")
+            import traceback
+
+            self.logger.error(traceback.format_exc())
             return {
                 "status": "error",
                 "error": str(e),

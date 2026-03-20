@@ -47,12 +47,40 @@ INDEX_CODE_MAP = {
 
 # Benchmark ETF mapping
 BENCHMARK_CONFIG = {
-    "CSI300": {"tushare_code": "510300.SH", "qlib_symbol": "SH510300"},
-    "CSI500": {"tushare_code": "510500.SH", "qlib_symbol": "SH510500"},
-    "CSI800": {"tushare_code": "510800.SH", "qlib_symbol": "SH510800"},
-    "CSI1000": {"tushare_code": "512100.SH", "qlib_symbol": "SH512100"},
-    "DIVIDEND": {"tushare_code": "510880.SH", "qlib_symbol": "SH510880"},
+    "CSI300": {
+        "tushare_code": "510300.SH",
+        "qlib_symbol": "SH510300",
+        "name": "沪深300ETF",
+    },
+    "CSI500": {
+        "tushare_code": "510500.SH",
+        "qlib_symbol": "SH510500",
+        "name": "中证500ETF",
+    },
+    "CSI800": {
+        "tushare_code": "510800.SH",
+        "qlib_symbol": "SH510800",
+        "name": "中证800ETF",
+    },
+    "CSI1000": {
+        "tushare_code": "512100.SH",
+        "qlib_symbol": "SH512100",
+        "name": "中证1000ETF",
+    },
+    "DIVIDEND": {
+        "tushare_code": "510880.SH",
+        "qlib_symbol": "SH510880",
+        "name": "红利ETF",
+    },
+    "SZSE_300": {
+        "tushare_code": "159919.SZ",
+        "qlib_symbol": "SZ159919",
+        "name": "沪深300ETF(深交所)",
+    },
 }
+
+# ETF code set for quick lookup
+ETF_CODES = {config["tushare_code"] for config in BENCHMARK_CONFIG.values()}
 
 
 class TushareDataCollector(BaseDataCollector):
@@ -193,7 +221,10 @@ class TushareDataCollector(BaseDataCollector):
         """
         try:
             pro = self._get_pro_api()
-            index_code = INDEX_CODE_MAP.get(self.index)
+            # Handle case-insensitive lookup (config uses csi300, INDEX_CODE_MAP uses CSI300)
+            index_code = INDEX_CODE_MAP.get(self.index) or INDEX_CODE_MAP.get(
+                self.index.upper()
+            )
 
             if not index_code:
                 raise ValueError(f"Unknown index: {self.index}")
@@ -236,10 +267,22 @@ class TushareDataCollector(BaseDataCollector):
             # Add the index itself for benchmark comparison
             symbols.append(index_code)
 
-            logger.info(
-                f"Retrieved {len(symbols)-1} constituent stocks for {self.index}"
+            # Add the corresponding ETF for ETF Enhanced Indexing Strategy
+            # Handle case-insensitive lookup (config uses csi300, BENCHMARK_CONFIG uses CSI300)
+            etf_config = BENCHMARK_CONFIG.get(self.index) or BENCHMARK_CONFIG.get(
+                self.index.upper()
             )
-            logger.info(f"Added index {index_code} for benchmark data")
+            if etf_config:
+                etf_code = etf_config["tushare_code"]
+                symbols.append(etf_code)
+                logger.info(
+                    f"Added ETF {etf_code} ({etf_config['name']}) for ETF Enhanced Indexing"
+                )
+
+            logger.info(
+                f"Retrieved {len(symbols)-2} constituent stocks for {self.index}"
+            )
+            logger.info(f"Added index {index_code} and ETF for benchmark/strategy data")
             logger.info(f"Sample stocks: {symbols[:5]}")
 
             return symbols
@@ -327,6 +370,8 @@ class TushareDataCollector(BaseDataCollector):
 
             # Check if this is an index (based on known index codes)
             is_index = symbol in INDEX_CODE_MAP.values()
+            # Check if this is an ETF
+            is_etf = symbol in ETF_CODES
 
             if is_index:
                 # Fetch index data using index_daily API
@@ -343,6 +388,27 @@ class TushareDataCollector(BaseDataCollector):
 
                 # Index data doesn't need adjustment factors
                 # Rename columns to standard format
+                df = df.rename(
+                    columns={
+                        "trade_date": "date",
+                        "vol": "volume",
+                    }
+                )
+
+            elif is_etf:
+                # Fetch ETF data using fund_daily API
+                logger.debug(f"Fetching ETF data for {symbol}")
+                df = pro.fund_daily(
+                    ts_code=symbol,
+                    start_date=start_date,
+                    end_date=end_date,
+                )
+
+                if df is None or df.empty:
+                    logger.warning(f"No ETF data returned for {symbol}")
+                    return pd.DataFrame()
+
+                # ETF data - rename columns to standard format
                 df = df.rename(
                     columns={
                         "trade_date": "date",
@@ -405,14 +471,14 @@ class TushareDataCollector(BaseDataCollector):
 
             # Convert volume to int64
             if "volume" in df.columns:
-                if is_index:
-                    # Index volume is already in correct units
+                if is_index or is_etf:
+                    # Index and ETF volume is already in correct units
                     df["volume"] = df["volume"].astype(np.int64)
                 else:
                     # Stock volume is in lots (手), convert to shares
                     df["volume"] = (df["volume"] * 100).astype(np.int64)
 
-            data_type = "index" if is_index else "stock"
+            data_type = "index" if is_index else ("etf" if is_etf else "stock")
             logger.debug(f"Retrieved {len(df)} records for {symbol} ({data_type})")
             return df
 
@@ -560,3 +626,100 @@ class TushareDataCollector(BaseDataCollector):
         except Exception as e:
             logger.error(f"Error fetching index components: {e}")
             raise
+
+    def collector_data(self, **kwargs) -> None:
+        """
+        Main data collection workflow for batch downloading.
+
+        This method implements the standard Qlib BaseCollector interface
+        for batch data collection. It downloads OHLCV data for all instruments
+        including stocks, indices, and ETFs.
+
+        Educational Notes:
+        - Called by data collection pipeline to execute batch downloads
+        - Saves data as CSV files in save_dir for Qlib processing
+        - Qlib will automatically convert CSV to binary format
+        - Includes error handling and progress tracking
+        """
+        import os
+        from pathlib import Path
+
+        logger.info(f"Starting TushareDataCollector batch data collection...")
+        logger.info(f"Target directory: {self.save_dir}")
+        logger.info(f"Date range: {self.start} to {self.end}")
+
+        # Ensure save directory exists
+        Path(self.save_dir).mkdir(parents=True, exist_ok=True)
+
+        # Get instrument list (stocks + index + ETF)
+        try:
+            instruments = self.get_instrument_list()
+            logger.info(f"Retrieved {len(instruments)} instruments for collection")
+
+            # Log instrument breakdown
+            etf_codes = [config["tushare_code"] for config in BENCHMARK_CONFIG.values()]
+            etf_count = sum(1 for code in instruments if code in etf_codes)
+            index_count = sum(
+                1 for code in instruments if code in INDEX_CODE_MAP.values()
+            )
+            stock_count = len(instruments) - etf_count - index_count
+            logger.info(
+                f"Breakdown: {stock_count} stocks, {index_count} indices, {etf_count} ETFs"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to get instrument list: {e}")
+            raise
+
+        # Download data for each instrument
+        successful_downloads = 0
+        failed_downloads = 0
+
+        for i, instrument in enumerate(instruments, 1):
+            try:
+                logger.info(f"[{i}/{len(instruments)}] Downloading {instrument}...")
+
+                # Get data for this instrument
+                df = self.get_data(
+                    symbol=instrument,
+                    interval="1d",
+                    start_datetime=self.start,
+                    end_datetime=self.end,
+                )
+
+                if df.empty:
+                    logger.warning(f"No data returned for {instrument}")
+                    failed_downloads += 1
+                    continue
+
+                # Convert to Qlib symbol format for filename
+                qlib_symbol = self.normalize_symbol(instrument)
+                csv_filename = f"{qlib_symbol}.csv"
+                csv_path = os.path.join(self.save_dir, csv_filename)
+
+                # Save to CSV
+                df.to_csv(csv_path)
+                logger.debug(f"Saved {len(df)} records to {csv_filename}")
+                successful_downloads += 1
+
+                # Add small delay to avoid API rate limits
+                import time
+
+                time.sleep(self.delay)
+
+            except Exception as e:
+                logger.error(f"Failed to download {instrument}: {e}")
+                failed_downloads += 1
+                continue
+
+        # Summary
+        logger.info(f"Data collection completed:")
+        logger.info(f"  Successful: {successful_downloads}")
+        logger.info(f"  Failed: {failed_downloads}")
+        logger.info(f"  Total: {len(instruments)}")
+
+        if successful_downloads == 0:
+            raise DataCollectionError("No data was successfully downloaded")
+
+        logger.info(f"CSV files saved to: {self.save_dir}")
+        logger.info("Qlib will automatically convert CSV files to binary format")

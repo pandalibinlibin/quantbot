@@ -154,8 +154,8 @@ def get_backtest_configuration():
         # Build unified config that shows actual strategy used (without specific parameters)
         unified_config = {
             "strategy": {
-                "class": "EnhancedIndexingStrategy",
-                "module_path": "app.services.enhanced_indexing_service",
+                "class": "ETFEnhancedIndexingStrategy",
+                "module_path": "app.services.etf_enhanced_indexing_service",
                 # Remove kwargs to avoid showing strategy-specific parameters
                 # Strategy parameters are managed in routine configuration
             },

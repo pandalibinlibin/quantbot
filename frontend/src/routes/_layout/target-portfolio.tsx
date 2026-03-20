@@ -28,28 +28,37 @@ import { OpenAPI } from "@/client";
 import { toast } from "sonner";
 import { useState, useEffect, useMemo } from "react";
 
-// Types
-interface PortfolioItem {
+// Types for ETF Enhanced Indexing Strategy
+interface PortfolioPosition {
   rank: number;
-  instrument: string;
-  benchmark_weight: number;
-  score: number;
-  target_weight: number;
-  deviation: number;
-  deviation_pct: string;
-  action: string;
+  symbol: string;
+  name: string;
+  type: "etf" | "stock";
+  weight: number;
+  score?: number;
+  target_value: number;
+  reference_price: number;
+  target_shares: number;
+  current_shares: number;
+  action: "buy" | "sell" | "hold";
+  action_shares: number;
+  action_lots: number;
+}
+
+interface PortfolioWeights {
+  etf_weight: number;
+  alpha_weight: number;
+  score_spread: number;
+  weight_mode: string;
 }
 
 interface PortfolioSummary {
-  benchmark: string;
-  benchmark_name: string;
-  total_stocks: number;
-  overweight_count: number;
-  underweight_count: number;
-  neutral_count: number;
-  max_deviation: number;
-  generated_at: string;
-  target_date: string;
+  total_positions: number;
+  etf_positions: number;
+  stock_positions: number;
+  buy_count: number;
+  sell_count: number;
+  hold_count: number;
 }
 
 interface RoutineResult {
@@ -59,8 +68,17 @@ interface RoutineResult {
   total_duration_seconds?: number;
   signal_count?: number;
   error?: string;
-  target_portfolio?: PortfolioItem[];
+  // ETF Enhanced Indexing format - matches JSON output
+  generated_at?: string;
+  trade_date?: string;
+  signal_for_date?: string;
+  total_value?: number;
+  region?: string;
+  lot_size?: number;
+  weights?: PortfolioWeights;
+  target_portfolio?: PortfolioPosition[];
   portfolio_summary?: PortfolioSummary;
+  strategy?: string;
 }
 
 // API helper functions
@@ -164,14 +182,23 @@ function TargetPortfolioPage() {
     }
   }, []);
 
+  // Always use ETF Enhanced Indexing format (legacy format removed)
+  const isETFStrategy = true;
+
   // Filter and paginate portfolio
   const filteredPortfolio = useMemo(() => {
     const portfolio = lastRoutineResult?.target_portfolio || [];
     if (!portfolioSearch.trim()) return portfolio;
     const search = portfolioSearch.toLowerCase();
-    return portfolio.filter((item) =>
-      item.instrument.toLowerCase().includes(search),
-    );
+    return portfolio.filter((item: any) => {
+      // Support both new (symbol) and legacy (instrument) formats
+      const code = item.symbol || item.instrument || "";
+      const name = item.name || "";
+      return (
+        code.toLowerCase().includes(search) ||
+        name.toLowerCase().includes(search)
+      );
+    });
   }, [lastRoutineResult?.target_portfolio, portfolioSearch]);
 
   const paginatedPortfolio = useMemo(() => {
@@ -286,29 +313,42 @@ function TargetPortfolioPage() {
 
   const handleExportJson = () => {
     const portfolio = lastRoutineResult?.target_portfolio || [];
-    const summary: any = lastRoutineResult?.portfolio_summary || {};
-    const exportData = {
-      generated_at: new Date().toISOString(),
-      target_date: summary.target_date,
-      benchmark: summary.benchmark_name,
-      total_stocks: summary.total_stocks,
-      portfolio: portfolio.map((item: PortfolioItem) => ({
-        rank: item.rank,
-        instrument: item.instrument,
-        score: item.score,
-        benchmark_weight: item.benchmark_weight,
-        target_weight: item.target_weight,
-        deviation: item.deviation,
-        action: item.action,
-      })),
-    };
+    const summary = lastRoutineResult?.portfolio_summary || {};
+    const weights = lastRoutineResult?.weights;
+
+    // Export in appropriate format based on strategy
+    const exportData = isETFStrategy
+      ? {
+          generated_at:
+            lastRoutineResult?.generated_at || new Date().toISOString(),
+          trade_date: lastRoutineResult?.trade_date || "",
+          signal_for_date: lastRoutineResult?.signal_for_date || "",
+          total_value: lastRoutineResult?.total_value || 1000000,
+          region: lastRoutineResult?.region || "cn",
+          lot_size: lastRoutineResult?.lot_size || 100,
+          weights: weights,
+          positions: portfolio,
+          summary: summary,
+        }
+      : {
+          generated_at: new Date().toISOString(),
+          target_date: (summary as any).target_date,
+          benchmark: (summary as any).benchmark_name,
+          total_stocks: (summary as any).total_stocks,
+          portfolio: portfolio,
+        };
+
     const blob = new Blob([JSON.stringify(exportData, null, 2)], {
       type: "application/json",
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `target_portfolio_${summary.target_date || "export"}.json`;
+    const dateStr =
+      lastRoutineResult?.signal_for_date ||
+      (summary as any).target_date ||
+      "export";
+    a.download = `target_portfolio_${dateStr}.json`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success("Portfolio exported successfully");
@@ -339,160 +379,311 @@ function TargetPortfolioPage() {
             )}
           </div>
 
-          {/* Portfolio Summary */}
-          {portfolioSummary && (
-            <Card>
-              <CardHeader className="pb-3">
+          {/* Portfolio Summary - Green theme */}
+          {lastRoutineResult && (
+            <Card className="border-green-200 dark:border-green-900">
+              <CardHeader className="pb-3 bg-green-50/50 dark:bg-green-950/20">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Portfolio Summary</CardTitle>
-                  <Badge variant="outline">
-                    {portfolioSummary.target_date}
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-green-600" />
+                    Portfolio Summary
+                  </CardTitle>
+                  <Badge className="bg-green-500">
+                    Signal: {lastRoutineResult?.signal_for_date || "N/A"}
                   </Badge>
                 </div>
-                <CardDescription>
-                  {portfolioSummary.benchmark_name || "Enhanced Indexing"}
-                </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-4 space-y-4">
+                {/* Key Info Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-muted/50 rounded-lg p-3 text-center">
-                    <div className="text-2xl font-bold">
-                      {portfolioSummary.total_stocks}
+                  <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3">
+                    <div className="text-xs text-green-600/80 uppercase tracking-wide">
+                      Trade Date
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      Total Stocks
+                    <div className="text-lg font-semibold text-green-700 dark:text-green-400">
+                      {lastRoutineResult?.trade_date || "-"}
                     </div>
                   </div>
-                  <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3 text-center">
-                    <div className="text-2xl font-bold text-green-600">
-                      {portfolioSummary.overweight_count}
+                  <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3">
+                    <div className="text-xs text-green-600/80 uppercase tracking-wide">
+                      Total Value
                     </div>
-                    <div className="text-sm text-green-600/80">Overweight</div>
-                  </div>
-                  <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-3 text-center">
-                    <div className="text-2xl font-bold text-red-600">
-                      {portfolioSummary.underweight_count}
+                    <div className="text-lg font-semibold text-green-700 dark:text-green-400">
+                      ¥{(lastRoutineResult?.total_value || 0).toLocaleString()}
                     </div>
-                    <div className="text-sm text-red-600/80">Underweight</div>
                   </div>
-                  <div className="bg-muted/50 rounded-lg p-3 text-center">
-                    <div className="text-2xl font-bold text-muted-foreground">
-                      {portfolioSummary.neutral_count}
+                  <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3">
+                    <div className="text-xs text-green-600/80 uppercase tracking-wide">
+                      Region
                     </div>
-                    <div className="text-sm text-muted-foreground">Neutral</div>
+                    <div className="text-lg font-semibold text-green-700 dark:text-green-400">
+                      {(lastRoutineResult?.region || "cn").toUpperCase()}
+                    </div>
                   </div>
+                  <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3">
+                    <div className="text-xs text-green-600/80 uppercase tracking-wide">
+                      Lot Size
+                    </div>
+                    <div className="text-lg font-semibold text-green-700 dark:text-green-400">
+                      {lastRoutineResult?.lot_size || 100}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Weights Section */}
+                {lastRoutineResult?.weights && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-3">
+                      <div className="text-xs text-emerald-600/80 uppercase tracking-wide">
+                        ETF Weight
+                      </div>
+                      <div className="text-xl font-bold text-emerald-600">
+                        {(
+                          (lastRoutineResult.weights.etf_weight || 0) * 100
+                        ).toFixed(0)}
+                        %
+                      </div>
+                    </div>
+                    <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-3">
+                      <div className="text-xs text-emerald-600/80 uppercase tracking-wide">
+                        Alpha Weight
+                      </div>
+                      <div className="text-xl font-bold text-emerald-600">
+                        {(
+                          (lastRoutineResult.weights.alpha_weight || 0) * 100
+                        ).toFixed(0)}
+                        %
+                      </div>
+                    </div>
+                    <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-3">
+                      <div className="text-xs text-emerald-600/80 uppercase tracking-wide">
+                        Score Spread
+                      </div>
+                      <div className="text-xl font-bold text-emerald-600">
+                        {(lastRoutineResult.weights.score_spread || 0).toFixed(
+                          4,
+                        )}
+                      </div>
+                    </div>
+                    <div className="bg-emerald-50 dark:bg-emerald-950/30 rounded-lg p-3">
+                      <div className="text-xs text-emerald-600/80 uppercase tracking-wide">
+                        Weight Mode
+                      </div>
+                      <div className="text-xl font-bold text-emerald-600 capitalize">
+                        {lastRoutineResult.weights.weight_mode || "dynamic"}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Position Counts */}
+                {portfolioSummary && (
+                  <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                    <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-2 text-center">
+                      <div className="text-xl font-bold text-blue-600">
+                        {portfolioSummary.etf_positions || 0}
+                      </div>
+                      <div className="text-xs text-blue-600/80">ETF</div>
+                    </div>
+                    <div className="bg-purple-50 dark:bg-purple-950/30 rounded-lg p-2 text-center">
+                      <div className="text-xl font-bold text-purple-600">
+                        {portfolioSummary.stock_positions || 0}
+                      </div>
+                      <div className="text-xs text-purple-600/80">Stocks</div>
+                    </div>
+                    <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-2 text-center">
+                      <div className="text-xl font-bold">
+                        {portfolioSummary.total_positions || 0}
+                      </div>
+                      <div className="text-xs text-muted-foreground">Total</div>
+                    </div>
+                    <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-2 text-center">
+                      <div className="text-xl font-bold text-green-600">
+                        {portfolioSummary.buy_count || 0}
+                      </div>
+                      <div className="text-xs text-green-600/80">Buy</div>
+                    </div>
+                    <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-2 text-center">
+                      <div className="text-xl font-bold text-red-600">
+                        {portfolioSummary.sell_count || 0}
+                      </div>
+                      <div className="text-xs text-red-600/80">Sell</div>
+                    </div>
+                    <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-2 text-center">
+                      <div className="text-xl font-bold text-gray-500">
+                        {portfolioSummary.hold_count || 0}
+                      </div>
+                      <div className="text-xs text-gray-500">Hold</div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Generated At */}
+                <div className="text-xs text-muted-foreground text-right">
+                  Generated:{" "}
+                  {lastRoutineResult?.generated_at
+                    ? new Date(lastRoutineResult.generated_at).toLocaleString()
+                    : "-"}
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Portfolio Table */}
+          {/* Portfolio Holdings Table - Green theme */}
           {hasPortfolio ? (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Portfolio Holdings</CardTitle>
+            <Card className="border-green-200 dark:border-green-900">
+              <CardHeader className="pb-3 bg-green-50/50 dark:bg-green-950/20">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-green-600" />
+                  Portfolio Holdings
+                </CardTitle>
                 <CardDescription>
-                  Target weights and deviations from benchmark
+                  All {filteredPortfolio.length} positions with trading actions
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                {/* Search and pagination controls */}
+              <CardContent className="pt-4">
+                {/* Search */}
                 <div className="flex items-center justify-between mb-4">
                   <Input
-                    placeholder="Search by stock code..."
+                    placeholder="Search symbol or name..."
                     value={portfolioSearch}
                     onChange={(e) => {
                       setPortfolioSearch(e.target.value);
                       setPortfolioPage(0);
                     }}
-                    className="max-w-xs"
+                    className="max-w-xs border-green-200 focus:border-green-400"
                   />
-                  <div className="text-sm text-muted-foreground">
-                    Showing {paginatedPortfolio.length} of{" "}
-                    {filteredPortfolio.length} stocks
-                  </div>
                 </div>
 
-                {/* Portfolio table with sticky header */}
-                <div className="rounded-md border max-h-[400px] overflow-y-auto">
-                  <table className="w-full caption-bottom text-sm">
-                    <thead className="sticky top-0 bg-background z-10 border-b">
-                      <tr>
-                        <th className="h-11 px-4 text-center align-middle text-xs font-semibold uppercase tracking-wider w-16">
-                          Rank
-                        </th>
-                        <th className="h-11 px-4 text-left align-middle text-xs font-semibold uppercase tracking-wider">
-                          Stock
-                        </th>
-                        <th className="h-11 px-4 text-right align-middle text-xs font-semibold uppercase tracking-wider">
-                          Benchmark
-                        </th>
-                        <th className="h-11 px-4 text-right align-middle text-xs font-semibold uppercase tracking-wider">
-                          Score
-                        </th>
-                        <th className="h-11 px-4 text-right align-middle text-xs font-semibold uppercase tracking-wider">
-                          Target
-                        </th>
-                        <th className="h-11 px-4 text-right align-middle text-xs font-semibold uppercase tracking-wider">
-                          Deviation
-                        </th>
-                        <th className="h-11 px-4 text-center align-middle text-xs font-semibold uppercase tracking-wider">
-                          Action
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {paginatedPortfolio.map((item) => (
-                        <tr
-                          key={item.instrument}
-                          className="border-b hover:bg-muted/50"
-                        >
-                          <td className="px-4 py-3 text-center font-medium">
-                            {item.rank}
-                          </td>
-                          <td className="px-4 py-3 font-mono">
-                            {item.instrument}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            {(item.benchmark_weight * 100).toFixed(2)}%
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            {item.score.toFixed(4)}
-                          </td>
-                          <td className="px-4 py-3 text-right font-medium">
-                            {(item.target_weight * 100).toFixed(2)}%
-                          </td>
-                          <td
-                            className={`px-4 py-3 text-right ${
-                              item.action === "超配"
-                                ? "text-green-600"
-                                : item.action === "低配"
-                                  ? "text-red-600"
-                                  : ""
-                            }`}
-                          >
-                            {item.deviation_pct}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <Badge
-                              variant={
-                                item.action === "超配"
-                                  ? "default"
-                                  : item.action === "低配"
-                                    ? "destructive"
-                                    : "secondary"
-                              }
-                              className={
-                                item.action === "超配" ? "bg-green-500" : ""
-                              }
-                            >
-                              {item.action}
-                            </Badge>
-                          </td>
+                {/* Portfolio table */}
+                <div className="rounded-lg border border-green-200 dark:border-green-900 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-green-50 dark:bg-green-950/50 border-b border-green-200 dark:border-green-900">
+                        <tr>
+                          <th className="h-11 px-3 text-center font-semibold text-green-800 dark:text-green-300 w-14">
+                            Rank
+                          </th>
+                          <th className="h-11 px-3 text-left font-semibold text-green-800 dark:text-green-300 w-28">
+                            Symbol
+                          </th>
+                          <th className="h-11 px-3 text-left font-semibold text-green-800 dark:text-green-300 min-w-[100px]">
+                            Name
+                          </th>
+                          <th className="h-11 px-3 text-center font-semibold text-green-800 dark:text-green-300 w-16">
+                            Type
+                          </th>
+                          <th className="h-11 px-3 text-right font-semibold text-green-800 dark:text-green-300 w-20">
+                            Weight
+                          </th>
+                          <th className="h-11 px-3 text-right font-semibold text-green-800 dark:text-green-300 w-20">
+                            Score
+                          </th>
+                          <th className="h-11 px-3 text-right font-semibold text-green-800 dark:text-green-300 w-24">
+                            Price
+                          </th>
+                          <th className="h-11 px-3 text-right font-semibold text-green-800 dark:text-green-300 w-28">
+                            Target Value
+                          </th>
+                          <th className="h-11 px-3 text-right font-semibold text-green-800 dark:text-green-300 w-24">
+                            Target Shares
+                          </th>
+                          <th className="h-11 px-3 text-right font-semibold text-green-800 dark:text-green-300 w-24">
+                            Current
+                          </th>
+                          <th className="h-11 px-3 text-center font-semibold text-green-800 dark:text-green-300 w-20">
+                            Action
+                          </th>
+                          <th className="h-11 px-3 text-right font-semibold text-green-800 dark:text-green-300 w-24">
+                            Shares
+                          </th>
+                          <th className="h-11 px-3 text-right font-semibold text-green-800 dark:text-green-300 w-20">
+                            Lots
+                          </th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {paginatedPortfolio.map((item: any, index: number) => (
+                          <tr
+                            key={item.symbol || index}
+                            className={`border-b border-green-100 dark:border-green-900/50 hover:bg-green-50/50 dark:hover:bg-green-950/30 ${item.type === "etf" ? "bg-emerald-50/50 dark:bg-emerald-950/20" : ""}`}
+                          >
+                            <td className="px-3 py-3 text-center font-medium text-green-700 dark:text-green-400">
+                              {item.rank}
+                            </td>
+                            <td className="px-3 py-3 font-mono font-semibold">
+                              {item.symbol}
+                            </td>
+                            <td
+                              className="px-3 py-3 truncate"
+                              title={item.name}
+                            >
+                              {item.name}
+                            </td>
+                            <td className="px-3 py-3 text-center">
+                              <Badge
+                                className={
+                                  item.type === "etf"
+                                    ? "bg-emerald-500"
+                                    : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                                }
+                              >
+                                {item.type?.toUpperCase()}
+                              </Badge>
+                            </td>
+                            <td className="px-3 py-3 text-right font-medium">
+                              {((item.weight || 0) * 100).toFixed(2)}%
+                            </td>
+                            <td className="px-3 py-3 text-right text-muted-foreground">
+                              {item.score != null ? item.score.toFixed(4) : "-"}
+                            </td>
+                            <td className="px-3 py-3 text-right font-medium">
+                              ¥{(item.reference_price || 0).toFixed(2)}
+                            </td>
+                            <td className="px-3 py-3 text-right">
+                              ¥
+                              {(item.target_value || 0).toLocaleString(
+                                undefined,
+                                {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                },
+                              )}
+                            </td>
+                            <td className="px-3 py-3 text-right font-medium">
+                              {(item.target_shares || 0).toLocaleString()}
+                            </td>
+                            <td className="px-3 py-3 text-right text-muted-foreground">
+                              {(item.current_shares || 0).toLocaleString()}
+                            </td>
+                            <td className="px-3 py-3 text-center">
+                              <Badge
+                                className={`${
+                                  item.action === "buy"
+                                    ? "bg-green-500"
+                                    : item.action === "sell"
+                                      ? "bg-red-500"
+                                      : "bg-gray-400"
+                                }`}
+                              >
+                                {item.action?.toUpperCase()}
+                              </Badge>
+                            </td>
+                            <td
+                              className={`px-3 py-3 text-right font-medium ${item.action === "buy" ? "text-green-600" : item.action === "sell" ? "text-red-600" : ""}`}
+                            >
+                              {(item.action_shares || 0).toLocaleString()}
+                            </td>
+                            <td
+                              className={`px-3 py-3 text-right ${item.action === "buy" ? "text-green-600" : item.action === "sell" ? "text-red-600" : ""}`}
+                            >
+                              {item.action_lots || 0}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
 
                 {/* Pagination */}

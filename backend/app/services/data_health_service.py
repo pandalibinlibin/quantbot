@@ -213,7 +213,8 @@ class DataHealthService:
             for col in ["open", "high", "low", "close"]:
                 if col in df.columns:
                     # Calculate percentage change, replace inf with 0
-                    pct_change = df[col].pct_change().abs()
+                    # Use fill_method=None to avoid FutureWarning
+                    pct_change = df[col].pct_change(fill_method=None).abs()
                     pct_change = pct_change.replace([float("inf"), float("-inf")], 0)
                     threshold = self.large_step_threshold_price
 

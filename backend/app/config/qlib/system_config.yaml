@@ -85,10 +85,10 @@ data_quality:
   # A value of 0 means no missing values are allowed
   missing_data_threshold: 0
 
-# Enhanced Indexing Strategy Configuration
+# Enhanced Indexing Strategy Configuration (Legacy - kept for backward compatibility)
 enhanced_indexing:
   # Whether to enable enhanced indexing strategy in routine
-  enabled: true
+  enabled: false # Disabled in favor of ETF Enhanced Indexing
 
   # Maximum deviation from benchmark weight per stock (default 2%)
   # e.g., if benchmark weight is 6%, target weight will be in [4%, 8%]
@@ -104,3 +104,34 @@ enhanced_indexing:
 
   # Output directory for target portfolio files
   output_dir: "/app/data/target_portfolio"
+
+# ETF Enhanced Indexing Strategy Configuration
+# A capital-efficient strategy: 1 ETF + 9 alpha stocks = 10 positions
+etf_enhanced_indexing:
+  # Whether to enable ETF enhanced indexing strategy
+  enabled: true
+
+  # Dynamic weight mode
+  # "dynamic": adjust ETF/Alpha weights based on score spread
+  # "fixed": use fixed weights
+  weight_mode: "dynamic"
+
+  # Alpha weight range (for dynamic mode)
+  # High score spread → High alpha weight (model confident)
+  # Low score spread → Low alpha weight (model uncertain)
+  alpha_weight_min: 0.2 # Minimum alpha weight (20%)
+  alpha_weight_max: 0.5 # Maximum alpha weight (50%)
+
+  # Stock selection
+  max_stocks: 9 # Maximum alpha stocks (fixed at 9)
+  weight_method: "score_weighted" # Weight allocation method
+
+  # Rebalancing frequency
+  rebalance_frequency: "daily" # Options: "daily", "weekly"
+
+  # Output directory for target portfolio files
+  output_dir: "/app/data/target_portfolio"
+
+  # Email notification (uses existing email service)
+  email_notification:
+    enabled: true

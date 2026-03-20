@@ -2,22 +2,23 @@
 # This configuration uses the same Enhanced Indexing Strategy as the routine
 # to maintain consistency between routine execution and backtesting.
 
-# Strategy configuration (uses routine's Enhanced Indexing Strategy)
+# Strategy configuration (uses ETF Enhanced Indexing Strategy)
 strategy:
-  class: EnhancedIndexingStrategy
-  module_path: app.services.enhanced_indexing_service
-  # Strategy parameters are loaded from system_config.yaml enhanced_indexing section
+  class: ETFEnhancedIndexingStrategy
+  module_path: app.services.etf_enhanced_indexing_service
+  # Strategy parameters are loaded from system_config.yaml etf_enhanced_indexing section
   # This ensures consistency with routine execution
 
 # Backtest parameters
 backtest:
-  account: 100000000 # Initial account value (100 million)
+  account: 1000000 # Initial account value (1 million for ETF Enhanced Indexing)
   benchmark: auto # Use auto-detection like routine (will resolve to SH000300 for CSI300)
 
   # A-share trading costs
   exchange_kwargs:
-    limit_threshold: 0.095 # Price limit threshold
+    limit_threshold: 0.095 # Price limit threshold (9.5% for A-shares)
     deal_price: close # Use close price for trading
-    open_cost: 0.0003 # Buy commission rate
-    close_cost: 0.0013 # Sell commission rate (includes stamp duty)
-    min_cost: 5 # Minimum commission per trade
+    open_cost: 0.0003 # Buy commission rate (0.03%)
+    close_cost: 0.0013 # Sell commission rate (0.03% + 0.1% stamp duty = 0.13%)
+    min_cost: 5 # Minimum commission per trade (5 CNY)
+    trade_unit: 100 # Trading lot size (100 shares for A-shares, 1 for US)

@@ -48,8 +48,11 @@ async function fetchOnlineStatus() {
 async function executeRoutine() {
   console.log("Executing routine API call...");
   console.log("API Base URL:", OpenAPI.BASE);
-  console.log("Access Token:", localStorage.getItem("access_token") ? "Present" : "Missing");
-  
+  console.log(
+    "Access Token:",
+    localStorage.getItem("access_token") ? "Present" : "Missing",
+  );
+
   const response = await fetch(`${OpenAPI.BASE}/api/v1/online/routine`, {
     method: "POST",
     headers: {
@@ -57,16 +60,18 @@ async function executeRoutine() {
       "Content-Type": "application/json",
     },
   });
-  
+
   console.log("Response status:", response.status);
   console.log("Response ok:", response.ok);
-  
+
   if (!response.ok) {
     const errorText = await response.text();
     console.error("API Error:", errorText);
-    throw new Error(`Failed to execute routine: ${response.status} - ${errorText}`);
+    throw new Error(
+      `Failed to execute routine: ${response.status} - ${errorText}`,
+    );
   }
-  
+
   const result = await response.json();
   console.log("Routine result:", result);
   return result;
@@ -331,8 +336,11 @@ function RoutinePage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {lastRoutineResult?.portfolio_summary?.total_stocks?.toLocaleString() ||
-                    "0"}
+                  {(
+                    lastRoutineResult?.portfolio_summary?.total_positions ||
+                    lastRoutineResult?.portfolio_summary?.total_stocks ||
+                    0
+                  ).toLocaleString()}
                 </div>
               </CardContent>
             </Card>
