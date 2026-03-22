@@ -1268,6 +1268,9 @@ class OnlineServingService:
             from qlib.data import D
 
             instruments = signals_df["instrument"].unique().tolist()
+            # Add benchmark index (CSI300) for chart comparison
+            if "SH000300" not in instruments:
+                instruments = instruments + ["SH000300"]
 
             # Get close prices
             price_data = D.features(
@@ -1406,10 +1409,26 @@ class OnlineServingService:
             # Update portfolio value
             portfolio_value = portfolio_value * (1 + daily_return) - day_cost
 
+            # Calculate benchmark return for this day
+            benchmark_return = 0.0
+            try:
+                if "SH000300" in available_instruments:
+                    bench_prices = price_data.xs("SH000300", level=0)
+                    if date in bench_prices.index and next_date in bench_prices.index:
+                        bench_today = bench_prices.loc[date, "close"]
+                        bench_next = bench_prices.loc[next_date, "close"]
+                        if bench_today > 0 and bench_next > 0:
+                            benchmark_return = float(
+                                (bench_next - bench_today) / bench_today
+                            )
+            except Exception:
+                pass
+
             daily_returns.append(
                 {
                     "date": str(date.date()),
                     "daily_return": daily_return,
+                    "benchmark_return": benchmark_return,
                     "portfolio_value": portfolio_value,
                     "cost": day_cost,
                 }
@@ -1533,6 +1552,7 @@ class OnlineServingService:
             # Cumulative returns chart - frontend expects "strategy" key
             cumulative_returns = []
             cum_return = 1.0
+            cum_benchmark = 1.0  # Track benchmark cumulative return
             max_cum_return = 1.0
             max_drawdown = 0.0
 
@@ -1550,8 +1570,11 @@ class OnlineServingService:
 
             for row in daily_returns:
                 daily_ret = row.get("daily_return", 0)
+                benchmark_ret = row.get("benchmark_return", 0)
                 cum_return *= 1 + daily_ret
-                cum_return_pct = cum_return - 1  # Convert to percentage
+                cum_benchmark *= 1 + benchmark_ret
+                cum_return_pct = float(cum_return - 1)  # Convert to percentage
+                cum_benchmark_pct = float(cum_benchmark - 1)
 
                 # Track current peak
                 if cum_return > max_cum_return:
@@ -1577,12 +1600,14 @@ class OnlineServingService:
                     if cum_return >= max_drawdown_peak_cum_return:
                         recovery_date = row.get("date")
 
-                cumulative_returns.append(
-                    {
-                        "date": row.get("date"),
-                        "strategy": cum_return_pct,  # Frontend expects "strategy" key
-                    }
-                )
+                chart_point = {
+                    "date": row.get("date"),
+                    "strategy": cum_return_pct,  # Frontend expects "strategy" key
+                }
+                # Add benchmark if available
+                if benchmark_ret != 0 or cum_benchmark != 1.0:
+                    chart_point["benchmark"] = cum_benchmark_pct
+                cumulative_returns.append(chart_point)
 
             # Portfolio value chart
             portfolio_values = [

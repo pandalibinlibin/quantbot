@@ -1,18 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 import {
-  Wallet,
-  TrendingUp,
   TrendingDown,
   Target,
-  Activity,
   AlertTriangle,
   CheckCircle2,
   Info,
-  RefreshCw,
-  ArrowRight,
   BarChart3,
   Zap,
+  Play,
+  Loader2,
+  Activity,
 } from "lucide-react";
 import {
   Card,
@@ -24,16 +23,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { OpenAPI } from "@/client";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
-} from "recharts";
 
 export const Route = createFileRoute("/_layout/")({
   component: Dashboard,
@@ -59,15 +48,49 @@ async function fetchDashboardSummary() {
   return response.json();
 }
 
+async function runRoutine() {
+  const response = await fetch(`${OpenAPI.BASE}/api/v1/online/routine`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+      "Content-Type": "application/json",
+    },
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || "Failed to run routine");
+  }
+  return response.json();
+}
+
+async function runBacktest() {
+  const response = await fetch(`${OpenAPI.BASE}/api/v1/backtest/run`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({}),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || "Failed to run backtest");
+  }
+  return response.json();
+}
+
 // Types
-interface PortfolioSummary {
-  total_value: number;
-  initial_cash: number;
+interface BacktestSummary {
+  has_results: boolean;
   total_return: number;
   total_return_pct: string;
-  annualized_return_pct?: string;
-  position_count: number;
-  trading_started: boolean;
+  annualized_return: number;
+  annualized_return_pct: string;
+  max_drawdown: number;
+  max_drawdown_pct: string;
+  sharpe_ratio: number;
+  trading_days: number;
+  backtest_date?: string;
 }
 
 interface ModelSummary {
@@ -85,18 +108,14 @@ interface SystemSummary {
   data_range_end?: string;
 }
 
-interface HoldingItem {
+interface TargetPositionItem {
+  rank: number;
   instrument: string;
-  value: number;
-  weight: number;
-  shares: number;
-}
-
-interface ActivityItem {
-  time: string;
+  name: string;
   type: string;
-  message: string;
-  success: boolean;
+  weight: number;
+  target_value: number;
+  action: string;
 }
 
 interface AlertItem {
@@ -107,17 +126,11 @@ interface AlertItem {
 
 interface DashboardData {
   success: boolean;
-  portfolio: PortfolioSummary;
+  backtest: BacktestSummary;
   model: ModelSummary;
   system: SystemSummary;
-  top_holdings: HoldingItem[];
-  recent_activities: ActivityItem[];
+  target_positions: TargetPositionItem[];
   alerts: AlertItem[];
-}
-
-// Format currency - always show full number
-function formatCurrency(value: number): string {
-  return `¥${value.toLocaleString("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // Format number with K/M suffix
@@ -131,36 +144,63 @@ function formatNumber(value: number): string {
 }
 
 function Dashboard() {
+  const [dailyTaskStatus, setDailyTaskStatus] = useState<string>("");
+
   const {
     data: dashboardData,
     isLoading,
     refetch,
-    isRefetching,
   } = useQuery<DashboardData>({
     queryKey: ["dashboardSummary"],
     queryFn: fetchDashboardSummary,
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  const portfolio = dashboardData?.portfolio;
+  const routineMutation = useMutation({
+    mutationFn: runRoutine,
+  });
+
+  const backtestMutation = useMutation({
+    mutationFn: runBacktest,
+  });
+
+  const handleDailyTask = async () => {
+    try {
+      // Step 1: Run Routine
+      setDailyTaskStatus("Running routine...");
+      await routineMutation.mutateAsync();
+
+      // Step 2: Run Backtest
+      setDailyTaskStatus("Running backtest...");
+      await backtestMutation.mutateAsync();
+
+      // Done
+      setDailyTaskStatus("Daily task completed!");
+      refetch();
+
+      // Clear status after 3 seconds
+      setTimeout(() => setDailyTaskStatus(""), 3000);
+    } catch (error) {
+      setDailyTaskStatus(
+        `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+      // Clear error after 5 seconds
+      setTimeout(() => setDailyTaskStatus(""), 5000);
+    }
+  };
+
+  const isDailyTaskRunning =
+    routineMutation.isPending || backtestMutation.isPending;
+
+  const backtest = dashboardData?.backtest;
   const model = dashboardData?.model;
   const system = dashboardData?.system;
-  const topHoldings = dashboardData?.top_holdings || [];
-  const recentActivities = dashboardData?.recent_activities || [];
+  const targetPositions = dashboardData?.target_positions || [];
   const alerts = dashboardData?.alerts || [];
 
   // Calculate return color
-  const returnValue = portfolio?.total_return || 0;
-  const isPositive = returnValue >= 0;
-
-  // Mock performance data for chart (in real implementation, fetch from API)
-  const performanceData = [
-    { date: "Day 1", return: 0 },
-    { date: "Day 2", return: returnValue > 0 ? returnValue * 0.3 : 0 },
-    { date: "Day 3", return: returnValue > 0 ? returnValue * 0.5 : 0 },
-    { date: "Day 4", return: returnValue > 0 ? returnValue * 0.7 : 0 },
-    { date: "Today", return: returnValue },
-  ];
+  const totalReturn = backtest?.total_return || 0;
+  const isPositive = totalReturn >= 0;
 
   return (
     <div className="container mx-auto space-y-6">
@@ -169,60 +209,39 @@ function Dashboard() {
         <div>
           <h1 className="text-2xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">
-            System overview and key metrics
+            ETF Enhanced Indexing Strategy Overview
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isRefetching}
-        >
-          <RefreshCw
-            className={`h-4 w-4 mr-2 ${isRefetching ? "animate-spin" : ""}`}
-          />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-3">
+          {dailyTaskStatus && (
+            <span
+              className={`text-sm ${dailyTaskStatus.startsWith("Error") ? "text-red-600" : dailyTaskStatus.includes("completed") ? "text-green-600" : "text-blue-600"}`}
+            >
+              {dailyTaskStatus}
+            </span>
+          )}
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleDailyTask}
+            disabled={isDailyTaskRunning}
+          >
+            {isDailyTaskRunning ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Play className="h-4 w-4 mr-2" />
+            )}
+            Daily Task
+          </Button>
+        </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards - Row 1: Backtest Results */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* Portfolio Value Card */}
+        {/* Total Return Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Portfolio Value
-            </CardTitle>
-            <Wallet className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="h-8 bg-muted animate-pulse rounded" />
-            ) : (
-              <>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(portfolio?.total_value || 0)}
-                </div>
-                <div
-                  className={`flex items-center text-xs ${isPositive ? "text-green-600" : "text-red-600"}`}
-                >
-                  {isPositive ? (
-                    <TrendingUp className="h-3 w-3 mr-1" />
-                  ) : (
-                    <TrendingDown className="h-3 w-3 mr-1" />
-                  )}
-                  {isPositive ? "+" : ""}
-                  {formatCurrency(returnValue)}
-                </div>
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Return Rate Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Return Rate</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Return</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -233,20 +252,42 @@ function Dashboard() {
                 <div
                   className={`text-2xl font-bold ${isPositive ? "text-green-600" : "text-red-600"}`}
                 >
-                  {portfolio?.total_return_pct || "0.00%"}
+                  {backtest?.total_return_pct || "N/A"}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Ann: {portfolio?.annualized_return_pct || "N/A"}
+                  Ann: {backtest?.annualized_return_pct || "N/A"}
                 </p>
               </>
             )}
           </CardContent>
         </Card>
 
-        {/* Model IC Card */}
+        {/* Max Drawdown Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Model IC</CardTitle>
+            <CardTitle className="text-sm font-medium">Max Drawdown</CardTitle>
+            <TrendingDown className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="h-8 bg-muted animate-pulse rounded" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold text-red-600">
+                  {backtest?.max_drawdown_pct || "N/A"}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Trading Days: {backtest?.trading_days || 0}
+                </p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Sharpe Ratio Card */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Sharpe Ratio</CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -254,29 +295,20 @@ function Dashboard() {
               <div className="h-8 bg-muted animate-pulse rounded" />
             ) : (
               <>
-                <div className="text-2xl font-bold">
-                  {model?.ic !== undefined && model?.ic !== null
-                    ? model.ic.toFixed(4)
-                    : "N/A"}
+                <div
+                  className={`text-2xl font-bold ${(backtest?.sharpe_ratio || 0) >= 1 ? "text-green-600" : (backtest?.sharpe_ratio || 0) >= 0 ? "text-yellow-600" : "text-red-600"}`}
+                >
+                  {backtest?.sharpe_ratio?.toFixed(2) || "N/A"}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">
-                    ICIR: {model?.icir?.toFixed(2) || "N/A"}
-                  </span>
-                  {model?.has_metrics && (
-                    <Badge
-                      variant={
-                        model.evaluation === "Excellent" ||
-                        model.evaluation === "Good"
-                          ? "default"
-                          : "secondary"
-                      }
-                      className="text-xs"
-                    >
-                      {model.evaluation}
-                    </Badge>
-                  )}
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  {(backtest?.sharpe_ratio || 0) >= 2
+                    ? "Excellent"
+                    : (backtest?.sharpe_ratio || 0) >= 1
+                      ? "Good"
+                      : (backtest?.sharpe_ratio || 0) >= 0
+                        ? "Fair"
+                        : "Poor"}
+                </p>
               </>
             )}
           </CardContent>
@@ -309,80 +341,75 @@ function Dashboard() {
         </Card>
       </div>
 
-      {/* Middle Row: Chart and Top Holdings */}
+      {/* Row 2: Model Metrics & Target Portfolio */}
       <div className="grid gap-4 md:grid-cols-2">
-        {/* Portfolio Performance Chart */}
+        {/* Model Metrics Card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Portfolio Performance
+              <Target className="h-5 w-5" />
+              Model Performance
             </CardTitle>
-            <CardDescription>Cumulative return over time</CardDescription>
+            <CardDescription>Prediction model quality metrics</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="h-[200px] bg-muted animate-pulse rounded" />
-            ) : portfolio?.trading_started ? (
-              <div className="h-[200px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={performanceData}>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      className="stroke-muted"
-                    />
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fontSize: 12 }}
-                      className="text-muted-foreground"
-                    />
-                    <YAxis
-                      tick={{ fontSize: 12 }}
-                      tickFormatter={(v) => formatCurrency(v)}
-                      className="text-muted-foreground"
-                    />
-                    <Tooltip
-                      formatter={(value) => [
-                        formatCurrency(Number(value) || 0),
-                        "Return",
-                      ]}
-                    />
-                    <ReferenceLine y={0} stroke="#888" strokeDasharray="3 3" />
-                    <Line
-                      type="monotone"
-                      dataKey="return"
-                      stroke={isPositive ? "#22c55e" : "#ef4444"}
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+              <div className="h-[180px] bg-muted animate-pulse rounded" />
+            ) : model?.has_metrics ? (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <p className="text-sm text-muted-foreground">IC (Mean)</p>
+                    <p className="text-2xl font-bold">
+                      {model.ic?.toFixed(4) || "N/A"}
+                    </p>
+                  </div>
+                  <div className="bg-muted/50 rounded-lg p-4">
+                    <p className="text-sm text-muted-foreground">ICIR</p>
+                    <p className="text-2xl font-bold">
+                      {model.icir?.toFixed(2) || "N/A"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    Model Evaluation
+                  </span>
+                  <Badge
+                    variant={
+                      model.evaluation === "Excellent" ||
+                      model.evaluation === "Good"
+                        ? "default"
+                        : "secondary"
+                    }
+                  >
+                    {model.evaluation}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  IC {">"} 0.03 is good, IC {">"} 0.05 is excellent
+                </p>
               </div>
             ) : (
-              <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+              <div className="h-[180px] flex items-center justify-center text-muted-foreground">
                 <div className="text-center">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>No trading data yet</p>
-                  <Link to="/paper-trading">
-                    <Button variant="link" size="sm">
-                      Start Paper Trading{" "}
-                      <ArrowRight className="h-4 w-4 ml-1" />
-                    </Button>
-                  </Link>
+                  <Target className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No model metrics yet</p>
+                  <p className="text-xs">Run Daily Task to generate</p>
                 </div>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Top Holdings */}
+        {/* Target Portfolio Card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Wallet className="h-5 w-5" />
-              Top Holdings
+              <Activity className="h-5 w-5" />
+              Target Portfolio
             </CardTitle>
-            <CardDescription>Your largest positions by value</CardDescription>
+            <CardDescription>Top positions from latest signal</CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -391,148 +418,126 @@ function Dashboard() {
                   <div key={i} className="h-8 bg-muted animate-pulse rounded" />
                 ))}
               </div>
-            ) : topHoldings.length > 0 ? (
-              <div className="space-y-3">
-                {topHoldings.map((holding, index) => (
+            ) : targetPositions.length > 0 ? (
+              <div className="space-y-2">
+                {targetPositions.slice(0, 6).map((pos) => (
                   <div
-                    key={holding.instrument}
-                    className="flex items-center justify-between"
+                    key={pos.instrument}
+                    className="flex items-center justify-between py-1"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-medium text-muted-foreground w-5">
-                        {index + 1}.
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className="text-xs text-muted-foreground w-4 flex-shrink-0">
+                        {pos.rank}
                       </span>
-                      <span className="font-medium">{holding.instrument}</span>
+                      <Badge
+                        variant={pos.type === "etf" ? "default" : "outline"}
+                        className="text-xs flex-shrink-0"
+                      >
+                        {pos.type === "etf" ? "ETF" : "Alpha"}
+                      </Badge>
+                      <div className="min-w-0 flex-1">
+                        <span className="font-medium text-sm">
+                          {pos.instrument}
+                        </span>
+                        {pos.name && (
+                          <span className="text-xs text-muted-foreground ml-1 truncate">
+                            {pos.name}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <div className="font-medium">
-                        {formatCurrency(holding.value)}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {holding.weight.toFixed(2)}%
-                      </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-sm text-muted-foreground">
+                        {pos.weight.toFixed(1)}%
+                      </span>
+                      <Badge
+                        variant={
+                          pos.action === "buy"
+                            ? "default"
+                            : pos.action === "sell"
+                              ? "destructive"
+                              : "secondary"
+                        }
+                        className="text-xs w-12 justify-center"
+                      >
+                        {pos.action}
+                      </Badge>
                     </div>
                   </div>
                 ))}
+                {targetPositions.length > 6 && (
+                  <Link to="/target-portfolio">
+                    <Button variant="link" size="sm" className="w-full">
+                      View all {targetPositions.length} positions
+                    </Button>
+                  </Link>
+                )}
               </div>
             ) : (
               <div className="h-[180px] flex items-center justify-center text-muted-foreground">
                 <div className="text-center">
-                  <Wallet className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>No holdings yet</p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Bottom Row: Recent Activity and Alerts */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Recent Activity
-            </CardTitle>
-            <CardDescription>Latest system events</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-8 bg-muted animate-pulse rounded" />
-                ))}
-              </div>
-            ) : recentActivities.length > 0 ? (
-              <div className="space-y-3">
-                {recentActivities.map((activity, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <CheckCircle2
-                      className={`h-4 w-4 mt-0.5 ${activity.success ? "text-green-600" : "text-red-600"}`}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm truncate">{activity.message}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {activity.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="h-[120px] flex items-center justify-center text-muted-foreground">
-                <div className="text-center">
                   <Activity className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>No recent activity</p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Alerts & Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Alerts & Actions
-            </CardTitle>
-            <CardDescription>Items requiring your attention</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-2">
-                {[1, 2].map((i) => (
-                  <div key={i} className="h-8 bg-muted animate-pulse rounded" />
-                ))}
-              </div>
-            ) : alerts.length > 0 ? (
-              <div className="space-y-3">
-                {alerts.map((alert, index) => (
-                  <div
-                    key={index}
-                    className={`flex items-start gap-3 p-2 rounded-lg ${
-                      alert.level === "error"
-                        ? "bg-red-50 dark:bg-red-950"
-                        : alert.level === "warning"
-                          ? "bg-yellow-50 dark:bg-yellow-950"
-                          : "bg-blue-50 dark:bg-blue-950"
-                    }`}
-                  >
-                    {alert.level === "error" ? (
-                      <AlertTriangle className="h-4 w-4 mt-0.5 text-red-600" />
-                    ) : alert.level === "warning" ? (
-                      <AlertTriangle className="h-4 w-4 mt-0.5 text-yellow-600" />
-                    ) : (
-                      <Info className="h-4 w-4 mt-0.5 text-blue-600" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm">{alert.message}</p>
-                      {alert.action === "run_routine" && (
-                        <Link to="/routine">
-                          <Button variant="link" size="sm" className="h-6 px-0">
-                            Go to Routine{" "}
-                            <ArrowRight className="h-3 w-3 ml-1" />
-                          </Button>
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="h-[120px] flex items-center justify-center text-muted-foreground">
-                <div className="text-center">
-                  <CheckCircle2 className="h-12 w-12 mx-auto mb-2 opacity-50 text-green-600" />
-                  <p>All systems operational</p>
+                  <p>No target portfolio yet</p>
+                  <p className="text-xs">Run Daily Task to generate</p>
                 </div>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Row 3: Alerts */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            Alerts & Actions
+          </CardTitle>
+          <CardDescription>Items requiring your attention</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-2">
+              {[1, 2].map((i) => (
+                <div key={i} className="h-8 bg-muted animate-pulse rounded" />
+              ))}
+            </div>
+          ) : alerts.length > 0 ? (
+            <div className="grid gap-3 md:grid-cols-2">
+              {alerts.map((alert, index) => (
+                <div
+                  key={index}
+                  className={`flex items-start gap-3 p-3 rounded-lg ${
+                    alert.level === "error"
+                      ? "bg-red-50 dark:bg-red-950"
+                      : alert.level === "warning"
+                        ? "bg-yellow-50 dark:bg-yellow-950"
+                        : "bg-blue-50 dark:bg-blue-950"
+                  }`}
+                >
+                  {alert.level === "error" ? (
+                    <AlertTriangle className="h-4 w-4 mt-0.5 text-red-600" />
+                  ) : alert.level === "warning" ? (
+                    <AlertTriangle className="h-4 w-4 mt-0.5 text-yellow-600" />
+                  ) : (
+                    <Info className="h-4 w-4 mt-0.5 text-blue-600" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm">{alert.message}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center py-8 text-muted-foreground">
+              <div className="text-center">
+                <CheckCircle2 className="h-12 w-12 mx-auto mb-2 opacity-50 text-green-600" />
+                <p>All systems operational</p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

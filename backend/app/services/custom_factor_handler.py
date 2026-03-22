@@ -53,7 +53,8 @@ class CustomFactorHandler(DataHandlerLP):
         process_type=DataHandlerLP.PTYPE_A,
         filter_pipe=None,
         inst_processors=None,
-        enable_alpha158=False,  # Alpha158 integration switch
+        enable_alpha158=None,  # Alpha158 integration switch (None = read from config)
+        region=None,  # Market region for label selection (None = read from config)
         **kwargs,
     ):
         """
@@ -83,13 +84,31 @@ class CustomFactorHandler(DataHandlerLP):
         # Import check_transform_proc following Alpha158 pattern
         from qlib.contrib.data.handler import check_transform_proc
 
+        # Load system configuration for Alpha158 and Label settings
+        self._system_config = self._load_system_config()
+
         # Store configuration for later use (needed by config() method)
         self.start_time = start_time
         self.end_time = end_time
         self.fit_start_time = fit_start_time
         self.fit_end_time = fit_end_time
         self.freq = freq
-        self.enable_alpha158 = enable_alpha158
+
+        # Determine Alpha158 setting: parameter > config > default (False)
+        if enable_alpha158 is not None:
+            self.enable_alpha158 = enable_alpha158
+        else:
+            self.enable_alpha158 = (
+                self._system_config.get("builtin_factor_libraries", {})
+                .get("alpha158", {})
+                .get("enabled", False)
+            )
+
+        # Determine market region: parameter > config > default ("cn")
+        if region is not None:
+            self.region = region
+        else:
+            self.region = self._system_config.get("data", {}).get("region", "cn")
 
         # Process processors following Alpha158 pattern
         if learn_processors is None:
@@ -285,32 +304,49 @@ class CustomFactorHandler(DataHandlerLP):
         Get label configuration for target prediction
 
         Educational Notes:
-        - Loads pre-computed label from bin files (if available)
-        - Falls back to expression-based calculation if no pre-computed label
-        - Label is defined by user in database with factor_type='label'
-        - Only one ACTIVE label is allowed at a time
+        - Always uses region-specific label expression from config
+        - A-shares (cn): T+2 return due to T+1 trading rule
+        - US stocks (us): T+1 return due to T+0 trading rule
+        - Label is NOT user-customizable, it's determined by market region
 
         Returns:
-            List of label expression strings in Qlib format
+            Tuple of (expressions, names) in Qlib format
         """
         logger.info("Building label configuration...")
 
-        # Try to load pre-computed label from database/bin files
-        label_name = self._load_label_from_db()
+        # Ensure system config is loaded (may not exist after deserialization)
+        if not hasattr(self, "_system_config") or self._system_config is None:
+            self._system_config = self._load_system_config()
 
-        if label_name:
-            # Use pre-computed label from bin file
-            label_expressions = [f"${label_name}"]
-            logger.info(f"Using pre-computed label: {label_expressions}")
-        else:
-            # Fallback to standard next-day return calculation
-            # Ref($close, -1) gets tomorrow's close price
-            label_expressions = ["Ref($close, -1)/$close - 1"]
-            logger.info(
-                f"No pre-computed label found, using default: {label_expressions}"
+        # Ensure region is set
+        if not hasattr(self, "region") or self.region is None:
+            self.region = self._system_config.get("data", {}).get("region", "cn")
+
+        # Use region-specific label expression from config
+        label_config = self._system_config.get("label_config", {})
+        region_config = label_config.get(self.region, {})
+
+        if region_config:
+            label_expression = region_config.get(
+                "expression", "Ref($close, -1)/$close - 1"  # Default T+1 return
             )
+            description = region_config.get("description", "")
+            logger.info(
+                f"Using region '{self.region}' label: {label_expression} ({description})"
+            )
+        else:
+            # Fallback based on region
+            if self.region == "cn":
+                # A-shares: T+2 return (T+1 trading rule)
+                label_expression = "Ref($close, -2)/Ref($close, -1) - 1"
+                logger.info(f"Using default CN label (T+2): {label_expression}")
+            else:
+                # US stocks: T+1 return (T+0 trading rule)
+                label_expression = "Ref($close, -1)/$close - 1"
+                logger.info(f"Using default US label (T+1): {label_expression}")
 
-        return label_expressions
+        # Return in Qlib format: ([expressions], [names])
+        return [label_expression], ["LABEL0"]
 
     def _load_label_from_db(self):
         """
@@ -342,6 +378,40 @@ class CustomFactorHandler(DataHandlerLP):
         except Exception as e:
             logger.error(f"Failed to load label from database: {e}")
             return None
+
+    def _load_system_config(self) -> Dict[str, Any]:
+        """
+        Load system configuration from YAML file.
+
+        Returns:
+            Dictionary containing system configuration
+        """
+        try:
+            import yaml
+            from pathlib import Path
+
+            # Try multiple possible config paths
+            possible_paths = [
+                Path("/app/app/config/qlib/system_config.yaml"),  # Docker path
+                Path(__file__).parent.parent
+                / "config"
+                / "qlib"
+                / "system_config.yaml",  # Relative path
+            ]
+
+            for config_path in possible_paths:
+                if config_path.exists():
+                    with open(config_path, "r", encoding="utf-8") as f:
+                        config = yaml.safe_load(f)
+                        logger.info(f"Loaded system config from {config_path}")
+                        return config or {}
+
+            logger.warning("System config file not found, using defaults")
+            return {}
+
+        except Exception as e:
+            logger.error(f"Failed to load system config: {e}")
+            return {}
 
     def get_feature_names(self) -> List[str]:
         """

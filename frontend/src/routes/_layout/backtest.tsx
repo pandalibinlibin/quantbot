@@ -963,8 +963,8 @@ function BacktestPage() {
                               }
                             />
                             <RechartsTooltip
-                              formatter={(value: number) => [
-                                `${(value * 100).toFixed(2)}%`,
+                              formatter={(value) => [
+                                `${((value as number) * 100).toFixed(2)}%`,
                                 "Daily Return",
                               ]}
                               labelFormatter={(label) => `Date: ${label}`}

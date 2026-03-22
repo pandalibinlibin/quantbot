@@ -337,8 +337,21 @@ function RoutinePage() {
               <CardContent>
                 <div className="text-2xl font-bold">
                   {(
-                    lastRoutineResult?.portfolio_summary?.total_positions ||
-                    lastRoutineResult?.portfolio_summary?.total_stocks ||
+                    (
+                      lastRoutineResult?.portfolio_summary as unknown as
+                        | Record<string, number>
+                        | undefined
+                    )?.total_positions ||
+                    (
+                      lastRoutineResult?.portfolio_summary as unknown as
+                        | Record<string, number>
+                        | undefined
+                    )?.total_stocks ||
+                    (
+                      lastRoutineResult?.portfolio_summary as unknown as
+                        | Record<string, number>
+                        | undefined
+                    )?.position_count ||
                     0
                   ).toLocaleString()}
                 </div>

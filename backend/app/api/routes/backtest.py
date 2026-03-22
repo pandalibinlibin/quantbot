@@ -16,6 +16,7 @@ import json
 from pathlib import Path
 
 from app.services.online_serving_service import get_online_serving_service
+from app.services.notification_service import get_notification_service
 from app.config.qlib import qlib_config
 
 logger = logging.getLogger(__name__)
@@ -307,6 +308,23 @@ def run_backtest(request: Optional[BacktestRunRequest] = None):
 
         # Persist result for later retrieval
         _save_backtest_result(response_data)
+
+        # Send email notification if backtest was successful
+        try:
+            notification_service = get_notification_service()
+            email_result = notification_service.send_backtest_report_email(
+                response_data
+            )
+            if email_result.get("success"):
+                logger.info(
+                    f"Backtest report email sent: {email_result.get('message')}"
+                )
+            else:
+                logger.warning(
+                    f"Failed to send backtest report email: {email_result.get('error')}"
+                )
+        except Exception as email_error:
+            logger.warning(f"Email notification failed: {email_error}")
 
         return BacktestRunResponse(**response_data)
 

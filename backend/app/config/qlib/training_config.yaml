@@ -30,7 +30,8 @@ task:
         kwargs:
           instruments: all
           # freq is set dynamically based on available data
-          enable_alpha158: false
+          # enable_alpha158 and region are now read from system_config.yaml
+          # No need to specify here - CustomFactorHandler reads from config automatically
       # segments are set dynamically based on actual data time range
       # Default split: 70% train, 15% valid, 15% test
 

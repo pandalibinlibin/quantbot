@@ -524,6 +524,13 @@ class NotificationService:
             ''' if buy_orders else '<p>No buy orders</p>'}
             
             <hr>
+            <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px; margin: 16px 0;">
+                <p style="margin: 0; font-size: 12px; color: #92400e;">
+                    <strong>⚠️ 免责声明 / Disclaimer</strong><br>
+                    本邮件内容仅供学习交流和技术研究使用，不构成任何投资建议。投资有风险，入市需谨慎。请根据自身情况独立判断，本系统及开发者不对任何投资决策承担责任。<br>
+                    <em>This email is for educational and research purposes only and does not constitute investment advice.</em>
+                </p>
+            </div>
             <p><small>This is an automated email from QuantBot Paper Trading system.</small></p>
         </body>
         </html>
@@ -710,6 +717,13 @@ class NotificationService:
             
             
             <hr>
+            <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px; margin: 16px 0;">
+                <p style="margin: 0; font-size: 12px; color: #92400e;">
+                    <strong>⚠️ 免责声明 / Disclaimer</strong><br>
+                    本邮件内容仅供学习交流和技术研究使用，不构成任何投资建议。投资有风险，入市需谨慎。请根据自身情况独立判断，本系统及开发者不对任何投资决策承担责任。<br>
+                    <em>This email is for educational and research purposes only and does not constitute investment advice.</em>
+                </p>
+            </div>
             <p><small>This is an automated email from QuantBot Enhanced Indexing system.</small></p>
         </body>
         </html>
@@ -1063,6 +1077,15 @@ class NotificationService:
                     </table>
                 </div>
                 
+                <!-- Disclaimer -->
+                <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px; margin: 16px 0;">
+                    <p style="margin: 0; font-size: 12px; color: #92400e;">
+                        <strong>⚠️ 免责声明 / Disclaimer</strong><br>
+                        本邮件内容仅供学习交流和技术研究使用，不构成任何投资建议。投资有风险，入市需谨慎。请根据自身情况独立判断，本系统及开发者不对任何投资决策承担责任。<br>
+                        <em>This email is for educational and research purposes only and does not constitute investment advice.</em>
+                    </p>
+                </div>
+
                 <!-- Footer -->
                 <div class="footer">
                     <strong>策略说明：</strong>ETF增强指数策略 | 权重模式：{weight_mode} | 交易单位：{lot_size}股/手<br>
@@ -1171,7 +1194,634 @@ class NotificationService:
         <p style="color: #888; font-size: 11px;">Showing all {total_stocks} positions in the target portfolio.</p>
 
         <hr>
+        <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px; margin: 16px 0;">
+            <p style="margin: 0; font-size: 12px; color: #92400e;">
+                <strong>⚠️ 免责声明 / Disclaimer</strong><br>
+                本邮件内容仅供学习交流和技术研究使用，不构成任何投资建议。投资有风险，入市需谨慎。请根据自身情况独立判断，本系统及开发者不对任何投资决策承担责任。<br>
+                <em>This email is for educational and research purposes only and does not constitute investment advice.</em>
+            </p>
+        </div>
         <p><small style="color: #888;">This is an automated email from QuantBot Enhanced Indexing system.</small></p>
+        </body>
+        </html>
+        """
+
+    def send_backtest_report_email(
+        self,
+        backtest_result: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Send backtest report email after backtest completion.
+
+        Args:
+            backtest_result: Backtest result data including metrics and charts
+
+        Returns:
+            Result of sending emails
+        """
+        # Check if emails are enabled in settings
+        if not settings.emails_enabled:
+            return {
+                "success": False,
+                "error": "Email sending is not configured.",
+            }
+
+        config = self._load_config()
+
+        if not config.get("enabled"):
+            return {
+                "success": False,
+                "error": "Notifications are disabled",
+            }
+
+        if not config.get("recipients"):
+            return {
+                "success": False,
+                "error": "No recipients configured",
+            }
+
+        # Build email content
+        html_content = self._build_backtest_report_html(backtest_result)
+        end_time = backtest_result.get("end_time", datetime.now().strftime("%Y-%m-%d"))
+
+        sent_count = 0
+        errors = []
+
+        for recipient in config["recipients"]:
+            try:
+                send_email(
+                    email_to=recipient,
+                    subject=f"QuantBot: Backtest Report {end_time}",
+                    html_content=html_content,
+                )
+                sent_count += 1
+            except Exception as e:
+                errors.append(f"{recipient}: {str(e)}")
+
+        if sent_count == len(config["recipients"]):
+            return {
+                "success": True,
+                "message": f"Backtest report sent to {sent_count} recipients",
+            }
+        elif sent_count > 0:
+            return {
+                "success": True,
+                "message": f"Backtest report sent to {sent_count}/{len(config['recipients'])} recipients",
+                "errors": errors,
+            }
+        else:
+            return {
+                "success": False,
+                "error": "Failed to send to any recipients",
+                "errors": errors,
+            }
+
+    def _generate_cumulative_returns_svg(
+        self, cumulative_returns: List[Dict], max_drawdown_info: Dict
+    ) -> str:
+        """Generate SVG chart for cumulative returns with benchmark comparison."""
+        if not cumulative_returns:
+            return '<p style="color: #64748b; text-align: center;">No chart data available</p>'
+
+        # Chart dimensions
+        width = 700
+        height = 300
+        padding_left = 60
+        padding_right = 20
+        padding_top = 30
+        padding_bottom = 50
+        chart_width = width - padding_left - padding_right
+        chart_height = height - padding_top - padding_bottom
+
+        # Extract data points (sample if too many points)
+        data = cumulative_returns
+        if len(data) > 100:
+            # Sample every nth point to keep chart readable
+            step = len(data) // 100
+            data = data[::step]
+            # Always include the last point
+            if cumulative_returns[-1] not in data:
+                data.append(cumulative_returns[-1])
+
+        # Get min/max values for scaling
+        strategy_values = [d.get("strategy", 0) for d in data]
+        benchmark_values = [d.get("benchmark", 0) for d in data if "benchmark" in d]
+        all_values = strategy_values + benchmark_values
+
+        if not all_values:
+            return '<p style="color: #64748b; text-align: center;">No chart data available</p>'
+
+        min_val = min(all_values)
+        max_val = max(all_values)
+
+        # Add padding to y-axis range
+        y_range = max_val - min_val if max_val != min_val else 0.1
+        min_val -= y_range * 0.1
+        max_val += y_range * 0.1
+        y_range = max_val - min_val
+
+        # Generate path for strategy line
+        def value_to_y(val):
+            return (
+                padding_top + chart_height - ((val - min_val) / y_range * chart_height)
+            )
+
+        def index_to_x(idx):
+            return (
+                padding_left + (idx / (len(data) - 1) * chart_width)
+                if len(data) > 1
+                else padding_left
+            )
+
+        # Strategy path
+        strategy_points = []
+        for i, d in enumerate(data):
+            x = index_to_x(i)
+            y = value_to_y(d.get("strategy", 0))
+            strategy_points.append(f"{x:.1f},{y:.1f}")
+        strategy_path = "M" + " L".join(strategy_points)
+
+        # Strategy area (fill under the line)
+        strategy_area_points = strategy_points.copy()
+        strategy_area_points.append(
+            f"{index_to_x(len(data)-1):.1f},{padding_top + chart_height}"
+        )
+        strategy_area_points.append(f"{padding_left},{padding_top + chart_height}")
+        strategy_area = "M" + " L".join(strategy_area_points) + " Z"
+
+        # Benchmark path (if available)
+        benchmark_path = ""
+        if benchmark_values:
+            benchmark_points = []
+            for i, d in enumerate(data):
+                if "benchmark" in d:
+                    x = index_to_x(i)
+                    y = value_to_y(d.get("benchmark", 0))
+                    benchmark_points.append(f"{x:.1f},{y:.1f}")
+            if benchmark_points:
+                benchmark_path = "M" + " L".join(benchmark_points)
+
+        # Y-axis labels
+        y_labels = []
+        num_y_labels = 5
+        for i in range(num_y_labels + 1):
+            val = min_val + (y_range * i / num_y_labels)
+            y = value_to_y(val)
+            label = f"{val * 100:.0f}%"
+            y_labels.append(
+                f'<text x="{padding_left - 10}" y="{y:.1f}" text-anchor="end" font-size="10" fill="#64748b">{label}</text>'
+            )
+
+        # X-axis labels (show first, middle, last dates)
+        x_labels = []
+        if data:
+            dates_to_show = [0, len(data) // 2, len(data) - 1]
+            for idx in dates_to_show:
+                if idx < len(data):
+                    x = index_to_x(idx)
+                    date_str = data[idx].get("date", "")[:10]  # Get YYYY-MM-DD
+                    x_labels.append(
+                        f'<text x="{x:.1f}" y="{height - 10}" text-anchor="middle" font-size="10" fill="#64748b">{date_str}</text>'
+                    )
+
+        # Zero line
+        zero_y = value_to_y(0)
+        zero_line = ""
+        if min_val < 0 < max_val:
+            zero_line = f'<line x1="{padding_left}" y1="{zero_y:.1f}" x2="{width - padding_right}" y2="{zero_y:.1f}" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>'
+
+        # Max drawdown region (if available)
+        drawdown_region = ""
+        if max_drawdown_info:
+            peak_date = max_drawdown_info.get("peak_date")
+            trough_date = max_drawdown_info.get("max_drawdown_date")
+            if peak_date and trough_date:
+                # Find indices for peak and trough dates
+                peak_idx = None
+                trough_idx = None
+                for i, d in enumerate(data):
+                    if d.get("date", "")[:10] == peak_date[:10]:
+                        peak_idx = i
+                    if d.get("date", "")[:10] == trough_date[:10]:
+                        trough_idx = i
+                if peak_idx is not None and trough_idx is not None:
+                    x1 = index_to_x(peak_idx)
+                    x2 = index_to_x(trough_idx)
+                    drawdown_region = f'<rect x="{x1:.1f}" y="{padding_top}" width="{x2 - x1:.1f}" height="{chart_height}" fill="#fee2e2" opacity="0.5"/>'
+
+        svg = f"""
+        <svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">
+            <!-- Background -->
+            <rect width="{width}" height="{height}" fill="white" rx="8"/>
+            
+            <!-- Grid lines -->
+            <line x1="{padding_left}" y1="{padding_top}" x2="{padding_left}" y2="{padding_top + chart_height}" stroke="#e2e8f0" stroke-width="1"/>
+            <line x1="{padding_left}" y1="{padding_top + chart_height}" x2="{width - padding_right}" y2="{padding_top + chart_height}" stroke="#e2e8f0" stroke-width="1"/>
+            
+            <!-- Zero line -->
+            {zero_line}
+            
+            <!-- Drawdown region -->
+            {drawdown_region}
+            
+            <!-- Strategy area fill -->
+            <path d="{strategy_area}" fill="#dcfce7" opacity="0.5"/>
+            
+            <!-- Benchmark line -->
+            {f'<path d="{benchmark_path}" fill="none" stroke="#3b82f6" stroke-width="2"/>' if benchmark_path else ''}
+            
+            <!-- Strategy line -->
+            <path d="{strategy_path}" fill="none" stroke="#16a34a" stroke-width="2"/>
+            
+            <!-- Y-axis labels -->
+            {"".join(y_labels)}
+            
+            <!-- X-axis labels -->
+            {"".join(x_labels)}
+            
+            <!-- Legend -->
+            <rect x="{width - 150}" y="10" width="12" height="12" fill="#16a34a"/>
+            <text x="{width - 133}" y="20" font-size="11" fill="#334155">Strategy</text>
+            {f'<rect x="{width - 150}" y="28" width="12" height="12" fill="#3b82f6"/><text x="{width - 133}" y="38" font-size="11" fill="#334155">Benchmark</text>' if benchmark_path else ''}
+        </svg>
+        """
+        return svg
+
+    def _generate_drawdown_analysis_html(
+        self, max_drawdown_info: Dict, max_drawdown: float
+    ) -> str:
+        """Generate HTML for drawdown analysis section."""
+        if not max_drawdown_info:
+            return ""
+
+        peak_date = max_drawdown_info.get("peak_date", "N/A")
+        trough_date = max_drawdown_info.get("max_drawdown_date", "N/A")
+        drawdown_days = max_drawdown_info.get("drawdown_days", 0)
+        recovery_date = max_drawdown_info.get("recovery_date", "Not recovered")
+
+        # Format max drawdown
+        max_dd_pct = f"{max_drawdown * 100:.2f}%" if max_drawdown else "N/A"
+
+        return f"""
+        <div class="section">
+            <div class="section-title">
+                📉 Drawdown Analysis
+            </div>
+            <p style="color: #64748b; font-size: 14px; margin-bottom: 16px;">
+                Maximum drawdown: <strong style="color: #dc2626;">{max_dd_pct}</strong>
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+                <div style="background-color: #fef2f2; border-radius: 8px; padding: 12px;">
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Peak Date</div>
+                    <div style="font-size: 14px; font-weight: 600; color: #1e293b;">{peak_date}</div>
+                </div>
+                <div style="background-color: #fef2f2; border-radius: 8px; padding: 12px;">
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Trough Date</div>
+                    <div style="font-size: 14px; font-weight: 600; color: #1e293b;">{trough_date}</div>
+                </div>
+                <div style="background-color: #fef2f2; border-radius: 8px; padding: 12px;">
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Drawdown Days</div>
+                    <div style="font-size: 14px; font-weight: 600; color: #1e293b;">{drawdown_days} days</div>
+                </div>
+                <div style="background-color: #fef2f2; border-radius: 8px; padding: 12px;">
+                    <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Recovery Date</div>
+                    <div style="font-size: 14px; font-weight: 600; color: #1e293b;">{recovery_date if recovery_date else "Not recovered"}</div>
+                </div>
+            </div>
+        </div>
+        """
+
+    def _build_backtest_report_html(self, backtest_result: Dict[str, Any]) -> str:
+        """Build HTML email body for backtest report matching frontend design."""
+        # Extract data from backtest result
+        start_time = backtest_result.get("start_time", "N/A")
+        end_time = backtest_result.get("end_time", "N/A")
+        data_start_time = backtest_result.get("data_start_time", start_time)
+        data_end_time = backtest_result.get("data_end_time", end_time)
+        trading_days = backtest_result.get("trading_days", 0)
+        total_return = backtest_result.get("total_return", 0)
+        net_return = backtest_result.get("net_return", 0)
+        total_cost = backtest_result.get("total_cost", 0)
+        final_account = backtest_result.get("final_account", 0)
+        strategy = backtest_result.get("strategy", "ETF Enhanced Indexing")
+        benchmark = backtest_result.get("benchmark", "SH000300")
+
+        # Risk metrics
+        risk_metrics = backtest_result.get("risk_metrics", {})
+        annualized_return = risk_metrics.get("annualized_return", 0)
+        max_drawdown = risk_metrics.get("max_drawdown", 0)
+        sharpe_ratio = risk_metrics.get("sharpe_ratio", 0)
+        volatility = risk_metrics.get("volatility", 0)
+        calmar_ratio = risk_metrics.get("calmar_ratio", 0)
+        win_rate = risk_metrics.get("win_rate", 0)
+        profit_loss_ratio = risk_metrics.get("profit_loss_ratio", 0)
+
+        # Charts data
+        charts = backtest_result.get("charts", {})
+        cumulative_returns = charts.get("cumulative_returns", [])
+        max_drawdown_info = charts.get("max_drawdown_info", {})
+
+        # Format helpers
+        def format_percent(value):
+            if value is None:
+                return "N/A"
+            return f"{value * 100:+.2f}%" if value >= 0 else f"{value * 100:.2f}%"
+
+        def format_currency(value):
+            if value is None:
+                return "N/A"
+            return f"¥{value:,.2f}"
+
+        def format_ratio(value):
+            if value is None:
+                return "N/A"
+            return f"{value:.2f}"
+
+        # Color helpers
+        return_color = (
+            "#16a34a" if total_return >= 0 else "#dc2626"
+        )  # green-600 / red-600
+        net_return_color = "#16a34a" if net_return >= 0 else "#dc2626"
+        annual_return_color = "#16a34a" if annualized_return >= 0 else "#dc2626"
+        sharpe_color = (
+            "#16a34a"
+            if sharpe_ratio >= 1
+            else ("#ea580c" if sharpe_ratio >= 0 else "#dc2626")
+        )
+
+        # Generate SVG chart for cumulative returns
+        chart_svg = self._generate_cumulative_returns_svg(
+            cumulative_returns, max_drawdown_info
+        )
+
+        # Generate drawdown analysis HTML
+        drawdown_html = self._generate_drawdown_analysis_html(
+            max_drawdown_info, max_drawdown
+        )
+
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body {{
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+                    margin: 0;
+                    padding: 20px;
+                    background-color: #f8fafc;
+                    color: #1e293b;
+                }}
+                .container {{
+                    max-width: 800px;
+                    margin: 0 auto;
+                    background-color: #ffffff;
+                    border-radius: 12px;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                    overflow: hidden;
+                }}
+                .header {{
+                    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+                    color: white;
+                    padding: 24px;
+                }}
+                .header h1 {{
+                    margin: 0 0 8px 0;
+                    font-size: 24px;
+                    font-weight: 600;
+                }}
+                .header p {{
+                    margin: 0;
+                    opacity: 0.9;
+                    font-size: 14px;
+                }}
+                .content {{
+                    padding: 24px;
+                }}
+                .section {{
+                    margin-bottom: 24px;
+                }}
+                .section-title {{
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 16px;
+                    font-weight: 600;
+                    color: #334155;
+                    margin-bottom: 16px;
+                    padding-bottom: 8px;
+                    border-bottom: 2px solid #e2e8f0;
+                }}
+                .metrics-grid {{
+                    display: grid;
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 16px;
+                }}
+                .metric-card {{
+                    background-color: #f8fafc;
+                    border-radius: 8px;
+                    padding: 16px;
+                }}
+                .metric-card.highlight {{
+                    background-color: #eff6ff;
+                    grid-column: span 3;
+                }}
+                .metric-card.wide {{
+                    grid-column: span 2;
+                }}
+                .metric-label {{
+                    font-size: 12px;
+                    color: #64748b;
+                    margin-bottom: 4px;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                }}
+                .metric-value {{
+                    font-size: 24px;
+                    font-weight: 700;
+                }}
+                .metric-value.small {{
+                    font-size: 18px;
+                }}
+                .positive {{ color: #16a34a; }}
+                .negative {{ color: #dc2626; }}
+                .warning {{ color: #ea580c; }}
+                .neutral {{ color: #64748b; }}
+                .info-row {{
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 8px 0;
+                    border-bottom: 1px solid #f1f5f9;
+                }}
+                .info-row:last-child {{
+                    border-bottom: none;
+                }}
+                .info-label {{
+                    color: #64748b;
+                    font-size: 14px;
+                }}
+                .info-value {{
+                    font-weight: 500;
+                    font-size: 14px;
+                }}
+                .footer {{
+                    background-color: #f8fafc;
+                    padding: 16px 24px;
+                    text-align: center;
+                    font-size: 12px;
+                    color: #94a3b8;
+                    border-top: 1px solid #e2e8f0;
+                }}
+                .badge {{
+                    display: inline-block;
+                    padding: 4px 12px;
+                    border-radius: 9999px;
+                    font-size: 12px;
+                    font-weight: 500;
+                }}
+                .badge-success {{
+                    background-color: #dcfce7;
+                    color: #16a34a;
+                }}
+                .badge-info {{
+                    background-color: #dbeafe;
+                    color: #2563eb;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>📊 Backtest Report</h1>
+                    <p>Strategy performance evaluation from {start_time} to {end_time}</p>
+                </div>
+                
+                <div class="content">
+                    <!-- Strategy Configuration -->
+                    <div class="section">
+                        <div class="section-title">
+                            ⚙️ Strategy Configuration
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Strategy</span>
+                            <span class="info-value">{strategy}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Benchmark</span>
+                            <span class="info-value">{benchmark}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Data Time Range</span>
+                            <span class="info-value">{data_start_time} ~ {data_end_time}</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Backtest Period</span>
+                            <span class="info-value">{start_time} ~ {end_time}</span>
+                        </div>
+                    </div>
+
+                    <!-- Backtest Results -->
+                    <div class="section">
+                        <div class="section-title">
+                            📈 Backtest Results
+                        </div>
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-label">📅 Trading Days</div>
+                                <div class="metric-value">{trading_days}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">📊 Total Return</div>
+                                <div class="metric-value" style="color: {return_color};">{format_percent(total_return)}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">📈 Net Return</div>
+                                <div class="metric-value" style="color: {net_return_color};">{format_percent(net_return)}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">💰 Total Cost</div>
+                                <div class="metric-value small" style="color: #ea580c;">{format_currency(total_cost)}</div>
+                            </div>
+                            <div class="metric-card wide">
+                                <div class="metric-label">💵 Final Account Value</div>
+                                <div class="metric-value">{format_currency(final_account)}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Risk Metrics -->
+                    <div class="section">
+                        <div class="section-title">
+                            ⚡ Risk Metrics
+                        </div>
+                        <div class="metrics-grid">
+                            <div class="metric-card">
+                                <div class="metric-label">📈 Annualized Return</div>
+                                <div class="metric-value small" style="color: {annual_return_color};">{format_percent(annualized_return)}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">📉 Max Drawdown</div>
+                                <div class="metric-value small negative">{format_percent(max_drawdown)}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">🎯 Sharpe Ratio</div>
+                                <div class="metric-value small" style="color: {sharpe_color};">{format_ratio(sharpe_ratio)}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">📊 Volatility</div>
+                                <div class="metric-value small neutral">{format_percent(volatility)}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">⚖️ Calmar Ratio</div>
+                                <div class="metric-value small">{format_ratio(calmar_ratio)}</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-label">🏆 Win Rate</div>
+                                <div class="metric-value small">{format_percent(win_rate)}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cumulative Returns Chart -->
+                    <div class="section">
+                        <div class="section-title">
+                            📈 Cumulative Returns & Max Drawdown
+                        </div>
+                        <div style="background-color: #f8fafc; border-radius: 8px; padding: 16px;">
+                            {chart_svg}
+                        </div>
+                    </div>
+
+                    <!-- Drawdown Analysis -->
+                    {drawdown_html}
+
+                    <!-- Metric Explanations -->
+                    <div class="section" style="background-color: #f8fafc; padding: 16px; border-radius: 8px; margin-top: 16px;">
+                        <div style="font-size: 12px; color: #64748b; line-height: 1.6;">
+                            <strong>📖 Metric Explanations:</strong><br>
+                            • <strong>Annualized Return</strong>: Yearly equivalent return rate<br>
+                            • <strong>Max Drawdown</strong>: Largest peak-to-trough decline (lower is better)<br>
+                            • <strong>Sharpe Ratio</strong>: Risk-adjusted return (>1 good, >2 excellent)<br>
+                            • <strong>Calmar Ratio</strong>: Annualized return / Max drawdown<br>
+                            • <strong>Win Rate</strong>: Percentage of profitable trading days
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px; margin: 0 24px 16px 24px;">
+                    <p style="margin: 0; font-size: 12px; color: #92400e;">
+                        <strong>⚠️ 免责声明 / Disclaimer</strong><br>
+                        本邮件内容仅供学习交流和技术研究使用，不构成任何投资建议。投资有风险，入市需谨慎。请根据自身情况独立判断，本系统及开发者不对任何投资决策承担责任。<br>
+                        <em>This email is for educational and research purposes only and does not constitute investment advice.</em>
+                    </p>
+                </div>
+
+                <div class="footer">
+                    This is an automated email from QuantBot Backtest System.<br>
+                    Generated at {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+                </div>
+            </div>
         </body>
         </html>
         """

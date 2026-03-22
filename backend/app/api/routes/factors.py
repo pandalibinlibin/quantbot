@@ -169,6 +169,137 @@ async def get_factors(
         )
 
 
+# Specific routes must come before generic path parameters
+@router.get("/builtin-libraries/alpha158")
+async def get_alpha158_info(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get Alpha158 factor library information and status
+
+    Returns:
+        Alpha158 configuration, status, and factor list
+    """
+    import yaml
+    from pathlib import Path
+
+    logger.info(f"Getting Alpha158 info for user {current_user.id}")
+
+    try:
+        # Load system config
+        config_paths = [
+            Path("/app/app/config/qlib/system_config.yaml"),
+            Path(__file__).parent.parent.parent
+            / "config"
+            / "qlib"
+            / "system_config.yaml",
+        ]
+
+        config = {}
+        for config_path in config_paths:
+            if config_path.exists():
+                with open(config_path, "r", encoding="utf-8") as f:
+                    config = yaml.safe_load(f) or {}
+                break
+
+        # Get Alpha158 config
+        alpha158_config = config.get("builtin_factor_libraries", {}).get("alpha158", {})
+        enabled = alpha158_config.get("enabled", False)
+        description = alpha158_config.get(
+            "description", "158 classic technical factors for tree-based models"
+        )
+        data_requirements = alpha158_config.get(
+            "data_requirements", ["open", "high", "low", "close", "volume", "vwap"]
+        )
+
+        # Get Alpha158 factor list from Qlib
+        factors = _get_alpha158_factors()
+
+        return {
+            "name": "alpha158",
+            "display_name": "Alpha158",
+            "enabled": enabled,
+            "description": description,
+            "factor_count": len(factors),
+            "data_requirements": data_requirements,
+            "factors": factors,
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get Alpha158 info: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get Alpha158 info: {str(e)}",
+        )
+
+
+@router.get("/label-config")
+async def get_label_config(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Get current label configuration based on market region
+
+    Returns:
+        Label configuration including expression and description
+    """
+    import yaml
+    from pathlib import Path
+
+    logger.info(f"Getting label config for user {current_user.id}")
+
+    try:
+        # Load system config
+        config_paths = [
+            Path("/app/app/config/qlib/system_config.yaml"),
+            Path(__file__).parent.parent.parent
+            / "config"
+            / "qlib"
+            / "system_config.yaml",
+        ]
+
+        config = {}
+        for config_path in config_paths:
+            if config_path.exists():
+                with open(config_path, "r", encoding="utf-8") as f:
+                    config = yaml.safe_load(f) or {}
+                break
+
+        # Get current region
+        region = config.get("data", {}).get("region", "cn")
+
+        # Get label config for region
+        label_config = config.get("label_config", {})
+        region_label = label_config.get(region, {})
+
+        if region_label:
+            expression = region_label.get("expression", "")
+            description = region_label.get("description", "")
+        else:
+            # Fallback defaults
+            if region == "cn":
+                expression = "Ref($close, -2)/Ref($close, -1) - 1"
+                description = "T+2 return for A-shares (T+1 trading rule)"
+            else:
+                expression = "Ref($close, -1)/$close - 1"
+                description = "T+1 return for US stocks (T+0 trading rule)"
+
+        return {
+            "region": region,
+            "expression": expression,
+            "description": description,
+            "name": "LABEL0",
+            "editable": False,  # Labels are not user-editable
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to get label config: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get label config: {str(e)}",
+        )
+
+
 @router.get("/{factor_id}", response_model=Factor)
 async def get_factor(
     factor_id: uuid.UUID,
@@ -376,3 +507,74 @@ async def validate_factor_expression(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Internal server error during expression validation",
         )
+
+
+def _get_alpha158_factors() -> List[dict]:
+    """
+    Get list of Alpha158 factors with their expressions and categories
+
+    Returns:
+        List of factor dictionaries with name, expression, and category
+    """
+    try:
+        from qlib.contrib.data.loader import Alpha158DL
+
+        # Get Alpha158 feature config
+        fields, names = Alpha158DL.get_feature_config()
+
+        factors = []
+        for i, (field, name) in enumerate(zip(fields, names)):
+            # Determine category based on factor name pattern
+            category = _categorize_alpha158_factor(name)
+            factors.append(
+                {
+                    "name": name,
+                    "expression": field,
+                    "category": category,
+                }
+            )
+
+        return factors
+
+    except Exception as e:
+        logger.error(f"Failed to get Alpha158 factors: {e}")
+        return []
+
+
+def _categorize_alpha158_factor(name: str) -> str:
+    """
+    Categorize Alpha158 factor based on its name pattern
+
+    Args:
+        name: Factor name (e.g., "KMID", "ROC5", "MA10")
+
+    Returns:
+        Category string: "kbar", "price", "volume", or "rolling"
+    """
+    # K-bar factors
+    kbar_factors = [
+        "KMID",
+        "KLEN",
+        "KMID2",
+        "KUP",
+        "KUP2",
+        "KLOW",
+        "KLOW2",
+        "KSFT",
+        "KSFT2",
+    ]
+    if name in kbar_factors:
+        return "kbar"
+
+    # Price factors (OPEN0, HIGH0, LOW0, CLOSE0, VWAP0, etc.)
+    price_prefixes = ["OPEN", "HIGH", "LOW", "CLOSE", "VWAP"]
+    for prefix in price_prefixes:
+        if name.startswith(prefix) and name[len(prefix) :].isdigit():
+            return "price"
+
+    # Volume factors
+    if name.startswith("VOLUME") and name[6:].isdigit():
+        return "volume"
+
+    # Rolling factors (everything else with numbers)
+    return "rolling"

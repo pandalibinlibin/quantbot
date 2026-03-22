@@ -749,14 +749,22 @@ class ETFEnhancedIndexingService:
             qlib_data_dir = os.environ.get("QLIB_DATA_DIR", "/app/qlib_data")
             qlib.init(provider_uri=qlib_data_dir, region="cn")
 
+        # Use dynamic date range (last 1 year from today)
+        from datetime import timedelta
+
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=365)
+        start_time_str = start_date.strftime("%Y-%m-%d")
+        end_time_str = end_date.strftime("%Y-%m-%d")
+
         for symbol in symbols:
             try:
-                # Get price data from Qlib - use a wide date range to ensure data availability
+                # Get price data from Qlib - use dynamic date range
                 df = D.features(
                     instruments=[symbol],
                     fields=["$close"],
-                    start_time="2023-01-01",
-                    end_time="2023-12-31",
+                    start_time=start_time_str,
+                    end_time=end_time_str,
                     freq="day",
                 )
 
@@ -788,10 +796,17 @@ class ETFEnhancedIndexingService:
             except Exception as e:
                 failed_symbols.append((symbol, str(e)))
 
-        # Raise error if any symbol failed
+        # Log warning for failed symbols but don't raise error
+        # This allows the strategy to continue with available data
         if failed_symbols:
             error_details = "; ".join([f"{s}: {err}" for s, err in failed_symbols])
-            raise ValueError(f"Failed to get prices for symbols: {error_details}")
+            logger.warning(
+                f"Could not get prices for some symbols (skipping): {error_details}"
+            )
+
+        # Only raise error if ALL symbols failed
+        if not prices:
+            raise ValueError(f"Failed to get prices for all symbols")
 
         return prices
 

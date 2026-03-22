@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-20T13:00:46.617253",
+  "generated_at": "2026-03-22T07:26:20.594045",
   "trade_date": "2026-03-20",
   "index": "csi300",
   "index_config": {
@@ -21,74 +21,74 @@
       "action": "buy"
     },
     {
-      "symbol": "SZ300782",
+      "symbol": "SH600515",
       "type": "stock",
       "weight": 0.03,
-      "score": 5.9494,
+      "score": 2.0809,
       "rank": 1,
       "action": "buy"
     },
     {
-      "symbol": "SZ300866",
+      "symbol": "SZ000166",
       "type": "stock",
       "weight": 0.03,
-      "score": 5.8418,
+      "score": 1.9678,
       "rank": 2,
       "action": "buy"
     },
     {
-      "symbol": "SH600570",
+      "symbol": "SZ001391",
       "type": "stock",
       "weight": 0.03,
-      "score": 1.3127,
+      "score": 1.9153,
       "rank": 3,
       "action": "buy"
     },
     {
-      "symbol": "SH600760",
+      "symbol": "SH601018",
       "type": "stock",
       "weight": 0.03,
-      "score": 1.2476,
+      "score": 1.8767,
       "rank": 4,
       "action": "buy"
     },
     {
-      "symbol": "SH601808",
+      "symbol": "SH600115",
       "type": "stock",
       "weight": 0.03,
-      "score": 1.2262,
+      "score": 1.8546,
       "rank": 5,
       "action": "buy"
     },
     {
-      "symbol": "SH603986",
+      "symbol": "SH600023",
       "type": "stock",
       "weight": 0.03,
-      "score": 1.2129,
+      "score": 1.8479,
       "rank": 6,
       "action": "buy"
     },
     {
-      "symbol": "SZ002648",
+      "symbol": "SH600362",
       "type": "stock",
       "weight": 0.03,
-      "score": 1.1948,
+      "score": 1.7713,
       "rank": 7,
       "action": "buy"
     },
     {
-      "symbol": "SH600460",
+      "symbol": "SZ300476",
       "type": "stock",
       "weight": 0.03,
-      "score": 1.1899,
+      "score": 1.77,
       "rank": 8,
       "action": "buy"
     },
     {
-      "symbol": "SH600588",
+      "symbol": "SH600795",
       "type": "stock",
       "weight": 0.03,
-      "score": 1.177,
+      "score": 1.7316,
       "rank": 9,
       "action": "buy"
     },

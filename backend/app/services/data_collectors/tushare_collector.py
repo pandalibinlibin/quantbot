@@ -166,12 +166,14 @@ class TushareDataCollector(BaseDataCollector):
         self._pro = None  # Lazy initialization of Tushare Pro API
 
         # Define field metadata for Qlib compatibility
+        # VWAP (Volume Weighted Average Price) is required by Alpha158 factor library
         self._field_metadata = {
             "open": "float64",
             "high": "float64",
             "low": "float64",
             "close": "float64",
             "volume": "int64",
+            "vwap": "float64",
         }
 
         logger.info(f"TushareDataCollector initialized for {index} index")
@@ -395,6 +397,15 @@ class TushareDataCollector(BaseDataCollector):
                     }
                 )
 
+                # Calculate VWAP for index
+                # Index data has 'amount' (turnover in CNY) and 'vol' (volume)
+                # VWAP = amount / volume (both already in compatible units for index)
+                if "amount" in df.columns and "volume" in df.columns:
+                    df["vwap"] = df["amount"] / (df["volume"] + 1e-12)
+                else:
+                    # Fallback: use average of OHLC
+                    df["vwap"] = (df["open"] + df["high"] + df["low"] + df["close"]) / 4
+
             elif is_etf:
                 # Fetch ETF data using fund_daily API
                 logger.debug(f"Fetching ETF data for {symbol}")
@@ -415,6 +426,14 @@ class TushareDataCollector(BaseDataCollector):
                         "vol": "volume",
                     }
                 )
+
+                # Calculate VWAP for ETF
+                # ETF data has 'amount' (turnover in CNY) and 'vol' (volume)
+                if "amount" in df.columns and "volume" in df.columns:
+                    df["vwap"] = df["amount"] / (df["volume"] + 1e-12)
+                else:
+                    # Fallback: use average of OHLC
+                    df["vwap"] = (df["open"] + df["high"] + df["low"] + df["close"]) / 4
 
             else:
                 # Fetch stock data using daily API
@@ -460,8 +479,24 @@ class TushareDataCollector(BaseDataCollector):
                     }
                 )
 
-            # Select and order columns
-            columns = ["date", "open", "high", "low", "close", "volume"]
+                # Calculate VWAP for stocks
+                # Tushare daily API returns:
+                # - amount: turnover in thousand CNY (千元)
+                # - vol: volume in lots (手, 1 lot = 100 shares)
+                # VWAP = (amount * 1000) / (vol * 100) = amount * 10 / vol
+                if "amount" in df.columns and "volume" in df.columns:
+                    # After rename, 'vol' becomes 'volume'
+                    # But 'amount' is still 'amount'
+                    df["vwap"] = (df["amount"] * 10) / (df["volume"] + 1e-12)
+                    # Apply forward adjustment to VWAP if adjustment was applied
+                    if "adj_ratio" in df.columns:
+                        df["vwap"] = df["vwap"] * df["adj_ratio"]
+                else:
+                    # Fallback: use average of OHLC
+                    df["vwap"] = (df["open"] + df["high"] + df["low"] + df["close"]) / 4
+
+            # Select and order columns (including VWAP for Alpha158)
+            columns = ["date", "open", "high", "low", "close", "volume", "vwap"]
             df = df[[col for col in columns if col in df.columns]]
 
             # Convert date to datetime and set as index

@@ -135,3 +135,41 @@ etf_enhanced_indexing:
   # Email notification (uses existing email service)
   email_notification:
     enabled: true
+
+# Built-in Factor Libraries Configuration
+# These are Qlib's pre-defined factor sets that can be used alongside custom factors
+builtin_factor_libraries:
+  alpha158:
+    # Whether to enable Alpha158 factor library
+    # Alpha158 contains 158 classic technical factors optimized for tree-based models
+    enabled: true
+
+    # Description for display in frontend
+    description: "158 classic technical factors for tree-based models (LightGBM, XGBoost)"
+
+    # Data requirements - all fields must be available in the data source
+    # VWAP is calculated from amount/volume in Tushare collector
+    data_requirements:
+      - "open"
+      - "high"
+      - "low"
+      - "close"
+      - "volume"
+      - "vwap"
+
+# Label Configuration
+# Different markets require different label calculations due to trading rules
+label_config:
+  # China A-shares: T+1 trading rule
+  # Today's signal → Buy tomorrow → Sell day after tomorrow
+  # Label = Ref($close, -2) / Ref($close, -1) - 1 (T+2 return)
+  cn:
+    expression: "Ref($close, -2)/Ref($close, -1) - 1"
+    description: "T+2 return for A-shares (T+1 trading rule)"
+
+  # US stocks: T+0 trading rule
+  # Today's signal → Buy tomorrow → Can sell tomorrow
+  # Label = Ref($close, -1) / $close - 1 (T+1 return)
+  us:
+    expression: "Ref($close, -1)/$close - 1"
+    description: "T+1 return for US stocks (T+0 trading rule)"

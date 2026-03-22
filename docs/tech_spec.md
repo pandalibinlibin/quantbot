@@ -11120,3 +11120,304 @@ def _generate_etf_backtest_charts(
 - **Calmar Ratio**: 5.17
 - **Win Rate**: 56.55%
 - **Profit/Loss Ratio**: 1.38
+
+---
+
+## 📅 2026-03-21 更新：Alpha158 因子库整合与 Label 配置优化
+
+### 🎯 本次更新目标
+
+整合 Qlib 内置的 Alpha158 因子库到我们的因子引擎中，并根据不同市场（A股/美股）的交易规则配置正确的 Label 计算方式。
+
+### 🔧 主要修改
+
+#### 1. VWAP 数据支持 (`tushare_collector.py`)
+
+**背景**：Alpha158 因子库需要 VWAP（成交量加权平均价）数据，但 Tushare API 不直接提供此字段。
+
+**解决方案**：在数据收集阶段从 `amount`（成交额）和 `volume`（成交量）计算 VWAP。
+
+```python
+# 股票 VWAP 计算
+# Tushare daily API 返回:
+# - amount: 成交额（千元）
+# - vol: 成交量（手，1手=100股）
+# VWAP = (amount * 1000) / (vol * 100) = amount * 10 / vol
+if "amount" in df.columns and "volume" in df.columns:
+    df["vwap"] = (df["amount"] * 10) / (df["volume"] + 1e-12)
+    # 应用前复权因子
+    if "adj_ratio" in df.columns:
+        df["vwap"] = df["vwap"] * df["adj_ratio"]
+```
+
+**数据字段更新**：
+- 原有：`open`, `high`, `low`, `close`, `volume`
+- 新增：`vwap`
+
+#### 2. Alpha158 配置 (`system_config.yaml`)
+
+```yaml
+# Built-in Factor Libraries Configuration
+builtin_factor_libraries:
+  alpha158:
+    enabled: true
+    description: "158 classic technical factors for tree-based models (LightGBM, XGBoost)"
+    data_requirements:
+      - "open"
+      - "high"
+      - "low"
+      - "close"
+      - "volume"
+      - "vwap"
+```
+
+#### 3. 区域特定 Label 配置 (`system_config.yaml`)
+
+**背景**：
+- **A股（cn）**：T+1 交易制度，今天信号 → 明天买入 → 后天卖出
+- **美股（us）**：T+0 交易制度，今天信号 → 明天买入 → 明天可卖出
+
+```yaml
+# Label Configuration
+label_config:
+  cn:
+    expression: "Ref($close, -2)/Ref($close, -1) - 1"
+    description: "T+2 return for A-shares (T+1 trading rule)"
+  
+  us:
+    expression: "Ref($close, -1)/$close - 1"
+    description: "T+1 return for US stocks (T+0 trading rule)"
+```
+
+#### 4. CustomFactorHandler 更新 (`custom_factor_handler.py`)
+
+**新增功能**：
+- 自动从 `system_config.yaml` 读取 Alpha158 启用状态
+- 自动根据市场区域选择正确的 Label 表达式
+- 新增 `_load_system_config()` 方法
+
+```python
+def __init__(self, ..., enable_alpha158=None, region=None, ...):
+    # 从配置文件读取 Alpha158 设置
+    if enable_alpha158 is None:
+        self.enable_alpha158 = self._system_config.get(
+            "builtin_factor_libraries", {}
+        ).get("alpha158", {}).get("enabled", False)
+    
+    # 从配置文件读取市场区域
+    if region is None:
+        self.region = self._system_config.get("data", {}).get("region", "cn")
+
+def get_label_config(self):
+    # 使用区域特定的 Label 表达式
+    label_config = self._system_config.get("label_config", {})
+    region_config = label_config.get(self.region, {})
+    label_expression = region_config.get("expression", "Ref($close, -1)/$close - 1")
+    return [label_expression], ["LABEL0"]
+```
+
+#### 5. Alpha158 API 端点 (`factors.py`)
+
+新增 API 端点获取 Alpha158 因子库信息：
+
+```
+GET /api/v1/factors/builtin-libraries/alpha158
+
+Response:
+{
+  "name": "alpha158",
+  "display_name": "Alpha158",
+  "enabled": true,
+  "description": "158 classic technical factors...",
+  "factor_count": 158,
+  "data_requirements": ["open", "high", "low", "close", "volume", "vwap"],
+  "factors": [
+    {"name": "KMID", "expression": "($close-$open)/$open", "category": "kbar"},
+    {"name": "ROC5", "expression": "Ref($close, 5)/$close", "category": "rolling"},
+    ...
+  ]
+}
+```
+
+#### 6. 前端因子页面更新 (`factors.tsx`)
+
+在 Features 标签页中新增 Alpha158 因子库显示区域：
+
+- 显示启用/禁用状态（从配置文件读取）
+- 显示因子数量和分类统计
+- 可展开查看所有 158 个因子的详细信息
+- 提示配置文件路径
+
+### 📊 Alpha158 因子分类
+
+| 分类 | 因子数量 | 说明 |
+|------|----------|------|
+| kbar | 9 | K线形态因子（KMID, KLEN, KUP, KLOW 等） |
+| price | ~20 | 价格因子（OPEN, HIGH, LOW, CLOSE, VWAP 在不同窗口） |
+| volume | ~5 | 成交量因子 |
+| rolling | ~124 | 滚动统计因子（ROC, MA, STD, RSI, CORR 等） |
+
+### 📁 修改文件清单
+
+| 文件 | 修改类型 | 说明 |
+|------|----------|------|
+| `backend/app/services/data_collectors/tushare_collector.py` | 新增 | VWAP 计算 |
+| `backend/app/config/qlib/system_config.yaml` | 新增 | Alpha158 和 Label 配置 |
+| `backend/app/services/custom_factor_handler.py` | 更新 | 读取配置、区域 Label |
+| `backend/app/api/routes/factors.py` | 新增 | Alpha158 API 端点 |
+| `frontend/src/routes/_layout/factors.tsx` | 更新 | Alpha158 显示区域 |
+| `backend/app/config/qlib/training_config.yaml` | 更新 | 移除硬编码配置 |
+
+### ✅ 配置说明
+
+**启用 Alpha158**：
+```yaml
+# system_config.yaml
+builtin_factor_libraries:
+  alpha158:
+    enabled: true  # 设为 true 启用
+```
+
+**切换市场区域**：
+```yaml
+# system_config.yaml
+data:
+  region: "cn"  # "cn" = A股 (T+2 Label), "us" = 美股 (T+1 Label)
+```
+
+### 🔄 数据重新收集
+
+由于新增了 VWAP 字段，需要重新收集数据：
+
+```bash
+# 清理旧数据并重新收集
+docker compose exec backend python -c "
+from app.services.data_collectors import TushareDataCollector
+collector = TushareDataCollector(index_name='CSI300')
+collector.collect_data()
+"
+```
+
+---
+
+## 📅 2026-03-22 更新：Dashboard 重构与邮件增强
+
+### 🎯 更新目标
+
+1. 重新设计 Dashboard 页面，移除模拟盘相关内容，适配 ETF 增强指数策略
+2. 添加 Daily Task 按钮，一键执行 routine 和 backtest
+3. 为所有邮件添加免责声明
+4. 回测邮件添加累计收益图表和回撤分析
+
+### 📊 Dashboard 重构
+
+#### 移除的功能
+- 模拟盘 (Paper Trading) 相关数据展示
+- Portfolio Value / Return Rate 卡片（基于模拟盘）
+- Top Holdings（模拟盘持仓）
+- Recent Activity（模拟盘交易记录）
+
+#### 新增的功能
+
+**KPI 卡片（第一行）**：
+| 卡片 | 数据来源 | 说明 |
+|------|----------|------|
+| Total Return | 回测结果 | 总收益率 + 年化收益 |
+| Max Drawdown | 回测结果 | 最大回撤 + 交易天数 |
+| Sharpe Ratio | 回测结果 | 夏普比率 + 评级 |
+| System Status | 在线服务 | 系统状态 + 信号数量 |
+
+**Model Performance 卡片**：
+- IC (Mean) 和 ICIR 指标
+- 模型评估等级 (Excellent/Good/Fair/Weak)
+
+**Target Portfolio 卡片**：
+- 从 `/app/data/target_portfolio/etf_enhanced_*.json` 读取最新目标组合
+- 显示前6个持仓：排名、类型(ETF/Alpha)、代码、名称、权重、操作(buy/sell/hold)
+
+**Alerts & Actions 卡片**：
+- 信号摘要：`Signal 2024-03-22: 3 buy, 2 sell, 5 hold`
+- 策略表现：当 Sharpe >= 1.0 且收益为正时显示
+- 系统警告：IC 低于阈值、系统未初始化等
+
+#### Daily Task 按钮
+
+替换原有的 Refresh 按钮，点击后依次执行：
+1. **Routine** - 调用 `/api/v1/online/routine`，生成交易信号，发送信号邮件
+2. **Backtest** - 调用 `/api/v1/backtest/run`，执行回测，发送回测报告邮件
+
+按钮状态显示：
+- `Running routine...` - 正在执行 routine
+- `Running backtest...` - 正在执行 backtest
+- `Daily task completed!` - 完成（绿色）
+- `Error: ...` - 错误信息（红色）
+
+### 📧 邮件增强
+
+#### 免责声明
+
+所有邮件模板添加统一的免责声明：
+
+```html
+<div style="background-color: #fef3c7; border: 1px solid #f59e0b; ...">
+  <strong>⚠️ 免责声明 / Disclaimer</strong><br>
+  本邮件内容仅供学习交流和技术研究使用，不构成任何投资建议。
+  投资有风险，入市需谨慎。请根据自身情况独立判断，
+  本系统及开发者不对任何投资决策承担责任。<br>
+  <em>This email is for educational and research purposes only 
+  and does not constitute investment advice.</em>
+</div>
+```
+
+涉及的邮件模板：
+- Paper Trading 邮件
+- Enhanced Indexing 交易信号邮件
+- ETF Enhanced Portfolio 邮件 (交易信号)
+- Backtest Report 邮件
+
+#### 回测邮件增强
+
+新增内容：
+1. **累计收益图表 (SVG)**：策略 vs 基准对比曲线
+2. **回撤分析**：最大回撤时间段、峰值/谷值日期、恢复状态
+
+### 📁 修改文件清单
+
+| 文件 | 修改类型 | 说明 |
+|------|----------|------|
+| `backend/app/api/routes/dashboard.py` | 重写 | 移除 paper_trading，使用回测结果和目标组合 |
+| `backend/app/services/notification_service.py` | 更新 | 添加免责声明到所有邮件模板 |
+| `frontend/src/routes/_layout/index.tsx` | 重写 | Dashboard 页面重构，添加 Daily Task 按钮 |
+
+### 🔧 后端 API 变更
+
+#### Dashboard Summary API
+
+**端点**: `GET /api/v1/dashboard/summary`
+
+**响应结构变更**：
+```python
+class DashboardResponse(BaseModel):
+    success: bool
+    backtest: BacktestSummary      # 新增：回测结果摘要
+    model: ModelSummary            # 保留：模型指标
+    system: SystemSummary          # 保留：系统状态
+    target_positions: List[TargetPositionItem]  # 新增：目标组合
+    alerts: List[AlertItem]        # 保留：警告提示
+    # 移除: portfolio, top_holdings, recent_activities
+```
+
+**数据来源**：
+- `BacktestSummary`: `/app/mlruns/backtest_results/latest_result.json`
+- `TargetPositionItem`: `/app/data/target_portfolio/etf_enhanced_*.json` (最新文件)
+- `ModelSummary`: `/app/mlruns/model_metrics/active_metrics.json`
+
+### ✅ 使用说明
+
+每日收盘后操作流程：
+1. 打开 Dashboard 页面
+2. 点击 **Daily Task** 按钮
+3. 等待 routine 和 backtest 完成
+4. 交易员收到两封邮件：
+   - 交易信号邮件（目标组合、买卖操作）
+   - 回测报告邮件（收益分析、风险指标、图表）

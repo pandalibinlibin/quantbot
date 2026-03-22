@@ -49,11 +49,34 @@ import {
   Lock,
   Layers,
   Tag,
+  Package,
+  CheckCircle2,
+  XCircle,
+  ChevronDown,
+  ChevronUp,
+  Eye,
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 import { FactorsService, DataSourceService } from "@/client";
 import type { Factor, FactorCreate, FactorUpdate } from "@/client";
+
+// Alpha158 factor info type
+interface Alpha158Factor {
+  name: string;
+  expression: string;
+  category: string;
+}
+
+interface Alpha158Info {
+  name: string;
+  display_name: string;
+  enabled: boolean;
+  description: string;
+  factor_count: number;
+  data_requirements: string[];
+  factors: Alpha158Factor[];
+}
 
 export const Route = createFileRoute("/_layout/factors")({
   component: FactorsPage,
@@ -71,12 +94,31 @@ function FactorsPage() {
   const [activeTab, setActiveTab] = useState<string>("features");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingFactor, setEditingFactor] = useState<Factor | null>(null);
+  const [showAlpha158Factors, setShowAlpha158Factors] = useState(false);
 
   // Form state for create/edit
   const [formName, setFormName] = useState("");
   const [formExpression, setFormExpression] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formType, setFormType] = useState<"feature" | "label">("feature");
+
+  // Query for Alpha158 info
+  const { data: alpha158Info } = useQuery<Alpha158Info>({
+    queryKey: ["alpha158Info"],
+    queryFn: async () => {
+      const apiUrl = import.meta.env.VITE_API_URL || "";
+      const response = await fetch(
+        `${apiUrl}/api/v1/factors/builtin-libraries/alpha158`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+          },
+        },
+      );
+      if (!response.ok) throw new Error("Failed to fetch Alpha158 info");
+      return response.json();
+    },
+  });
 
   // Query for data source status (to get all available features)
   const { data: dataSourceStatus } = useQuery({
@@ -94,14 +136,31 @@ function FactorsPage() {
     queryFn: () => FactorsService.getFactors({ factorType: "feature" }),
   });
 
-  // Query for labels
+  // Query for label config (from system_config.yaml, not user-editable)
+  interface LabelConfig {
+    region: string;
+    expression: string;
+    description: string;
+    name: string;
+    editable: boolean;
+  }
+
   const {
-    data: labels,
+    data: labelConfig,
     isLoading: labelsLoading,
     error: labelsError,
-  } = useQuery({
-    queryKey: ["factors", "label"],
-    queryFn: () => FactorsService.getFactors({ factorType: "label" }),
+  } = useQuery<LabelConfig>({
+    queryKey: ["labelConfig"],
+    queryFn: async () => {
+      const apiUrl = import.meta.env.VITE_API_URL || "";
+      const response = await fetch(`${apiUrl}/api/v1/factors/label-config`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+        },
+      });
+      if (!response.ok) throw new Error("Failed to fetch label config");
+      return response.json();
+    },
   });
 
   // OHLCV base field names (without frequency suffix)
@@ -175,10 +234,10 @@ function FactorsPage() {
   };
 
   const handleCreate = () => {
-    // Check if trying to create a label when one already exists
-    if (formType === "label" && labels && labels.length > 0) {
+    // Labels are not user-creatable - they come from system config
+    if (formType === "label") {
       alert(
-        "Only one label is allowed. Please edit the existing label instead.",
+        "Labels are configured in system_config.yaml and cannot be created manually.",
       );
       return;
     }
@@ -274,19 +333,15 @@ function FactorsPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="feature">Feature (X)</SelectItem>
-                        <SelectItem
-                          value="label"
-                          disabled={labels && labels.length > 0}
-                        >
-                          Label (Y){" "}
-                          {labels && labels.length > 0 && "(Already exists)"}
+                        <SelectItem value="label" disabled={true}>
+                          Label (Y) - Configured in system_config.yaml
                         </SelectItem>
                       </SelectContent>
                     </Select>
-                    {formType === "label" && labels && labels.length > 0 && (
+                    {formType === "label" && (
                       <p className="text-xs text-destructive">
-                        Only one label is allowed. Please edit the existing
-                        label instead.
+                        Labels are configured in system_config.yaml based on
+                        market region and cannot be created manually.
                       </p>
                     )}
                   </div>
@@ -356,7 +411,11 @@ function FactorsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {(features?.length || 0) + (labels?.length || 0)}
+                  {(features?.length || 0) +
+                    (alpha158Info?.enabled
+                      ? alpha158Info?.factor_count || 0
+                      : 0) +
+                    (labelConfig ? 1 : 0)}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Features + Labels combined
@@ -370,7 +429,10 @@ function FactorsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {features?.length || 0}
+                  {(features?.length || 0) +
+                    (alpha158Info?.enabled
+                      ? alpha158Info?.factor_count || 0
+                      : 0)}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Input variables (X) for training
@@ -383,7 +445,7 @@ function FactorsPage() {
                 <Tag className="h-4 w-4 text-green-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{labels?.length || 0}</div>
+                <div className="text-2xl font-bold">{labelConfig ? 1 : 0}</div>
                 <p className="text-xs text-muted-foreground">
                   Target variable (Y) to predict
                 </p>
@@ -419,14 +481,118 @@ function FactorsPage() {
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList>
               <TabsTrigger value="features">
-                Features ({features?.length || 0})
+                Features (
+                {(features?.length || 0) +
+                  (alpha158Info?.enabled ? alpha158Info?.factor_count || 0 : 0)}
+                )
               </TabsTrigger>
               <TabsTrigger value="labels">
-                Labels ({labels?.length || 0})
+                Labels ({labelConfig ? 1 : 0})
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="features" className="mt-4">
+            <TabsContent value="features" className="mt-4 space-y-6">
+              {/* Alpha158 Built-in Factor Library */}
+              {alpha158Info && (
+                <Card className="border-blue-200 bg-blue-50/30">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Package className="h-5 w-5 text-blue-600" />
+                        <CardTitle className="text-lg">
+                          {alpha158Info.display_name}
+                        </CardTitle>
+                        {alpha158Info.enabled ? (
+                          <Badge variant="default" className="bg-green-600">
+                            <CheckCircle2 className="h-3 w-3 mr-1" />
+                            Enabled
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Disabled
+                          </Badge>
+                        )}
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setShowAlpha158Factors(!showAlpha158Factors)
+                        }
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        {showAlpha158Factors ? "Hide" : "View"} Factors
+                        {showAlpha158Factors ? (
+                          <ChevronUp className="h-4 w-4 ml-1" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 ml-1" />
+                        )}
+                      </Button>
+                    </div>
+                    <CardDescription>
+                      {alpha158Info.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                      <span>
+                        <strong>{alpha158Info.factor_count}</strong> factors
+                      </span>
+                      <span>
+                        Categories:{" "}
+                        {Array.from(
+                          new Set(alpha158Info.factors.map((f) => f.category)),
+                        ).join(", ")}
+                      </span>
+                      <span>
+                        Data: {alpha158Info.data_requirements.join(", ")}
+                      </span>
+                    </div>
+
+                    {/* Alpha158 Factor List (Collapsible) */}
+                    {showAlpha158Factors && (
+                      <div className="mt-4 border rounded-lg overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="w-24">Name</TableHead>
+                              <TableHead>Expression</TableHead>
+                              <TableHead className="w-20">Category</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {alpha158Info.factors.map((factor) => (
+                              <TableRow key={factor.name}>
+                                <TableCell className="font-mono text-xs">
+                                  {factor.name}
+                                </TableCell>
+                                <TableCell>
+                                  <code className="text-xs bg-muted px-1 py-0.5 rounded break-all">
+                                    {factor.expression}
+                                  </code>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="text-xs">
+                                    {factor.category}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+
+                    <p className="text-xs text-muted-foreground mt-3">
+                      Configure in <code>system_config.yaml</code> →{" "}
+                      <code>builtin_factor_libraries.alpha158.enabled</code>
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Custom Factors Table */}
               <FactorTable
                 factors={features || []}
                 isLoading={featuresLoading}
@@ -437,13 +603,86 @@ function FactorsPage() {
             </TabsContent>
 
             <TabsContent value="labels" className="mt-4">
-              <FactorTable
-                factors={labels || []}
-                isLoading={labelsLoading}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                type="label"
-              />
+              {/* Label Configuration (from system_config.yaml) */}
+              {labelsLoading ? (
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-center">
+                      <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                      <span className="ml-2 text-muted-foreground">
+                        Loading...
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ) : labelConfig ? (
+                <Card className="border-green-200 bg-green-50/30">
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-5 w-5 text-green-600" />
+                      <CardTitle>Label Configuration</CardTitle>
+                      <Badge variant="outline" className="ml-2">
+                        Region: {labelConfig.region.toUpperCase()}
+                      </Badge>
+                    </div>
+                    <CardDescription>
+                      Target variable (Y) for model training - configured based
+                      on market region
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Expression</TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead className="text-right">Status</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        <TableRow>
+                          <TableCell className="font-medium">
+                            {labelConfig.name}
+                          </TableCell>
+                          <TableCell>
+                            <code className="text-xs bg-muted px-2 py-1 rounded">
+                              {labelConfig.expression}
+                            </code>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground text-sm">
+                            {labelConfig.description}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className="inline-flex items-center text-muted-foreground text-xs">
+                              <Lock className="h-3 w-3 mr-1" />
+                              System Config
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                    <p className="text-xs text-muted-foreground mt-4">
+                      Labels are determined by market region and cannot be
+                      modified manually. Configure in{" "}
+                      <code>system_config.yaml</code> →{" "}
+                      <code>label_config</code>
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="text-center text-muted-foreground">
+                      <Tag className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                      <p>No label configuration found.</p>
+                      <p className="text-sm mt-2">
+                        Check system_config.yaml for label_config settings.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </TabsContent>
           </Tabs>
 
