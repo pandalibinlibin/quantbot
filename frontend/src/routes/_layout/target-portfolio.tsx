@@ -26,7 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { OpenAPI } from "@/client";
 import { toast } from "sonner";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 
 // Types for ETF Enhanced Indexing Strategy
 interface PortfolioPosition {
@@ -150,8 +150,14 @@ async function sendTestEmail(recipient?: string) {
   return response.json();
 }
 
-// LocalStorage key for routine result
-const ROUTINE_RESULT_KEY = "quantbot_last_routine_result";
+async function fetchLatestPortfolio() {
+  const response = await fetch(
+    `${OpenAPI.BASE}/api/v1/dashboard/latest-portfolio`,
+    { headers: apiHeaders() },
+  );
+  if (!response.ok) throw new Error("Failed to fetch latest portfolio");
+  return response.json();
+}
 
 export const Route = createFileRoute("/_layout/target-portfolio")({
   component: TargetPortfolioPage,
@@ -167,20 +173,33 @@ function TargetPortfolioPage() {
   const [portfolioPage, setPortfolioPage] = useState(0);
   const portfolioPageSize = 50;
 
-  // Load last routine result from localStorage
-  const [lastRoutineResult, setLastRoutineResult] =
-    useState<RoutineResult | null>(null);
+  // Fetch latest portfolio from API (reads from file, has correct current_shares)
+  const {
+    data: latestPortfolio,
+    isLoading: portfolioLoading,
+    error: portfolioError,
+  } = useQuery({
+    queryKey: ["latestPortfolio"],
+    queryFn: fetchLatestPortfolio,
+    refetchOnWindowFocus: true,
+    staleTime: 30000, // 30 seconds
+  });
 
-  useEffect(() => {
-    const stored = localStorage.getItem(ROUTINE_RESULT_KEY);
-    if (stored) {
-      try {
-        setLastRoutineResult(JSON.parse(stored));
-      } catch (e) {
-        console.error("Failed to parse stored routine result:", e);
-      }
-    }
-  }, []);
+  // Build routine result from API data
+  const lastRoutineResult: RoutineResult | null = useMemo(() => {
+    if (!latestPortfolio?.success) return null;
+    return {
+      success: true,
+      generated_at: latestPortfolio.generated_at,
+      trade_date: latestPortfolio.trade_date,
+      signal_for_date: latestPortfolio.signal_for_date,
+      total_value: latestPortfolio.total_value,
+      weights: latestPortfolio.weights,
+      target_portfolio: latestPortfolio.positions,
+      portfolio_summary: latestPortfolio.summary,
+      strategy: "etf_enhanced_indexing",
+    };
+  }, [latestPortfolio]);
 
   // Always use ETF Enhanced Indexing format (legacy format removed)
   const isETFStrategy = true;
@@ -358,6 +377,38 @@ function TargetPortfolioPage() {
   const hasPortfolio =
     lastRoutineResult?.target_portfolio &&
     lastRoutineResult.target_portfolio.length > 0;
+
+  // Show loading state
+  if (portfolioLoading) {
+    return (
+      <div className="flex flex-col overflow-hidden -m-6 md:-m-8 h-[calc(100vh-8rem)]">
+        <div className="h-full overflow-y-auto p-6 md:p-8">
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <span className="ml-2 text-muted-foreground">
+              Loading portfolio...
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (portfolioError) {
+    return (
+      <div className="flex flex-col overflow-hidden -m-6 md:-m-8 h-[calc(100vh-8rem)]">
+        <div className="h-full overflow-y-auto p-6 md:p-8">
+          <div className="flex items-center justify-center h-64">
+            <XCircle className="h-8 w-8 text-red-500" />
+            <span className="ml-2 text-red-500">
+              Failed to load portfolio: {portfolioError.message}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col overflow-hidden -m-6 md:-m-8 h-[calc(100vh-8rem)]">

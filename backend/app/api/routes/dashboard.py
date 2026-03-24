@@ -105,6 +105,65 @@ def _get_model_evaluation(ic: float) -> str:
         return "Weak"
 
 
+class LatestPortfolioResponse(BaseModel):
+    """Response for latest portfolio endpoint."""
+
+    success: bool
+    trade_date: Optional[str] = None
+    signal_for_date: Optional[str] = None
+    generated_at: Optional[str] = None
+    total_value: float = 0
+    positions: List[Dict[str, Any]] = []
+    weights: Dict[str, Any] = {}
+    summary: Dict[str, Any] = {}
+    error: Optional[str] = None
+
+
+@router.get("/latest-portfolio", response_model=LatestPortfolioResponse)
+def get_latest_portfolio():
+    """
+    Get the latest target portfolio from file.
+
+    This reads directly from the most recent etf_enhanced_*.json file,
+    ensuring current_shares reflects the actual persisted holdings.
+    """
+    try:
+        if not TARGET_PORTFOLIO_DIR.exists():
+            return LatestPortfolioResponse(
+                success=False, error="Portfolio directory not found"
+            )
+
+        # Find the latest portfolio file
+        portfolio_files = sorted(
+            TARGET_PORTFOLIO_DIR.glob("etf_enhanced_*.json"), reverse=True
+        )
+
+        if not portfolio_files:
+            return LatestPortfolioResponse(
+                success=False, error="No portfolio files found"
+            )
+
+        latest_file = portfolio_files[0]
+
+        with open(latest_file, "r", encoding="utf-8") as f:
+            portfolio_data = json.load(f)
+
+        return LatestPortfolioResponse(
+            success=True,
+            trade_date=portfolio_data.get("trade_date"),
+            signal_for_date=portfolio_data.get("signal_for_date"),
+            generated_at=portfolio_data.get("generated_at"),
+            total_value=portfolio_data.get("total_value", 0),
+            positions=portfolio_data.get("positions", []),
+            weights=portfolio_data.get("weights", {}),
+            summary=portfolio_data.get("summary", {}),
+        )
+
+    except Exception as e:
+        logger.error(f"Failed to get latest portfolio: {e}")
+        return LatestPortfolioResponse(success=False, error=str(e))
+
+
 @router.get("/summary", response_model=DashboardResponse)
 def get_dashboard_summary():
     """

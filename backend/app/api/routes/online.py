@@ -303,3 +303,118 @@ def reset_state():
     except Exception as e:
         logger.error(f"Failed to reset state: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to reset state: {str(e)}")
+
+
+# Holdings Management Endpoints
+
+
+class HoldingsResponse(BaseModel):
+    """Response model for holdings endpoints."""
+
+    success: bool
+    holdings: Dict[str, int] = {}
+    position_count: int = 0
+    updated_at: Optional[str] = None
+    message: str = ""
+
+
+class UpdateHoldingsRequest(BaseModel):
+    """Request model for updating holdings."""
+
+    holdings: Dict[str, int] = Field(..., description="Holdings dict: symbol -> shares")
+
+
+@router.get("/holdings", response_model=HoldingsResponse)
+def get_holdings():
+    """
+    Get current holdings state.
+
+    Returns the persisted holdings that will be used for calculating
+    the next day's trading signals.
+    """
+    try:
+        from app.services.etf_enhanced_indexing_service import (
+            get_etf_enhanced_indexing_service,
+        )
+
+        etf_service = get_etf_enhanced_indexing_service()
+        holdings = etf_service._current_holdings.copy()
+
+        # Try to get updated_at from file
+        holdings_file = etf_service._get_holdings_file_path()
+        updated_at = None
+        if holdings_file.exists():
+            import json
+
+            with open(holdings_file, "r") as f:
+                data = json.load(f)
+                updated_at = data.get("updated_at")
+
+        return HoldingsResponse(
+            success=True,
+            holdings=holdings,
+            position_count=len(holdings),
+            updated_at=updated_at,
+            message=f"Current holdings: {len(holdings)} positions",
+        )
+    except Exception as e:
+        logger.error(f"Failed to get holdings: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get holdings: {str(e)}")
+
+
+@router.post("/holdings", response_model=HoldingsResponse)
+def update_holdings(request: UpdateHoldingsRequest):
+    """
+    Update current holdings state.
+
+    Use this to manually set holdings if they differ from the
+    auto-applied trades (e.g., partial fills, manual adjustments).
+    """
+    try:
+        from app.services.etf_enhanced_indexing_service import (
+            get_etf_enhanced_indexing_service,
+        )
+
+        etf_service = get_etf_enhanced_indexing_service()
+        etf_service.save_holdings(request.holdings)
+
+        return HoldingsResponse(
+            success=True,
+            holdings=etf_service._current_holdings.copy(),
+            position_count=len(etf_service._current_holdings),
+            message=f"Holdings updated: {len(request.holdings)} positions",
+        )
+    except Exception as e:
+        logger.error(f"Failed to update holdings: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to update holdings: {str(e)}"
+        )
+
+
+@router.delete("/holdings", response_model=HoldingsResponse)
+def clear_holdings():
+    """
+    Clear all holdings (reset to empty portfolio).
+
+    Use with caution - this will make the next signal calculation
+    assume you have no existing positions.
+    """
+    try:
+        from app.services.etf_enhanced_indexing_service import (
+            get_etf_enhanced_indexing_service,
+        )
+
+        etf_service = get_etf_enhanced_indexing_service()
+        etf_service.save_holdings({})
+
+        return HoldingsResponse(
+            success=True,
+            holdings={},
+            position_count=0,
+            message="Holdings cleared",
+        )
+    except Exception as e:
+        logger.error(f"Failed to clear holdings: {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to clear holdings: {str(e)}"
+        )

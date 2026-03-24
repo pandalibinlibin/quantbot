@@ -15,6 +15,7 @@ Key Features:
 - Daily rebalancing by default
 """
 
+import hashlib
 import json
 import logging
 from datetime import datetime
@@ -57,6 +58,9 @@ class ETFEnhancedIndexingService:
         self._current_holdings: Dict[str, int] = {}  # symbol -> shares
         self._stock_name_cache: Dict[str, str] = {}  # symbol -> name cache
         self._initialized = True
+
+        # Load persisted holdings on initialization
+        self._load_persisted_holdings()
         logger.info("ETFEnhancedIndexingService initialized")
 
     def _load_config(self) -> Dict[str, Any]:
@@ -502,6 +506,10 @@ class ETFEnhancedIndexingService:
         # Use provided holdings or internal state
         if current_holdings is None:
             current_holdings = self._current_holdings.copy()
+            logger.info(
+                f"Using internal holdings: {len(current_holdings)} positions, "
+                f"symbols: {list(current_holdings.keys())[:5]}..."
+            )
 
         # Calculate dynamic weights
         etf_weight, alpha_weight, score_spread = self.calculate_dynamic_weights(
@@ -831,6 +839,127 @@ class ETFEnhancedIndexingService:
             next_dt += timedelta(days=1)
         return next_dt.strftime("%Y-%m-%d")
 
+    # ===== Smart Cache =====
+
+    def _calculate_fingerprint(self) -> Dict[str, str]:
+        """
+        Calculate a fingerprint based on data source and factor configuration.
+
+        The fingerprint includes:
+        - data_end_date: Last date in Qlib data
+        - factor_hash: Hash of active factor names
+
+        Returns:
+            Dict with fingerprint components
+        """
+        fingerprint = {
+            "data_end_date": "",
+            "factor_hash": "",
+        }
+
+        # Get data end date from Qlib
+        try:
+            import qlib
+            from qlib.data import D
+            import os
+
+            # Initialize Qlib if not already done
+            if not hasattr(qlib, "_default_config") or qlib._default_config is None:
+                qlib_data_dir = os.environ.get("QLIB_DATA_DIR", "/app/qlib_data")
+                qlib.init(provider_uri=qlib_data_dir, region="cn")
+
+            calendar = D.calendar(freq="day")
+            if calendar is not None and len(calendar) > 0:
+                fingerprint["data_end_date"] = str(calendar[-1])[:10]
+        except Exception as e:
+            logger.warning(f"Failed to get data end date for fingerprint: {e}")
+
+        # Get factor hash from database
+        try:
+            from sqlmodel import Session, select
+            from app.core.db import engine
+            from app.models import Factor, FactorStatus
+
+            with Session(engine) as session:
+                statement = (
+                    select(Factor.name)
+                    .where(Factor.status == FactorStatus.ACTIVE)
+                    .order_by(Factor.name)
+                )
+                factor_names = session.exec(statement).all()
+
+                # Create hash of sorted factor names
+                factor_str = ",".join(sorted(factor_names))
+                fingerprint["factor_hash"] = hashlib.md5(
+                    factor_str.encode()
+                ).hexdigest()[:8]
+        except Exception as e:
+            logger.warning(f"Failed to get factor hash for fingerprint: {e}")
+
+        return fingerprint
+
+    def check_cache_valid(
+        self, trade_date: str
+    ) -> Tuple[bool, Optional[Dict[str, Any]]]:
+        """
+        Check if cached portfolio is valid for the given trade date.
+
+        Cache is valid if:
+        1. Portfolio file exists for the trade date
+        2. Data source has not changed (same data_end_date)
+        3. Factors have not changed (same factor_hash)
+
+        Args:
+            trade_date: Trade date to check (YYYY-MM-DD)
+
+        Returns:
+            Tuple of (is_valid, cached_portfolio_data or None)
+        """
+        # Load existing portfolio for this date
+        cached_portfolio = self.load_portfolio(trade_date)
+
+        if cached_portfolio is None:
+            logger.info(f"No cached portfolio for {trade_date}")
+            return False, None
+
+        # Get cached fingerprint
+        cached_fingerprint = cached_portfolio.get("fingerprint", {})
+        if not cached_fingerprint:
+            logger.info(f"Cached portfolio has no fingerprint, will recalculate")
+            return False, None
+
+        # Calculate current fingerprint
+        current_fingerprint = self._calculate_fingerprint()
+
+        # Compare fingerprints
+        data_changed = cached_fingerprint.get(
+            "data_end_date"
+        ) != current_fingerprint.get("data_end_date")
+        factor_changed = cached_fingerprint.get(
+            "factor_hash"
+        ) != current_fingerprint.get("factor_hash")
+
+        if data_changed:
+            logger.info(
+                f"Data source changed: {cached_fingerprint.get('data_end_date')} -> "
+                f"{current_fingerprint.get('data_end_date')}, will recalculate"
+            )
+            return False, None
+
+        if factor_changed:
+            logger.info(
+                f"Factors changed: {cached_fingerprint.get('factor_hash')} -> "
+                f"{current_fingerprint.get('factor_hash')}, will recalculate"
+            )
+            return False, None
+
+        logger.info(
+            f"Using cached portfolio for {trade_date} "
+            f"(data_end_date={current_fingerprint.get('data_end_date')}, "
+            f"factor_hash={current_fingerprint.get('factor_hash')})"
+        )
+        return True, cached_portfolio
+
     # ===== Portfolio Persistence =====
 
     def save_portfolio(
@@ -839,7 +968,7 @@ class ETFEnhancedIndexingService:
         date: Optional[str] = None,
     ) -> str:
         """
-        Save target portfolio to JSON file.
+        Save target portfolio to JSON file with fingerprint.
 
         Args:
             portfolio_data: Portfolio data from calculate_target_portfolio()
@@ -850,6 +979,9 @@ class ETFEnhancedIndexingService:
         """
         if date is None:
             date = datetime.now().strftime("%Y-%m-%d")
+
+        # Add fingerprint for cache validation
+        portfolio_data["fingerprint"] = self._calculate_fingerprint()
 
         output_dir = Path(self.output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -918,6 +1050,105 @@ class ETFEnhancedIndexingService:
         """
         self._current_holdings = holdings.copy()
         logger.info(f"Updated holdings: {len(holdings)} positions")
+
+    def _get_holdings_file_path(self) -> Path:
+        """Get the path to the holdings persistence file."""
+        output_dir = Path(self.output_dir)
+        return output_dir / "current_holdings.json"
+
+    def _load_persisted_holdings(self) -> None:
+        """Load holdings from persistence file on startup."""
+        holdings_file = self._get_holdings_file_path()
+        if holdings_file.exists():
+            try:
+                with open(holdings_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                self._current_holdings = data.get("holdings", {})
+                logger.info(
+                    f"Loaded persisted holdings: {len(self._current_holdings)} positions "
+                    f"(last updated: {data.get('updated_at', 'unknown')})"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to load persisted holdings: {e}")
+                self._current_holdings = {}
+        else:
+            logger.info("No persisted holdings found, starting with empty portfolio")
+
+    def save_holdings(
+        self,
+        holdings: Optional[Dict[str, int]] = None,
+        trade_date: Optional[str] = None,
+    ) -> str:
+        """
+        Save current holdings to persistence file.
+
+        Args:
+            holdings: Holdings to save (uses internal state if None)
+            trade_date: Trade date for tracking (defaults to today)
+
+        Returns:
+            Path to saved file
+        """
+        if holdings is not None:
+            self._current_holdings = holdings.copy()
+
+        if trade_date is None:
+            trade_date = datetime.now().strftime("%Y-%m-%d")
+
+        output_dir = Path(self.output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        holdings_file = self._get_holdings_file_path()
+        data = {
+            "holdings": self._current_holdings,
+            "updated_at": datetime.now().isoformat(),
+            "trade_date": trade_date,  # Track which date these holdings are for
+            "position_count": len(self._current_holdings),
+        }
+
+        with open(holdings_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+
+        logger.info(
+            f"Saved holdings to {holdings_file}: {len(self._current_holdings)} positions (trade_date={trade_date})"
+        )
+        return str(holdings_file)
+
+    def apply_trades_to_holdings(
+        self, positions: List[Dict[str, Any]], trade_date: Optional[str] = None
+    ) -> Dict[str, int]:
+        """
+        Apply trades from target portfolio to update holdings.
+
+        This simulates executing the trades and updates the internal holdings state.
+        Should be called after the user confirms they have executed the trades.
+
+        Note: Multiple executions on the same day are safe - the holdings will
+        be updated to the latest target positions each time.
+
+        Args:
+            positions: List of position dicts from calculate_target_portfolio
+            trade_date: Trade date for tracking
+
+        Returns:
+            Updated holdings dict
+        """
+        for pos in positions:
+            symbol = pos.get("symbol", "")
+            target_shares = pos.get("target_shares", 0)
+            if symbol:
+                if target_shares > 0:
+                    self._current_holdings[symbol] = target_shares
+                elif symbol in self._current_holdings:
+                    del self._current_holdings[symbol]
+
+        # Persist the updated holdings with trade date
+        self.save_holdings(trade_date=trade_date)
+
+        logger.info(
+            f"Applied trades, new holdings: {len(self._current_holdings)} positions"
+        )
+        return self._current_holdings.copy()
 
 
 def get_etf_enhanced_indexing_service() -> ETFEnhancedIndexingService:

@@ -630,23 +630,59 @@ class OnlineServingService:
             etf_service = get_etf_enhanced_indexing_service()
 
             if etf_service.enabled:
+                date_str = cur_time if cur_time else datetime.now().strftime("%Y-%m-%d")
+
+                # Smart cache: Check if we can use cached result
+                # Cache is valid if same day AND no data/factor changes
+                cache_valid, cached_portfolio = etf_service.check_cache_valid(date_str)
+
+                if cache_valid and cached_portfolio:
+                    self.logger.info(
+                        f"Using cached portfolio for {date_str} (no data/factor changes)"
+                    )
+                    portfolio_data = cached_portfolio
+
+                    # Return cached result with cache indicator
+                    return {
+                        "success": True,
+                        "cached": True,
+                        "target_portfolio": portfolio_data.get("positions", []),
+                        "summary": portfolio_data.get("summary", {}),
+                        "weights": portfolio_data.get("weights", {}),
+                        "strategy": "etf_enhanced_indexing",
+                        "generated_at": portfolio_data.get(
+                            "generated_at", datetime.now().isoformat()
+                        ),
+                        "trade_date": portfolio_data.get("trade_date", cur_time or ""),
+                        "signal_for_date": portfolio_data.get("signal_for_date", ""),
+                        "total_value": portfolio_data.get("total_value", 1000000),
+                        "lot_size": portfolio_data.get("lot_size", 100),
+                        "region": portfolio_data.get("region", "cn"),
+                    }
+
+                # Cache invalid or not found, calculate new portfolio
                 self.logger.info(
                     "Calculating target portfolio using ETF Enhanced Indexing strategy..."
                 )
 
                 # Calculate target portfolio with ETF + top stocks
+                # This uses current holdings to calculate action (buy/sell/hold)
                 portfolio_data = etf_service.calculate_target_portfolio(
                     signals=signals,
                     trade_date=cur_time,
                 )
 
-                # Save portfolio to file
+                # Save portfolio to file (includes fingerprint for future cache validation)
                 if portfolio_data.get("positions"):
-                    date_str = (
-                        cur_time if cur_time else datetime.now().strftime("%Y-%m-%d")
-                    )
+                    # Save portfolio FIRST (with current_shares showing pre-trade state)
                     saved_path = etf_service.save_portfolio(portfolio_data, date_str)
                     self.logger.info(f"ETF enhanced portfolio saved to {saved_path}")
+
+                    # Then apply trades to holdings (for next day's calculation)
+                    # This updates internal holdings state to target_shares
+                    etf_service.apply_trades_to_holdings(
+                        portfolio_data.get("positions", []), trade_date=date_str
+                    )
 
                 position_count = len(portfolio_data.get("positions", []))
                 self.logger.info(
@@ -659,6 +695,7 @@ class OnlineServingService:
 
                 return {
                     "success": True,
+                    "cached": False,
                     "target_portfolio": portfolio_data.get("positions", []),
                     "summary": portfolio_data.get("summary", {}),
                     "weights": portfolio_data.get("weights", {}),
