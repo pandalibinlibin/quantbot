@@ -1726,11 +1726,17 @@ class OnlineServingService:
             except Exception as e:
                 self.logger.warning(f"Error calculating return for {date}: {e}")
 
-            # Apply trading costs (simplified)
-            day_cost = (
-                portfolio_value * (open_cost + close_cost) * 0.1
-            )  # Assume 10% turnover
-            total_cost += day_cost
+            # Apply trading costs only on rebalancing days
+            # Cost = portfolio_value * (open_cost + close_cost) * turnover_ratio
+            # On rebalance day, assume full portfolio turnover for alpha portion
+            if is_rebalance_day:
+                # Only alpha portion incurs trading costs (ETF portion is index tracking)
+                # Use current_etf_weight which is updated on each rebalance day
+                current_alpha_weight = 1.0 - current_etf_weight
+                day_cost = (
+                    portfolio_value * (open_cost + close_cost) * current_alpha_weight
+                )
+                total_cost += day_cost
 
             # Store old portfolio value for net return calculation
             old_portfolio_value = portfolio_value
