@@ -164,11 +164,12 @@ class CustomFactorHandler(DataHandlerLP):
         - This avoids re-computing factors that are already stored as bin files
 
         Returns:
-            List of factor expression strings in Qlib format
+            Tuple of (expressions, names) following Qlib's QlibDataLoader format
         """
         logger.info("Building feature configuration...")
 
         feature_expressions = []
+        feature_names = []
 
         # Add Alpha158 factors if enabled (these will be computed on-the-fly)
         if self.enable_alpha158:
@@ -176,22 +177,25 @@ class CustomFactorHandler(DataHandlerLP):
             try:
                 from qlib.contrib.data.loader import Alpha158DL
 
-                alpha158_config = Alpha158DL.get_feature_config()
-                feature_expressions.extend(alpha158_config)
-                logger.info(f"Added {len(alpha158_config)} Alpha158 factors")
+                # Alpha158DL.get_feature_config() returns (expressions, names) tuple
+                alpha158_exprs, alpha158_names = Alpha158DL.get_feature_config()
+                feature_expressions.extend(alpha158_exprs)
+                feature_names.extend(alpha158_names)
+                logger.info(f"Added {len(alpha158_exprs)} Alpha158 factors")
             except Exception as e:
                 logger.error(f"Failed to load Alpha158 factors: {e}")
 
         # Add pre-computed custom factors from bin files (using $field_name format)
-        precomputed_factors = self._load_precomputed_factors()
-        if precomputed_factors:
-            feature_expressions.extend(precomputed_factors)
+        precomputed_exprs, precomputed_names = self._load_precomputed_factors()
+        if precomputed_exprs:
+            feature_expressions.extend(precomputed_exprs)
+            feature_names.extend(precomputed_names)
             logger.info(
-                f"Added {len(precomputed_factors)} pre-computed factors from bin files"
+                f"Added {len(precomputed_exprs)} pre-computed factors from bin files"
             )
 
         logger.info(f"Total feature expressions: {len(feature_expressions)}")
-        return feature_expressions
+        return (feature_expressions, feature_names)
 
     def _load_precomputed_factors(self, include_ohlcv: bool = True):
         """
@@ -204,7 +208,7 @@ class CustomFactorHandler(DataHandlerLP):
             include_ohlcv: Whether to include OHLCV raw data fields
 
         Returns:
-            List of $field_name expressions for features
+            Tuple of (expressions, names) for features
         """
         try:
             from .factor_storage import FactorStorage
@@ -213,11 +217,14 @@ class CustomFactorHandler(DataHandlerLP):
             storage = FactorStorage(freq=self.freq if hasattr(self, "freq") else "day")
 
             feature_expressions = []
+            feature_names = []
 
             # Add OHLCV raw data fields if requested
             if include_ohlcv:
                 ohlcv_fields = ["$open", "$high", "$low", "$close", "$volume"]
+                ohlcv_names = ["OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"]
                 feature_expressions.extend(ohlcv_fields)
+                feature_names.extend(ohlcv_names)
                 logger.info(f"Added {len(ohlcv_fields)} OHLCV fields")
 
             # Get list of stored factors (excludes OHLCV raw data)
@@ -233,19 +240,23 @@ class CustomFactorHandler(DataHandlerLP):
                     logger.info(f"Excluding label '{factor_name}' from features")
                     continue
                 feature_expressions.append(f"${factor_name}")
+                feature_names.append(factor_name.upper())
 
             logger.info(
                 f"Found {len(stored_factors)} pre-computed factors: {stored_factors}"
             )
             logger.info(f"Total feature expressions: {len(feature_expressions)}")
-            return feature_expressions
+            return (feature_expressions, feature_names)
 
         except Exception as e:
             logger.error(f"Failed to load pre-computed factors: {e}")
             # Fallback to OHLCV only
             if include_ohlcv:
-                return ["$open", "$high", "$low", "$close", "$volume"]
-            return []
+                return (
+                    ["$open", "$high", "$low", "$close", "$volume"],
+                    ["OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"],
+                )
+            return ([], [])
 
     def _load_custom_factors_from_db(self):
         """

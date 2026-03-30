@@ -258,6 +258,165 @@ class OnlineServingService:
             self.logger.error(f"Failed to re-prepare signals with online filter: {e}")
             raise
 
+    def _extend_signals_to_latest_date(self, signals: pd.DataFrame) -> pd.DataFrame:
+        """
+        Extend signals to cover all available data dates using the latest model.
+
+        If signals end before the latest data date, use the most recent model
+        to predict signals for the remaining dates.
+
+        Args:
+            signals: Existing signals DataFrame with MultiIndex (datetime, instrument)
+
+        Returns:
+            Extended signals DataFrame covering all data dates
+        """
+        try:
+            from qlib.data import D
+
+            # Get signal date range
+            signal_dates = signals.index.get_level_values("datetime").unique()
+            signal_end_date = signal_dates.max()
+
+            # Get data date range
+            latest_data_date = self._get_latest_data_date()
+            if latest_data_date is None:
+                self.logger.warning("Could not determine latest data date")
+                return signals
+
+            latest_data_date = pd.Timestamp(latest_data_date)
+
+            # Check if signals already cover all data
+            if signal_end_date >= latest_data_date:
+                self.logger.info(
+                    f"Signals already cover all data dates (signal_end={signal_end_date}, data_end={latest_data_date})"
+                )
+                return signals
+
+            self.logger.info(
+                f"Extending signals from {signal_end_date} to {latest_data_date}"
+            )
+
+            # Get the latest model from online recorders
+            from qlib.workflow.online.utils import OnlineToolR
+            from qlib.workflow import R
+
+            online_tool = OnlineToolR()
+
+            # Find the latest online recorder
+            latest_recorder = None
+            latest_exp_name = None
+
+            for strategy in self._online_manager.strategies:
+                exp = R.get_exp(experiment_name=strategy.name_id)
+                recorders = exp.list_recorders()
+
+                for rec_id, rec in recorders.items():
+                    if online_tool.get_online_tag(rec) == OnlineToolR.ONLINE_TAG:
+                        latest_recorder = rec
+                        latest_exp_name = strategy.name_id
+                        break
+                if latest_recorder:
+                    break
+
+            if latest_recorder is None:
+                self.logger.warning("No online recorder found for signal extension")
+                return signals
+
+            # Load the model from the recorder
+            model = latest_recorder.load_object("params.pkl")
+            self.logger.info(f"Loaded model from recorder for signal extension")
+
+            # Create dataset for the missing date range
+            from app.services.custom_factor_handler import CustomFactorHandler
+            from qlib.data.dataset import DatasetH
+
+            # Get the day after signal_end_date
+            calendar = D.calendar(freq="day")
+            calendar_list = list(calendar)
+
+            # Find the index of signal_end_date in calendar
+            try:
+                end_idx = calendar_list.index(signal_end_date)
+                start_date = (
+                    calendar_list[end_idx + 1]
+                    if end_idx + 1 < len(calendar_list)
+                    else None
+                )
+            except ValueError:
+                # signal_end_date not in calendar, find the next trading day
+                start_date = None
+                for cal_date in calendar_list:
+                    if cal_date > signal_end_date:
+                        start_date = cal_date
+                        break
+
+            if start_date is None or start_date > latest_data_date:
+                self.logger.info("No additional dates to predict")
+                return signals
+
+            self.logger.info(
+                f"Predicting signals for dates: {start_date} to {latest_data_date}"
+            )
+
+            # Create handler for the missing date range
+            handler = CustomFactorHandler(
+                start_time=str(start_date.date()),
+                end_time=str(latest_data_date.date()),
+                freq="day",
+            )
+
+            dataset = DatasetH(
+                handler=handler,
+                segments={
+                    "predict": (start_date, latest_data_date),
+                },
+            )
+
+            # Generate predictions
+            new_predictions = model.predict(dataset, segment="predict")
+
+            if new_predictions is None or len(new_predictions) == 0:
+                self.logger.warning("No new predictions generated")
+                return signals
+
+            self.logger.info(f"Generated {len(new_predictions)} new predictions")
+
+            # Combine original signals with new predictions
+            # Ensure both have the same column name
+            if isinstance(new_predictions, pd.Series):
+                new_predictions = new_predictions.to_frame(name="score")
+            if isinstance(signals, pd.Series):
+                signals = signals.to_frame(name="score")
+
+            # Ensure column names match
+            if signals.columns[0] != new_predictions.columns[0]:
+                new_predictions.columns = signals.columns
+
+            # Concatenate and sort
+            extended_signals = pd.concat([signals, new_predictions])
+            extended_signals = extended_signals.sort_index()
+
+            # Remove duplicates (keep first)
+            extended_signals = extended_signals[
+                ~extended_signals.index.duplicated(keep="first")
+            ]
+
+            self.logger.info(
+                f"Extended signals: {len(signals)} -> {len(extended_signals)} "
+                f"(added {len(extended_signals) - len(signals)} predictions)"
+            )
+
+            return extended_signals
+
+        except Exception as e:
+            self.logger.error(f"Failed to extend signals: {e}")
+            import traceback
+
+            self.logger.error(traceback.format_exc())
+            # Return original signals on error
+            return signals
+
     def _auto_init(self) -> Dict[str, Any]:
         """
         Auto-initialize OnlineManager on first routine call.
@@ -632,6 +791,78 @@ class OnlineServingService:
             if etf_service.enabled:
                 date_str = cur_time if cur_time else datetime.now().strftime("%Y-%m-%d")
 
+                # Check if today is a rebalancing day
+                is_rebalance_day = etf_service.is_rebalance_day(date_str)
+                days_until_rebalance = etf_service.get_days_until_rebalance(date_str)
+
+                if not is_rebalance_day:
+                    # Not a rebalancing day - return current holdings with HOLD action
+                    self.logger.info(
+                        f"Not a rebalancing day ({date_str}). "
+                        f"Next rebalance in {days_until_rebalance} trading days. "
+                        f"Skipping portfolio recalculation."
+                    )
+
+                    # Load the most recent portfolio file and set all actions to hold
+                    cached_portfolio = etf_service.load_latest_portfolio()
+
+                    if cached_portfolio:
+                        positions = cached_portfolio.get("positions", [])
+                        # Set all actions to hold (no trading on non-rebalance days)
+                        for pos in positions:
+                            pos["action"] = "hold"
+                            pos["action_shares"] = 0
+                            pos["action_lots"] = 0
+
+                        # Build portfolio data for email
+                        hold_portfolio_data = {
+                            **cached_portfolio,
+                            "positions": positions,
+                            "summary": {
+                                **cached_portfolio.get("summary", {}),
+                                "buy_count": 0,
+                                "sell_count": 0,
+                                "hold_count": len(positions),
+                            },
+                            "trade_date": date_str,
+                            "generated_at": datetime.now().isoformat(),
+                            "is_rebalance_day": False,
+                            "message": f"Not a rebalancing day. Next rebalance in {days_until_rebalance} trading days.",
+                        }
+
+                        # Send email notification even for hold (non-rebalance day)
+                        self._send_etf_portfolio_email(hold_portfolio_data)
+
+                        return {
+                            "success": True,
+                            "cached": True,
+                            "is_rebalance_day": False,
+                            "days_until_rebalance": days_until_rebalance,
+                            "target_portfolio": positions,
+                            "summary": {
+                                **cached_portfolio.get("summary", {}),
+                                "buy_count": 0,
+                                "sell_count": 0,
+                                "hold_count": len(positions),
+                            },
+                            "weights": cached_portfolio.get("weights", {}),
+                            "strategy": "etf_enhanced_indexing",
+                            "generated_at": datetime.now().isoformat(),
+                            "trade_date": date_str,
+                            "signal_for_date": cached_portfolio.get(
+                                "signal_for_date", ""
+                            ),
+                            "total_value": cached_portfolio.get("total_value", 1000000),
+                            "lot_size": cached_portfolio.get("lot_size", 100),
+                            "region": cached_portfolio.get("region", "cn"),
+                            "message": f"Not a rebalancing day. Next rebalance in {days_until_rebalance} trading days.",
+                        }
+                    else:
+                        # No previous portfolio, need to calculate even on non-rebalance day
+                        self.logger.warning(
+                            "No previous portfolio found. Will calculate initial portfolio."
+                        )
+
                 # Smart cache: Check if we can use cached result
                 # Cache is valid if same day AND no data/factor changes
                 cache_valid, cached_portfolio = etf_service.check_cache_valid(date_str)
@@ -642,10 +873,15 @@ class OnlineServingService:
                     )
                     portfolio_data = cached_portfolio
 
+                    # Send email notification even when using cache
+                    self._send_etf_portfolio_email(portfolio_data)
+
                     # Return cached result with cache indicator
                     return {
                         "success": True,
                         "cached": True,
+                        "is_rebalance_day": True,
+                        "days_until_rebalance": 0,
                         "target_portfolio": portfolio_data.get("positions", []),
                         "summary": portfolio_data.get("summary", {}),
                         "weights": portfolio_data.get("weights", {}),
@@ -1152,7 +1388,11 @@ class OnlineServingService:
                 f"Using {len(signals)} signals from Online Serving for backtest"
             )
 
-            # Execute backtest using the signals
+            # Extend signals to cover all available data dates
+            # This uses the latest model to predict signals for dates not covered by rolling training
+            signals = self._extend_signals_to_latest_date(signals)
+
+            # Execute backtest using the extended signals
             result = self._execute_signal_based_backtest(signals, account)
 
             if result.get("status") == "error":
@@ -1161,15 +1401,20 @@ class OnlineServingService:
             # Convert result format for API compatibility
             # Qlib metrics + custom metrics
             risk_metrics = {
-                # Qlib risk_analysis metrics
+                # Qlib risk_analysis metrics (arithmetic annualized)
                 "annualized_return": result.get("annual_return"),
                 "max_drawdown": result.get("max_drawdown"),
                 "sharpe_ratio": result.get("sharpe_ratio"),
                 "volatility": result.get("volatility"),
                 # Custom additional metrics
+                "cagr": result.get("cagr"),  # Compound Annual Growth Rate
                 "calmar_ratio": result.get("calmar_ratio"),
                 "win_rate": result.get("win_rate"),
                 "profit_loss_ratio": result.get("profit_loss_ratio"),
+                # Cost efficiency metrics
+                "cost_ratio": result.get("cost_ratio"),
+                "cost_to_profit_ratio": result.get("cost_to_profit_ratio"),
+                "turnover_rate": result.get("turnover_rate"),
             }
 
             # Generate chart data from daily returns
@@ -1187,6 +1432,12 @@ class OnlineServingService:
                 "data_end_time": result.get("end_time"),
                 "freq": "day",
                 "trading_days": result.get("trading_days"),
+                "rebalance_days": result.get(
+                    "rebalance_days"
+                ),  # Actual rebalancing days
+                "rebalance_period": result.get(
+                    "rebalance_period"
+                ),  # Rebalancing period config
                 "signal_count": result.get("trading_days"),  # One signal per day
                 "total_return": result.get("total_return"),
                 "total_cost": result.get("total_cost"),
@@ -1331,13 +1582,26 @@ class OnlineServingService:
                 "error": f"Failed to load price data: {str(e)}",
             }
 
+        # Get rebalancing period from config
+        rebalance_period = etf_service.rebalance_period_days
+        self.logger.info(
+            f"Backtest rebalancing period: every {rebalance_period} trading days"
+        )
+
         # Run backtest day by day
         prev_portfolio_value = account
+        current_weights = {}  # Persist weights between rebalancing days
+        current_etf_weight = 0.5  # Default ETF weight
+        rebalance_count = 0  # Track actual rebalancing days
 
         for i, date in enumerate(
             unique_dates[:-1]
         ):  # Skip last day (no next day return)
             next_date = unique_dates[i + 1]
+
+            # Check if this is a rebalancing day using ETF service (consistent with online serving)
+            date_str = str(date.date()) if hasattr(date, "date") else str(date)[:10]
+            is_rebalance_day = etf_service.is_rebalance_day(date_str)
 
             # Get signals for this date
             day_signals = signals_df[signals_df["datetime"] == date]
@@ -1352,38 +1616,50 @@ class OnlineServingService:
                 )
             )
 
-            # Calculate target portfolio using ETF service logic
-            try:
-                etf_weight, alpha_weight, _ = etf_service.calculate_dynamic_weights(
-                    signal_dict
-                )
+            # Only recalculate target weights on rebalancing days
+            if is_rebalance_day:
+                rebalance_count += 1  # Increment rebalance counter
+                # Calculate target portfolio using ETF service logic
+                try:
+                    etf_weight, alpha_weight, _ = etf_service.calculate_dynamic_weights(
+                        signal_dict
+                    )
+                    current_etf_weight = etf_weight
 
-                # Get top stocks
-                sorted_signals = sorted(
-                    signal_dict.items(), key=lambda x: x[1], reverse=True
-                )
-                top_stocks = sorted_signals[: etf_service.max_stocks]
+                    # Get top stocks
+                    sorted_signals = sorted(
+                        signal_dict.items(), key=lambda x: x[1], reverse=True
+                    )
+                    top_stocks = sorted_signals[: etf_service.max_stocks]
 
-                # Calculate target weights
-                target_weights = {}
+                    # Calculate target weights
+                    target_weights = {}
 
-                # ETF weight (simplified - use cash equivalent)
-                etf_value = portfolio_value * etf_weight
+                    # ETF weight (simplified - use cash equivalent)
+                    etf_value = portfolio_value * etf_weight
 
-                # Stock weights
-                total_score = sum(max(0, s) for _, s in top_stocks)
-                if total_score > 0:
-                    for symbol, score in top_stocks:
-                        target_weights[symbol] = (
-                            max(0, score) / total_score
-                        ) * alpha_weight
-                else:
-                    for symbol, _ in top_stocks:
-                        target_weights[symbol] = alpha_weight / len(top_stocks)
+                    # Stock weights
+                    total_score = sum(max(0, s) for _, s in top_stocks)
+                    if total_score > 0:
+                        for symbol, score in top_stocks:
+                            target_weights[symbol] = (
+                                max(0, score) / total_score
+                            ) * alpha_weight
+                    else:
+                        for symbol, _ in top_stocks:
+                            target_weights[symbol] = alpha_weight / len(top_stocks)
 
-            except Exception as e:
-                self.logger.warning(f"Failed to calculate weights for {date}: {e}")
-                continue
+                    # Update current weights for non-rebalance days
+                    current_weights = target_weights.copy()
+
+                except Exception as e:
+                    self.logger.warning(f"Failed to calculate weights for {date}: {e}")
+                    continue
+            else:
+                # Use existing weights (no rebalancing)
+                target_weights = current_weights
+                if not target_weights:
+                    continue  # Skip if no weights yet
 
             # Calculate daily return based on holdings
             daily_return = 0.0
@@ -1542,12 +1818,48 @@ class OnlineServingService:
         avg_loss = float(np.abs(np.mean(losses))) if len(losses) > 0 else 0.0
         profit_loss_ratio = avg_profit / avg_loss if avg_loss > 0 else 0.0
 
+        # Compound Annual Growth Rate (CAGR) = (1 + total_return)^(252/trading_days) - 1
+        # This is the geometric annualized return
+        if trading_days > 0 and total_return > -1:
+            cagr = float((1 + total_return) ** (252 / trading_days) - 1)
+        else:
+            cagr = 0.0
+
+        # Cost Efficiency Metrics
+        # 1. Cost Ratio = Total Cost / Initial Account (cost as % of capital)
+        cost_ratio = float(total_cost / account) if account > 0 else 0.0
+
+        # 2. Cost to Profit Ratio = Total Cost / Gross Profit
+        #    Lower is better. If > 1, costs exceed profits (bad)
+        gross_profit = total_return * account  # Profit in currency
+        if gross_profit > 0:
+            cost_to_profit_ratio = float(total_cost / gross_profit)
+        else:
+            cost_to_profit_ratio = float("inf") if total_cost > 0 else 0.0
+
+        # 3. Turnover Rate = Total Traded Value / Initial Account
+        #    Estimates how many times the portfolio was turned over
+        #    Since total_cost = traded_value * cost_rate, we can derive:
+        #    traded_value = total_cost / cost_rate
+        #    turnover = traded_value / account
+        cost_rate = 0.003  # 0.3% round-trip cost assumption
+        if account > 0 and cost_rate > 0:
+            # Estimate total traded value from cost
+            total_traded_value = total_cost / cost_rate
+            # Turnover = traded value / initial capital
+            # Divide by 2 because each trade involves buy and sell
+            turnover_rate = float(total_traded_value / account / 2)
+        else:
+            turnover_rate = 0.0
+
         # Log metrics for debugging
         self.logger.info(
             f"Backtest metrics: total_return={total_return:.4f}, "
-            f"annual_return={annual_return:.4f}, volatility={volatility:.4f}, "
+            f"annual_return={annual_return:.4f}, cagr={cagr:.4f}, "
             f"sharpe={sharpe_ratio:.4f}, max_dd={max_drawdown:.4f}, "
-            f"calmar={calmar_ratio:.4f}, win_rate={win_rate:.4f}, pl_ratio={profit_loss_ratio:.4f}"
+            f"calmar={calmar_ratio:.4f}, win_rate={win_rate:.4f}, "
+            f"cost_ratio={cost_ratio:.4f}, cost_to_profit={cost_to_profit_ratio:.4f}, "
+            f"turnover={turnover_rate:.2f}, rebalance_days={rebalance_count}"
         )
 
         return {
@@ -1555,18 +1867,25 @@ class OnlineServingService:
             "start_time": str(unique_dates[0].date()),
             "end_time": str(unique_dates[-1].date()),
             "trading_days": trading_days,
+            "rebalance_days": rebalance_count,  # Actual rebalancing days
+            "rebalance_period": rebalance_period,  # Rebalancing period config
             "total_return": float(total_return),
             "total_cost": float(total_cost),
             "final_account": float(portfolio_value),
-            # Qlib risk_analysis metrics
+            # Qlib risk_analysis metrics (arithmetic annualized)
             "annual_return": float(annual_return),
             "volatility": float(volatility),
             "sharpe_ratio": float(sharpe_ratio),
             "max_drawdown": float(max_drawdown),
             # Custom additional metrics
+            "cagr": float(cagr),  # Compound Annual Growth Rate (geometric)
             "calmar_ratio": float(calmar_ratio),
             "win_rate": float(win_rate),
             "profit_loss_ratio": float(profit_loss_ratio),
+            # Cost efficiency metrics
+            "cost_ratio": float(cost_ratio),  # Cost as % of capital
+            "cost_to_profit_ratio": float(cost_to_profit_ratio),  # Cost / Profit
+            "turnover_rate": float(turnover_rate),  # Portfolio turnover
             "daily_returns": daily_returns,
         }
 

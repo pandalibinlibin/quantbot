@@ -75,7 +75,7 @@ class ETFEnhancedIndexingService:
             "alpha_weight_max": config.get("alpha_weight_max", 0.5),
             "max_stocks": config.get("max_stocks", 9),
             "weight_method": config.get("weight_method", "score_weighted"),
-            "rebalance_frequency": config.get("rebalance_frequency", "daily"),
+            "rebalance_period_days": config.get("rebalance_period_days", 1),
             "output_dir": config.get("output_dir", "/app/data/target_portfolio"),
         }
 
@@ -139,6 +139,263 @@ class ETFEnhancedIndexingService:
     def lot_size(self) -> int:
         """Get trading lot size based on market region."""
         return 100 if self.region == "cn" else 1
+
+    @property
+    def rebalance_period_days(self) -> int:
+        """Get rebalancing period in trading days (1 = daily, 5 = weekly)."""
+        return self._config.get("rebalance_period_days", 1)
+
+    # ===== Rebalancing Methods =====
+
+    def is_rebalance_day(self, trade_date: str) -> bool:
+        """
+        Check if the given trade_date is a rebalancing day.
+
+        Uses Qlib trading calendar to determine if the date falls on a
+        rebalancing day based on the configured rebalance_period_days.
+
+        Args:
+            trade_date: Date string in YYYY-MM-DD format
+
+        Returns:
+            True if it's a rebalancing day, False otherwise
+        """
+        import qlib
+        from qlib.data import D
+        import pandas as pd
+        import numpy as np
+        import os
+
+        period = self.rebalance_period_days
+        if period <= 1:
+            return True  # Daily rebalancing
+
+        try:
+            # Ensure Qlib is initialized
+            if not hasattr(qlib, "_default_config") or qlib._default_config is None:
+                qlib_data_dir = os.environ.get("QLIB_DATA_DIR", "/app/qlib_data")
+                qlib.init(provider_uri=qlib_data_dir, region="cn")
+
+            # Get trading calendar (returns numpy array)
+            calendar = D.calendar(freq="day")
+            calendar_list = list(calendar)
+
+            # Convert trade_date to datetime
+            trade_dt = pd.Timestamp(trade_date)
+
+            # Find index of trade_date in calendar
+            try:
+                idx = calendar_list.index(trade_dt)
+            except ValueError:
+                # If not a trading day, not a rebalance day
+                logger.debug(f"{trade_date} is not a trading day")
+                return False
+
+            # Check if index is divisible by period
+            is_rebalance = (idx % period) == 0
+
+            logger.info(
+                f"Rebalance check: {trade_date} (day #{idx}), "
+                f"period={period}, is_rebalance_day={is_rebalance}"
+            )
+            return is_rebalance
+
+        except Exception as e:
+            logger.warning(f"Failed to check rebalance day: {e}, defaulting to True")
+            return True
+
+    def get_next_rebalance_day(self, from_date: str) -> Optional[str]:
+        """
+        Get the next rebalancing day from the given date (inclusive).
+
+        If from_date is a rebalance day, returns from_date.
+        Otherwise returns the next rebalance day.
+
+        Args:
+            from_date: Starting date in YYYY-MM-DD format
+
+        Returns:
+            Next rebalancing day in YYYY-MM-DD format, or None if error
+        """
+        import qlib
+        from qlib.data import D
+        import pandas as pd
+        import os
+
+        period = self.rebalance_period_days
+        if period <= 1:
+            return from_date  # Daily rebalancing, today is rebalance day
+
+        try:
+            # Ensure Qlib is initialized
+            if not hasattr(qlib, "_default_config") or qlib._default_config is None:
+                qlib_data_dir = os.environ.get("QLIB_DATA_DIR", "/app/qlib_data")
+                qlib.init(provider_uri=qlib_data_dir, region="cn")
+
+            calendar = D.calendar(freq="day")
+            calendar_list = list(calendar)
+            from_dt = pd.Timestamp(from_date)
+
+            # Find index of from_date or nearest trading day
+            try:
+                start_idx = calendar_list.index(from_dt)
+            except ValueError:
+                # from_date not in calendar, find nearest trading day
+                start_idx = None
+                # First try to find next trading day
+                for i, cal_date in enumerate(calendar_list):
+                    if cal_date > from_dt:
+                        start_idx = i
+                        break
+
+                # If no future trading day found, from_date is after calendar end
+                if start_idx is None:
+                    # Find the last rebalance day in calendar
+                    last_idx = len(calendar_list) - 1
+                    last_rebalance_idx = (last_idx // period) * period
+                    last_rebalance_date = calendar_list[last_rebalance_idx]
+
+                    # Calculate how many trading days from last_rebalance to calendar end
+                    trading_days_after_last_rebalance = last_idx - last_rebalance_idx
+                    # Trading days remaining until next rebalance
+                    trading_days_to_next = period - trading_days_after_last_rebalance
+
+                    # Estimate calendar days for remaining trading days
+                    # Skip weekends: for each 5 trading days, add 2 weekend days
+                    def estimate_calendar_days(trading_days: int, start_date) -> int:
+                        """Estimate calendar days for given trading days, accounting for weekends."""
+                        cal_days = 0
+                        remaining = trading_days
+                        current = start_date
+                        while remaining > 0:
+                            current += pd.Timedelta(days=1)
+                            cal_days += 1
+                            # Skip weekends (Saturday=5, Sunday=6)
+                            if current.dayofweek < 5:
+                                remaining -= 1
+                        return cal_days
+
+                    # Start from calendar end date
+                    last_calendar_date = calendar_list[-1]
+                    cal_days_to_next = estimate_calendar_days(
+                        trading_days_to_next, last_calendar_date
+                    )
+                    next_rebalance_date = last_calendar_date + pd.Timedelta(
+                        days=cal_days_to_next
+                    )
+
+                    # If next_rebalance_date is still before from_date, add another period
+                    while next_rebalance_date < from_dt:
+                        cal_days_for_period = estimate_calendar_days(
+                            period, next_rebalance_date
+                        )
+                        next_rebalance_date += pd.Timedelta(days=cal_days_for_period)
+
+                    logger.info(
+                        f"Estimated next rebalance: last_rebalance={last_rebalance_date.date()}, "
+                        f"next={next_rebalance_date.date()}"
+                    )
+                    return (
+                        str(next_rebalance_date.date())
+                        if hasattr(next_rebalance_date, "date")
+                        else str(next_rebalance_date)[:10]
+                    )
+
+            # Check if current day is a rebalance day
+            if (start_idx % period) == 0:
+                # Today is a rebalance day, return today
+                today_date = calendar_list[start_idx]
+                return (
+                    str(today_date.date())
+                    if hasattr(today_date, "date")
+                    else str(today_date)[:10]
+                )
+
+            # Find next rebalance day
+            next_rebalance_idx = ((start_idx // period) + 1) * period
+
+            if next_rebalance_idx < len(calendar_list):
+                next_date = calendar_list[next_rebalance_idx]
+                return (
+                    str(next_date.date())
+                    if hasattr(next_date, "date")
+                    else str(next_date)[:10]
+                )
+
+            # Calendar doesn't have future dates, estimate based on period
+            # Assume 5 trading days per week, calculate approximate date
+            days_since_last_rebalance = start_idx % period
+            days_to_next = period - days_since_last_rebalance
+            if days_to_next == 0:
+                days_to_next = (
+                    period  # If today is rebalance day, next is in 'period' days
+                )
+
+            # Estimate calendar days (roughly 7/5 ratio for trading to calendar days)
+            calendar_days = int(days_to_next * 7 / 5) + 1
+            last_date = calendar_list[-1]
+            estimated_date = last_date + pd.Timedelta(days=calendar_days)
+            return (
+                str(estimated_date.date())
+                if hasattr(estimated_date, "date")
+                else str(estimated_date)[:10]
+            )
+
+        except Exception as e:
+            logger.warning(f"Failed to get next rebalance day: {e}")
+            return None
+
+    def get_days_until_rebalance(self, from_date: str) -> int:
+        """
+        Get the number of trading days until the next rebalancing day.
+
+        Args:
+            from_date: Current date in YYYY-MM-DD format
+
+        Returns:
+            Number of trading days until next rebalance (0 if today is rebalance day)
+        """
+        import qlib
+        from qlib.data import D
+        import pandas as pd
+        import os
+
+        period = self.rebalance_period_days
+        if period <= 1:
+            return 0  # Daily rebalancing
+
+        try:
+            # Ensure Qlib is initialized
+            if not hasattr(qlib, "_default_config") or qlib._default_config is None:
+                qlib_data_dir = os.environ.get("QLIB_DATA_DIR", "/app/qlib_data")
+                qlib.init(provider_uri=qlib_data_dir, region="cn")
+
+            calendar = D.calendar(freq="day")
+            calendar_list = list(calendar)
+            from_dt = pd.Timestamp(from_date)
+
+            # Find the index - if not a trading day, find the next trading day
+            try:
+                idx = calendar_list.index(from_dt)
+            except ValueError:
+                # Not a trading day, find the next trading day
+                idx = None
+                for i, cal_date in enumerate(calendar_list):
+                    if cal_date > from_dt:
+                        idx = i
+                        break
+                if idx is None:
+                    return 0  # No future trading days found
+
+            days_since_last = idx % period
+
+            if days_since_last == 0:
+                return 0  # Next trading day is rebalance day
+            return period - days_since_last
+
+        except Exception as e:
+            logger.warning(f"Failed to calculate days until rebalance: {e}")
+            return 0
 
     # ===== Index and ETF Methods =====
 
@@ -905,21 +1162,21 @@ class ETFEnhancedIndexingService:
         Check if cached portfolio is valid for the given trade date.
 
         Cache is valid if:
-        1. Portfolio file exists for the trade date
+        1. A recent portfolio file exists (uses latest portfolio, not by date)
         2. Data source has not changed (same data_end_date)
         3. Factors have not changed (same factor_hash)
 
         Args:
-            trade_date: Trade date to check (YYYY-MM-DD)
+            trade_date: Trade date to check (YYYY-MM-DD) - used for logging only
 
         Returns:
             Tuple of (is_valid, cached_portfolio_data or None)
         """
-        # Load existing portfolio for this date
-        cached_portfolio = self.load_portfolio(trade_date)
+        # Load the latest portfolio file (not by date, since trade_date may differ)
+        cached_portfolio = self.load_latest_portfolio()
 
         if cached_portfolio is None:
-            logger.info(f"No cached portfolio for {trade_date}")
+            logger.info(f"No cached portfolio found for cache check")
             return False, None
 
         # Get cached fingerprint
@@ -958,6 +1215,35 @@ class ETFEnhancedIndexingService:
             f"(data_end_date={current_fingerprint.get('data_end_date')}, "
             f"factor_hash={current_fingerprint.get('factor_hash')})"
         )
+
+        # Update positions with current holdings to recalculate actions
+        # This ensures that if holdings were already applied, actions show as HOLD
+        positions = cached_portfolio.get("positions", [])
+        current_holdings = self._current_holdings.copy()
+
+        for pos in positions:
+            symbol = pos.get("symbol", "")
+            target_shares = pos.get("target_shares", 0)
+            # Update current_shares from actual holdings
+            pos["current_shares"] = current_holdings.get(symbol, 0)
+            # Recalculate action based on updated current_shares
+            action, action_shares, action_lots = self.calculate_action(
+                target_shares, pos["current_shares"]
+            )
+            pos["action"] = action
+            pos["action_shares"] = action_shares
+            pos["action_lots"] = action_lots
+
+        # Update summary counts
+        buy_count = sum(1 for p in positions if p.get("action") == "buy")
+        sell_count = sum(1 for p in positions if p.get("action") == "sell")
+        hold_count = sum(1 for p in positions if p.get("action") == "hold")
+
+        if "summary" in cached_portfolio:
+            cached_portfolio["summary"]["buy_count"] = buy_count
+            cached_portfolio["summary"]["sell_count"] = sell_count
+            cached_portfolio["summary"]["hold_count"] = hold_count
+
         return True, cached_portfolio
 
     # ===== Portfolio Persistence =====
@@ -1017,25 +1303,31 @@ class ETFEnhancedIndexingService:
             logger.error(f"Failed to load portfolio: {e}")
             return None
 
-    def get_latest_portfolio(self) -> Optional[Dict[str, Any]]:
+    def load_latest_portfolio(self) -> Optional[Dict[str, Any]]:
         """
-        Get the latest saved portfolio.
+        Load the most recent portfolio file.
 
         Returns:
-            Latest portfolio data or None if no portfolios exist
+            Portfolio data or None if no portfolio files exist
         """
         output_dir = Path(self.output_dir)
 
         if not output_dir.exists():
+            logger.warning(f"Portfolio directory not found: {output_dir}")
             return None
 
-        files = sorted(output_dir.glob("etf_enhanced_*.json"), reverse=True)
+        # Find all portfolio files and sort by date (newest first)
+        portfolio_files = sorted(output_dir.glob("etf_enhanced_*.json"), reverse=True)
 
-        if not files:
+        if not portfolio_files:
+            logger.warning("No portfolio files found")
             return None
+
+        latest_file = portfolio_files[0]
+        logger.info(f"Loading latest portfolio from: {latest_file}")
 
         try:
-            with open(files[0], "r", encoding="utf-8") as f:
+            with open(latest_file, "r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception as e:
             logger.error(f"Failed to load latest portfolio: {e}")

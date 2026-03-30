@@ -126,8 +126,8 @@ etf_enhanced_indexing:
   max_stocks: 9 # Maximum alpha stocks (fixed at 9)
   weight_method: "score_weighted" # Weight allocation method
 
-  # Rebalancing frequency
-  rebalance_frequency: "daily" # Options: "daily", "weekly"
+  # Rebalancing period in trading days (1 = daily, 5 = weekly)
+  rebalance_period_days: 5
 
   # Output directory for target portfolio files
   output_dir: "/app/data/target_portfolio"

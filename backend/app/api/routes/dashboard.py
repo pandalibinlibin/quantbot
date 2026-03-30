@@ -32,6 +32,8 @@ class BacktestSummary(BaseModel):
     total_return_pct: str = "0.00%"
     annualized_return: float = 0.0
     annualized_return_pct: str = "0.00%"
+    cagr: float = 0.0
+    cagr_pct: str = "0.00%"
     max_drawdown: float = 0.0
     max_drawdown_pct: str = "0.00%"
     sharpe_ratio: float = 0.0
@@ -48,6 +50,15 @@ class ModelSummary(BaseModel):
     has_metrics: bool = False
 
 
+class RebalanceInfo(BaseModel):
+    """Rebalancing schedule information."""
+
+    rebalance_period_days: int = 1  # Rebalancing period in trading days
+    is_rebalance_day: bool = True  # Whether today is a rebalancing day
+    next_rebalance_date: Optional[str] = None  # Next rebalancing date (YYYY-MM-DD)
+    days_until_rebalance: int = 0  # Trading days until next rebalance
+
+
 class SystemSummary(BaseModel):
     """System status summary for dashboard."""
 
@@ -56,6 +67,7 @@ class SystemSummary(BaseModel):
     last_routine_time: Optional[str] = None
     data_range_start: Optional[str] = None
     data_range_end: Optional[str] = None
+    rebalance: Optional[RebalanceInfo] = None
 
 
 class TargetPositionItem(BaseModel):
@@ -125,7 +137,8 @@ def get_latest_portfolio():
     Get the latest target portfolio from file.
 
     This reads directly from the most recent etf_enhanced_*.json file,
-    ensuring current_shares reflects the actual persisted holdings.
+    and recalculates actions based on current holdings to ensure
+    accurate buy/sell/hold status.
     """
     try:
         if not TARGET_PORTFOLIO_DIR.exists():
@@ -148,15 +161,73 @@ def get_latest_portfolio():
         with open(latest_file, "r", encoding="utf-8") as f:
             portfolio_data = json.load(f)
 
+        positions = portfolio_data.get("positions", [])
+
+        # Load current holdings to recalculate actions
+        holdings_file = TARGET_PORTFOLIO_DIR / "current_holdings.json"
+        current_holdings = {}
+        if holdings_file.exists():
+            with open(holdings_file, "r", encoding="utf-8") as f:
+                holdings_data = json.load(f)
+                current_holdings = holdings_data.get("holdings", {})
+
+        # Recalculate actions based on current holdings
+        buy_count = 0
+        sell_count = 0
+        hold_count = 0
+        for pos in positions:
+            symbol = pos.get("symbol", "")
+            target_shares = pos.get("target_shares", 0)
+            # Update current_shares from actual holdings
+            pos["current_shares"] = current_holdings.get(symbol, 0)
+            # Recalculate action
+            diff = target_shares - pos["current_shares"]
+            if diff > 0:
+                # Round to lot size (100)
+                action_shares = (diff // 100) * 100
+                if action_shares > 0:
+                    pos["action"] = "buy"
+                    pos["action_shares"] = action_shares
+                    pos["action_lots"] = action_shares // 100
+                    buy_count += 1
+                else:
+                    pos["action"] = "hold"
+                    pos["action_shares"] = 0
+                    pos["action_lots"] = 0
+                    hold_count += 1
+            elif diff < 0:
+                action_shares = (abs(diff) // 100) * 100
+                if action_shares > 0:
+                    pos["action"] = "sell"
+                    pos["action_shares"] = action_shares
+                    pos["action_lots"] = action_shares // 100
+                    sell_count += 1
+                else:
+                    pos["action"] = "hold"
+                    pos["action_shares"] = 0
+                    pos["action_lots"] = 0
+                    hold_count += 1
+            else:
+                pos["action"] = "hold"
+                pos["action_shares"] = 0
+                pos["action_lots"] = 0
+                hold_count += 1
+
+        # Update summary with recalculated counts
+        summary = portfolio_data.get("summary", {})
+        summary["buy_count"] = buy_count
+        summary["sell_count"] = sell_count
+        summary["hold_count"] = hold_count
+
         return LatestPortfolioResponse(
             success=True,
             trade_date=portfolio_data.get("trade_date"),
             signal_for_date=portfolio_data.get("signal_for_date"),
             generated_at=portfolio_data.get("generated_at"),
             total_value=portfolio_data.get("total_value", 0),
-            positions=portfolio_data.get("positions", []),
+            positions=positions,
             weights=portfolio_data.get("weights", {}),
-            summary=portfolio_data.get("summary", {}),
+            summary=summary,
         )
 
     except Exception as e:
@@ -189,6 +260,7 @@ def get_dashboard_summary():
                 total_return = backtest_data.get("total_return", 0)
                 risk_metrics = backtest_data.get("risk_metrics", {})
                 annualized_return = risk_metrics.get("annualized_return", 0)
+                cagr = risk_metrics.get("cagr", 0)
                 max_drawdown = risk_metrics.get("max_drawdown", 0)
                 sharpe_ratio = risk_metrics.get("sharpe_ratio", 0)
 
@@ -198,6 +270,8 @@ def get_dashboard_summary():
                     total_return_pct=f"{total_return * 100:+.2f}%",
                     annualized_return=annualized_return,
                     annualized_return_pct=f"{annualized_return * 100:+.2f}%",
+                    cagr=cagr,
+                    cagr_pct=f"{cagr * 100:+.2f}%",
                     max_drawdown=max_drawdown,
                     max_drawdown_pct=f"{max_drawdown * 100:.2f}%",
                     sharpe_ratio=sharpe_ratio,
@@ -224,7 +298,63 @@ def get_dashboard_summary():
                         portfolio_data = json.load(f)
 
                     positions = portfolio_data.get("positions", [])
-                    summary = portfolio_data.get("summary", {})
+
+                    # Load current holdings to recalculate actions
+                    holdings_file = TARGET_PORTFOLIO_DIR / "current_holdings.json"
+                    current_holdings = {}
+                    if holdings_file.exists():
+                        with open(holdings_file, "r", encoding="utf-8") as f:
+                            holdings_data = json.load(f)
+                            current_holdings = holdings_data.get("holdings", {})
+
+                    # Recalculate actions based on current holdings
+                    buy_count = 0
+                    sell_count = 0
+                    hold_count = 0
+                    for pos in positions:
+                        symbol = pos.get("symbol", "")
+                        target_shares = pos.get("target_shares", 0)
+                        # Update current_shares from actual holdings
+                        pos["current_shares"] = current_holdings.get(symbol, 0)
+                        # Recalculate action
+                        diff = target_shares - pos["current_shares"]
+                        if diff > 0:
+                            # Round to lot size (100)
+                            action_shares = (diff // 100) * 100
+                            if action_shares > 0:
+                                pos["action"] = "buy"
+                                pos["action_shares"] = action_shares
+                                pos["action_lots"] = action_shares // 100
+                                buy_count += 1
+                            else:
+                                pos["action"] = "hold"
+                                pos["action_shares"] = 0
+                                pos["action_lots"] = 0
+                                hold_count += 1
+                        elif diff < 0:
+                            action_shares = (abs(diff) // 100) * 100
+                            if action_shares > 0:
+                                pos["action"] = "sell"
+                                pos["action_shares"] = action_shares
+                                pos["action_lots"] = action_shares // 100
+                                sell_count += 1
+                            else:
+                                pos["action"] = "hold"
+                                pos["action_shares"] = 0
+                                pos["action_lots"] = 0
+                                hold_count += 1
+                        else:
+                            pos["action"] = "hold"
+                            pos["action_shares"] = 0
+                            pos["action_lots"] = 0
+                            hold_count += 1
+
+                    summary = {
+                        "buy_count": buy_count,
+                        "sell_count": sell_count,
+                        "hold_count": hold_count,
+                        "total_positions": len(positions),
+                    }
 
                     # Store summary info for alerts
                     portfolio_summary_info = {
@@ -292,10 +422,35 @@ def get_dashboard_summary():
         except Exception as e:
             logger.warning(f"Failed to get model metrics: {e}")
 
-        # 4. Get System Status
+        # 4. Get System Status and Rebalance Info
         try:
             online_service = get_online_serving_service()
             status = online_service.get_status()
+
+            # Get rebalance info from ETF service
+            rebalance_info = None
+            try:
+                from app.services.etf_enhanced_indexing_service import (
+                    get_etf_enhanced_indexing_service,
+                )
+
+                etf_service = get_etf_enhanced_indexing_service()
+                rebalance_period = etf_service.rebalance_period_days
+
+                # Get today's date for rebalance check
+                today = datetime.now().strftime("%Y-%m-%d")
+                is_rebalance = etf_service.is_rebalance_day(today)
+                next_rebalance = etf_service.get_next_rebalance_day(today)
+                days_until = etf_service.get_days_until_rebalance(today)
+
+                rebalance_info = RebalanceInfo(
+                    rebalance_period_days=rebalance_period,
+                    is_rebalance_day=is_rebalance,
+                    next_rebalance_date=next_rebalance,
+                    days_until_rebalance=days_until,
+                )
+            except Exception as e:
+                logger.warning(f"Failed to get rebalance info: {e}")
 
             if status.get("is_initialized"):
                 system_summary = SystemSummary(
@@ -312,6 +467,7 @@ def get_dashboard_summary():
                         if status.get("data_range")
                         else None
                     ),
+                    rebalance=rebalance_info,
                 )
             elif model_summary.has_metrics:
                 # Routine was run before but service restarted
@@ -321,6 +477,7 @@ def get_dashboard_summary():
                     last_routine_time=None,
                     data_range_start=None,
                     data_range_end=None,
+                    rebalance=rebalance_info,
                 )
             else:
                 system_summary = SystemSummary(
@@ -329,6 +486,7 @@ def get_dashboard_summary():
                     last_routine_time=None,
                     data_range_start=None,
                     data_range_end=None,
+                    rebalance=rebalance_info,
                 )
                 alerts.append(
                     AlertItem(

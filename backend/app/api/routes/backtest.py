@@ -67,13 +67,18 @@ class BacktestRunRequest(BaseModel):
 class RiskMetrics(BaseModel):
     """Risk metrics for backtest results."""
 
-    annualized_return: Optional[float] = None
+    annualized_return: Optional[float] = None  # Arithmetic annualized (Qlib)
+    cagr: Optional[float] = None  # Compound Annual Growth Rate (geometric)
     max_drawdown: Optional[float] = None
     sharpe_ratio: Optional[float] = None
     volatility: Optional[float] = None
     calmar_ratio: Optional[float] = None
     win_rate: Optional[float] = None
     profit_loss_ratio: Optional[float] = None
+    # Cost efficiency metrics
+    cost_ratio: Optional[float] = None  # Total Cost / Initial Capital
+    cost_to_profit_ratio: Optional[float] = None  # Total Cost / Gross Profit
+    turnover_rate: Optional[float] = None  # Portfolio turnover times
 
 
 class BacktestRunResponse(BaseModel):
@@ -86,6 +91,8 @@ class BacktestRunResponse(BaseModel):
     data_end_time: Optional[str] = None
     freq: Optional[str] = None
     trading_days: Optional[int] = None
+    rebalance_days: Optional[int] = None  # Actual number of rebalancing days
+    rebalance_period: Optional[int] = None  # Rebalancing period in days
     signal_count: Optional[int] = None
     total_return: Optional[float] = None
     total_cost: Optional[float] = None
@@ -292,6 +299,8 @@ def run_backtest(request: Optional[BacktestRunRequest] = None):
             "data_end_time": result.get("data_end_time", result.get("end_time")),
             "freq": result.get("freq"),
             "trading_days": result.get("trading_days"),
+            "rebalance_days": result.get("rebalance_days"),
+            "rebalance_period": result.get("rebalance_period"),
             "signal_count": result.get("signal_count"),
             "total_return": result.get("total_return"),
             "total_cost": result.get("total_cost"),

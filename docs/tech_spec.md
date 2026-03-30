@@ -11151,6 +11151,7 @@ if "amount" in df.columns and "volume" in df.columns:
 ```
 
 **数据字段更新**：
+
 - 原有：`open`, `high`, `low`, `close`, `volume`
 - 新增：`vwap`
 
@@ -11174,6 +11175,7 @@ builtin_factor_libraries:
 #### 3. 区域特定 Label 配置 (`system_config.yaml`)
 
 **背景**：
+
 - **A股（cn）**：T+1 交易制度，今天信号 → 明天买入 → 后天卖出
 - **美股（us）**：T+0 交易制度，今天信号 → 明天买入 → 明天可卖出
 
@@ -11183,7 +11185,7 @@ label_config:
   cn:
     expression: "Ref($close, -2)/Ref($close, -1) - 1"
     description: "T+2 return for A-shares (T+1 trading rule)"
-  
+
   us:
     expression: "Ref($close, -1)/$close - 1"
     description: "T+1 return for US stocks (T+0 trading rule)"
@@ -11192,6 +11194,7 @@ label_config:
 #### 4. CustomFactorHandler 更新 (`custom_factor_handler.py`)
 
 **新增功能**：
+
 - 自动从 `system_config.yaml` 读取 Alpha158 启用状态
 - 自动根据市场区域选择正确的 Label 表达式
 - 新增 `_load_system_config()` 方法
@@ -11203,7 +11206,7 @@ def __init__(self, ..., enable_alpha158=None, region=None, ...):
         self.enable_alpha158 = self._system_config.get(
             "builtin_factor_libraries", {}
         ).get("alpha158", {}).get("enabled", False)
-    
+
     # 从配置文件读取市场区域
     if region is None:
         self.region = self._system_config.get("data", {}).get("region", "cn")
@@ -11250,39 +11253,41 @@ Response:
 
 ### 📊 Alpha158 因子分类
 
-| 分类 | 因子数量 | 说明 |
-|------|----------|------|
-| kbar | 9 | K线形态因子（KMID, KLEN, KUP, KLOW 等） |
-| price | ~20 | 价格因子（OPEN, HIGH, LOW, CLOSE, VWAP 在不同窗口） |
-| volume | ~5 | 成交量因子 |
-| rolling | ~124 | 滚动统计因子（ROC, MA, STD, RSI, CORR 等） |
+| 分类    | 因子数量 | 说明                                                |
+| ------- | -------- | --------------------------------------------------- |
+| kbar    | 9        | K线形态因子（KMID, KLEN, KUP, KLOW 等）             |
+| price   | ~20      | 价格因子（OPEN, HIGH, LOW, CLOSE, VWAP 在不同窗口） |
+| volume  | ~5       | 成交量因子                                          |
+| rolling | ~124     | 滚动统计因子（ROC, MA, STD, RSI, CORR 等）          |
 
 ### 📁 修改文件清单
 
-| 文件 | 修改类型 | 说明 |
-|------|----------|------|
-| `backend/app/services/data_collectors/tushare_collector.py` | 新增 | VWAP 计算 |
-| `backend/app/config/qlib/system_config.yaml` | 新增 | Alpha158 和 Label 配置 |
-| `backend/app/services/custom_factor_handler.py` | 更新 | 读取配置、区域 Label |
-| `backend/app/api/routes/factors.py` | 新增 | Alpha158 API 端点 |
-| `frontend/src/routes/_layout/factors.tsx` | 更新 | Alpha158 显示区域 |
-| `backend/app/config/qlib/training_config.yaml` | 更新 | 移除硬编码配置 |
+| 文件                                                        | 修改类型 | 说明                   |
+| ----------------------------------------------------------- | -------- | ---------------------- |
+| `backend/app/services/data_collectors/tushare_collector.py` | 新增     | VWAP 计算              |
+| `backend/app/config/qlib/system_config.yaml`                | 新增     | Alpha158 和 Label 配置 |
+| `backend/app/services/custom_factor_handler.py`             | 更新     | 读取配置、区域 Label   |
+| `backend/app/api/routes/factors.py`                         | 新增     | Alpha158 API 端点      |
+| `frontend/src/routes/_layout/factors.tsx`                   | 更新     | Alpha158 显示区域      |
+| `backend/app/config/qlib/training_config.yaml`              | 更新     | 移除硬编码配置         |
 
 ### ✅ 配置说明
 
 **启用 Alpha158**：
+
 ```yaml
 # system_config.yaml
 builtin_factor_libraries:
   alpha158:
-    enabled: true  # 设为 true 启用
+    enabled: true # 设为 true 启用
 ```
 
 **切换市场区域**：
+
 ```yaml
 # system_config.yaml
 data:
-  region: "cn"  # "cn" = A股 (T+2 Label), "us" = 美股 (T+1 Label)
+  region: "cn" # "cn" = A股 (T+2 Label), "us" = 美股 (T+1 Label)
 ```
 
 ### 🔄 数据重新收集
@@ -11312,6 +11317,7 @@ collector.collect_data()
 ### 📊 Dashboard 重构
 
 #### 移除的功能
+
 - 模拟盘 (Paper Trading) 相关数据展示
 - Portfolio Value / Return Rate 卡片（基于模拟盘）
 - Top Holdings（模拟盘持仓）
@@ -11328,14 +11334,17 @@ collector.collect_data()
 | System Status | 在线服务 | 系统状态 + 信号数量 |
 
 **Model Performance 卡片**：
+
 - IC (Mean) 和 ICIR 指标
 - 模型评估等级 (Excellent/Good/Fair/Weak)
 
 **Target Portfolio 卡片**：
+
 - 从 `/app/data/target_portfolio/etf_enhanced_*.json` 读取最新目标组合
 - 显示前6个持仓：排名、类型(ETF/Alpha)、代码、名称、权重、操作(buy/sell/hold)
 
 **Alerts & Actions 卡片**：
+
 - 信号摘要：`Signal 2024-03-22: 3 buy, 2 sell, 5 hold`
 - 策略表现：当 Sharpe >= 1.0 且收益为正时显示
 - 系统警告：IC 低于阈值、系统未初始化等
@@ -11343,10 +11352,12 @@ collector.collect_data()
 #### Daily Task 按钮
 
 替换原有的 Refresh 按钮，点击后依次执行：
+
 1. **Routine** - 调用 `/api/v1/online/routine`，生成交易信号，发送信号邮件
 2. **Backtest** - 调用 `/api/v1/backtest/run`，执行回测，发送回测报告邮件
 
 按钮状态显示：
+
 - `Running routine...` - 正在执行 routine
 - `Running backtest...` - 正在执行 backtest
 - `Daily task completed!` - 完成（绿色）
@@ -11360,16 +11371,19 @@ collector.collect_data()
 
 ```html
 <div style="background-color: #fef3c7; border: 1px solid #f59e0b; ...">
-  <strong>⚠️ 免责声明 / Disclaimer</strong><br>
+  <strong>⚠️ 免责声明 / Disclaimer</strong><br />
   本邮件内容仅供学习交流和技术研究使用，不构成任何投资建议。
   投资有风险，入市需谨慎。请根据自身情况独立判断，
-  本系统及开发者不对任何投资决策承担责任。<br>
-  <em>This email is for educational and research purposes only 
-  and does not constitute investment advice.</em>
+  本系统及开发者不对任何投资决策承担责任。<br />
+  <em
+    >This email is for educational and research purposes only and does not
+    constitute investment advice.</em
+  >
 </div>
 ```
 
 涉及的邮件模板：
+
 - Paper Trading 邮件
 - Enhanced Indexing 交易信号邮件
 - ETF Enhanced Portfolio 邮件 (交易信号)
@@ -11378,16 +11392,17 @@ collector.collect_data()
 #### 回测邮件增强
 
 新增内容：
+
 1. **累计收益图表 (SVG)**：策略 vs 基准对比曲线
 2. **回撤分析**：最大回撤时间段、峰值/谷值日期、恢复状态
 
 ### 📁 修改文件清单
 
-| 文件 | 修改类型 | 说明 |
-|------|----------|------|
-| `backend/app/api/routes/dashboard.py` | 重写 | 移除 paper_trading，使用回测结果和目标组合 |
-| `backend/app/services/notification_service.py` | 更新 | 添加免责声明到所有邮件模板 |
-| `frontend/src/routes/_layout/index.tsx` | 重写 | Dashboard 页面重构，添加 Daily Task 按钮 |
+| 文件                                           | 修改类型 | 说明                                       |
+| ---------------------------------------------- | -------- | ------------------------------------------ |
+| `backend/app/api/routes/dashboard.py`          | 重写     | 移除 paper_trading，使用回测结果和目标组合 |
+| `backend/app/services/notification_service.py` | 更新     | 添加免责声明到所有邮件模板                 |
+| `frontend/src/routes/_layout/index.tsx`        | 重写     | Dashboard 页面重构，添加 Daily Task 按钮   |
 
 ### 🔧 后端 API 变更
 
@@ -11396,6 +11411,7 @@ collector.collect_data()
 **端点**: `GET /api/v1/dashboard/summary`
 
 **响应结构变更**：
+
 ```python
 class DashboardResponse(BaseModel):
     success: bool
@@ -11408,6 +11424,7 @@ class DashboardResponse(BaseModel):
 ```
 
 **数据来源**：
+
 - `BacktestSummary`: `/app/mlruns/backtest_results/latest_result.json`
 - `TargetPositionItem`: `/app/data/target_portfolio/etf_enhanced_*.json` (最新文件)
 - `ModelSummary`: `/app/mlruns/model_metrics/active_metrics.json`
@@ -11415,9 +11432,284 @@ class DashboardResponse(BaseModel):
 ### ✅ 使用说明
 
 每日收盘后操作流程：
+
 1. 打开 Dashboard 页面
 2. 点击 **Daily Task** 按钮
 3. 等待 routine 和 backtest 完成
 4. 交易员收到两封邮件：
    - 交易信号邮件（目标组合、买卖操作）
    - 回测报告邮件（收益分析、风险指标、图表）
+
+---
+
+## 📅 2026-03-24 Update: Fix Target Portfolio Current Shares Display
+
+### 🎯 Problem Description
+
+The Target Portfolio page displayed `current_shares = 0` for all positions, showing `BUY` action even when holdings already existed. However, the Dashboard page correctly showed `HOLD` action.
+
+### 🔍 Root Cause Analysis
+
+1. **Backend file has correct data**: `etf_enhanced_2026-03-24.json` contains correct `current_shares` values
+2. **Dashboard reads from file**: Dashboard API reads directly from the portfolio file, showing correct `HOLD` status
+3. **Target Portfolio reads from localStorage**: The page was reading stale data from `localStorage` (saved from a previous Daily Task execution when `current_shares` was 0)
+
+### 🛠️ Solution
+
+#### Backend Changes
+
+**File**: `backend/app/api/routes/dashboard.py`
+
+Added new API endpoint to fetch the latest portfolio directly from file:
+
+```python
+@router.get("/latest-portfolio", response_model=LatestPortfolioResponse)
+def get_latest_portfolio():
+    """
+    Get the latest target portfolio from file.
+    Reads directly from the most recent etf_enhanced_*.json file,
+    ensuring current_shares reflects the actual persisted holdings.
+    """
+```
+
+**Response Model**:
+
+```python
+class LatestPortfolioResponse(BaseModel):
+    success: bool
+    trade_date: Optional[str] = None
+    signal_for_date: Optional[str] = None
+    generated_at: Optional[str] = None
+    total_value: float = 0
+    positions: List[Dict[str, Any]] = []
+    weights: Dict[str, Any] = {}
+    summary: Dict[str, Any] = {}
+    error: Optional[str] = None
+```
+
+#### Frontend Changes
+
+**File**: `frontend/src/routes/_layout/target-portfolio.tsx`
+
+1. Removed `localStorage` reading logic
+2. Added `fetchLatestPortfolio()` API function
+3. Used `useQuery` to fetch data from the new API endpoint
+4. Added loading and error state displays
+
+**Before**:
+
+```typescript
+// Load last routine result from localStorage
+const [lastRoutineResult, setLastRoutineResult] =
+  useState<RoutineResult | null>(null);
+
+useEffect(() => {
+  const stored = localStorage.getItem(ROUTINE_RESULT_KEY);
+  if (stored) {
+    setLastRoutineResult(JSON.parse(stored));
+  }
+}, []);
+```
+
+**After**:
+
+```typescript
+// Fetch latest portfolio from API (reads from file, has correct current_shares)
+const {
+  data: latestPortfolio,
+  isLoading,
+  error,
+} = useQuery({
+  queryKey: ["latestPortfolio"],
+  queryFn: fetchLatestPortfolio,
+  refetchOnWindowFocus: true,
+  staleTime: 30000,
+});
+
+// Build routine result from API data
+const lastRoutineResult = useMemo(() => {
+  if (!latestPortfolio?.success) return null;
+  return {
+    success: true,
+    generated_at: latestPortfolio.generated_at,
+    trade_date: latestPortfolio.trade_date,
+    // ... other fields
+    target_portfolio: latestPortfolio.positions,
+  };
+}, [latestPortfolio]);
+```
+
+### 📁 Modified Files
+
+| File                                               | Change Type | Description                          |
+| -------------------------------------------------- | ----------- | ------------------------------------ |
+| `backend/app/api/routes/dashboard.py`              | Added       | New `/latest-portfolio` API endpoint |
+| `frontend/src/routes/_layout/target-portfolio.tsx` | Modified    | Use API instead of localStorage      |
+
+### ✅ Result
+
+- Target Portfolio page now displays correct `current_shares` values
+- `HOLD` action is shown when target equals current holdings
+- Data is always fresh from the backend file, not stale localStorage
+
+---
+
+## 📅 2026-03-30 更新：调仓日历统一与Dashboard修复
+
+### 🎯 本次更新目标
+
+1. 修复Dashboard显示"Next: N/A"的问题
+2. 修复Target Portfolio页面显示buy/sell而非hold的问题
+3. 统一Backtest和Online Serving的调仓日历算法
+
+### 🔧 主要修改
+
+#### 1. 调仓日历算法 (`etf_enhanced_indexing_service.py`)
+
+**调仓日计算规则**：
+
+- 数据第一天（Qlib日历idx=0）是调仓日
+- 之后每隔`period`个交易日是调仓日
+- 判断公式：`idx % period == 0`
+
+**修复`get_next_rebalance_day()`**：
+
+当查询日期超出Qlib日历范围时，正确估算下一个调仓日：
+
+```python
+def get_next_rebalance_day(self, from_date: str) -> Optional[str]:
+    # 当from_date超出日历范围时
+    if start_idx is None:
+        # 找到日历中最后一个调仓日
+        last_idx = len(calendar_list) - 1
+        last_rebalance_idx = (last_idx // period) * period
+        last_rebalance_date = calendar_list[last_rebalance_idx]
+
+        # 计算距离下一个调仓日还需多少交易日
+        trading_days_after_last_rebalance = last_idx - last_rebalance_idx
+        trading_days_to_next = period - trading_days_after_last_rebalance
+
+        # 跳过周末，估算日历天数
+        def estimate_calendar_days(trading_days: int, start_date) -> int:
+            cal_days = 0
+            remaining = trading_days
+            current = start_date
+            while remaining > 0:
+                current += pd.Timedelta(days=1)
+                cal_days += 1
+                if current.dayofweek < 5:  # 跳过周末
+                    remaining -= 1
+            return cal_days
+
+        cal_days_to_next = estimate_calendar_days(trading_days_to_next, last_calendar_date)
+        next_rebalance_date = last_calendar_date + pd.Timedelta(days=cal_days_to_next)
+        return str(next_rebalance_date.date())
+```
+
+**示例计算**（2026-03-30查询，period=5）：
+
+- 日历最后一天：2026-03-27（周五，idx=728）
+- 上一个调仓日：2026-03-24（idx=725，725%5=0）
+- 距离下一个调仓日：5 - 3 = 2个交易日
+- 跳过周末后：2026-03-31（周二）
+
+#### 2. Target Portfolio动态计算Action (`dashboard.py`)
+
+**问题**：`/api/v1/dashboard/latest-portfolio` API直接返回文件中保存的action，没有根据当前持仓重新计算。
+
+**修复**：API返回前根据`current_holdings.json`重新计算action：
+
+```python
+@router.get("/latest-portfolio")
+def get_latest_portfolio():
+    # 加载portfolio文件
+    portfolio_data = json.load(latest_file)
+    positions = portfolio_data.get("positions", [])
+
+    # 加载当前持仓
+    holdings_file = TARGET_PORTFOLIO_DIR / "current_holdings.json"
+    current_holdings = {}
+    if holdings_file.exists():
+        holdings_data = json.load(holdings_file)
+        current_holdings = holdings_data.get("holdings", {})
+
+    # 重新计算action
+    for pos in positions:
+        symbol = pos.get("symbol", "")
+        target_shares = pos.get("target_shares", 0)
+        pos["current_shares"] = current_holdings.get(symbol, 0)
+
+        diff = target_shares - pos["current_shares"]
+        if diff > 0:
+            action_shares = (diff // 100) * 100
+            pos["action"] = "buy" if action_shares > 0 else "hold"
+        elif diff < 0:
+            action_shares = (abs(diff) // 100) * 100
+            pos["action"] = "sell" if action_shares > 0 else "hold"
+        else:
+            pos["action"] = "hold"
+```
+
+#### 3. Backtest使用统一调仓日历 (`online_serving_service.py`)
+
+**问题**：Backtest使用信号数据索引判断调仓日，与Online Serving使用Qlib日历索引不一致。
+
+**修复**：Backtest使用`ETFEnhancedIndexingService.is_rebalance_day()`：
+
+```python
+# Before: 使用信号数据索引
+is_rebalance_day = (i % rebalance_period) == 0
+
+# After: 使用ETF服务的调仓日历
+date_str = str(date.date()) if hasattr(date, 'date') else str(date)[:10]
+is_rebalance_day = etf_service.is_rebalance_day(date_str)
+```
+
+### 📁 Modified Files
+
+| File                                                    | Change Type | Description                                              |
+| ------------------------------------------------------- | ----------- | -------------------------------------------------------- |
+| `backend/app/services/etf_enhanced_indexing_service.py` | Modified    | Fix `get_next_rebalance_day()` for dates beyond calendar |
+| `backend/app/api/routes/dashboard.py`                   | Modified    | Recalculate actions based on current holdings            |
+| `backend/app/services/online_serving_service.py`        | Modified    | Use unified rebalance calendar in backtest               |
+
+### ✅ Result
+
+- Dashboard correctly shows next rebalance date (e.g., "Next: 2026-03-31")
+- Target Portfolio page shows "HOLD" when current_shares equals target_shares
+- Backtest and Online Serving use the same rebalance calendar algorithm
+
+#### 4. 每次Run Task都发送邮件 (`online_serving_service.py`)
+
+**问题**：邮件只在新计算portfolio时发送，非调仓日和使用缓存时不发送。
+
+**修复**：在所有分支都添加邮件发送：
+
+```python
+# 非调仓日（hold action）
+if not is_rebalance_day:
+    cached_portfolio = etf_service.load_latest_portfolio()
+    if cached_portfolio:
+        # ... set all actions to hold ...
+
+        # Send email notification even for hold (non-rebalance day)
+        self._send_etf_portfolio_email(hold_portfolio_data)
+        return {...}
+
+# 调仓日使用缓存
+if cache_valid and cached_portfolio:
+    # Send email notification even when using cache
+    self._send_etf_portfolio_email(portfolio_data)
+    return {...}
+
+# 新计算portfolio（原有逻辑）
+self._send_etf_portfolio_email(portfolio_data)
+```
+
+**邮件发送场景**：
+
+| 场景                              | 是否发送邮件 |
+| --------------------------------- | ------------ |
+| 调仓日 + 第一次运行（新计算）     | ✅ 发送      |
+| 调仓日 + 非第一次运行（使用缓存） | ✅ 发送      |
+| 非调仓日（hold action）           | ✅ 发送      |

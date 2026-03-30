@@ -100,12 +100,20 @@ interface ModelSummary {
   has_metrics: boolean;
 }
 
+interface RebalanceInfo {
+  rebalance_period_days: number;
+  is_rebalance_day: boolean;
+  next_rebalance_date?: string;
+  days_until_rebalance: number;
+}
+
 interface SystemSummary {
   is_initialized: boolean;
   signal_count: number;
   last_routine_time?: string;
   data_range_start?: string;
   data_range_end?: string;
+  rebalance?: RebalanceInfo;
 }
 
 interface TargetPositionItem {
@@ -175,7 +183,7 @@ function Dashboard() {
       await backtestMutation.mutateAsync();
 
       // Done
-      setDailyTaskStatus("Daily task completed!");
+      setDailyTaskStatus("Task completed!");
       refetch();
 
       // Clear status after 3 seconds
@@ -231,7 +239,7 @@ function Dashboard() {
             ) : (
               <Play className="h-4 w-4 mr-2" />
             )}
-            Daily Task
+            Run Task
           </Button>
         </div>
       </div>
@@ -255,7 +263,8 @@ function Dashboard() {
                   {backtest?.total_return_pct || "N/A"}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Ann: {backtest?.annualized_return_pct || "N/A"}
+                  Ann: {backtest?.annualized_return_pct || "N/A"} | CAGR:{" "}
+                  {backtest?.cagr_pct || "N/A"}
                 </p>
               </>
             )}
@@ -331,9 +340,39 @@ function Dashboard() {
                   >
                     {system?.is_initialized ? "Online" : "Offline"}
                   </Badge>
+                  {system?.rebalance && (
+                    <Badge
+                      variant={
+                        system.rebalance.is_rebalance_day
+                          ? "default"
+                          : "outline"
+                      }
+                      className={
+                        system.rebalance.is_rebalance_day ? "bg-green-600" : ""
+                      }
+                    >
+                      {system.rebalance.is_rebalance_day
+                        ? "Rebalance Day"
+                        : "Not Rebalance Day"}
+                    </Badge>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   Signals: {formatNumber(system?.signal_count || 0)}
+                  {system?.rebalance && (
+                    <span className="ml-2">
+                      | Period: {system.rebalance.rebalance_period_days}d |
+                      Next: {system.rebalance.next_rebalance_date || "N/A"}
+                      {!system.rebalance.is_rebalance_day &&
+                        system.rebalance.days_until_rebalance > 0 && (
+                          <span>
+                            {" "}
+                            ({system.rebalance.days_until_rebalance} trading
+                            days)
+                          </span>
+                        )}
+                    </span>
+                  )}
                 </p>
               </>
             )}
@@ -395,7 +434,7 @@ function Dashboard() {
                 <div className="text-center">
                   <Target className="h-12 w-12 mx-auto mb-2 opacity-50" />
                   <p>No model metrics yet</p>
-                  <p className="text-xs">Run Daily Task to generate</p>
+                  <p className="text-xs">Run Task to generate</p>
                 </div>
               </div>
             )}
@@ -478,7 +517,7 @@ function Dashboard() {
                 <div className="text-center">
                   <Activity className="h-12 w-12 mx-auto mb-2 opacity-50" />
                   <p>No target portfolio yet</p>
-                  <p className="text-xs">Run Daily Task to generate</p>
+                  <p className="text-xs">Run Task to generate</p>
                 </div>
               </div>
             )}

@@ -477,6 +477,12 @@ function BacktestPage() {
                     <div className="text-2xl font-bold">
                       {backtestResult.trading_days}
                     </div>
+                    {backtestResult.rebalance_days && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Rebalance: {backtestResult.rebalance_days} days (every{" "}
+                        {backtestResult.rebalance_period || 1} days)
+                      </div>
+                    )}
                   </div>
 
                   {/* Total Return */}
@@ -554,12 +560,12 @@ function BacktestPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {/* Annualized Return */}
+                    {/* Annualized Return (Arithmetic) */}
                     <div className="bg-muted/50 rounded-lg p-4">
                       <div className="flex items-center text-muted-foreground mb-1">
                         <TrendingUp className="h-4 w-4" />
-                        <span className="text-sm ml-2">Annualized Return</span>
-                        <MetricTooltip content="将投资收益换算成一年的收益率。例如3个月赚5%，年化约20%。用于比较不同时间长度的投资表现。" />
+                        <span className="text-sm ml-2">Ann. Return</span>
+                        <MetricTooltip content="算术年化收益率 = 日均收益 × 252。Qlib标准方法，适合短期比较。" />
                       </div>
                       <div
                         className={`text-xl font-bold ${
@@ -572,6 +578,24 @@ function BacktestPage() {
                         {formatPercent(
                           backtestResult.risk_metrics.annualized_return || 0,
                         )}
+                      </div>
+                    </div>
+
+                    {/* CAGR (Compound Annual Growth Rate) */}
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <div className="flex items-center text-muted-foreground mb-1">
+                        <TrendingUp className="h-4 w-4" />
+                        <span className="text-sm ml-2">CAGR</span>
+                        <MetricTooltip content="复合年化增长率 = (1+总收益)^(252/交易天数)-1。考虑复利效应，更适合长期投资评估。" />
+                      </div>
+                      <div
+                        className={`text-xl font-bold ${
+                          (backtestResult.risk_metrics.cagr || 0) >= 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {formatPercent(backtestResult.risk_metrics.cagr || 0)}
                       </div>
                     </div>
 
@@ -661,11 +685,11 @@ function BacktestPage() {
                     </div>
 
                     {/* Profit/Loss Ratio */}
-                    <div className="bg-muted/50 rounded-lg p-4 md:col-span-2">
+                    <div className="bg-muted/50 rounded-lg p-4">
                       <div className="flex items-center text-muted-foreground mb-1">
                         <DollarSign className="h-4 w-4" />
-                        <span className="text-sm ml-2">Profit/Loss Ratio</span>
-                        <MetricTooltip content="平均盈利÷平均亏损。1.21表示赚钱时平均赚1.21元，亏钱时平均亏1元。配合胜率使用，即使胜率低于50%，高盈亏比也能盈利。" />
+                        <span className="text-sm ml-2">P/L Ratio</span>
+                        <MetricTooltip content="平均盈利÷平均亏损。>1表示赚钱时赚得比亏钱时亏得多。配合胜率使用，即使胜率低于50%，高盈亏比也能盈利。" />
                       </div>
                       <div
                         className={`text-xl font-bold ${
@@ -678,6 +702,68 @@ function BacktestPage() {
                         {(
                           backtestResult.risk_metrics.profit_loss_ratio || 0
                         ).toFixed(2)}
+                      </div>
+                    </div>
+
+                    {/* Cost to Profit Ratio */}
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <div className="flex items-center text-muted-foreground mb-1">
+                        <DollarSign className="h-4 w-4" />
+                        <span className="text-sm ml-2">Cost/Profit</span>
+                        <MetricTooltip content="交易成本÷总利润。<0.1表示成本控制优秀，0.1-0.3正常，>0.5表示成本过高侵蚀利润。" />
+                      </div>
+                      <div
+                        className={`text-xl font-bold ${
+                          (backtestResult.risk_metrics.cost_to_profit_ratio ||
+                            0) <= 0.1
+                            ? "text-green-600"
+                            : (backtestResult.risk_metrics
+                                  .cost_to_profit_ratio || 0) <= 0.3
+                              ? "text-yellow-600"
+                              : "text-red-600"
+                        }`}
+                      >
+                        {(
+                          backtestResult.risk_metrics.cost_to_profit_ratio || 0
+                        ).toFixed(2)}
+                      </div>
+                    </div>
+
+                    {/* Turnover Rate */}
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <div className="flex items-center text-muted-foreground mb-1">
+                        <BarChart3 className="h-4 w-4" />
+                        <span className="text-sm ml-2">Turnover</span>
+                        <MetricTooltip content="组合换手次数。表示整个回测期间资金周转了多少次。换手越高，交易成本越高。" />
+                      </div>
+                      <div className="text-xl font-bold">
+                        {(
+                          backtestResult.risk_metrics.turnover_rate || 0
+                        ).toFixed(1)}
+                        x
+                      </div>
+                    </div>
+
+                    {/* Cost Ratio */}
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <div className="flex items-center text-muted-foreground mb-1">
+                        <DollarSign className="h-4 w-4" />
+                        <span className="text-sm ml-2">Cost Ratio</span>
+                        <MetricTooltip content="总交易成本÷初始资金。表示成本占本金的比例。<1%优秀，1-3%正常，>5%偏高。" />
+                      </div>
+                      <div
+                        className={`text-xl font-bold ${
+                          (backtestResult.risk_metrics.cost_ratio || 0) <= 0.01
+                            ? "text-green-600"
+                            : (backtestResult.risk_metrics.cost_ratio || 0) <=
+                                0.03
+                              ? "text-yellow-600"
+                              : "text-red-600"
+                        }`}
+                      >
+                        {formatPercent(
+                          backtestResult.risk_metrics.cost_ratio || 0,
+                        )}
                       </div>
                     </div>
                   </div>
