@@ -68,7 +68,8 @@ class RiskMetrics(BaseModel):
     """Risk metrics for backtest results."""
 
     annualized_return: Optional[float] = None  # Arithmetic annualized (Qlib)
-    cagr: Optional[float] = None  # Compound Annual Growth Rate (geometric)
+    cagr: Optional[float] = None  # Compound Annual Growth Rate (geometric) - gross
+    net_cagr: Optional[float] = None  # Net CAGR (after costs) - actual investor return
     max_drawdown: Optional[float] = None
     sharpe_ratio: Optional[float] = None
     volatility: Optional[float] = None

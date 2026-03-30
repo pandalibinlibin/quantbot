@@ -28,12 +28,16 @@ class BacktestSummary(BaseModel):
     """Backtest results summary for dashboard."""
 
     has_results: bool = False
-    total_return: float = 0.0
+    total_return: float = 0.0  # Gross return (before costs)
     total_return_pct: str = "0.00%"
+    net_return: float = 0.0  # Net return (after costs) - actual investor return
+    net_return_pct: str = "0.00%"
     annualized_return: float = 0.0
     annualized_return_pct: str = "0.00%"
-    cagr: float = 0.0
+    cagr: float = 0.0  # Gross CAGR (before costs)
     cagr_pct: str = "0.00%"
+    net_cagr: float = 0.0  # Net CAGR (after costs) - actual investor return
+    net_cagr_pct: str = "0.00%"
     max_drawdown: float = 0.0
     max_drawdown_pct: str = "0.00%"
     sharpe_ratio: float = 0.0
@@ -258,9 +262,11 @@ def get_dashboard_summary():
                     backtest_data = json.load(f)
 
                 total_return = backtest_data.get("total_return", 0)
+                net_return = backtest_data.get("net_return", 0)
                 risk_metrics = backtest_data.get("risk_metrics", {})
                 annualized_return = risk_metrics.get("annualized_return", 0)
                 cagr = risk_metrics.get("cagr", 0)
+                net_cagr = risk_metrics.get("net_cagr", 0)
                 max_drawdown = risk_metrics.get("max_drawdown", 0)
                 sharpe_ratio = risk_metrics.get("sharpe_ratio", 0)
 
@@ -268,10 +274,14 @@ def get_dashboard_summary():
                     has_results=True,
                     total_return=total_return,
                     total_return_pct=f"{total_return * 100:+.2f}%",
+                    net_return=net_return,
+                    net_return_pct=f"{net_return * 100:+.2f}%",
                     annualized_return=annualized_return,
                     annualized_return_pct=f"{annualized_return * 100:+.2f}%",
                     cagr=cagr,
                     cagr_pct=f"{cagr * 100:+.2f}%",
+                    net_cagr=net_cagr,
+                    net_cagr_pct=f"{net_cagr * 100:+.2f}%",
                     max_drawdown=max_drawdown,
                     max_drawdown_pct=f"{max_drawdown * 100:.2f}%",
                     sharpe_ratio=sharpe_ratio,

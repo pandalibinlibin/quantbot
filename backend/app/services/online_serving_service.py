@@ -1407,7 +1407,8 @@ class OnlineServingService:
                 "sharpe_ratio": result.get("sharpe_ratio"),
                 "volatility": result.get("volatility"),
                 # Custom additional metrics
-                "cagr": result.get("cagr"),  # Compound Annual Growth Rate
+                "cagr": result.get("cagr"),  # Compound Annual Growth Rate (gross)
+                "net_cagr": result.get("net_cagr"),  # Net CAGR (after costs)
                 "calmar_ratio": result.get("calmar_ratio"),
                 "win_rate": result.get("win_rate"),
                 "profit_loss_ratio": result.get("profit_loss_ratio"),
@@ -1417,11 +1418,23 @@ class OnlineServingService:
                 "turnover_rate": result.get("turnover_rate"),
             }
 
+            # Get the actual account value used in backtest
+            # If account was None, it was set from config in _execute_signal_based_backtest
+            from app.config.qlib import qlib_config
+
+            backtest_config = qlib_config.backtest_config.get("backtest", {})
+            actual_account = (
+                account
+                if account is not None
+                else backtest_config.get("account", 1000000)
+            )
+
             # Generate chart data from daily returns
             # Pass Qlib's max_drawdown to ensure consistency
             chart_data = self._generate_etf_backtest_charts(
                 result.get("daily_returns", []),
                 qlib_max_drawdown=result.get("max_drawdown"),
+                initial_account=actual_account,
             )
 
             api_result = {
@@ -1441,7 +1454,7 @@ class OnlineServingService:
                 "signal_count": result.get("trading_days"),  # One signal per day
                 "total_return": result.get("total_return"),
                 "total_cost": result.get("total_cost"),
-                "net_return": result.get("total_return"),  # Cost already deducted
+                "net_return": result.get("net_return"),  # Net return (after costs)
                 "final_account": result.get("final_account"),
                 "benchmark": benchmark or "ETF",
                 "strategy": "etf_enhanced_indexing",
@@ -1719,8 +1732,18 @@ class OnlineServingService:
             )  # Assume 10% turnover
             total_cost += day_cost
 
-            # Update portfolio value
+            # Store old portfolio value for net return calculation
+            old_portfolio_value = portfolio_value
+
+            # Update portfolio value (after costs)
             portfolio_value = portfolio_value * (1 + daily_return) - day_cost
+
+            # Calculate net daily return (after costs)
+            net_daily_return = (
+                (portfolio_value - old_portfolio_value) / old_portfolio_value
+                if old_portfolio_value > 0
+                else 0.0
+            )
 
             # Calculate benchmark return for this day
             benchmark_return = 0.0
@@ -1740,7 +1763,8 @@ class OnlineServingService:
             daily_returns.append(
                 {
                     "date": str(date.date()),
-                    "daily_return": daily_return,
+                    "daily_return": daily_return,  # Gross return (before costs)
+                    "net_daily_return": net_daily_return,  # Net return (after costs)
                     "benchmark_return": benchmark_return,
                     "portfolio_value": portfolio_value,
                     "cost": day_cost,
@@ -1755,7 +1779,10 @@ class OnlineServingService:
             }
 
         returns_array = np.array([d["daily_return"] for d in daily_returns])
-        total_return = (portfolio_value - account) / account
+        # Net return (after costs) - based on actual portfolio value
+        net_return = (portfolio_value - account) / account
+        # Gross return (before costs) - compound daily returns
+        gross_return = float(np.prod(1 + returns_array) - 1)
         trading_days = len(daily_returns)
 
         # Use Qlib's risk_analysis for standard metrics
@@ -1788,7 +1815,7 @@ class OnlineServingService:
             )
             # Fallback to manual calculation if Qlib fails
             annual_factor = 252 / trading_days if trading_days > 0 else 1
-            annual_return = (1 + total_return) ** annual_factor - 1
+            annual_return = (1 + gross_return) ** annual_factor - 1
             volatility = (
                 float(np.std(returns_array, ddof=1) * np.sqrt(252))
                 if len(returns_array) > 1
@@ -1818,12 +1845,19 @@ class OnlineServingService:
         avg_loss = float(np.abs(np.mean(losses))) if len(losses) > 0 else 0.0
         profit_loss_ratio = avg_profit / avg_loss if avg_loss > 0 else 0.0
 
-        # Compound Annual Growth Rate (CAGR) = (1 + total_return)^(252/trading_days) - 1
-        # This is the geometric annualized return
-        if trading_days > 0 and total_return > -1:
-            cagr = float((1 + total_return) ** (252 / trading_days) - 1)
+        # Compound Annual Growth Rate (CAGR) = (1 + return)^(252/trading_days) - 1
+        # Calculate both gross and net CAGR
+        # Gross CAGR - for benchmark comparison (before costs)
+        if trading_days > 0 and gross_return > -1:
+            cagr = float((1 + gross_return) ** (252 / trading_days) - 1)
         else:
             cagr = 0.0
+
+        # Net CAGR - actual investor return (after costs)
+        if trading_days > 0 and net_return > -1:
+            net_cagr = float((1 + net_return) ** (252 / trading_days) - 1)
+        else:
+            net_cagr = 0.0
 
         # Cost Efficiency Metrics
         # 1. Cost Ratio = Total Cost / Initial Account (cost as % of capital)
@@ -1831,7 +1865,7 @@ class OnlineServingService:
 
         # 2. Cost to Profit Ratio = Total Cost / Gross Profit
         #    Lower is better. If > 1, costs exceed profits (bad)
-        gross_profit = total_return * account  # Profit in currency
+        gross_profit = gross_return * account  # Profit in currency
         if gross_profit > 0:
             cost_to_profit_ratio = float(total_cost / gross_profit)
         else:
@@ -1854,8 +1888,8 @@ class OnlineServingService:
 
         # Log metrics for debugging
         self.logger.info(
-            f"Backtest metrics: total_return={total_return:.4f}, "
-            f"annual_return={annual_return:.4f}, cagr={cagr:.4f}, "
+            f"Backtest metrics: gross_return={gross_return:.4f}, net_return={net_return:.4f}, "
+            f"annual_return={annual_return:.4f}, cagr={cagr:.4f}, net_cagr={net_cagr:.4f}, "
             f"sharpe={sharpe_ratio:.4f}, max_dd={max_drawdown:.4f}, "
             f"calmar={calmar_ratio:.4f}, win_rate={win_rate:.4f}, "
             f"cost_ratio={cost_ratio:.4f}, cost_to_profit={cost_to_profit_ratio:.4f}, "
@@ -1869,7 +1903,12 @@ class OnlineServingService:
             "trading_days": trading_days,
             "rebalance_days": rebalance_count,  # Actual rebalancing days
             "rebalance_period": rebalance_period,  # Rebalancing period config
-            "total_return": float(total_return),
+            "total_return": float(
+                gross_return
+            ),  # Gross return (before costs) for benchmark comparison
+            "net_return": float(
+                net_return
+            ),  # Net return (after costs) - actual investor return
             "total_cost": float(total_cost),
             "final_account": float(portfolio_value),
             # Qlib risk_analysis metrics (arithmetic annualized)
@@ -1878,7 +1917,10 @@ class OnlineServingService:
             "sharpe_ratio": float(sharpe_ratio),
             "max_drawdown": float(max_drawdown),
             # Custom additional metrics
-            "cagr": float(cagr),  # Compound Annual Growth Rate (geometric)
+            "cagr": float(cagr),  # Compound Annual Growth Rate (geometric) - gross
+            "net_cagr": float(
+                net_cagr
+            ),  # Net CAGR (after costs) - actual investor return
             "calmar_ratio": float(calmar_ratio),
             "win_rate": float(win_rate),
             "profit_loss_ratio": float(profit_loss_ratio),
@@ -1890,13 +1932,17 @@ class OnlineServingService:
         }
 
     def _generate_etf_backtest_charts(
-        self, daily_returns: list, qlib_max_drawdown: float = None
+        self,
+        daily_returns: list,
+        qlib_max_drawdown: float = None,
+        initial_account: float = None,
     ) -> Dict[str, Any]:
         """Generate chart data from ETF backtest daily returns.
 
         Args:
             daily_returns: List of daily return records
             qlib_max_drawdown: Max drawdown from Qlib's risk_analysis (for consistency)
+            initial_account: Initial account value for net return calculation
         """
         if not daily_returns:
             self.logger.warning("No daily returns data for chart generation")
@@ -1924,19 +1970,52 @@ class OnlineServingService:
             recovery_date = None
             found_max_drawdown = False
 
+            # Use initial_account for accurate net return calculation
+            # If not provided, back-calculate from first day's data
+            if initial_account is not None and initial_account > 0:
+                initial_value = initial_account
+            else:
+                initial_value = (
+                    daily_returns[0].get("portfolio_value", 0) if daily_returns else 0
+                )
+                first_return = (
+                    daily_returns[0].get("daily_return", 0) if daily_returns else 0
+                )
+                first_cost = daily_returns[0].get("cost", 0) if daily_returns else 0
+                # Back-calculate: pv = prev * (1 + ret) - cost => prev = (pv + cost) / (1 + ret)
+                if first_return != -1:
+                    initial_value = (initial_value + first_cost) / (1 + first_return)
+
+            # Track both gross and net cumulative returns
+            cum_gross = 1.0  # Gross return (before costs) - for benchmark comparison
+            cum_net = 1.0  # Net return (after costs) - actual investor return
+
             for row in daily_returns:
                 daily_ret = row.get("daily_return", 0)
                 benchmark_ret = row.get("benchmark_return", 0)
-                cum_return *= 1 + daily_ret
+                portfolio_value = row.get("portfolio_value", 0)
+
+                # Gross return: compound daily returns (no costs)
+                cum_gross *= 1 + daily_ret
+                cum_gross_pct = float(cum_gross - 1)
+
+                # Net return: based on actual portfolio value (includes costs)
+                if initial_value > 0:
+                    cum_net = portfolio_value / initial_value
+                    cum_net_pct = float(cum_net - 1)
+                else:
+                    cum_net *= 1 + daily_ret
+                    cum_net_pct = float(cum_net - 1)
+
                 cum_benchmark *= 1 + benchmark_ret
-                cum_return_pct = float(cum_return - 1)  # Convert to percentage
                 cum_benchmark_pct = float(cum_benchmark - 1)
 
-                # Track current peak
+                # Track current peak using gross return (for fair comparison)
+                cum_return = cum_gross  # Use gross for drawdown calculation
                 if cum_return > max_cum_return:
                     max_cum_return = cum_return
                     current_peak_date = row.get("date")
-                    current_peak_value = cum_return_pct
+                    current_peak_value = cum_gross_pct
 
                 # Calculate drawdown from current peak
                 current_drawdown = (cum_return - max_cum_return) / max_cum_return
@@ -1958,7 +2037,8 @@ class OnlineServingService:
 
                 chart_point = {
                     "date": row.get("date"),
-                    "strategy": cum_return_pct,  # Frontend expects "strategy" key
+                    "strategy": cum_gross_pct,  # Gross return (before costs) for benchmark comparison
+                    "net_return": cum_net_pct,  # Net return (after costs) - actual investor return
                 }
                 # Add benchmark if available
                 if benchmark_ret != 0 or cum_benchmark != 1.0:
@@ -1998,15 +2078,22 @@ class OnlineServingService:
                     "recovery_date": recovery_date,
                 }
 
+            # Calculate yearly and monthly returns
+            yearly_returns = self._calculate_periodic_returns(daily_returns, "yearly")
+            monthly_returns = self._calculate_periodic_returns(daily_returns, "monthly")
+
             self.logger.info(
                 f"Generated chart data: {len(cumulative_returns)} points, "
-                f"max_drawdown={max_drawdown:.4f}"
+                f"max_drawdown={max_drawdown:.4f}, "
+                f"yearly_periods={len(yearly_returns)}, monthly_periods={len(monthly_returns)}"
             )
 
             return {
                 "cumulative_returns": cumulative_returns,
                 "portfolio_values": portfolio_values,
                 "max_drawdown_info": max_drawdown_info,
+                "yearly_returns": yearly_returns,
+                "monthly_returns": monthly_returns,
             }
         except Exception as e:
             self.logger.error(f"Failed to generate chart data: {e}")
@@ -2014,6 +2101,83 @@ class OnlineServingService:
 
             self.logger.error(traceback.format_exc())
             return {}
+
+    def _calculate_periodic_returns(
+        self, daily_returns: list, period: str = "yearly"
+    ) -> list:
+        """
+        Calculate periodic (yearly or monthly) returns for strategy and benchmark.
+
+        Args:
+            daily_returns: List of daily return records with 'date', 'daily_return', 'benchmark_return'
+            period: 'yearly' or 'monthly'
+
+        Returns:
+            List of periodic return records with strategy_return, benchmark_return, and excess_return
+        """
+        if not daily_returns:
+            return []
+
+        try:
+            from collections import defaultdict
+
+            # Group daily returns by period
+            period_data = defaultdict(lambda: {"strategy": [], "benchmark": []})
+
+            for row in daily_returns:
+                date_str = row.get("date", "")
+                if not date_str:
+                    continue
+
+                # Extract period key (YYYY for yearly, YYYY-MM for monthly)
+                if period == "yearly":
+                    period_key = date_str[:4]  # YYYY
+                else:  # monthly
+                    period_key = date_str[:7]  # YYYY-MM
+
+                # Use net_daily_return for strategy (after costs) - reflects actual investor return
+                # Fallback to daily_return if net_daily_return not available (backward compatibility)
+                period_data[period_key]["strategy"].append(
+                    row.get("net_daily_return", row.get("daily_return", 0))
+                )
+                period_data[period_key]["benchmark"].append(
+                    row.get("benchmark_return", 0)
+                )
+
+            # Calculate compounded returns for each period
+            results = []
+            for period_key in sorted(period_data.keys()):
+                data = period_data[period_key]
+
+                # Compound daily returns: (1+r1) * (1+r2) * ... - 1
+                strategy_cum = 1.0
+                for r in data["strategy"]:
+                    strategy_cum *= 1 + r
+                strategy_return = strategy_cum - 1
+
+                benchmark_cum = 1.0
+                for r in data["benchmark"]:
+                    benchmark_cum *= 1 + r
+                benchmark_return = benchmark_cum - 1
+
+                # Excess return (alpha)
+                excess_return = strategy_return - benchmark_return
+
+                results.append(
+                    {
+                        "period": period_key,
+                        "strategy_return": round(strategy_return, 6),
+                        "benchmark_return": round(benchmark_return, 6),
+                        "excess_return": round(excess_return, 6),
+                        "trading_days": len(data["strategy"]),
+                    }
+                )
+
+            return results
+
+        except Exception as e:
+            self.logger.error(f"Failed to calculate {period} returns: {e}")
+            return []
 
     def get_status(self) -> Dict[str, Any]:
         """

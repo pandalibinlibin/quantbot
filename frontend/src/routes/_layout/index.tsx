@@ -84,8 +84,14 @@ interface BacktestSummary {
   has_results: boolean;
   total_return: number;
   total_return_pct: string;
+  net_return: number;
+  net_return_pct: string;
   annualized_return: number;
   annualized_return_pct: string;
+  cagr: number;
+  cagr_pct: string;
+  net_cagr: number;
+  net_cagr_pct: string;
   max_drawdown: number;
   max_drawdown_pct: string;
   sharpe_ratio: number;
@@ -246,10 +252,10 @@ function Dashboard() {
 
       {/* KPI Cards - Row 1: Backtest Results */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* Total Return Card */}
+        {/* Net Return Card - actual investor return after costs */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Return</CardTitle>
+            <CardTitle className="text-sm font-medium">Net Return</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -258,13 +264,12 @@ function Dashboard() {
             ) : (
               <>
                 <div
-                  className={`text-2xl font-bold ${isPositive ? "text-green-600" : "text-red-600"}`}
+                  className={`text-2xl font-bold ${(backtest?.net_return || 0) >= 0 ? "text-green-600" : "text-red-600"}`}
                 >
-                  {backtest?.total_return_pct || "N/A"}
+                  {backtest?.net_return_pct || "N/A"}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Ann: {backtest?.annualized_return_pct || "N/A"} | CAGR:{" "}
-                  {backtest?.cagr_pct || "N/A"}
+                  CAGR: {backtest?.net_cagr_pct || "N/A"}
                 </p>
               </>
             )}

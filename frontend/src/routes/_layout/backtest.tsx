@@ -559,43 +559,24 @@ function BacktestPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {/* Annualized Return (Arithmetic) */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {/* Net CAGR (Compound Annual Growth Rate after costs) */}
                     <div className="bg-muted/50 rounded-lg p-4">
                       <div className="flex items-center text-muted-foreground mb-1">
                         <TrendingUp className="h-4 w-4" />
-                        <span className="text-sm ml-2">Ann. Return</span>
-                        <MetricTooltip content="算术年化收益率 = 日均收益 × 252。Qlib标准方法，适合短期比较。" />
+                        <span className="text-sm ml-2">CAGR (Net)</span>
+                        <MetricTooltip content="净复合年化增长率 = (1+净收益)^(252/交易天数)-1。基于扣除成本后的实际收益，反映投资者真实回报。" />
                       </div>
                       <div
                         className={`text-xl font-bold ${
-                          (backtestResult.risk_metrics.annualized_return ||
-                            0) >= 0
+                          (backtestResult.risk_metrics.net_cagr || 0) >= 0
                             ? "text-green-600"
                             : "text-red-600"
                         }`}
                       >
                         {formatPercent(
-                          backtestResult.risk_metrics.annualized_return || 0,
+                          backtestResult.risk_metrics.net_cagr || 0,
                         )}
-                      </div>
-                    </div>
-
-                    {/* CAGR (Compound Annual Growth Rate) */}
-                    <div className="bg-muted/50 rounded-lg p-4">
-                      <div className="flex items-center text-muted-foreground mb-1">
-                        <TrendingUp className="h-4 w-4" />
-                        <span className="text-sm ml-2">CAGR</span>
-                        <MetricTooltip content="复合年化增长率 = (1+总收益)^(252/交易天数)-1。考虑复利效应，更适合长期投资评估。" />
-                      </div>
-                      <div
-                        className={`text-xl font-bold ${
-                          (backtestResult.risk_metrics.cagr || 0) >= 0
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {formatPercent(backtestResult.risk_metrics.cagr || 0)}
                       </div>
                     </div>
 
@@ -860,7 +841,7 @@ function BacktestPage() {
                             <RechartsTooltip
                               formatter={(value, name) => [
                                 formatPercent(value as number),
-                                name === "strategy" ? "Strategy" : "Benchmark",
+                                name,
                               ]}
                               labelFormatter={(label) => `Date: ${label}`}
                             />
@@ -906,8 +887,21 @@ function BacktestPage() {
                               stroke="#22c55e"
                               strokeWidth={2}
                               fill="url(#strategyGradient)"
-                              name="Strategy"
+                              name="Gross Return"
                             />
+                            {/* Net Return line (after costs) */}
+                            {backtestResult.charts.cumulative_returns[0]
+                              ?.net_return !== undefined && (
+                              <Area
+                                type="monotone"
+                                dataKey="net_return"
+                                stroke="#15803d"
+                                strokeWidth={2}
+                                strokeDasharray="5 5"
+                                fill="none"
+                                name="Net Return"
+                              />
+                            )}
                             {backtestResult.charts.cumulative_returns[0]
                               ?.benchmark !== undefined && (
                               <Area
@@ -1137,6 +1131,221 @@ function BacktestPage() {
                               .recovery_date || "Not recovered"}
                           </div>
                         </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+              {/* Yearly Returns Table */}
+              {backtestResult.charts?.yearly_returns &&
+                backtestResult.charts.yearly_returns.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-5 w-5 text-blue-500" />
+                        <CardTitle className="text-lg">
+                          Yearly Performance
+                        </CardTitle>
+                      </div>
+                      <CardDescription>
+                        Annual returns comparison: Strategy vs Benchmark
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left py-2 px-3 font-medium">
+                                Year
+                              </th>
+                              <th className="text-right py-2 px-3 font-medium">
+                                Strategy
+                              </th>
+                              <th className="text-right py-2 px-3 font-medium">
+                                Benchmark
+                              </th>
+                              <th className="text-right py-2 px-3 font-medium">
+                                Excess (α)
+                              </th>
+                              <th className="text-right py-2 px-3 font-medium">
+                                Days
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {backtestResult.charts.yearly_returns.map(
+                              (row: any) => (
+                                <tr
+                                  key={row.period}
+                                  className="border-b hover:bg-muted/50"
+                                >
+                                  <td className="py-2 px-3 font-mono">
+                                    {row.period}
+                                  </td>
+                                  <td
+                                    className={`py-2 px-3 text-right font-mono ${row.strategy_return >= 0 ? "text-green-600" : "text-red-600"}`}
+                                  >
+                                    {(row.strategy_return * 100).toFixed(2)}%
+                                  </td>
+                                  <td
+                                    className={`py-2 px-3 text-right font-mono ${row.benchmark_return >= 0 ? "text-green-600" : "text-red-600"}`}
+                                  >
+                                    {(row.benchmark_return * 100).toFixed(2)}%
+                                  </td>
+                                  <td
+                                    className={`py-2 px-3 text-right font-mono font-medium ${row.excess_return >= 0 ? "text-green-600" : "text-red-600"}`}
+                                  >
+                                    {row.excess_return >= 0 ? "+" : ""}
+                                    {(row.excess_return * 100).toFixed(2)}%
+                                  </td>
+                                  <td className="py-2 px-3 text-right text-muted-foreground">
+                                    {row.trading_days}
+                                  </td>
+                                </tr>
+                              ),
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+              {/* Monthly Returns Heatmap */}
+              {backtestResult.charts?.monthly_returns &&
+                backtestResult.charts.monthly_returns.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <BarChart3 className="h-5 w-5 text-purple-500" />
+                        <CardTitle className="text-lg">
+                          Monthly Performance
+                        </CardTitle>
+                      </div>
+                      <CardDescription>
+                        Monthly returns breakdown with excess returns (α)
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={backtestResult.charts.monthly_returns}
+                          >
+                            <CartesianGrid
+                              strokeDasharray="3 3"
+                              opacity={0.3}
+                            />
+                            <XAxis
+                              dataKey="period"
+                              tick={{ fontSize: 10 }}
+                              tickFormatter={(value) => value.slice(2)} // Show YY-MM
+                              interval={0}
+                              angle={-45}
+                              textAnchor="end"
+                              height={60}
+                            />
+                            <YAxis
+                              tick={{ fontSize: 11 }}
+                              tickFormatter={(value: number) =>
+                                `${(value * 100).toFixed(0)}%`
+                              }
+                            />
+                            <RechartsTooltip
+                              formatter={(value: number, name: string) => [
+                                `${(value * 100).toFixed(2)}%`,
+                                name === "strategy_return"
+                                  ? "Strategy"
+                                  : name === "benchmark_return"
+                                    ? "Benchmark"
+                                    : "Excess (α)",
+                              ]}
+                              labelFormatter={(label) => `Month: ${label}`}
+                            />
+                            <Legend
+                              formatter={(value) =>
+                                value === "strategy_return"
+                                  ? "Strategy"
+                                  : value === "benchmark_return"
+                                    ? "Benchmark"
+                                    : "Excess (α)"
+                              }
+                            />
+                            <ReferenceLine
+                              y={0}
+                              stroke="#666"
+                              strokeDasharray="2 2"
+                            />
+                            <Bar
+                              dataKey="strategy_return"
+                              fill="#22c55e"
+                              name="strategy_return"
+                            />
+                            <Bar
+                              dataKey="benchmark_return"
+                              fill="#3b82f6"
+                              name="benchmark_return"
+                            />
+                            <Bar
+                              dataKey="excess_return"
+                              fill="#a855f7"
+                              name="excess_return"
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* Monthly Returns Table */}
+                      <div className="mt-4 overflow-x-auto max-h-[300px]">
+                        <table className="w-full text-sm">
+                          <thead className="sticky top-0 bg-background">
+                            <tr className="border-b">
+                              <th className="text-left py-2 px-2 font-medium">
+                                Month
+                              </th>
+                              <th className="text-right py-2 px-2 font-medium">
+                                Strategy
+                              </th>
+                              <th className="text-right py-2 px-2 font-medium">
+                                Benchmark
+                              </th>
+                              <th className="text-right py-2 px-2 font-medium">
+                                Excess (α)
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {backtestResult.charts.monthly_returns.map(
+                              (row: any) => (
+                                <tr
+                                  key={row.period}
+                                  className="border-b hover:bg-muted/50"
+                                >
+                                  <td className="py-1.5 px-2 font-mono text-xs">
+                                    {row.period}
+                                  </td>
+                                  <td
+                                    className={`py-1.5 px-2 text-right font-mono text-xs ${row.strategy_return >= 0 ? "text-green-600" : "text-red-600"}`}
+                                  >
+                                    {(row.strategy_return * 100).toFixed(2)}%
+                                  </td>
+                                  <td
+                                    className={`py-1.5 px-2 text-right font-mono text-xs ${row.benchmark_return >= 0 ? "text-green-600" : "text-red-600"}`}
+                                  >
+                                    {(row.benchmark_return * 100).toFixed(2)}%
+                                  </td>
+                                  <td
+                                    className={`py-1.5 px-2 text-right font-mono text-xs font-medium ${row.excess_return >= 0 ? "text-green-600" : "text-red-600"}`}
+                                  >
+                                    {row.excess_return >= 0 ? "+" : ""}
+                                    {(row.excess_return * 100).toFixed(2)}%
+                                  </td>
+                                </tr>
+                              ),
+                            )}
+                          </tbody>
+                        </table>
                       </div>
                     </CardContent>
                   </Card>

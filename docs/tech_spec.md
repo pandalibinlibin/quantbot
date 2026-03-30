@@ -11713,3 +11713,201 @@ self._send_etf_portfolio_email(portfolio_data)
 | 调仓日 + 第一次运行（新计算）     | ✅ 发送      |
 | 调仓日 + 非第一次运行（使用缓存） | ✅ 发送      |
 | 非调仓日（hold action）           | ✅ 发送      |
+
+#### 5. 年度/月度收益分析 (`online_serving_service.py`, `backtest.tsx`)
+
+**新功能**：在回测页面显示年度和月度收益对比，便于分析策略在不同时间段的表现。
+
+**后端实现**：
+
+```python
+def _calculate_periodic_returns(self, daily_returns: list, period: str = "yearly") -> list:
+    """Calculate periodic (yearly or monthly) returns for strategy and benchmark."""
+    from collections import defaultdict
+
+    # Group daily returns by period (YYYY for yearly, YYYY-MM for monthly)
+    period_data = defaultdict(lambda: {"strategy": [], "benchmark": []})
+
+    for row in daily_returns:
+        period_key = row["date"][:4] if period == "yearly" else row["date"][:7]
+        period_data[period_key]["strategy"].append(row["daily_return"])
+        period_data[period_key]["benchmark"].append(row["benchmark_return"])
+
+    # Calculate compounded returns for each period
+    results = []
+    for period_key in sorted(period_data.keys()):
+        strategy_return = prod(1 + r for r in data["strategy"]) - 1
+        benchmark_return = prod(1 + r for r in data["benchmark"]) - 1
+        excess_return = strategy_return - benchmark_return
+
+        results.append({
+            "period": period_key,
+            "strategy_return": strategy_return,
+            "benchmark_return": benchmark_return,
+            "excess_return": excess_return,
+            "trading_days": len(data["strategy"]),
+        })
+    return results
+```
+
+**前端展示**：
+
+1. **年度表格**：显示每年的策略收益、基准收益、超额收益（α）
+2. **月度柱状图**：并排显示策略、基准、超额收益的月度对比
+3. **月度表格**：详细的月度数据列表
+
+### 📁 Modified Files (Updated)
+
+| File                                                    | Change Type | Description                                                            |
+| ------------------------------------------------------- | ----------- | ---------------------------------------------------------------------- |
+| `backend/app/services/etf_enhanced_indexing_service.py` | Modified    | Fix `get_next_rebalance_day()` for dates beyond calendar               |
+| `backend/app/api/routes/dashboard.py`                   | Modified    | Recalculate actions based on current holdings                          |
+| `backend/app/services/online_serving_service.py`        | Modified    | Unified rebalance calendar, email on every run, yearly/monthly returns |
+| `frontend/src/routes/_layout/backtest.tsx`              | Modified    | Add yearly table and monthly chart for performance breakdown           |
+
+### ✅ Result (Updated)
+
+- Dashboard correctly shows next rebalance date (e.g., "Next: 2026-03-31")
+- Target Portfolio page shows "HOLD" when current_shares equals target_shares
+- Backtest and Online Serving use the same rebalance calendar algorithm
+- Signal email sent on every run task (including hold and cached scenarios)
+- Backtest page shows yearly and monthly performance comparison with benchmark
+
+---
+
+## 🔧 2026-03-30: Gross/Net Return Separation and Display Fixes
+
+### Problem Description
+
+1. **Identical Total Return and Net Return**: The backtest page showed identical values for Total Return and Net Return
+2. **Missing Net Return curve**: The cumulative returns chart only showed one curve instead of both Gross and Net Return
+3. **NameError in backtest**: `total_return` variable was referenced after being renamed to `gross_return`
+4. **CAGR showing 0%**: Net CAGR was not being passed to frontend due to missing field in Pydantic model
+5. **Chart tooltip labels**: All curves showed "Benchmark" label in tooltip
+
+### Root Cause Analysis
+
+1. **API Response Bug**: `net_return` field was incorrectly assigned `result.get("total_return")` instead of `result.get("net_return")`
+2. **Variable Rename Incomplete**: After renaming `total_return` to `gross_return`, several references were not updated
+3. **Missing Pydantic Field**: `RiskMetrics` model in `backtest.py` was missing `net_cagr` field, causing Pydantic to drop it during serialization
+4. **Tooltip Logic Error**: Tooltip formatter was checking for `dataKey` values instead of using the `name` prop directly
+
+### Solution Implementation
+
+#### 1. Backend: Separate Gross and Net Return Calculations (`online_serving_service.py`)
+
+```python
+# Calculate net daily return (after costs)
+old_portfolio_value = portfolio_value
+portfolio_value = portfolio_value * (1 + daily_return) - day_cost
+net_daily_return = (portfolio_value - old_portfolio_value) / old_portfolio_value
+
+daily_returns.append({
+    "date": str(date.date()),
+    "daily_return": daily_return,  # Gross return (before costs)
+    "net_daily_return": net_daily_return,  # Net return (after costs)
+    "benchmark_return": benchmark_return,
+    "portfolio_value": portfolio_value,
+    "cost": day_cost,
+})
+```
+
+#### 2. Backend: Add Net CAGR Calculation (`online_serving_service.py`)
+
+```python
+# Gross CAGR - for benchmark comparison (before costs)
+if trading_days > 0 and gross_return > -1:
+    cagr = float((1 + gross_return) ** (252 / trading_days) - 1)
+
+# Net CAGR - actual investor return (after costs)
+if trading_days > 0 and net_return > -1:
+    net_cagr = float((1 + net_return) ** (252 / trading_days) - 1)
+```
+
+#### 3. Backend: Add net_cagr to RiskMetrics Model (`backtest.py`)
+
+```python
+class RiskMetrics(BaseModel):
+    annualized_return: Optional[float] = None
+    cagr: Optional[float] = None  # Gross CAGR
+    net_cagr: Optional[float] = None  # Net CAGR (after costs)
+    max_drawdown: Optional[float] = None
+    # ... other fields
+```
+
+#### 4. Backend: Add net_return and net_cagr to Dashboard API (`dashboard.py`)
+
+```python
+class BacktestSummary(BaseModel):
+    total_return: float = 0.0  # Gross return
+    net_return: float = 0.0  # Net return (after costs)
+    cagr: float = 0.0  # Gross CAGR
+    net_cagr: float = 0.0  # Net CAGR (after costs)
+    # ... other fields
+```
+
+#### 5. Frontend: Dashboard Shows Net Return (`index.tsx`)
+
+Changed Dashboard card from "Total Return" to "Net Return" with Net CAGR:
+
+```tsx
+<CardTitle>Net Return</CardTitle>
+<div>{backtest?.net_return_pct || "N/A"}</div>
+<p>CAGR: {backtest?.net_cagr_pct || "N/A"}</p>
+```
+
+#### 6. Frontend: Backtest Page Uses Net CAGR (`backtest.tsx`)
+
+```tsx
+<span>CAGR (Net)</span>
+<MetricTooltip content="净复合年化增长率..." />
+{formatPercent(backtestResult.risk_metrics.net_cagr || 0)}
+```
+
+#### 7. Frontend: Fix Chart Tooltip Labels (`backtest.tsx`)
+
+```tsx
+<RechartsTooltip
+  formatter={(value, name) => [
+    formatPercent(value as number),
+    name, // Use name prop directly from Area components
+  ]}
+/>
+```
+
+#### 8. Frontend: Yearly/Monthly Performance Uses Net Return
+
+```python
+# Use net_daily_return for strategy (after costs)
+period_data[period_key]["strategy"].append(
+    row.get("net_daily_return", row.get("daily_return", 0))
+)
+```
+
+### Gross Return Usage (Limited to Backtest Page Only)
+
+| Location                 | Field            | Description                                 |
+| ------------------------ | ---------------- | ------------------------------------------- |
+| Backtest Results Card    | `total_return`   | Shows gross return for benchmark comparison |
+| Cumulative Returns Chart | `strategy` curve | "Gross Return" line (green solid)           |
+
+All other displays (Dashboard, Risk Metrics CAGR, Yearly/Monthly Performance) use **Net Return**.
+
+### Modified Files
+
+| File                                             | Change Type | Description                                               |
+| ------------------------------------------------ | ----------- | --------------------------------------------------------- |
+| `backend/app/services/online_serving_service.py` | Modified    | Add net_daily_return, net_cagr calculation, fix NameError |
+| `backend/app/api/routes/backtest.py`             | Modified    | Add net_cagr to RiskMetrics model                         |
+| `backend/app/api/routes/dashboard.py`            | Modified    | Add net_return, net_cagr fields to BacktestSummary        |
+| `frontend/src/routes/_layout/index.tsx`          | Modified    | Show Net Return and Net CAGR in Dashboard                 |
+| `frontend/src/routes/_layout/backtest.tsx`       | Modified    | Use net_cagr, fix tooltip, remove Ann. Return             |
+
+### Result
+
+- ✅ Dashboard shows Net Return with Net CAGR (actual investor return after costs)
+- ✅ Backtest page shows both Total Return (gross) and Net Return
+- ✅ Cumulative Returns chart shows 3 curves: Gross Return, Net Return, Benchmark
+- ✅ Chart tooltip correctly labels each curve
+- ✅ Risk Metrics shows CAGR (Net) instead of Ann. Return
+- ✅ Yearly/Monthly Performance uses Net Return for strategy comparison
