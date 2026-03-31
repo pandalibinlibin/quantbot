@@ -11916,6 +11916,69 @@ All other displays (Dashboard, Risk Metrics CAGR, Yearly/Monthly Performance) us
 
 ## 2026-04-01: Trading Signal Generation Fix
 
+### Rebalancing Logic Overview
+
+#### 1. Rebalance Period
+
+- Rebalance every **5 trading days** (`rebalance_period: 5`)
+- System checks: `day_number % 5 == 0`
+
+#### 2. Portfolio Composition
+
+- **Fixed position count**: 1 ETF + 9 stocks = 10 positions
+- **Stock selection**: Top 9 stocks by model prediction score (`max_stocks: 9`)
+
+#### 3. Dynamic Weight Allocation
+
+ETF and Alpha stock weights are **dynamically adjusted** based on model confidence (score spread):
+
+```python
+def calculate_dynamic_weights(self, scores: Dict[str, float]) -> Tuple[float, float, float]:
+    """
+    High score spread → High alpha weight (model confident)
+    Low score spread → Low alpha weight (model uncertain, prefer ETF)
+    """
+    # Calculate spread between top and bottom stocks
+    top_avg = np.mean(sorted_scores[:max_stocks])
+    bottom_avg = np.mean(sorted_scores[-max_stocks:])
+    score_spread = top_avg - bottom_avg
+
+    # Normalize spread to [0, 1], assuming typical range [0, 2]
+    normalized_spread = np.clip(score_spread / 2.0, 0, 1)
+
+    # Alpha weight: alpha_weight_min ~ alpha_weight_max
+    alpha_weight = alpha_weight_min + normalized_spread * (alpha_weight_max - alpha_weight_min)
+    etf_weight = 1.0 - alpha_weight
+```
+
+**Configuration** (`paper_trading_config.yaml`):
+
+```yaml
+etf_enhanced_indexing:
+  weight_mode: "dynamic" # "fixed" or "dynamic"
+  alpha_weight_min: 0.3 # Min alpha weight when model uncertain
+  alpha_weight_max: 0.7 # Max alpha weight when model confident
+  alpha_weight_fixed: 0.5 # Used when weight_mode is "fixed"
+```
+
+**Example**:
+
+- Score spread = 3.814 → normalized = 1.0 (capped)
+- Alpha weight = 0.3 + 1.0 × (0.7 - 0.3) = 0.7 (70%)
+- ETF weight = 1.0 - 0.7 = 0.3 (30%)
+
+But in current config with `alpha_weight_min = alpha_weight_max = 0.5`, the weights are effectively fixed at 50%/50%.
+
+#### 4. Stock Weight Distribution
+
+Within the alpha portion, individual stock weights are **score-weighted**:
+
+```python
+stock_weights = [(symbol, (score / total_score) * alpha_weight) for symbol, score in top_stocks]
+```
+
+Higher scoring stocks get higher weights within the alpha allocation.
+
 ### Problem
 
 When rebalancing portfolio, the system was generating imbalanced trading signals:
