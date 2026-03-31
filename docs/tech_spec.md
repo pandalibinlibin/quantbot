@@ -1,7 +1,7 @@
 # QuantBot 技术规格文档
 
-**版本**: 4.0 (选股系统专注化)  
-**最后更新**: 2026-03-03
+**版本**: 4.1 (Trading Signal Fix)  
+**最后更新**: 2026-04-01
 
 ---
 
@@ -11911,3 +11911,91 @@ All other displays (Dashboard, Risk Metrics CAGR, Yearly/Monthly Performance) us
 - ✅ Chart tooltip correctly labels each curve
 - ✅ Risk Metrics shows CAGR (Net) instead of Ann. Return
 - ✅ Yearly/Monthly Performance uses Net Return for strategy comparison
+
+---
+
+## 2026-04-01: Trading Signal Generation Fix
+
+### Problem
+
+When rebalancing portfolio, the system was generating imbalanced trading signals:
+
+- 9 BUY orders for new target stocks
+- Only 1 SELL order (for ETF adjustment)
+- Missing SELL signals for stocks that should be exited
+
+This caused the holdings count to grow incorrectly (e.g., 19 positions instead of 10).
+
+### Root Cause
+
+The `calculate_target_portfolio` function in `etf_enhanced_indexing_service.py` only generated signals for stocks in the **new target portfolio**, but did not generate SELL signals for stocks in the **current holdings** that were not in the new target.
+
+### Solution
+
+#### 1. Generate SELL Signals for Exiting Positions (`etf_enhanced_indexing_service.py`)
+
+Added logic to generate SELL signals for holdings not in the target portfolio:
+
+```python
+# Generate SELL signals for holdings not in target portfolio
+target_symbols = set(all_symbols)  # ETF + top stocks
+for symbol, current_shares in current_holdings.items():
+    if symbol not in target_symbols and current_shares > 0:
+        # This holding needs to be sold (not in new target portfolio)
+        positions.append({
+            "rank": -1,  # Negative rank indicates exit position
+            "symbol": symbol,
+            "name": self.get_stock_name(symbol),
+            "type": "stock",
+            "weight": 0.0,
+            "score": 0.0,
+            "target_value": 0.0,
+            "target_shares": 0,
+            "current_shares": current_shares,
+            "action": "sell",
+            "action_shares": current_shares,
+        })
+```
+
+#### 2. Fix Holdings Update Logic (`etf_enhanced_indexing_service.py`)
+
+Modified `apply_trades_to_holdings` to replace holdings entirely instead of merging:
+
+```python
+def apply_trades_to_holdings(self, positions, trade_date):
+    # Build new holdings from target positions (replace, not merge)
+    new_holdings = {}
+    for pos in positions:
+        symbol = pos.get("symbol", "")
+        target_shares = pos.get("target_shares", 0)
+        if symbol and target_shares > 0:
+            new_holdings[symbol] = target_shares
+
+    # Replace current holdings with new holdings
+    self._current_holdings = new_holdings
+    self.save_holdings(trade_date=trade_date)
+```
+
+#### 3. Filter Holdings Display (`target-portfolio.tsx`, `dashboard.py`, `notification_service.py`)
+
+- **Full Holdings Detail**: Only show positions with `target_shares > 0`
+- **Dashboard Target Portfolio**: Filter and sort by weight, show top 6 holdings
+- **Email Template**: Filter detail rows to only include actual holdings
+
+### Modified Files
+
+| File                                                    | Change Type | Description                                                                          |
+| ------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------ |
+| `backend/app/services/etf_enhanced_indexing_service.py` | Modified    | Add SELL signal generation for exiting positions; fix holdings replacement logic     |
+| `backend/app/services/notification_service.py`          | Modified    | Filter email detail rows to only show holdings with target_shares > 0                |
+| `backend/app/api/routes/dashboard.py`                   | Modified    | Add target_shares field; filter positions with holdings only                         |
+| `frontend/src/routes/_layout/target-portfolio.tsx`      | Modified    | Filter Full Holdings Detail to show only positions with target_shares > 0            |
+| `frontend/src/routes/_layout/index.tsx`                 | Modified    | Add target_shares to interface; filter and sort Dashboard Target Portfolio by weight |
+
+### Result
+
+- ✅ Trading Orders correctly shows balanced BUY/SELL signals (9 buys + 9 sells for stock rebalancing)
+- ✅ Full Holdings Detail only shows actual holdings after executing orders (10 positions)
+- ✅ Dashboard Target Portfolio shows top 6 holdings by weight
+- ✅ Email template only includes positions with holdings in detail table
+- ✅ Holdings file correctly maintains fixed portfolio size (1 ETF + 9 stocks)

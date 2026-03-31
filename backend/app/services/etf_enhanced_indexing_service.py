@@ -303,16 +303,11 @@ class ETFEnhancedIndexingService:
 
             # Check if current day is a rebalance day
             if (start_idx % period) == 0:
-                # Today is a rebalance day, return today
-                today_date = calendar_list[start_idx]
-                return (
-                    str(today_date.date())
-                    if hasattr(today_date, "date")
-                    else str(today_date)[:10]
-                )
-
-            # Find next rebalance day
-            next_rebalance_idx = ((start_idx // period) + 1) * period
+                # Today is a rebalance day, return NEXT rebalance day (not today)
+                next_rebalance_idx = start_idx + period
+            else:
+                # Find next rebalance day
+                next_rebalance_idx = ((start_idx // period) + 1) * period
 
             if next_rebalance_idx < len(calendar_list):
                 next_date = calendar_list[next_rebalance_idx]
@@ -861,6 +856,40 @@ class ETFEnhancedIndexingService:
                     "action_lots": action_lots,
                 }
             )
+
+        # Generate SELL signals for holdings not in target portfolio
+        target_symbols = set(all_symbols)  # ETF + top stocks
+        for symbol, current_shares in current_holdings.items():
+            if symbol not in target_symbols and current_shares > 0:
+                # This holding needs to be sold (not in new target portfolio)
+                price = prices.get(symbol)
+                if price is None:
+                    # Fetch price for this symbol
+                    extra_prices = self._get_latest_prices([symbol])
+                    price = extra_prices.get(symbol, 100.0)
+
+                action_lots = current_shares // self.lot_size
+                positions.append(
+                    {
+                        "rank": -1,  # Negative rank indicates exit position
+                        "symbol": symbol,
+                        "name": self.get_stock_name(symbol),
+                        "type": "stock",
+                        "weight": 0.0,
+                        "score": 0.0,
+                        "target_value": 0.0,
+                        "reference_price": round(price, 4),
+                        "target_shares": 0,
+                        "current_shares": current_shares,
+                        "action": "sell",
+                        "action_shares": current_shares,
+                        "action_lots": action_lots,
+                    }
+                )
+                logger.info(
+                    f"Generated SELL signal for {symbol}: {current_shares} shares "
+                    f"(not in target portfolio)"
+                )
 
         # Build summary
         buy_count = sum(1 for p in positions if p["action"] == "buy")
@@ -1425,14 +1454,16 @@ class ETFEnhancedIndexingService:
         Returns:
             Updated holdings dict
         """
+        # Build new holdings from target positions (replace, not merge)
+        new_holdings = {}
         for pos in positions:
             symbol = pos.get("symbol", "")
             target_shares = pos.get("target_shares", 0)
-            if symbol:
-                if target_shares > 0:
-                    self._current_holdings[symbol] = target_shares
-                elif symbol in self._current_holdings:
-                    del self._current_holdings[symbol]
+            if symbol and target_shares > 0:
+                new_holdings[symbol] = target_shares
+
+        # Replace current holdings with new holdings
+        self._current_holdings = new_holdings
 
         # Persist the updated holdings with trade date
         self.save_holdings(trade_date=trade_date)

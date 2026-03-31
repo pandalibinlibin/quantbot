@@ -873,6 +873,18 @@ class OnlineServingService:
                     )
                     portfolio_data = cached_portfolio
 
+                    # Save updated portfolio (with recalculated actions based on current holdings)
+                    saved_path = etf_service.save_portfolio(portfolio_data, date_str)
+                    self.logger.info(f"Updated portfolio saved to {saved_path}")
+
+                    # Update holdings to target_shares for next rebalance calculation
+                    etf_service.apply_trades_to_holdings(
+                        portfolio_data.get("positions", []), trade_date=date_str
+                    )
+                    self.logger.info(
+                        "Holdings updated to target positions for next rebalance"
+                    )
+
                     # Send email notification even when using cache
                     self._send_etf_portfolio_email(portfolio_data)
 
@@ -911,13 +923,17 @@ class OnlineServingService:
                 # Save portfolio to file (includes fingerprint for future cache validation)
                 if portfolio_data.get("positions"):
                     # Save portfolio FIRST (with current_shares showing pre-trade state)
+                    # This file is used by frontend API and email - preserves the action info
                     saved_path = etf_service.save_portfolio(portfolio_data, date_str)
                     self.logger.info(f"ETF enhanced portfolio saved to {saved_path}")
 
-                    # Then apply trades to holdings (for next day's calculation)
-                    # This updates internal holdings state to target_shares
+                    # Then update holdings to target_shares for next rebalance calculation
+                    # This is safe because frontend API reads from portfolio file (not holdings)
                     etf_service.apply_trades_to_holdings(
                         portfolio_data.get("positions", []), trade_date=date_str
+                    )
+                    self.logger.info(
+                        "Holdings updated to target positions for next rebalance"
                     )
 
                 position_count = len(portfolio_data.get("positions", []))

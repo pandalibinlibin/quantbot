@@ -83,6 +83,7 @@ class TargetPositionItem(BaseModel):
     type: str = "alpha"  # "etf" or "alpha"
     weight: float = 0.0
     target_value: float = 0.0
+    target_shares: int = 0
     action: str = "hold"
 
 
@@ -165,63 +166,12 @@ def get_latest_portfolio():
         with open(latest_file, "r", encoding="utf-8") as f:
             portfolio_data = json.load(f)
 
+        # Use the portfolio file data directly - it contains the correct
+        # current_shares (snapshot at generation time) and action calculations.
+        # Do NOT recalculate from current_holdings.json, as that file
+        # is updated to target_shares after signal generation for next rebalance.
         positions = portfolio_data.get("positions", [])
-
-        # Load current holdings to recalculate actions
-        holdings_file = TARGET_PORTFOLIO_DIR / "current_holdings.json"
-        current_holdings = {}
-        if holdings_file.exists():
-            with open(holdings_file, "r", encoding="utf-8") as f:
-                holdings_data = json.load(f)
-                current_holdings = holdings_data.get("holdings", {})
-
-        # Recalculate actions based on current holdings
-        buy_count = 0
-        sell_count = 0
-        hold_count = 0
-        for pos in positions:
-            symbol = pos.get("symbol", "")
-            target_shares = pos.get("target_shares", 0)
-            # Update current_shares from actual holdings
-            pos["current_shares"] = current_holdings.get(symbol, 0)
-            # Recalculate action
-            diff = target_shares - pos["current_shares"]
-            if diff > 0:
-                # Round to lot size (100)
-                action_shares = (diff // 100) * 100
-                if action_shares > 0:
-                    pos["action"] = "buy"
-                    pos["action_shares"] = action_shares
-                    pos["action_lots"] = action_shares // 100
-                    buy_count += 1
-                else:
-                    pos["action"] = "hold"
-                    pos["action_shares"] = 0
-                    pos["action_lots"] = 0
-                    hold_count += 1
-            elif diff < 0:
-                action_shares = (abs(diff) // 100) * 100
-                if action_shares > 0:
-                    pos["action"] = "sell"
-                    pos["action_shares"] = action_shares
-                    pos["action_lots"] = action_shares // 100
-                    sell_count += 1
-                else:
-                    pos["action"] = "hold"
-                    pos["action_shares"] = 0
-                    pos["action_lots"] = 0
-                    hold_count += 1
-            else:
-                pos["action"] = "hold"
-                pos["action_shares"] = 0
-                pos["action_lots"] = 0
-                hold_count += 1
-
-        # Update summary with recalculated counts
         summary = portfolio_data.get("summary", {})
-        summary["buy_count"] = buy_count
-        summary["sell_count"] = sell_count
-        summary["hold_count"] = hold_count
 
         return LatestPortfolioResponse(
             success=True,
@@ -307,64 +257,10 @@ def get_dashboard_summary():
                     with open(latest_file, "r", encoding="utf-8") as f:
                         portfolio_data = json.load(f)
 
+                    # Use portfolio file data directly - it contains the correct
+                    # current_shares and action calculations from generation time
                     positions = portfolio_data.get("positions", [])
-
-                    # Load current holdings to recalculate actions
-                    holdings_file = TARGET_PORTFOLIO_DIR / "current_holdings.json"
-                    current_holdings = {}
-                    if holdings_file.exists():
-                        with open(holdings_file, "r", encoding="utf-8") as f:
-                            holdings_data = json.load(f)
-                            current_holdings = holdings_data.get("holdings", {})
-
-                    # Recalculate actions based on current holdings
-                    buy_count = 0
-                    sell_count = 0
-                    hold_count = 0
-                    for pos in positions:
-                        symbol = pos.get("symbol", "")
-                        target_shares = pos.get("target_shares", 0)
-                        # Update current_shares from actual holdings
-                        pos["current_shares"] = current_holdings.get(symbol, 0)
-                        # Recalculate action
-                        diff = target_shares - pos["current_shares"]
-                        if diff > 0:
-                            # Round to lot size (100)
-                            action_shares = (diff // 100) * 100
-                            if action_shares > 0:
-                                pos["action"] = "buy"
-                                pos["action_shares"] = action_shares
-                                pos["action_lots"] = action_shares // 100
-                                buy_count += 1
-                            else:
-                                pos["action"] = "hold"
-                                pos["action_shares"] = 0
-                                pos["action_lots"] = 0
-                                hold_count += 1
-                        elif diff < 0:
-                            action_shares = (abs(diff) // 100) * 100
-                            if action_shares > 0:
-                                pos["action"] = "sell"
-                                pos["action_shares"] = action_shares
-                                pos["action_lots"] = action_shares // 100
-                                sell_count += 1
-                            else:
-                                pos["action"] = "hold"
-                                pos["action_shares"] = 0
-                                pos["action_lots"] = 0
-                                hold_count += 1
-                        else:
-                            pos["action"] = "hold"
-                            pos["action_shares"] = 0
-                            pos["action_lots"] = 0
-                            hold_count += 1
-
-                    summary = {
-                        "buy_count": buy_count,
-                        "sell_count": sell_count,
-                        "hold_count": hold_count,
-                        "total_positions": len(positions),
-                    }
+                    summary = portfolio_data.get("summary", {})
 
                     # Store summary info for alerts
                     portfolio_summary_info = {
@@ -375,9 +271,13 @@ def get_dashboard_summary():
                         "hold_count": summary.get("hold_count", 0),
                     }
 
-                    # Sort by rank and take top 10
+                    # Filter to only include positions with holdings (target_shares > 0)
+                    # then sort by rank and take top 10
+                    holdings_only = [
+                        p for p in positions if p.get("target_shares", 0) > 0
+                    ]
                     sorted_positions = sorted(
-                        positions, key=lambda x: x.get("rank", 999)
+                        holdings_only, key=lambda x: x.get("rank", 999)
                     )[:10]
 
                     for pos in sorted_positions:
@@ -398,6 +298,7 @@ def get_dashboard_summary():
                                 weight=pos.get("weight", 0)
                                 * 100,  # Convert to percentage
                                 target_value=pos.get("target_value", 0),
+                                target_shares=pos.get("target_shares", 0),
                                 action=pos.get("action", "hold"),
                             )
                         )

@@ -159,6 +159,164 @@ async function fetchLatestPortfolio() {
   return response.json();
 }
 
+// Trading Orders Section Component - Shows buy/sell/hold orders separately
+function TradingOrdersSection({
+  positions,
+}: {
+  positions: PortfolioPosition[];
+}) {
+  const buyPositions = positions.filter((p) => p.action === "buy");
+  const sellPositions = positions.filter((p) => p.action === "sell");
+  const holdPositions = positions.filter((p) => p.action === "hold");
+
+  const hasOrders = buyPositions.length > 0 || sellPositions.length > 0;
+
+  // Render a single action table
+  const renderActionTable = (
+    items: PortfolioPosition[],
+    actionType: "buy" | "sell" | "hold",
+  ) => {
+    if (items.length === 0) return null;
+
+    const config = {
+      buy: {
+        title: "Buy Orders",
+        emoji: "🟢",
+        headerBg: "bg-green-500",
+        borderColor: "border-green-200 dark:border-green-800",
+        rowHover: "hover:bg-green-50 dark:hover:bg-green-950/30",
+      },
+      sell: {
+        title: "Sell Orders",
+        emoji: "🔴",
+        headerBg: "bg-red-500",
+        borderColor: "border-red-200 dark:border-red-800",
+        rowHover: "hover:bg-red-50 dark:hover:bg-red-950/30",
+      },
+      hold: {
+        title: "Hold Positions",
+        emoji: "⚪",
+        headerBg: "bg-gray-400",
+        borderColor: "border-gray-200 dark:border-gray-700",
+        rowHover: "hover:bg-gray-50 dark:hover:bg-gray-900/30",
+      },
+    };
+
+    const c = config[actionType];
+    const actionLabel =
+      actionType === "buy" ? "Buy" : actionType === "sell" ? "Sell" : "Adjust";
+
+    return (
+      <div className="mb-4">
+        <div
+          className={`${c.headerBg} text-white px-4 py-2 rounded-t-lg font-semibold flex items-center gap-2`}
+        >
+          <span>{c.emoji}</span>
+          <span>
+            {c.title} ({items.length})
+          </span>
+        </div>
+        <div
+          className={`border ${c.borderColor} border-t-0 rounded-b-lg overflow-hidden`}
+        >
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 dark:bg-gray-800/50">
+              <tr>
+                <th className="h-10 px-3 text-left font-medium w-28">Symbol</th>
+                <th className="h-10 px-3 text-left font-medium">Name</th>
+                <th className="h-10 px-3 text-center font-medium w-16">Type</th>
+                <th className="h-10 px-3 text-right font-medium w-24">
+                  Ref Price
+                </th>
+                <th className="h-10 px-3 text-right font-medium w-20">
+                  {actionLabel} Lots
+                </th>
+                <th className="h-10 px-3 text-right font-medium w-24">
+                  {actionLabel} Shares
+                </th>
+                <th className="h-10 px-3 text-right font-medium w-28">
+                  Target Value
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item, index) => (
+                <tr
+                  key={item.symbol || index}
+                  className={`border-t border-gray-100 dark:border-gray-800 ${c.rowHover}`}
+                >
+                  <td className="px-3 py-3 font-mono font-bold text-base">
+                    {item.symbol}
+                  </td>
+                  <td className="px-3 py-3">{item.name}</td>
+                  <td className="px-3 py-3 text-center">
+                    <Badge
+                      variant="outline"
+                      className={
+                        item.type === "etf"
+                          ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                          : ""
+                      }
+                    >
+                      {item.type === "etf" ? "ETF" : "Stock"}
+                    </Badge>
+                  </td>
+                  <td className="px-3 py-3 text-right font-medium text-base">
+                    ¥{(item.reference_price || 0).toFixed(3)}
+                  </td>
+                  <td className="px-3 py-3 text-right font-bold text-lg">
+                    {(item.action_lots || 0).toLocaleString()}
+                  </td>
+                  <td className="px-3 py-3 text-right text-muted-foreground">
+                    {(item.action_shares || 0).toLocaleString()}
+                  </td>
+                  <td className="px-3 py-3 text-right">
+                    ¥{(item.target_value || 0).toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <Card className="border-orange-200 dark:border-orange-900">
+      <CardHeader className="pb-3 bg-orange-50/50 dark:bg-orange-950/20">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-orange-600" />
+          Trading Orders
+        </CardTitle>
+        <CardDescription>
+          {hasOrders
+            ? `${buyPositions.length} buy, ${sellPositions.length} sell, ${holdPositions.length} hold`
+            : "No trading orders - all positions are held"}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="pt-4">
+        {hasOrders ? (
+          <>
+            {renderActionTable(buyPositions, "buy")}
+            {renderActionTable(sellPositions, "sell")}
+            {holdPositions.length > 0 &&
+              renderActionTable(holdPositions, "hold")}
+          </>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            <div className="text-4xl mb-2">✅</div>
+            <p className="font-medium">No Trading Required</p>
+            <p className="text-sm">
+              All {holdPositions.length} positions are held with no changes
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export const Route = createFileRoute("/_layout/target-portfolio")({
   component: TargetPortfolioPage,
   head: () => ({
@@ -204,12 +362,16 @@ function TargetPortfolioPage() {
   // Always use ETF Enhanced Indexing format (legacy format removed)
   const isETFStrategy = true;
 
-  // Filter and paginate portfolio
+  // Filter and paginate portfolio - only show positions with holdings (target_shares > 0)
   const filteredPortfolio = useMemo(() => {
     const portfolio = lastRoutineResult?.target_portfolio || [];
-    if (!portfolioSearch.trim()) return portfolio;
+    // First filter to only include positions with target_shares > 0
+    const holdingsOnly = portfolio.filter(
+      (item: any) => (item.target_shares || 0) > 0,
+    );
+    if (!portfolioSearch.trim()) return holdingsOnly;
     const search = portfolioSearch.toLowerCase();
-    return portfolio.filter((item: any) => {
+    return holdingsOnly.filter((item: any) => {
       // Support both new (symbol) and legacy (instrument) formats
       const code = item.symbol || item.instrument || "";
       const name = item.name || "";
@@ -580,16 +742,23 @@ function TargetPortfolioPage() {
             </Card>
           )}
 
-          {/* Portfolio Holdings Table - Green theme */}
+          {/* Trading Orders Section - Split by action type */}
+          {hasPortfolio && (
+            <TradingOrdersSection
+              positions={lastRoutineResult?.target_portfolio || []}
+            />
+          )}
+
+          {/* Full Holdings Table */}
           {hasPortfolio ? (
-            <Card className="border-green-200 dark:border-green-900">
-              <CardHeader className="pb-3 bg-green-50/50 dark:bg-green-950/20">
+            <Card className="border-blue-200 dark:border-blue-900">
+              <CardHeader className="pb-3 bg-blue-50/50 dark:bg-blue-950/20">
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-green-600" />
-                  Portfolio Holdings
+                  <TrendingUp className="h-5 w-5 text-blue-600" />
+                  Full Holdings Detail
                 </CardTitle>
                 <CardDescription>
-                  All {filteredPortfolio.length} positions with trading actions
+                  Complete portfolio with {filteredPortfolio.length} positions
                 </CardDescription>
               </CardHeader>
               <CardContent className="pt-4">
@@ -602,54 +771,42 @@ function TargetPortfolioPage() {
                       setPortfolioSearch(e.target.value);
                       setPortfolioPage(0);
                     }}
-                    className="max-w-xs border-green-200 focus:border-green-400"
+                    className="max-w-xs border-blue-200 focus:border-blue-400"
                   />
                 </div>
 
-                {/* Portfolio table */}
-                <div className="rounded-lg border border-green-200 dark:border-green-900 overflow-hidden">
+                {/* Portfolio table - Shows holdings AFTER executing orders */}
+                <div className="rounded-lg border border-blue-200 dark:border-blue-900 overflow-hidden">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-green-50 dark:bg-green-950/50 border-b border-green-200 dark:border-green-900">
+                    <table className="w-full text-sm table-fixed">
+                      <thead className="bg-blue-50 dark:bg-blue-950/50 border-b border-blue-200 dark:border-blue-900">
                         <tr>
-                          <th className="h-11 px-3 text-center font-semibold text-green-800 dark:text-green-300 w-14">
+                          <th className="h-11 px-2 text-center font-semibold text-blue-800 dark:text-blue-300 w-12">
                             Rank
                           </th>
-                          <th className="h-11 px-3 text-left font-semibold text-green-800 dark:text-green-300 w-28">
+                          <th className="h-11 px-2 text-left font-semibold text-blue-800 dark:text-blue-300 w-24">
                             Symbol
                           </th>
-                          <th className="h-11 px-3 text-left font-semibold text-green-800 dark:text-green-300 min-w-[100px]">
+                          <th className="h-11 px-2 text-left font-semibold text-blue-800 dark:text-blue-300 w-24">
                             Name
                           </th>
-                          <th className="h-11 px-3 text-center font-semibold text-green-800 dark:text-green-300 w-16">
+                          <th className="h-11 px-2 text-center font-semibold text-blue-800 dark:text-blue-300 w-16">
                             Type
                           </th>
-                          <th className="h-11 px-3 text-right font-semibold text-green-800 dark:text-green-300 w-20">
+                          <th className="h-11 px-2 text-right font-semibold text-blue-800 dark:text-blue-300 w-16">
                             Weight
                           </th>
-                          <th className="h-11 px-3 text-right font-semibold text-green-800 dark:text-green-300 w-20">
+                          <th className="h-11 px-2 text-right font-semibold text-blue-800 dark:text-blue-300 w-16">
                             Score
                           </th>
-                          <th className="h-11 px-3 text-right font-semibold text-green-800 dark:text-green-300 w-24">
+                          <th className="h-11 px-2 text-right font-semibold text-blue-800 dark:text-blue-300 w-20">
                             Price
                           </th>
-                          <th className="h-11 px-3 text-right font-semibold text-green-800 dark:text-green-300 w-28">
-                            Target Value
-                          </th>
-                          <th className="h-11 px-3 text-right font-semibold text-green-800 dark:text-green-300 w-24">
-                            Target Shares
-                          </th>
-                          <th className="h-11 px-3 text-right font-semibold text-green-800 dark:text-green-300 w-24">
-                            Current
-                          </th>
-                          <th className="h-11 px-3 text-center font-semibold text-green-800 dark:text-green-300 w-20">
-                            Action
-                          </th>
-                          <th className="h-11 px-3 text-right font-semibold text-green-800 dark:text-green-300 w-24">
+                          <th className="h-11 px-2 text-right font-semibold text-blue-800 dark:text-blue-300 w-20">
                             Shares
                           </th>
-                          <th className="h-11 px-3 text-right font-semibold text-green-800 dark:text-green-300 w-20">
-                            Lots
+                          <th className="h-11 px-2 text-right font-semibold text-blue-800 dark:text-blue-300 w-24">
+                            Value
                           </th>
                         </tr>
                       </thead>
@@ -657,78 +814,45 @@ function TargetPortfolioPage() {
                         {paginatedPortfolio.map((item: any, index: number) => (
                           <tr
                             key={item.symbol || index}
-                            className={`border-b border-green-100 dark:border-green-900/50 hover:bg-green-50/50 dark:hover:bg-green-950/30 ${item.type === "etf" ? "bg-emerald-50/50 dark:bg-emerald-950/20" : ""}`}
+                            className={`border-b border-blue-100 dark:border-blue-900/50 hover:bg-blue-50/50 dark:hover:bg-blue-950/30 ${item.type === "etf" ? "bg-emerald-50/50 dark:bg-emerald-950/20" : ""}`}
                           >
-                            <td className="px-3 py-3 text-center font-medium text-green-700 dark:text-green-400">
+                            <td className="px-2 py-2 text-center font-medium text-blue-700 dark:text-blue-400">
                               {item.rank}
                             </td>
-                            <td className="px-3 py-3 font-mono font-semibold">
+                            <td className="px-2 py-2 font-mono font-semibold truncate">
                               {item.symbol}
                             </td>
                             <td
-                              className="px-3 py-3 truncate"
+                              className="px-2 py-2 truncate"
                               title={item.name}
                             >
                               {item.name}
                             </td>
-                            <td className="px-3 py-3 text-center">
+                            <td className="px-2 py-2 text-center">
                               <Badge
                                 className={
                                   item.type === "etf"
                                     ? "bg-emerald-500"
-                                    : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                                    : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
                                 }
                               >
                                 {item.type?.toUpperCase()}
                               </Badge>
                             </td>
-                            <td className="px-3 py-3 text-right font-medium">
-                              {((item.weight || 0) * 100).toFixed(2)}%
+                            <td className="px-2 py-2 text-right font-medium">
+                              {((item.weight || 0) * 100).toFixed(1)}%
                             </td>
-                            <td className="px-3 py-3 text-right text-muted-foreground">
+                            <td className="px-2 py-2 text-right text-muted-foreground">
                               {item.score != null ? item.score.toFixed(4) : "-"}
                             </td>
-                            <td className="px-3 py-3 text-right font-medium">
+                            <td className="px-2 py-2 text-right font-medium">
                               ¥{(item.reference_price || 0).toFixed(2)}
                             </td>
-                            <td className="px-3 py-3 text-right">
-                              ¥
-                              {(item.target_value || 0).toLocaleString(
-                                undefined,
-                                {
-                                  minimumFractionDigits: 2,
-                                  maximumFractionDigits: 2,
-                                },
-                              )}
-                            </td>
-                            <td className="px-3 py-3 text-right font-medium">
+                            <td className="px-2 py-2 text-right font-medium">
                               {(item.target_shares || 0).toLocaleString()}
                             </td>
-                            <td className="px-3 py-3 text-right text-muted-foreground">
-                              {(item.current_shares || 0).toLocaleString()}
-                            </td>
-                            <td className="px-3 py-3 text-center">
-                              <Badge
-                                className={`${
-                                  item.action === "buy"
-                                    ? "bg-green-500"
-                                    : item.action === "sell"
-                                      ? "bg-red-500"
-                                      : "bg-gray-400"
-                                }`}
-                              >
-                                {item.action?.toUpperCase()}
-                              </Badge>
-                            </td>
-                            <td
-                              className={`px-3 py-3 text-right font-medium ${item.action === "buy" ? "text-green-600" : item.action === "sell" ? "text-red-600" : ""}`}
-                            >
-                              {(item.action_shares || 0).toLocaleString()}
-                            </td>
-                            <td
-                              className={`px-3 py-3 text-right ${item.action === "buy" ? "text-green-600" : item.action === "sell" ? "text-red-600" : ""}`}
-                            >
-                              {item.action_lots || 0}
+                            <td className="px-2 py-2 text-right">
+                              ¥{(item.target_value || 0).toLocaleString()}
                             </td>
                           </tr>
                         ))}

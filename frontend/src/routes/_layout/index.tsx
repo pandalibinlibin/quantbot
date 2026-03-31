@@ -129,6 +129,7 @@ interface TargetPositionItem {
   type: string;
   weight: number;
   target_value: number;
+  target_shares: number;
   action: string;
 }
 
@@ -464,55 +465,52 @@ function Dashboard() {
               </div>
             ) : targetPositions.length > 0 ? (
               <div className="space-y-2">
-                {targetPositions.slice(0, 6).map((pos) => (
-                  <div
-                    key={pos.instrument}
-                    className="flex items-center justify-between py-1"
-                  >
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="text-xs text-muted-foreground w-4 flex-shrink-0">
-                        {pos.rank}
-                      </span>
-                      <Badge
-                        variant={pos.type === "etf" ? "default" : "outline"}
-                        className="text-xs flex-shrink-0"
-                      >
-                        {pos.type === "etf" ? "ETF" : "Alpha"}
-                      </Badge>
-                      <div className="min-w-0 flex-1">
-                        <span className="font-medium text-sm">
-                          {pos.instrument}
+                {/* Show top 6 holdings by weight (filter holdings, sort by weight desc, take 6) */}
+                {targetPositions
+                  .filter((pos) => pos.target_shares > 0)
+                  .sort((a, b) => b.weight - a.weight)
+                  .slice(0, 6)
+                  .map((pos) => (
+                    <div
+                      key={pos.instrument}
+                      className="flex items-center justify-between py-1"
+                    >
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="text-xs text-muted-foreground w-4 flex-shrink-0">
+                          {pos.rank}
                         </span>
-                        {pos.name && (
-                          <span className="text-xs text-muted-foreground ml-1 truncate">
-                            {pos.name}
+                        <Badge
+                          variant={pos.type === "etf" ? "default" : "outline"}
+                          className="text-xs flex-shrink-0"
+                        >
+                          {pos.type === "etf" ? "ETF" : "Alpha"}
+                        </Badge>
+                        <div className="min-w-0 flex-1">
+                          <span className="font-medium text-sm">
+                            {pos.instrument}
                           </span>
-                        )}
+                          {pos.name && (
+                            <span className="text-xs text-muted-foreground ml-1 truncate">
+                              {pos.name}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-sm text-muted-foreground flex-shrink-0">
                         {pos.weight.toFixed(1)}%
                       </span>
-                      <Badge
-                        variant={
-                          pos.action === "buy"
-                            ? "default"
-                            : pos.action === "sell"
-                              ? "destructive"
-                              : "secondary"
-                        }
-                        className="text-xs w-12 justify-center"
-                      >
-                        {pos.action}
-                      </Badge>
                     </div>
-                  </div>
-                ))}
-                {targetPositions.length > 6 && (
+                  ))}
+                {targetPositions.filter((pos) => pos.target_shares > 0).length >
+                  6 && (
                   <Link to="/target-portfolio">
                     <Button variant="link" size="sm" className="w-full">
-                      View all {targetPositions.length} positions
+                      View all{" "}
+                      {
+                        targetPositions.filter((pos) => pos.target_shares > 0)
+                          .length
+                      }{" "}
+                      positions
                     </Button>
                   </Link>
                 )}

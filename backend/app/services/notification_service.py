@@ -857,37 +857,28 @@ class NotificationService:
         sell_rows = "".join([build_action_row(p) for p in sell_positions])
         hold_rows = "".join([build_action_row(p) for p in hold_positions])
 
-        # Build detailed positions table
+        # Build detailed positions table - shows holdings AFTER executing orders
         def build_detail_row(pos):
-            action_color = (
-                "#27ae60"
-                if pos.get("action") == "buy"
-                else ("#e74c3c" if pos.get("action") == "sell" else "#666")
-            )
-            action_text = (
-                "买入"
-                if pos.get("action") == "buy"
-                else ("卖出" if pos.get("action") == "sell" else "持有")
-            )
             pos_type = "ETF" if pos.get("type") == "etf" else "股票"
+            score = pos.get("score", 0)
+            score_str = f"{score:.4f}" if score else "-"
             return f"""
             <tr style="border-bottom: 1px solid #eee;">
                 <td style="padding: 8px; text-align: center;">{pos.get('rank', '-')}</td>
-                <td style="padding: 8px;"><strong>{pos.get('symbol', '')}</strong><br><small style="color: #666;">{pos.get('name', '')}</small></td>
+                <td style="padding: 8px;"><strong>{pos.get('symbol', '')}</strong></td>
+                <td style="padding: 8px;">{pos.get('name', '')}</td>
                 <td style="padding: 8px; text-align: center;"><small>{pos_type}</small></td>
-                <td style="padding: 8px; text-align: right;">{pos.get('score', 0):.4f}</td>
                 <td style="padding: 8px; text-align: right;">{pos.get('weight', 0):.2%}</td>
-                <td style="padding: 8px; text-align: right;">¥{pos.get('target_value', 0):,.0f}</td>
+                <td style="padding: 8px; text-align: right;">{score_str}</td>
                 <td style="padding: 8px; text-align: right;">¥{pos.get('reference_price', 0):,.3f}</td>
                 <td style="padding: 8px; text-align: right;">{pos.get('target_shares', 0):,}</td>
-                <td style="padding: 8px; text-align: right;">{pos.get('current_shares', 0):,}</td>
-                <td style="padding: 8px; text-align: center; color: {action_color};"><strong>{action_text}</strong></td>
-                <td style="padding: 8px; text-align: right; font-weight: bold;">{pos.get('action_lots', 0):,}手</td>
-                <td style="padding: 8px; text-align: right;">{pos.get('action_shares', 0):,}股</td>
+                <td style="padding: 8px; text-align: right;">¥{pos.get('target_value', 0):,.0f}</td>
             </tr>
             """
 
-        detail_rows = "".join([build_detail_row(p) for p in positions])
+        # Only include positions with holdings (target_shares > 0)
+        holdings_only = [p for p in positions if p.get("target_shares", 0) > 0]
+        detail_rows = "".join([build_detail_row(p) for p in holdings_only])
 
         return f"""
         <html>
@@ -1051,24 +1042,21 @@ class NotificationService:
                     '''}
                 </div>
                 
-                <!-- Detailed Portfolio -->
+                <!-- Detailed Portfolio - Holdings AFTER executing orders -->
                 <div class="section">
-                    <div class="section-title">📋 完整持仓明细</div>
+                    <div class="section-title">📋 完整持仓明细（执行指令后）</div>
                     <table class="detail-table">
                         <thead>
                             <tr>
                                 <th style="width: 40px;">排名</th>
-                                <th>代码/名称</th>
+                                <th style="width: 90px;">代码</th>
+                                <th>名称</th>
                                 <th style="width: 50px;">类型</th>
-                                <th style="width: 65px; text-align: right;">分数</th>
                                 <th style="width: 55px; text-align: right;">权重</th>
-                                <th style="width: 85px; text-align: right;">目标金额</th>
+                                <th style="width: 65px; text-align: right;">分数</th>
                                 <th style="width: 75px; text-align: right;">参考价</th>
-                                <th style="width: 70px; text-align: right;">目标股数</th>
-                                <th style="width: 70px; text-align: right;">当前持股</th>
-                                <th style="width: 50px; text-align: center;">操作</th>
-                                <th style="width: 60px; text-align: right;">手数</th>
-                                <th style="width: 70px; text-align: right;">股数</th>
+                                <th style="width: 70px; text-align: right;">持股数</th>
+                                <th style="width: 85px; text-align: right;">市值</th>
                             </tr>
                         </thead>
                         <tbody>
