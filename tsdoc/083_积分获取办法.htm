@@ -1,0 +1,212 @@
+<!-- Page: 积分获取办法 -->
+<!DOCTYPE html><html lang="en" style="height:100%"><head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tushare数据</title>
+<meta content="免费股票数据,开源股票数据接口,股票数据,股票数据接口,python股票数据,财经数据,金融数据,行业大数据,区块链数据,量化投资,知识图谱" name="keywords">
+<meta name="description" content="Tushare为金融数据分析提供便捷、快速的接口，与投研和量化策略无缝对接">
+<meta content="index,follow" name="robots">
+<meta name="application-name" content="Tushare">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-192x192.png?v=811d9139fa2ea47f5595907da1f3c34d" sizes="192x192">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-160x160.png" sizes="160x160">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-96x96.png?v=4960eb8103c873c586ad41ef3f53db84" sizes="96x96">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-16x16.png?v=f7299bbce2cff4db7e3dfa6fb8c6a73c" sizes="16x16">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-32x32.png?v=a5df4bdd9f96de59f57bb9a7a50d8f96" sizes="32x32">
+<link href="/static/vendors/bootstrap/dist/css/bootstrap.min.css?v=d7ac98c842e4ec59d2c21fef89fce09c" rel="stylesheet">
+<link href="/static/vendors/jstree/themes/default/style.min.css?v=779fc4b400d1748ec2fb99685ad80550" rel="stylesheet">
+<link href="/static/frontend/css/custom.css?v=afa9fcaf1ec38d2c9d46d41a0615a077" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/static/vendors/codemirror/lib/codemirror.css?v=fc217d502b05f65616356459c0ec1d62">
+<link rel="stylesheet" href="/static/vendors/tui-editor/dist/tui-editor.css?v=144c2e273b8a0e79b208d0d86ccd3999">
+<link rel="stylesheet" href="/static/vendors/tui-editor/dist/tui-editor-contents.css?v=3ed3a3154a2304c111075714324b0e7b">
+<link rel="stylesheet" href="/static/vendors/highlightjs/styles/github.css?v=bf6c14925e66edb1526b6c9489b3c042">
+<link rel="stylesheet" href="/static/common/css/md.css?v=087ce310ed8e685ac6526e2a54db3c68">
+
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+<script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+<![endif]-->
+<script type="text/javascript" src="/static/vendors/requirejs/require.js?v=6da8be361b9ee26c5e721e76c6d4afce"></script>
+<script type="text/javascript" src="/static/frontend/js/config.js?v=85f0040a930464e1c6dbc61026f79de8"></script>
+<script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="jquery" src="/static/vendors/jquery/dist/jquery.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="jstree" src="/static/vendors/jstree/jstree.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="bootstrap" src="/static/vendors/bootstrap/dist/js/bootstrap.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="validate" src="/static/vendors/jquery-validation/dist/jquery.validate.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="custom" src="/static/vendors/../frontend/js/custom.js"></script></head>
+<body style="height:100%">
+<div id="page" style="height:100%;">
+<header id="header" class="site-header">
+<nav id="navbar" class="site-navbar navbar navbar-static-top" role="navigation">
+<div class="container">
+<div class="navbar-header">
+<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse-1">
+<span class="sr-only">Toggle navigation</span>
+<i class="fa fa-bars" style="font-size: 1.5em; padding: 15px 0;"></i>
+</button>
+<h1 class="navbar-brand">
+<a href="/"><img src="/static/frontend/images/logo.png?v=39c50795cb540b4463114d1bf3135d6e" alt="tushare"></a>
+</h1>
+</div>
+<div class="collapse navbar-collapse" id="navbar-collapse-1">
+<ul id="navigation" class="nav navbar-nav navbar-right">
+<li><a href="/">首页</a></li>
+<li><a href="/document/1">平台介绍</a></li>
+<li><a href="/document/2">数据接口</a></li>
+<!-- <li><a href="/document/41">另类数据</a></li>-->
+<li><a href="/news/sina">资讯数据</a></li>
+<li><a href="/webclient">数据工具</a></li>
+<li><a href="/weborder/#/permission">社区捐助</a></li>
+
+<li class="navbar-tail"><a href="/weborder/#/login" class="nav-login">登录/注册</a></li>
+
+</ul>
+</div>
+</div>
+</nav>
+</header>
+
+
+<section id="document" class="whole">
+<div class="container">
+<div class="document">
+<nav class="sidebar col-md-3 col-sm-4 col-xs-12">
+
+            <div id="jstree" class="jstree jstree-1 jstree-default" role="tree" aria-multiselectable="true" tabindex="0" aria-activedescendant="j1_1" aria-busy="false"><ul class="jstree-container-ul jstree-children jstree-no-icons jstree-wholerow-ul jstree-no-dots" role="group"><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_1_anchor" id="j1_1" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=450" tabindex="-1" id="j1_1_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>Tushare skills</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_2_anchor" aria-expanded="false" id="j1_2" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=5" tabindex="-1" id="j1_2_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>平台介绍</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_8_anchor" aria-expanded="false" id="j1_8" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=37" tabindex="-1" id="j1_8_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>操作手册</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_12_anchor" aria-expanded="false" id="j1_12" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=129" tabindex="-1" id="j1_12_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>获取方式</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_17_anchor" aria-expanded="false" id="j1_17" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=229" tabindex="-1" id="j1_17_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>踩坑记录</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_24_anchor" aria-expanded="true" id="j1_24" class="jstree-node   in jstree-open"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=10" tabindex="-1" id="j1_24_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>平台服务</a><ul role="group" class="jstree-children"><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_25_anchor" id="j1_25" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=11" tabindex="-1" id="j1_25_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>API服务</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_26_anchor" id="j1_26" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=12" tabindex="-1" id="j1_26_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>定制服务</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_27_anchor" id="j1_27" class="jstree-node active jstree-clicked jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=13" tabindex="-1" id="j1_27_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>平台积分</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_28_anchor" id="j1_28" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=108" tabindex="-1" id="j1_28_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>数据更新说明</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_29_anchor" id="j1_29" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=290" tabindex="-1" id="j1_29_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>积分频次对应表</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_30_anchor" id="j1_30" class="jstree-node  jstree-leaf jstree-last"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=307" tabindex="-1" id="j1_30_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>积分到期查询</a></li></ul></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_31_anchor" aria-expanded="false" id="j1_31" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=30" tabindex="-1" id="j1_31_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>相关工具</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_40_anchor" aria-expanded="false" id="j1_40" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=167" tabindex="-1" id="j1_40_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>培训课程</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_45_anchor" aria-expanded="false" id="j1_45" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=205" tabindex="-1" id="j1_45_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>机构招聘</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_49_anchor" aria-expanded="false" id="j1_49" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=306" tabindex="-1" id="j1_49_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>高校服务</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_52_anchor" id="j1_52" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=270" tabindex="-1" id="j1_52_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>专业微群</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_53_anchor" id="j1_53" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=243" tabindex="-1" id="j1_53_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>社区捐助</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_54_anchor" aria-expanded="false" id="j1_54" class="jstree-node in jstree-closed jstree-last"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=411" tabindex="-1" id="j1_54_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>社区协议</a></li></ul></div>
+        
+</nav>
+<div class="content col-md-9 col-sm-8 col-xs-12">
+<div class="search-panel">
+<div class="search-container">
+<span class="fa fa-search search-icon"></span>
+<input type="text" class="search-input" placeholder="Search">
+</div>
+</div>
+<h2 id="_1">平台积分</h2>
+<p><strong>积分目的</strong></p>
+<hr>
+<p>为了让Tushare社区形成更好的互动，鼓励大家更多参与社区活动，也让数据从需求、规划、采集到服务变得更完善，同时为提高数据的及时性和准确性，Tushare Pro将引入积分概念。未来，平台积分将作为用户最重要的凭证参与社区活动，甚至分享平台更多权益。</p>
+<p><br></p>
+<p><strong>积分用途</strong></p>
+<hr>
+<p>一句话：积分很重要，是调取数据的权限，是社区贡献的分值。</p>
+<p><br></p>
+<p><strong>积分规则(初稿)</strong></p>
+<hr>
+<p>1、注册新用户，获得100分<br>
+2、成功推荐注册一个<strong>有效</strong>用户，获得50分（通过技术手段获得的积分会被清理）<br>
+3、修改个人真实资料，可获得20积分（小积分，大作用，120/320/520/620/x20就靠这20分了）<br>
+4、贡献代码，获采纳后，根据贡献大小可获得100～500积分<br>
+5、整理需求，并编写清晰的需求说明，获采纳后可获得50～500分<br>
+6、及时提交bug，确认后获得5～50分<br>
+7、积极参与社区维护，在社区群里帮助和解答用户问题，根据重要程度可获得50～200分 <br>
+8、在自己的博客或者互联网论坛发表Tushare相关的用途、用法等介绍性文章，通过QQ或微信截图和网址发给群主，根据<strong>文章质量</strong>可获得100～1000积分<br>
+9、加入Tushare社区群，在社区里可以获得其他用户的积分转让<br>
+10、<strong>在校</strong>学生：成为Tushare社区参与者，1、每年完成4-8篇使用Tushare数据案例文章；2、Tushare数据贡献者，需求整理、数据整理，提交问题等)和<strong>高校老师</strong>(可以Tushare作为教学案例等，开课老师可以统一申请学生权限)，绑定个人手机号（用手机注册也算）3、加入Tushare专门的QQ群（Tushare高校群 711623732）4、为学生提供专业人才招聘供需交流平台<br>
+11、付费加入微信<a href="https://tushare.pro/document/1?doc_id=270">专业群</a>，<strong>送5000积分</strong>，具体方法请参阅<a href="https://tushare.pro/document/1?doc_id=270">微信群入群说明</a><br>
+12、加入高级用户QQ群，群号：1059991854，点击<a href="https://tushare.pro/document/2?doc_id=244">付费</a>200，同时获得更多支持。<br>
+13、<a href="https://tushare.pro/document/2?doc_id=244" target="_blank">赞助</a>Tushare社区获得积分权限，不强求、不设限，金额随意，对我们的支持越大，开放的权限越多。<a href="https://tushare.pro/document/2?doc_id=244" target="_blank">捐助</a>时请把Tushare ID（登录Pro后可查看，ID或注册手机号/邮箱都可以）通过留言方式一同发送，收到后完成积分操作。</p>
+<p><br></p>
+<p><font color="red"><br>
+注：Tushare每年的服务器和网络带宽成本非常高，正常获取和捐助的积分及单独权限都是一年有效期，一年内不消耗不扣减。权限足够的话，调取的数据总量不设限制。另外，因捐助的费用会转入阿里云充值，一旦捐助不支持退款，请理解和支持。<br>
+</font><br>
+<br><br>
+<br></p>
+<p><strong>部分细节</strong></p>
+<p><b>提交BUG和需求：</b></p>
+<p>1、在<a href="https://github.com/waditu/Tushare" target="_blank">Tushare github</a>的issues里提交<br>
+2、写清楚问题（数据需求）和调取过程，问题能重现<br>
+3、在问题最后，留下你在tushare上注册的ID号<br>
+4、问题确认后，增加积分</p>
+<p><b>发表与Tushare相关的文章：</b><br>
+ 1、文章最好自己编写，内容包括但不限于Tushare的介绍、使用方法和过程、利用Tushare数据结合投资案例等<br>
+ 2、发布到个人或公司的公众号<br>
+ 3、发布到个人微博或博客<br>
+ 4、发布到各种财经论坛，大学校园论坛、知乎、雪球等<br>
+ 5、根据阅读量或读者反馈活跃度，对于高质量的文章，可超额赠送积分</p>
+</div>
+</div>
+</div>
+</section>
+
+<footer id="footer" class="site-footer">
+<div class="container">
+<div class="row footer-panel">
+<div class="col-md-4">
+<div class=""><img src="/static/frontend/images/wechat_public.png?v=847e8d705d3a409d000dce413ab5c257" alt=""></div>
+</div>
+<div class="col-md-4">
+<div class="title">使用文档</div>
+<div class="content">
+<ul>
+<li><a href="/document/1">平台介绍</a></li>
+<li><a href="/document/2">数据接口</a></li>
+<li><a href="/document/41">区块链</a></li>
+<li><a href="/news">资讯数据</a></li>
+</ul>
+</div>
+</div>
+<div class="col-md-4">
+<div class="title">关注我们</div>
+<div class="content">
+<ul>
+<li>公众号：waditu</li>
+<li>Github：<a href="https://github.com/waditu" target="_blank">https://github.com/waditu</a></li>
+<li>雪 球：<a href="https://xueqiu.com/u/9103835084" target="_blank">https://xueqiu.com/u/9103835084</a></li>
+<li>微 博：<a href="https://weibo.com/u/1304687120" target="_blank">https://weibo.com/u/1304687120</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="row footer-footer">
+<div class="copyright"><p>© 2018 Tushare <a href="https://beian.miit.gov.cn" target="_blank">
+"沪ICP备2020031644号"
+</a></p></div>
+</div>
+</div>
+</footer>
+
+</div>
+<div class="scroll-to-top" data-spy="affix" data-offset-top="200">
+<a href="#page" class="smooth-scroll">置顶</a>
+</div>
+
+<script type="text/javascript">
+require(['custom']);
+</script>
+
+
+<script type="text/javascript">
+require([
+'jquery',
+'jstree'
+], function ($, jstree) {
+$(document).ready(function() {
+const tree = $('#jstree').jstree({
+// plugins : ['state']
+plugins : ['wholerow'],
+core: {
+themes: {
+multiple: false,
+icons: false,
+stripes: false,
+expand_selected_onload: true
+}
+}
+});
+tree.on("select_node.jstree", function (e, data) {
+window.location = `${location.protocol}//${location.host}${data.node.a_attr.href}`;
+});
+const searchInput = document.querySelector('.search-input');
+const searchIcon = document.querySelector('.search-icon');
+const onSearch = () => {
+const query = searchInput.value;
+if (query) {
+window.location = `${location.protocol}//${location.host}/document/search?q=${encodeURIComponent(query)}`;
+}
+}
+searchInput.addEventListener('change', onSearch);
+searchIcon.addEventListener('click', onSearch);
+});
+});
+</script>
+
+
+</body></html>

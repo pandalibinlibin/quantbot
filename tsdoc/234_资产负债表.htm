@@ -1,0 +1,1229 @@
+<!-- Page: 资产负债表 -->
+<!DOCTYPE html><html lang="en" style="height:100%"><head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tushare数据</title>
+<meta content="免费股票数据,开源股票数据接口,股票数据,股票数据接口,python股票数据,财经数据,金融数据,行业大数据,区块链数据,量化投资,知识图谱" name="keywords">
+<meta name="description" content="Tushare为金融数据分析提供便捷、快速的接口，与投研和量化策略无缝对接">
+<meta content="index,follow" name="robots">
+<meta name="application-name" content="Tushare">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-192x192.png?v=811d9139fa2ea47f5595907da1f3c34d" sizes="192x192">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-160x160.png" sizes="160x160">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-96x96.png?v=4960eb8103c873c586ad41ef3f53db84" sizes="96x96">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-16x16.png?v=f7299bbce2cff4db7e3dfa6fb8c6a73c" sizes="16x16">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-32x32.png?v=a5df4bdd9f96de59f57bb9a7a50d8f96" sizes="32x32">
+<link href="/static/vendors/bootstrap/dist/css/bootstrap.min.css?v=d7ac98c842e4ec59d2c21fef89fce09c" rel="stylesheet">
+<link href="/static/vendors/jstree/themes/default/style.min.css?v=779fc4b400d1748ec2fb99685ad80550" rel="stylesheet">
+<link href="/static/frontend/css/custom.css?v=afa9fcaf1ec38d2c9d46d41a0615a077" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/static/vendors/codemirror/lib/codemirror.css?v=fc217d502b05f65616356459c0ec1d62">
+<link rel="stylesheet" href="/static/vendors/tui-editor/dist/tui-editor.css?v=144c2e273b8a0e79b208d0d86ccd3999">
+<link rel="stylesheet" href="/static/vendors/tui-editor/dist/tui-editor-contents.css?v=3ed3a3154a2304c111075714324b0e7b">
+<link rel="stylesheet" href="/static/vendors/highlightjs/styles/github.css?v=bf6c14925e66edb1526b6c9489b3c042">
+<link rel="stylesheet" href="/static/common/css/md.css?v=087ce310ed8e685ac6526e2a54db3c68">
+
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+<script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+<![endif]-->
+<script type="text/javascript" src="/static/vendors/requirejs/require.js?v=6da8be361b9ee26c5e721e76c6d4afce"></script>
+<script type="text/javascript" src="/static/frontend/js/config.js?v=85f0040a930464e1c6dbc61026f79de8"></script>
+<script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="jquery" src="/static/vendors/jquery/dist/jquery.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="jstree" src="/static/vendors/jstree/jstree.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="bootstrap" src="/static/vendors/bootstrap/dist/js/bootstrap.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="validate" src="/static/vendors/jquery-validation/dist/jquery.validate.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="custom" src="/static/vendors/../frontend/js/custom.js"></script></head>
+<body style="height:100%">
+<div id="page" style="height:100%;">
+<header id="header" class="site-header">
+<nav id="navbar" class="site-navbar navbar navbar-static-top" role="navigation">
+<div class="container">
+<div class="navbar-header">
+<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse-1">
+<span class="sr-only">Toggle navigation</span>
+<i class="fa fa-bars" style="font-size: 1.5em; padding: 15px 0;"></i>
+</button>
+<h1 class="navbar-brand">
+<a href="/"><img src="/static/frontend/images/logo.png?v=39c50795cb540b4463114d1bf3135d6e" alt="tushare"></a>
+</h1>
+</div>
+<div class="collapse navbar-collapse" id="navbar-collapse-1">
+<ul id="navigation" class="nav navbar-nav navbar-right">
+<li><a href="/">首页</a></li>
+<li><a href="/document/1">平台介绍</a></li>
+<li><a href="/document/2">数据接口</a></li>
+<!-- <li><a href="/document/41">另类数据</a></li>-->
+<li><a href="/news/sina">资讯数据</a></li>
+<li><a href="/webclient">数据工具</a></li>
+<li><a href="/weborder/#/permission">社区捐助</a></li>
+
+<li class="navbar-tail"><a href="/weborder/#/login" class="nav-login">登录/注册</a></li>
+
+</ul>
+</div>
+</div>
+</nav>
+</header>
+
+
+<section id="document" class="whole">
+<div class="container">
+<div class="document">
+<nav class="sidebar col-md-3 col-sm-4 col-xs-12">
+
+            <div id="jstree" class="jstree jstree-1 jstree-default" role="tree" aria-multiselectable="true" tabindex="0" aria-activedescendant="j1_1" aria-busy="false"><ul class="jstree-container-ul jstree-children jstree-no-icons jstree-wholerow-ul jstree-no-dots" role="group"><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_1_anchor" aria-expanded="true" id="j1_1" class="jstree-node   in jstree-open"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=14" tabindex="-1" id="j1_1_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>股票数据</a><ul role="group" class="jstree-children"><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_2_anchor" aria-expanded="false" id="j1_2" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=24" tabindex="-1" id="j1_2_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>基础数据</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_16_anchor" aria-expanded="false" id="j1_16" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=15" tabindex="-1" id="j1_16_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>行情数据</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_40_anchor" aria-expanded="true" id="j1_40" class="jstree-node   in jstree-open"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=16" tabindex="-1" id="j1_40_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>财务数据</a><ul role="group" class="jstree-children"><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_41_anchor" id="j1_41" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=33" tabindex="-1" id="j1_41_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>利润表</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_42_anchor" id="j1_42" class="jstree-node active jstree-clicked jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=36" tabindex="-1" id="j1_42_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>资产负债表</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_43_anchor" id="j1_43" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=44" tabindex="-1" id="j1_43_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>现金流量表</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_44_anchor" id="j1_44" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=45" tabindex="-1" id="j1_44_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>业绩预告</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_45_anchor" id="j1_45" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=46" tabindex="-1" id="j1_45_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>业绩快报</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_46_anchor" id="j1_46" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=103" tabindex="-1" id="j1_46_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>分红送股数据</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_47_anchor" id="j1_47" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=79" tabindex="-1" id="j1_47_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>财务指标数据</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_48_anchor" id="j1_48" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=80" tabindex="-1" id="j1_48_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>财务审计意见</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_49_anchor" id="j1_49" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=81" tabindex="-1" id="j1_49_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>主营业务构成</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_50_anchor" id="j1_50" class="jstree-node  jstree-leaf jstree-last"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=162" tabindex="-1" id="j1_50_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>财报披露日期表</a></li></ul></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_51_anchor" aria-expanded="false" id="j1_51" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=17" tabindex="-1" id="j1_51_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>参考数据</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_66_anchor" aria-expanded="false" id="j1_66" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=291" tabindex="-1" id="j1_66_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>特色数据</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_80_anchor" aria-expanded="false" id="j1_80" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=330" tabindex="-1" id="j1_80_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>两融及转融通</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_88_anchor" aria-expanded="false" id="j1_88" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=342" tabindex="-1" id="j1_88_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>资金流向数据</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_97_anchor" aria-expanded="false" id="j1_97" class="jstree-node in jstree-closed jstree-last"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=346" tabindex="-1" id="j1_97_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>打板专题数据</a></li></ul></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_122_anchor" aria-expanded="false" id="j1_122" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=384" tabindex="-1" id="j1_122_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>ETF专题</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_132_anchor" aria-expanded="false" id="j1_132" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=93" tabindex="-1" id="j1_132_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>指数专题</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_152_anchor" aria-expanded="false" id="j1_152" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=18" tabindex="-1" id="j1_152_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>公募基金</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_161_anchor" aria-expanded="false" id="j1_161" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=134" tabindex="-1" id="j1_161_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>期货数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_176_anchor" aria-expanded="false" id="j1_176" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=283" tabindex="-1" id="j1_176_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>现货数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_179_anchor" aria-expanded="false" id="j1_179" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=157" tabindex="-1" id="j1_179_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>期权数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_183_anchor" aria-expanded="false" id="j1_183" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=184" tabindex="-1" id="j1_183_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>债券专题</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_199_anchor" aria-expanded="false" id="j1_199" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=177" tabindex="-1" id="j1_199_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>外汇数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_202_anchor" aria-expanded="false" id="j1_202" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=190" tabindex="-1" id="j1_202_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>港股数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_214_anchor" aria-expanded="false" id="j1_214" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=251" tabindex="-1" id="j1_214_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>美股数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_224_anchor" aria-expanded="false" id="j1_224" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=82" tabindex="-1" id="j1_224_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>行业经济</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_234_anchor" aria-expanded="false" id="j1_234" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=147" tabindex="-1" id="j1_234_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>宏观经济</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_263_anchor" aria-expanded="false" id="j1_263" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=142" tabindex="-1" id="j1_263_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>大模型语料专题数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_272_anchor" aria-expanded="false" id="j1_272" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=263" tabindex="-1" id="j1_272_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>财富管理</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_276_anchor" id="j1_276" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=209" tabindex="-1" id="j1_276_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>数据索引</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_277_anchor" id="j1_277" class="jstree-node  jstree-leaf jstree-last"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=244" tabindex="-1" id="j1_277_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>社区捐助</a></li></ul></div>
+        
+</nav>
+<div class="content col-md-9 col-sm-8 col-xs-12">
+<div class="search-panel">
+<div class="search-container">
+<span class="fa fa-search search-icon"></span>
+<input type="text" class="search-input" placeholder="Search">
+</div>
+</div>
+<h2 id="_1">资产负债表</h2>
+<hr>
+<p>接口：balancesheet，可以通过<a href="https://tushare.pro/webclient/"><strong>数据工具</strong></a>调试和查看数据。<br>
+描述：获取上市公司资产负债表<br>
+积分：用户需要至少2000积分才可以调取，具体请参阅<a href="https://tushare.pro/document/1?doc_id=13">积分获取办法</a><br>
+<font color="red"><br>
+提示：当前接口只能按单只股票获取其历史数据，如果需要获取某一季度全部上市公司数据，请使用balancesheet_vip接口（参数一致），需积攒5000积分。<br>
+</font></p>
+<p><strong>输入参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>必选</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ts_code</td>
+<td>str</td>
+<td>Y</td>
+<td>股票代码</td>
+</tr>
+<tr>
+<td>ann_date</td>
+<td>str</td>
+<td>N</td>
+<td>公告日期(YYYYMMDD格式，下同)</td>
+</tr>
+<tr>
+<td>start_date</td>
+<td>str</td>
+<td>N</td>
+<td>公告日开始日期</td>
+</tr>
+<tr>
+<td>end_date</td>
+<td>str</td>
+<td>N</td>
+<td>公告日结束日期</td>
+</tr>
+<tr>
+<td>period</td>
+<td>str</td>
+<td>N</td>
+<td>报告期(每个季度最后一天的日期，比如20171231表示年报，20170630半年报，20170930三季报)</td>
+</tr>
+<tr>
+<td>report_type</td>
+<td>str</td>
+<td>N</td>
+<td>报告类型：见下方详细说明</td>
+</tr>
+<tr>
+<td>comp_type</td>
+<td>str</td>
+<td>N</td>
+<td>公司类型：1一般工商业 2银行 3保险 4证券</td>
+</tr>
+</tbody>
+</table>
+<p><strong>输出参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>默认显示</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ts_code</td>
+<td>str</td>
+<td>Y</td>
+<td>TS股票代码</td>
+</tr>
+<tr>
+<td>ann_date</td>
+<td>str</td>
+<td>Y</td>
+<td>公告日期</td>
+</tr>
+<tr>
+<td>f_ann_date</td>
+<td>str</td>
+<td>Y</td>
+<td>实际公告日期</td>
+</tr>
+<tr>
+<td>end_date</td>
+<td>str</td>
+<td>Y</td>
+<td>报告期</td>
+</tr>
+<tr>
+<td>report_type</td>
+<td>str</td>
+<td>Y</td>
+<td>报表类型</td>
+</tr>
+<tr>
+<td>comp_type</td>
+<td>str</td>
+<td>Y</td>
+<td>公司类型(1一般工商业2银行3保险4证券)</td>
+</tr>
+<tr>
+<td>end_type</td>
+<td>str</td>
+<td>Y</td>
+<td>报告期类型</td>
+</tr>
+<tr>
+<td>total_share</td>
+<td>float</td>
+<td>Y</td>
+<td>期末总股本</td>
+</tr>
+<tr>
+<td>cap_rese</td>
+<td>float</td>
+<td>Y</td>
+<td>资本公积金</td>
+</tr>
+<tr>
+<td>undistr_porfit</td>
+<td>float</td>
+<td>Y</td>
+<td>未分配利润</td>
+</tr>
+<tr>
+<td>surplus_rese</td>
+<td>float</td>
+<td>Y</td>
+<td>盈余公积金</td>
+</tr>
+<tr>
+<td>special_rese</td>
+<td>float</td>
+<td>Y</td>
+<td>专项储备</td>
+</tr>
+<tr>
+<td>money_cap</td>
+<td>float</td>
+<td>Y</td>
+<td>货币资金</td>
+</tr>
+<tr>
+<td>trad_asset</td>
+<td>float</td>
+<td>Y</td>
+<td>交易性金融资产</td>
+</tr>
+<tr>
+<td>notes_receiv</td>
+<td>float</td>
+<td>Y</td>
+<td>应收票据</td>
+</tr>
+<tr>
+<td>accounts_receiv</td>
+<td>float</td>
+<td>Y</td>
+<td>应收账款</td>
+</tr>
+<tr>
+<td>oth_receiv</td>
+<td>float</td>
+<td>Y</td>
+<td>其他应收款</td>
+</tr>
+<tr>
+<td>prepayment</td>
+<td>float</td>
+<td>Y</td>
+<td>预付款项</td>
+</tr>
+<tr>
+<td>div_receiv</td>
+<td>float</td>
+<td>Y</td>
+<td>应收股利</td>
+</tr>
+<tr>
+<td>int_receiv</td>
+<td>float</td>
+<td>Y</td>
+<td>应收利息</td>
+</tr>
+<tr>
+<td>inventories</td>
+<td>float</td>
+<td>Y</td>
+<td>存货</td>
+</tr>
+<tr>
+<td>amor_exp</td>
+<td>float</td>
+<td>Y</td>
+<td>待摊费用</td>
+</tr>
+<tr>
+<td>nca_within_1y</td>
+<td>float</td>
+<td>Y</td>
+<td>一年内到期的非流动资产</td>
+</tr>
+<tr>
+<td>sett_rsrv</td>
+<td>float</td>
+<td>Y</td>
+<td>结算备付金</td>
+</tr>
+<tr>
+<td>loanto_oth_bank_fi</td>
+<td>float</td>
+<td>Y</td>
+<td>拆出资金</td>
+</tr>
+<tr>
+<td>premium_receiv</td>
+<td>float</td>
+<td>Y</td>
+<td>应收保费</td>
+</tr>
+<tr>
+<td>reinsur_receiv</td>
+<td>float</td>
+<td>Y</td>
+<td>应收分保账款</td>
+</tr>
+<tr>
+<td>reinsur_res_receiv</td>
+<td>float</td>
+<td>Y</td>
+<td>应收分保合同准备金</td>
+</tr>
+<tr>
+<td>pur_resale_fa</td>
+<td>float</td>
+<td>Y</td>
+<td>买入返售金融资产</td>
+</tr>
+<tr>
+<td>oth_cur_assets</td>
+<td>float</td>
+<td>Y</td>
+<td>其他流动资产</td>
+</tr>
+<tr>
+<td>total_cur_assets</td>
+<td>float</td>
+<td>Y</td>
+<td>流动资产合计</td>
+</tr>
+<tr>
+<td>fa_avail_for_sale</td>
+<td>float</td>
+<td>Y</td>
+<td>可供出售金融资产</td>
+</tr>
+<tr>
+<td>htm_invest</td>
+<td>float</td>
+<td>Y</td>
+<td>持有至到期投资</td>
+</tr>
+<tr>
+<td>lt_eqt_invest</td>
+<td>float</td>
+<td>Y</td>
+<td>长期股权投资</td>
+</tr>
+<tr>
+<td>invest_real_estate</td>
+<td>float</td>
+<td>Y</td>
+<td>投资性房地产</td>
+</tr>
+<tr>
+<td>time_deposits</td>
+<td>float</td>
+<td>Y</td>
+<td>定期存款</td>
+</tr>
+<tr>
+<td>oth_assets</td>
+<td>float</td>
+<td>Y</td>
+<td>其他资产</td>
+</tr>
+<tr>
+<td>lt_rec</td>
+<td>float</td>
+<td>Y</td>
+<td>长期应收款</td>
+</tr>
+<tr>
+<td>fix_assets</td>
+<td>float</td>
+<td>Y</td>
+<td>固定资产</td>
+</tr>
+<tr>
+<td>cip</td>
+<td>float</td>
+<td>Y</td>
+<td>在建工程</td>
+</tr>
+<tr>
+<td>const_materials</td>
+<td>float</td>
+<td>Y</td>
+<td>工程物资</td>
+</tr>
+<tr>
+<td>fixed_assets_disp</td>
+<td>float</td>
+<td>Y</td>
+<td>固定资产清理</td>
+</tr>
+<tr>
+<td>produc_bio_assets</td>
+<td>float</td>
+<td>Y</td>
+<td>生产性生物资产</td>
+</tr>
+<tr>
+<td>oil_and_gas_assets</td>
+<td>float</td>
+<td>Y</td>
+<td>油气资产</td>
+</tr>
+<tr>
+<td>intan_assets</td>
+<td>float</td>
+<td>Y</td>
+<td>无形资产</td>
+</tr>
+<tr>
+<td>r_and_d</td>
+<td>float</td>
+<td>Y</td>
+<td>研发支出</td>
+</tr>
+<tr>
+<td>goodwill</td>
+<td>float</td>
+<td>Y</td>
+<td>商誉</td>
+</tr>
+<tr>
+<td>lt_amor_exp</td>
+<td>float</td>
+<td>Y</td>
+<td>长期待摊费用</td>
+</tr>
+<tr>
+<td>defer_tax_assets</td>
+<td>float</td>
+<td>Y</td>
+<td>递延所得税资产</td>
+</tr>
+<tr>
+<td>decr_in_disbur</td>
+<td>float</td>
+<td>Y</td>
+<td>发放贷款及垫款</td>
+</tr>
+<tr>
+<td>oth_nca</td>
+<td>float</td>
+<td>Y</td>
+<td>其他非流动资产</td>
+</tr>
+<tr>
+<td>total_nca</td>
+<td>float</td>
+<td>Y</td>
+<td>非流动资产合计</td>
+</tr>
+<tr>
+<td>cash_reser_cb</td>
+<td>float</td>
+<td>Y</td>
+<td>现金及存放中央银行款项</td>
+</tr>
+<tr>
+<td>depos_in_oth_bfi</td>
+<td>float</td>
+<td>Y</td>
+<td>存放同业和其它金融机构款项</td>
+</tr>
+<tr>
+<td>prec_metals</td>
+<td>float</td>
+<td>Y</td>
+<td>贵金属</td>
+</tr>
+<tr>
+<td>deriv_assets</td>
+<td>float</td>
+<td>Y</td>
+<td>衍生金融资产</td>
+</tr>
+<tr>
+<td>rr_reins_une_prem</td>
+<td>float</td>
+<td>Y</td>
+<td>应收分保未到期责任准备金</td>
+</tr>
+<tr>
+<td>rr_reins_outstd_cla</td>
+<td>float</td>
+<td>Y</td>
+<td>应收分保未决赔款准备金</td>
+</tr>
+<tr>
+<td>rr_reins_lins_liab</td>
+<td>float</td>
+<td>Y</td>
+<td>应收分保寿险责任准备金</td>
+</tr>
+<tr>
+<td>rr_reins_lthins_liab</td>
+<td>float</td>
+<td>Y</td>
+<td>应收分保长期健康险责任准备金</td>
+</tr>
+<tr>
+<td>refund_depos</td>
+<td>float</td>
+<td>Y</td>
+<td>存出保证金</td>
+</tr>
+<tr>
+<td>ph_pledge_loans</td>
+<td>float</td>
+<td>Y</td>
+<td>保户质押贷款</td>
+</tr>
+<tr>
+<td>refund_cap_depos</td>
+<td>float</td>
+<td>Y</td>
+<td>存出资本保证金</td>
+</tr>
+<tr>
+<td>indep_acct_assets</td>
+<td>float</td>
+<td>Y</td>
+<td>独立账户资产</td>
+</tr>
+<tr>
+<td>client_depos</td>
+<td>float</td>
+<td>Y</td>
+<td>其中：客户资金存款</td>
+</tr>
+<tr>
+<td>client_prov</td>
+<td>float</td>
+<td>Y</td>
+<td>其中：客户备付金</td>
+</tr>
+<tr>
+<td>transac_seat_fee</td>
+<td>float</td>
+<td>Y</td>
+<td>其中:交易席位费</td>
+</tr>
+<tr>
+<td>invest_as_receiv</td>
+<td>float</td>
+<td>Y</td>
+<td>应收款项类投资</td>
+</tr>
+<tr>
+<td>total_assets</td>
+<td>float</td>
+<td>Y</td>
+<td>资产总计</td>
+</tr>
+<tr>
+<td>lt_borr</td>
+<td>float</td>
+<td>Y</td>
+<td>长期借款</td>
+</tr>
+<tr>
+<td>st_borr</td>
+<td>float</td>
+<td>Y</td>
+<td>短期借款</td>
+</tr>
+<tr>
+<td>cb_borr</td>
+<td>float</td>
+<td>Y</td>
+<td>向中央银行借款</td>
+</tr>
+<tr>
+<td>depos_ib_deposits</td>
+<td>float</td>
+<td>Y</td>
+<td>吸收存款及同业存放</td>
+</tr>
+<tr>
+<td>loan_oth_bank</td>
+<td>float</td>
+<td>Y</td>
+<td>拆入资金</td>
+</tr>
+<tr>
+<td>trading_fl</td>
+<td>float</td>
+<td>Y</td>
+<td>交易性金融负债</td>
+</tr>
+<tr>
+<td>notes_payable</td>
+<td>float</td>
+<td>Y</td>
+<td>应付票据</td>
+</tr>
+<tr>
+<td>acct_payable</td>
+<td>float</td>
+<td>Y</td>
+<td>应付账款</td>
+</tr>
+<tr>
+<td>adv_receipts</td>
+<td>float</td>
+<td>Y</td>
+<td>预收款项</td>
+</tr>
+<tr>
+<td>sold_for_repur_fa</td>
+<td>float</td>
+<td>Y</td>
+<td>卖出回购金融资产款</td>
+</tr>
+<tr>
+<td>comm_payable</td>
+<td>float</td>
+<td>Y</td>
+<td>应付手续费及佣金</td>
+</tr>
+<tr>
+<td>payroll_payable</td>
+<td>float</td>
+<td>Y</td>
+<td>应付职工薪酬</td>
+</tr>
+<tr>
+<td>taxes_payable</td>
+<td>float</td>
+<td>Y</td>
+<td>应交税费</td>
+</tr>
+<tr>
+<td>int_payable</td>
+<td>float</td>
+<td>Y</td>
+<td>应付利息</td>
+</tr>
+<tr>
+<td>div_payable</td>
+<td>float</td>
+<td>Y</td>
+<td>应付股利</td>
+</tr>
+<tr>
+<td>oth_payable</td>
+<td>float</td>
+<td>Y</td>
+<td>其他应付款</td>
+</tr>
+<tr>
+<td>acc_exp</td>
+<td>float</td>
+<td>Y</td>
+<td>预提费用</td>
+</tr>
+<tr>
+<td>deferred_inc</td>
+<td>float</td>
+<td>Y</td>
+<td>递延收益</td>
+</tr>
+<tr>
+<td>st_bonds_payable</td>
+<td>float</td>
+<td>Y</td>
+<td>应付短期债券</td>
+</tr>
+<tr>
+<td>payable_to_reinsurer</td>
+<td>float</td>
+<td>Y</td>
+<td>应付分保账款</td>
+</tr>
+<tr>
+<td>rsrv_insur_cont</td>
+<td>float</td>
+<td>Y</td>
+<td>保险合同准备金</td>
+</tr>
+<tr>
+<td>acting_trading_sec</td>
+<td>float</td>
+<td>Y</td>
+<td>代理买卖证券款</td>
+</tr>
+<tr>
+<td>acting_uw_sec</td>
+<td>float</td>
+<td>Y</td>
+<td>代理承销证券款</td>
+</tr>
+<tr>
+<td>non_cur_liab_due_1y</td>
+<td>float</td>
+<td>Y</td>
+<td>一年内到期的非流动负债</td>
+</tr>
+<tr>
+<td>oth_cur_liab</td>
+<td>float</td>
+<td>Y</td>
+<td>其他流动负债</td>
+</tr>
+<tr>
+<td>total_cur_liab</td>
+<td>float</td>
+<td>Y</td>
+<td>流动负债合计</td>
+</tr>
+<tr>
+<td>bond_payable</td>
+<td>float</td>
+<td>Y</td>
+<td>应付债券</td>
+</tr>
+<tr>
+<td>lt_payable</td>
+<td>float</td>
+<td>Y</td>
+<td>长期应付款</td>
+</tr>
+<tr>
+<td>specific_payables</td>
+<td>float</td>
+<td>Y</td>
+<td>专项应付款</td>
+</tr>
+<tr>
+<td>estimated_liab</td>
+<td>float</td>
+<td>Y</td>
+<td>预计负债</td>
+</tr>
+<tr>
+<td>defer_tax_liab</td>
+<td>float</td>
+<td>Y</td>
+<td>递延所得税负债</td>
+</tr>
+<tr>
+<td>defer_inc_non_cur_liab</td>
+<td>float</td>
+<td>Y</td>
+<td>递延收益-非流动负债</td>
+</tr>
+<tr>
+<td>oth_ncl</td>
+<td>float</td>
+<td>Y</td>
+<td>其他非流动负债</td>
+</tr>
+<tr>
+<td>total_ncl</td>
+<td>float</td>
+<td>Y</td>
+<td>非流动负债合计</td>
+</tr>
+<tr>
+<td>depos_oth_bfi</td>
+<td>float</td>
+<td>Y</td>
+<td>同业和其它金融机构存放款项</td>
+</tr>
+<tr>
+<td>deriv_liab</td>
+<td>float</td>
+<td>Y</td>
+<td>衍生金融负债</td>
+</tr>
+<tr>
+<td>depos</td>
+<td>float</td>
+<td>Y</td>
+<td>吸收存款</td>
+</tr>
+<tr>
+<td>agency_bus_liab</td>
+<td>float</td>
+<td>Y</td>
+<td>代理业务负债</td>
+</tr>
+<tr>
+<td>oth_liab</td>
+<td>float</td>
+<td>Y</td>
+<td>其他负债</td>
+</tr>
+<tr>
+<td>prem_receiv_adva</td>
+<td>float</td>
+<td>Y</td>
+<td>预收保费</td>
+</tr>
+<tr>
+<td>depos_received</td>
+<td>float</td>
+<td>Y</td>
+<td>存入保证金</td>
+</tr>
+<tr>
+<td>ph_invest</td>
+<td>float</td>
+<td>Y</td>
+<td>保户储金及投资款</td>
+</tr>
+<tr>
+<td>reser_une_prem</td>
+<td>float</td>
+<td>Y</td>
+<td>未到期责任准备金</td>
+</tr>
+<tr>
+<td>reser_outstd_claims</td>
+<td>float</td>
+<td>Y</td>
+<td>未决赔款准备金</td>
+</tr>
+<tr>
+<td>reser_lins_liab</td>
+<td>float</td>
+<td>Y</td>
+<td>寿险责任准备金</td>
+</tr>
+<tr>
+<td>reser_lthins_liab</td>
+<td>float</td>
+<td>Y</td>
+<td>长期健康险责任准备金</td>
+</tr>
+<tr>
+<td>indept_acc_liab</td>
+<td>float</td>
+<td>Y</td>
+<td>独立账户负债</td>
+</tr>
+<tr>
+<td>pledge_borr</td>
+<td>float</td>
+<td>Y</td>
+<td>其中:质押借款</td>
+</tr>
+<tr>
+<td>indem_payable</td>
+<td>float</td>
+<td>Y</td>
+<td>应付赔付款</td>
+</tr>
+<tr>
+<td>policy_div_payable</td>
+<td>float</td>
+<td>Y</td>
+<td>应付保单红利</td>
+</tr>
+<tr>
+<td>total_liab</td>
+<td>float</td>
+<td>Y</td>
+<td>负债合计</td>
+</tr>
+<tr>
+<td>treasury_share</td>
+<td>float</td>
+<td>Y</td>
+<td>减:库存股</td>
+</tr>
+<tr>
+<td>ordin_risk_reser</td>
+<td>float</td>
+<td>Y</td>
+<td>一般风险准备</td>
+</tr>
+<tr>
+<td>forex_differ</td>
+<td>float</td>
+<td>Y</td>
+<td>外币报表折算差额</td>
+</tr>
+<tr>
+<td>invest_loss_unconf</td>
+<td>float</td>
+<td>Y</td>
+<td>未确认的投资损失</td>
+</tr>
+<tr>
+<td>minority_int</td>
+<td>float</td>
+<td>Y</td>
+<td>少数股东权益</td>
+</tr>
+<tr>
+<td>total_hldr_eqy_exc_min_int</td>
+<td>float</td>
+<td>Y</td>
+<td>股东权益合计(不含少数股东权益)</td>
+</tr>
+<tr>
+<td>total_hldr_eqy_inc_min_int</td>
+<td>float</td>
+<td>Y</td>
+<td>股东权益合计(含少数股东权益)</td>
+</tr>
+<tr>
+<td>total_liab_hldr_eqy</td>
+<td>float</td>
+<td>Y</td>
+<td>负债及股东权益总计</td>
+</tr>
+<tr>
+<td>lt_payroll_payable</td>
+<td>float</td>
+<td>Y</td>
+<td>长期应付职工薪酬</td>
+</tr>
+<tr>
+<td>oth_comp_income</td>
+<td>float</td>
+<td>Y</td>
+<td>其他综合收益</td>
+</tr>
+<tr>
+<td>oth_eqt_tools</td>
+<td>float</td>
+<td>Y</td>
+<td>其他权益工具</td>
+</tr>
+<tr>
+<td>oth_eqt_tools_p_shr</td>
+<td>float</td>
+<td>Y</td>
+<td>其他权益工具(优先股)</td>
+</tr>
+<tr>
+<td>lending_funds</td>
+<td>float</td>
+<td>Y</td>
+<td>融出资金</td>
+</tr>
+<tr>
+<td>acc_receivable</td>
+<td>float</td>
+<td>Y</td>
+<td>应收款项</td>
+</tr>
+<tr>
+<td>st_fin_payable</td>
+<td>float</td>
+<td>Y</td>
+<td>应付短期融资款</td>
+</tr>
+<tr>
+<td>payables</td>
+<td>float</td>
+<td>Y</td>
+<td>应付款项</td>
+</tr>
+<tr>
+<td>hfs_assets</td>
+<td>float</td>
+<td>Y</td>
+<td>持有待售的资产</td>
+</tr>
+<tr>
+<td>hfs_sales</td>
+<td>float</td>
+<td>Y</td>
+<td>持有待售的负债</td>
+</tr>
+<tr>
+<td>cost_fin_assets</td>
+<td>float</td>
+<td>Y</td>
+<td>以摊余成本计量的金融资产</td>
+</tr>
+<tr>
+<td>fair_value_fin_assets</td>
+<td>float</td>
+<td>Y</td>
+<td>以公允价值计量且其变动计入其他综合收益的金融资产</td>
+</tr>
+<tr>
+<td>cip_total</td>
+<td>float</td>
+<td>Y</td>
+<td>在建工程(合计)(元)</td>
+</tr>
+<tr>
+<td>oth_pay_total</td>
+<td>float</td>
+<td>Y</td>
+<td>其他应付款(合计)(元)</td>
+</tr>
+<tr>
+<td>long_pay_total</td>
+<td>float</td>
+<td>Y</td>
+<td>长期应付款(合计)(元)</td>
+</tr>
+<tr>
+<td>debt_invest</td>
+<td>float</td>
+<td>Y</td>
+<td>债权投资(元)</td>
+</tr>
+<tr>
+<td>oth_debt_invest</td>
+<td>float</td>
+<td>Y</td>
+<td>其他债权投资(元)</td>
+</tr>
+<tr>
+<td>oth_eq_invest</td>
+<td>float</td>
+<td>N</td>
+<td>其他权益工具投资(元)</td>
+</tr>
+<tr>
+<td>oth_illiq_fin_assets</td>
+<td>float</td>
+<td>N</td>
+<td>其他非流动金融资产(元)</td>
+</tr>
+<tr>
+<td>oth_eq_ppbond</td>
+<td>float</td>
+<td>N</td>
+<td>其他权益工具:永续债(元)</td>
+</tr>
+<tr>
+<td>receiv_financing</td>
+<td>float</td>
+<td>N</td>
+<td>应收款项融资</td>
+</tr>
+<tr>
+<td>use_right_assets</td>
+<td>float</td>
+<td>N</td>
+<td>使用权资产</td>
+</tr>
+<tr>
+<td>lease_liab</td>
+<td>float</td>
+<td>N</td>
+<td>租赁负债</td>
+</tr>
+<tr>
+<td>contract_assets</td>
+<td>float</td>
+<td>Y</td>
+<td>合同资产</td>
+</tr>
+<tr>
+<td>contract_liab</td>
+<td>float</td>
+<td>Y</td>
+<td>合同负债</td>
+</tr>
+<tr>
+<td>accounts_receiv_bill</td>
+<td>float</td>
+<td>Y</td>
+<td>应收票据及应收账款</td>
+</tr>
+<tr>
+<td>accounts_pay</td>
+<td>float</td>
+<td>Y</td>
+<td>应付票据及应付账款</td>
+</tr>
+<tr>
+<td>oth_rcv_total</td>
+<td>float</td>
+<td>Y</td>
+<td>其他应收款(合计)（元）</td>
+</tr>
+<tr>
+<td>fix_assets_total</td>
+<td>float</td>
+<td>Y</td>
+<td>固定资产(合计)(元)</td>
+</tr>
+<tr>
+<td>update_flag</td>
+<td>str</td>
+<td>Y</td>
+<td>更新标识</td>
+</tr>
+</tbody>
+</table>
+<p><strong>接口使用说明</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">pro</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">pro_api</span><span class="p">()</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pro</span><span class="o">.</span><span class="n">balancesheet</span><span class="p">(</span><span class="n">ts_code</span><span class="o">=</span><span class="s1">'600000.SH'</span><span class="p">,</span> <span class="n">start_date</span><span class="o">=</span><span class="s1">'20180101'</span><span class="p">,</span> <span class="n">end_date</span><span class="o">=</span><span class="s1">'20180730'</span><span class="p">,</span> <span class="n">fields</span><span class="o">=</span><span class="s1">'ts_code,ann_date,f_ann_date,end_date,report_type,comp_type,cap_rese'</span><span class="p">)</span>
+</code></pre></div>
+
+<p>获取某一季度全部股票数据</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">df2</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">pro</span><span class="p">.</span><span class="nx">balancesheet_vip</span><span class="p">(</span><span class="nx">period</span><span class="p">=</span><span class="err">'</span><span class="mi">20181231</span><span class="err">'</span><span class="p">,</span><span class="nx">fields</span><span class="p">=</span><span class="err">'</span><span class="nx">ts_code</span><span class="p">,</span><span class="nx">ann_date</span><span class="p">,</span><span class="nx">f_ann_date</span><span class="p">,</span><span class="nx">end_date</span><span class="p">,</span><span class="nx">report_type</span><span class="p">,</span><span class="nx">comp_type</span><span class="p">,</span><span class="nx">cap_rese</span><span class="err">'</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>数据样例</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="w">         </span><span class="nx">ts_code</span><span class="w">  </span><span class="nx">ann_date</span><span class="w"> </span><span class="nx">f_ann_date</span><span class="w">  </span><span class="nx">end_date</span><span class="w"> </span><span class="nx">report_type</span><span class="w"> </span><span class="nx">comp_type</span><span class="w">  </span>\
+<span class="mi">0</span><span class="w">  </span><span class="mi">600000</span><span class="p">.</span><span class="nx">SH</span><span class="w">  </span><span class="mi">20180830</span><span class="w">   </span><span class="mi">20180830</span><span class="w">  </span><span class="mi">20180630</span><span class="w">           </span><span class="mi">1</span><span class="w">         </span><span class="mi">2</span><span class="w">   </span>
+<span class="mi">1</span><span class="w">  </span><span class="mi">600000</span><span class="p">.</span><span class="nx">SH</span><span class="w">  </span><span class="mi">20180428</span><span class="w">   </span><span class="mi">20180428</span><span class="w">  </span><span class="mi">20180331</span><span class="w">           </span><span class="mi">1</span><span class="w">         </span><span class="mi">2</span>
+
+<span class="w">             </span><span class="nx">cap_rese</span><span class="w">  </span>
+<span class="mi">0</span><span class="w">  </span><span class="m m-Double">8.176000</span><span class="nx">e</span><span class="o">+</span><span class="mi">10</span><span class="w">  </span>
+<span class="mi">1</span><span class="w">  </span><span class="m m-Double">8.176000</span><span class="nx">e</span><span class="o">+</span><span class="mi">10</span>
+</code></pre></div>
+
+<p><strong>主要报表类型说明</strong></p>
+<p>代码 | 类型   | 说明<br>
+---- | ----- | ---- |<br>
+1 | 合并报表 | 上市公司最新报表（默认）<br>
+2 | 单季合并  | 单一季度的合并报表<br>
+3 | 调整单季合并表 | 调整后的单季合并报表（如果有）<br>
+4 | 调整合并报表 | 本年度公布上年同期的财务报表数据，报告期为上年度<br>
+5 | 调整前合并报表 | 数据发生变更，将原数据进行保留，即调整前的原数据<br>
+6 | 母公司报表 | 该公司母公司的财务报表数据<br>
+7 | 母公司单季表 | 母公司的单季度表<br>
+8 | 母公司调整单季表 | 母公司调整后的单季表<br>
+9 | 母公司调整表 | 该公司母公司的本年度公布上年同期的财务报表数据<br>
+10 | 母公司调整前报表 | 母公司调整之前的原始财务报表数据<br>
+11 | 母公司调整前合并报表 | 母公司调整之前合并报表原数据<br>
+12 | 母公司调整前报表 | 母公司报表发生变更前保留的原数据</p>
+</div>
+</div>
+</div>
+</section>
+
+<footer id="footer" class="site-footer">
+<div class="container">
+<div class="row footer-panel">
+<div class="col-md-4">
+<div class=""><img src="/static/frontend/images/wechat_public.png?v=847e8d705d3a409d000dce413ab5c257" alt=""></div>
+</div>
+<div class="col-md-4">
+<div class="title">使用文档</div>
+<div class="content">
+<ul>
+<li><a href="/document/1">平台介绍</a></li>
+<li><a href="/document/2">数据接口</a></li>
+<li><a href="/document/41">区块链</a></li>
+<li><a href="/news">资讯数据</a></li>
+</ul>
+</div>
+</div>
+<div class="col-md-4">
+<div class="title">关注我们</div>
+<div class="content">
+<ul>
+<li>公众号：waditu</li>
+<li>Github：<a href="https://github.com/waditu" target="_blank">https://github.com/waditu</a></li>
+<li>雪 球：<a href="https://xueqiu.com/u/9103835084" target="_blank">https://xueqiu.com/u/9103835084</a></li>
+<li>微 博：<a href="https://weibo.com/u/1304687120" target="_blank">https://weibo.com/u/1304687120</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="row footer-footer">
+<div class="copyright"><p>© 2018 Tushare <a href="https://beian.miit.gov.cn" target="_blank">
+"沪ICP备2020031644号"
+</a></p></div>
+</div>
+</div>
+</footer>
+
+</div>
+<div class="scroll-to-top" data-spy="affix" data-offset-top="200">
+<a href="#page" class="smooth-scroll">置顶</a>
+</div>
+
+<script type="text/javascript">
+require(['custom']);
+</script>
+
+
+<script type="text/javascript">
+require([
+'jquery',
+'jstree'
+], function ($, jstree) {
+$(document).ready(function() {
+const tree = $('#jstree').jstree({
+// plugins : ['state']
+plugins : ['wholerow'],
+core: {
+themes: {
+multiple: false,
+icons: false,
+stripes: false,
+expand_selected_onload: true
+}
+}
+});
+tree.on("select_node.jstree", function (e, data) {
+window.location = `${location.protocol}//${location.host}${data.node.a_attr.href}`;
+});
+const searchInput = document.querySelector('.search-input');
+const searchIcon = document.querySelector('.search-icon');
+const onSearch = () => {
+const query = searchInput.value;
+if (query) {
+window.location = `${location.protocol}//${location.host}/document/search?q=${encodeURIComponent(query)}`;
+}
+}
+searchInput.addEventListener('change', onSearch);
+searchIcon.addEventListener('click', onSearch);
+});
+});
+</script>
+
+
+</body></html>

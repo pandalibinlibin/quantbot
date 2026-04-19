@@ -1,0 +1,303 @@
+<!-- Page: 上证e互动问答 -->
+<!DOCTYPE html><html lang="en" style="height:100%"><head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tushare数据</title>
+<meta content="免费股票数据,开源股票数据接口,股票数据,股票数据接口,python股票数据,财经数据,金融数据,行业大数据,区块链数据,量化投资,知识图谱" name="keywords">
+<meta name="description" content="Tushare为金融数据分析提供便捷、快速的接口，与投研和量化策略无缝对接">
+<meta content="index,follow" name="robots">
+<meta name="application-name" content="Tushare">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-192x192.png?v=811d9139fa2ea47f5595907da1f3c34d" sizes="192x192">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-160x160.png" sizes="160x160">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-96x96.png?v=4960eb8103c873c586ad41ef3f53db84" sizes="96x96">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-16x16.png?v=f7299bbce2cff4db7e3dfa6fb8c6a73c" sizes="16x16">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-32x32.png?v=a5df4bdd9f96de59f57bb9a7a50d8f96" sizes="32x32">
+<link href="/static/vendors/bootstrap/dist/css/bootstrap.min.css?v=d7ac98c842e4ec59d2c21fef89fce09c" rel="stylesheet">
+<link href="/static/vendors/jstree/themes/default/style.min.css?v=779fc4b400d1748ec2fb99685ad80550" rel="stylesheet">
+<link href="/static/frontend/css/custom.css?v=afa9fcaf1ec38d2c9d46d41a0615a077" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/static/vendors/codemirror/lib/codemirror.css?v=fc217d502b05f65616356459c0ec1d62">
+<link rel="stylesheet" href="/static/vendors/tui-editor/dist/tui-editor.css?v=144c2e273b8a0e79b208d0d86ccd3999">
+<link rel="stylesheet" href="/static/vendors/tui-editor/dist/tui-editor-contents.css?v=3ed3a3154a2304c111075714324b0e7b">
+<link rel="stylesheet" href="/static/vendors/highlightjs/styles/github.css?v=bf6c14925e66edb1526b6c9489b3c042">
+<link rel="stylesheet" href="/static/common/css/md.css?v=087ce310ed8e685ac6526e2a54db3c68">
+
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+<script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+<![endif]-->
+<script type="text/javascript" src="/static/vendors/requirejs/require.js?v=6da8be361b9ee26c5e721e76c6d4afce"></script>
+<script type="text/javascript" src="/static/frontend/js/config.js?v=85f0040a930464e1c6dbc61026f79de8"></script>
+<script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="jquery" src="/static/vendors/jquery/dist/jquery.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="jstree" src="/static/vendors/jstree/jstree.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="bootstrap" src="/static/vendors/bootstrap/dist/js/bootstrap.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="validate" src="/static/vendors/jquery-validation/dist/jquery.validate.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="custom" src="/static/vendors/../frontend/js/custom.js"></script></head>
+<body style="height:100%">
+<div id="page" style="height:100%;">
+<header id="header" class="site-header">
+<nav id="navbar" class="site-navbar navbar navbar-static-top" role="navigation">
+<div class="container">
+<div class="navbar-header">
+<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse-1">
+<span class="sr-only">Toggle navigation</span>
+<i class="fa fa-bars" style="font-size: 1.5em; padding: 15px 0;"></i>
+</button>
+<h1 class="navbar-brand">
+<a href="/"><img src="/static/frontend/images/logo.png?v=39c50795cb540b4463114d1bf3135d6e" alt="tushare"></a>
+</h1>
+</div>
+<div class="collapse navbar-collapse" id="navbar-collapse-1">
+<ul id="navigation" class="nav navbar-nav navbar-right">
+<li><a href="/">首页</a></li>
+<li><a href="/document/1">平台介绍</a></li>
+<li><a href="/document/2">数据接口</a></li>
+<!-- <li><a href="/document/41">另类数据</a></li>-->
+<li><a href="/news/sina">资讯数据</a></li>
+<li><a href="/webclient">数据工具</a></li>
+<li><a href="/weborder/#/permission">社区捐助</a></li>
+
+<li class="navbar-tail"><a href="/weborder/#/login" class="nav-login">登录/注册</a></li>
+
+</ul>
+</div>
+</div>
+</nav>
+</header>
+
+
+<section id="document" class="whole">
+<div class="container">
+<div class="document">
+<nav class="sidebar col-md-3 col-sm-4 col-xs-12">
+
+            <div id="jstree" class="jstree jstree-1 jstree-default" role="tree" aria-multiselectable="true" tabindex="0" aria-activedescendant="j1_1" aria-busy="false"><ul class="jstree-container-ul jstree-children jstree-no-icons jstree-wholerow-ul jstree-no-dots" role="group"><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_1_anchor" aria-expanded="false" id="j1_1" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=14" tabindex="-1" id="j1_1_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>股票数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_122_anchor" aria-expanded="false" id="j1_122" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=384" tabindex="-1" id="j1_122_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>ETF专题</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_132_anchor" aria-expanded="false" id="j1_132" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=93" tabindex="-1" id="j1_132_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>指数专题</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_152_anchor" aria-expanded="false" id="j1_152" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=18" tabindex="-1" id="j1_152_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>公募基金</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_161_anchor" aria-expanded="false" id="j1_161" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=134" tabindex="-1" id="j1_161_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>期货数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_176_anchor" aria-expanded="false" id="j1_176" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=283" tabindex="-1" id="j1_176_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>现货数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_179_anchor" aria-expanded="false" id="j1_179" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=157" tabindex="-1" id="j1_179_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>期权数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_183_anchor" aria-expanded="false" id="j1_183" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=184" tabindex="-1" id="j1_183_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>债券专题</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_199_anchor" aria-expanded="false" id="j1_199" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=177" tabindex="-1" id="j1_199_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>外汇数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_202_anchor" aria-expanded="false" id="j1_202" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=190" tabindex="-1" id="j1_202_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>港股数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_214_anchor" aria-expanded="false" id="j1_214" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=251" tabindex="-1" id="j1_214_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>美股数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_224_anchor" aria-expanded="false" id="j1_224" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=82" tabindex="-1" id="j1_224_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>行业经济</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_234_anchor" aria-expanded="false" id="j1_234" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=147" tabindex="-1" id="j1_234_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>宏观经济</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_263_anchor" aria-expanded="true" id="j1_263" class="jstree-node   in jstree-open"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=142" tabindex="-1" id="j1_263_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>大模型语料专题数据</a><ul role="group" class="jstree-children"><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_264_anchor" id="j1_264" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=406" tabindex="-1" id="j1_264_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>国家政策库</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_265_anchor" id="j1_265" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=415" tabindex="-1" id="j1_265_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>券商研究报告</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_266_anchor" id="j1_266" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=143" tabindex="-1" id="j1_266_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>新闻快讯（短讯）</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_267_anchor" id="j1_267" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=195" tabindex="-1" id="j1_267_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>新闻通讯（长篇）</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_268_anchor" id="j1_268" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=154" tabindex="-1" id="j1_268_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>新闻联播文字稿</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_269_anchor" id="j1_269" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=176" tabindex="-1" id="j1_269_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>上市公司公告</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_270_anchor" id="j1_270" class="jstree-node active jstree-clicked jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=366" tabindex="-1" id="j1_270_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>上证e互动问答</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_271_anchor" id="j1_271" class="jstree-node  jstree-leaf jstree-last"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=367" tabindex="-1" id="j1_271_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>深证易互动问答</a></li></ul></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_272_anchor" aria-expanded="false" id="j1_272" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=263" tabindex="-1" id="j1_272_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>财富管理</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_276_anchor" id="j1_276" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=209" tabindex="-1" id="j1_276_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>数据索引</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_277_anchor" id="j1_277" class="jstree-node  jstree-leaf jstree-last"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=244" tabindex="-1" id="j1_277_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>社区捐助</a></li></ul></div>
+        
+</nav>
+<div class="content col-md-9 col-sm-8 col-xs-12">
+<div class="search-panel">
+<div class="search-container">
+<span class="fa fa-search search-icon"></span>
+<input type="text" class="search-input" placeholder="Search">
+</div>
+</div>
+<h2 id="e">上证E互动</h2>
+<hr>
+<p>接口：irm_qa_sh，历史数据开始于2023年6月。<br>
+描述：获取上交所e互动董秘问答文本数据。上证e互动是由上海证券交易所建立、上海证券市场所有参与主体无偿使用的沟通平台,旨在引导和促进上市公司、投资者等各市场参与主体之间的信息沟通,构建集中、便捷的互动渠道。本接口数据记录了以上沟通问答的文本数据。<br>
+限量：单次请求最大返回3000行数据，可根据股票代码，日期等参数循环提取全部数据<br>
+权限：用户后120积分可以试用，正式权限为10000积分，或申请单独开权限，请参考<a href="https://tushare.pro/document/1?doc_id=290">权限说明</a></p>
+<p><br><br>
+<br></p>
+<p><strong>输入参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>必选</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ts_code</td>
+<td>str</td>
+<td>N</td>
+<td>股票代码</td>
+</tr>
+<tr>
+<td>trade_date</td>
+<td>str</td>
+<td>N</td>
+<td>交易日期（格式YYYYMMDD，下同）</td>
+</tr>
+<tr>
+<td>start_date</td>
+<td>str</td>
+<td>N</td>
+<td>开始日期</td>
+</tr>
+<tr>
+<td>end_date</td>
+<td>str</td>
+<td>N</td>
+<td>结束日期</td>
+</tr>
+<tr>
+<td>pub_date</td>
+<td>str</td>
+<td>N</td>
+<td>发布开始日期(格式：2025-06-03 16:43:03)</td>
+</tr>
+<tr>
+<td>pub_date</td>
+<td>str</td>
+<td>N</td>
+<td>发布结束日期(格式：2025-06-03 18:43:23)</td>
+</tr>
+</tbody>
+</table>
+<p><br><br>
+<br></p>
+<p><strong>输出参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>默认显示</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ts_code</td>
+<td>str</td>
+<td>Y</td>
+<td>股票代码</td>
+</tr>
+<tr>
+<td>name</td>
+<td>str</td>
+<td>Y</td>
+<td>公司名称</td>
+</tr>
+<tr>
+<td>trade_date</td>
+<td>str</td>
+<td>Y</td>
+<td>日期</td>
+</tr>
+<tr>
+<td>q</td>
+<td>str</td>
+<td>Y</td>
+<td>问题</td>
+</tr>
+<tr>
+<td>a</td>
+<td>str</td>
+<td>Y</td>
+<td>回复</td>
+</tr>
+<tr>
+<td>pub_time</td>
+<td>datetime</td>
+<td>Y</td>
+<td>回复时间</td>
+</tr>
+</tbody>
+</table>
+<p><br><br>
+<br></p>
+<p><strong>接口调用</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">pro</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">pro_api</span><span class="p">()</span>
+
+<span class="c1">#获取2025年2月12日上证e互动的问答文本</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pro</span><span class="o">.</span><span class="n">irm_qa_sh</span><span class="p">(</span><span class="n">ann_date</span><span class="o">=</span><span class="s1">'20250212'</span><span class="p">)</span>
+</code></pre></div>
+
+<p><br></p>
+<p><strong>数据样例</strong></p>
+<p><img src="https://tushare.pro/files/web/e.png"></p>
+<div class="codehilite"><pre><span></span><code>       ts_code  name                                                  q                                                  a
+0   601121.SH  宝地矿业  股价利多因素主要看基本面，关键是业绩，利空因素就是减持和低价增发，目前宝地的业绩难以抵消股东...  尊敬的投资者，您好！衷心感谢您对宝地矿业的关注与鞭策。公司将加快推进重点项目建设，做好生产经...
+1   600615.SH  丰华股份  您好！我是一名城市居民，长期关注空气污染问题。想请问贵公司在日常经营过程中，是否采取了有效的...  尊敬的投资者您好！公司不属于重点排污单位。公司高度重视环境保护工作，采取有效措施不断提高环境...
+2   600615.SH  丰华股份       公司镁合金等材料在机器人行业应用前景远大。公司是不是可以考虑加大在机器人方面的战略布局？  尊敬的投资者您好！镁合金材料在轻量化方面应用领域宽泛，目前公司的镁合金产品主要应用于交通工具...
+3   601121.SH  宝地矿业  如果宝地矿业董事会看好自己公司的投资价值，为什么宁可委托申万宏源证券投资理财，也不用自有资金...  尊敬的投资者，您好。感谢您对宝地矿业的关注与建议。公司始终秉持稳健的财务管理和资金使用原则，...
+4   600615.SH  丰华股份  尊敬的董秘您好，据报道人形机器人所使用除peek材料之外，最多的就是镁合金相关材质，请问公司...                   尊敬的投资者您好！目前公司没有人形机器人项目储备，感谢您的关注！
+<span class="k">..</span>        ...   ...                                                ...                                                ...
+95  600423.SH  柳化股份  领导您好！我是一名心系环境的普通居民，长期对空气污染问题保持高度关注。请问贵公司在生产过程中...  投资者，您好！公司十分重视环境问题，积极推动节能减排理念，三废排放严格按照国家标准执行，具体...
+96  600190.SH  ST锦港  公司董事会，你公司2024之前问题很大，涉刑事等众多问题，公司必须发布或配合彻查业绩巨亏问题...  尊敬的投资者，您好！公司对相关事项进展将及时履行信息披露义务，请以公司对外披露的公告为准，感...
+97  688120.SH  华海清科               你公司在国内行业的竞争优势有哪些？是否将这些优势转化为了公司的发展成果？  尊敬的投资者您好！公司是一家拥有核心自主知识产权的高端半导体装备制造商，产品主要应用于芯片制...
+98  688120.SH  华海清科                                   你公司被看好或认可的地方在哪里？  尊敬的投资者您好！公司是一家拥有核心自主知识产权的高端半导体装备制造商，产品主要应用于芯片制...
+99  600630.SH  龙头股份                    请问公司接入微信小店已有一段时间，请问微信小店的销售情况如何？  尊敬的投资者，您好！公司旗下三枪品牌目前已入驻微信第三方平台有赞商城。您可在微信小程序搜索“...
+</code></pre></div>
+</div>
+</div>
+</div>
+</section>
+
+<footer id="footer" class="site-footer">
+<div class="container">
+<div class="row footer-panel">
+<div class="col-md-4">
+<div class=""><img src="/static/frontend/images/wechat_public.png?v=847e8d705d3a409d000dce413ab5c257" alt=""></div>
+</div>
+<div class="col-md-4">
+<div class="title">使用文档</div>
+<div class="content">
+<ul>
+<li><a href="/document/1">平台介绍</a></li>
+<li><a href="/document/2">数据接口</a></li>
+<li><a href="/document/41">区块链</a></li>
+<li><a href="/news">资讯数据</a></li>
+</ul>
+</div>
+</div>
+<div class="col-md-4">
+<div class="title">关注我们</div>
+<div class="content">
+<ul>
+<li>公众号：waditu</li>
+<li>Github：<a href="https://github.com/waditu" target="_blank">https://github.com/waditu</a></li>
+<li>雪 球：<a href="https://xueqiu.com/u/9103835084" target="_blank">https://xueqiu.com/u/9103835084</a></li>
+<li>微 博：<a href="https://weibo.com/u/1304687120" target="_blank">https://weibo.com/u/1304687120</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="row footer-footer">
+<div class="copyright"><p>© 2018 Tushare <a href="https://beian.miit.gov.cn" target="_blank">
+"沪ICP备2020031644号"
+</a></p></div>
+</div>
+</div>
+</footer>
+
+</div>
+<div class="scroll-to-top" data-spy="affix" data-offset-top="200">
+<a href="#page" class="smooth-scroll">置顶</a>
+</div>
+
+<script type="text/javascript">
+require(['custom']);
+</script>
+
+
+<script type="text/javascript">
+require([
+'jquery',
+'jstree'
+], function ($, jstree) {
+$(document).ready(function() {
+const tree = $('#jstree').jstree({
+// plugins : ['state']
+plugins : ['wholerow'],
+core: {
+themes: {
+multiple: false,
+icons: false,
+stripes: false,
+expand_selected_onload: true
+}
+}
+});
+tree.on("select_node.jstree", function (e, data) {
+window.location = `${location.protocol}//${location.host}${data.node.a_attr.href}`;
+});
+const searchInput = document.querySelector('.search-input');
+const searchIcon = document.querySelector('.search-icon');
+const onSearch = () => {
+const query = searchInput.value;
+if (query) {
+window.location = `${location.protocol}//${location.host}/document/search?q=${encodeURIComponent(query)}`;
+}
+}
+searchInput.addEventListener('change', onSearch);
+searchIcon.addEventListener('click', onSearch);
+});
+});
+</script>
+
+
+</body></html>

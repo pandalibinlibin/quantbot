@@ -1,0 +1,246 @@
+<!-- Page: pip安装超时的解决方案 -->
+<!DOCTYPE html><html lang="en" style="height:100%"><head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tushare数据</title>
+<meta content="免费股票数据,开源股票数据接口,股票数据,股票数据接口,python股票数据,财经数据,金融数据,行业大数据,区块链数据,量化投资,知识图谱" name="keywords">
+<meta name="description" content="Tushare为金融数据分析提供便捷、快速的接口，与投研和量化策略无缝对接">
+<meta content="index,follow" name="robots">
+<meta name="application-name" content="Tushare">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-192x192.png?v=811d9139fa2ea47f5595907da1f3c34d" sizes="192x192">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-160x160.png" sizes="160x160">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-96x96.png?v=4960eb8103c873c586ad41ef3f53db84" sizes="96x96">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-16x16.png?v=f7299bbce2cff4db7e3dfa6fb8c6a73c" sizes="16x16">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-32x32.png?v=a5df4bdd9f96de59f57bb9a7a50d8f96" sizes="32x32">
+<link href="/static/vendors/bootstrap/dist/css/bootstrap.min.css?v=d7ac98c842e4ec59d2c21fef89fce09c" rel="stylesheet">
+<link href="/static/vendors/jstree/themes/default/style.min.css?v=779fc4b400d1748ec2fb99685ad80550" rel="stylesheet">
+<link href="/static/frontend/css/custom.css?v=afa9fcaf1ec38d2c9d46d41a0615a077" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/static/vendors/codemirror/lib/codemirror.css?v=fc217d502b05f65616356459c0ec1d62">
+<link rel="stylesheet" href="/static/vendors/tui-editor/dist/tui-editor.css?v=144c2e273b8a0e79b208d0d86ccd3999">
+<link rel="stylesheet" href="/static/vendors/tui-editor/dist/tui-editor-contents.css?v=3ed3a3154a2304c111075714324b0e7b">
+<link rel="stylesheet" href="/static/vendors/highlightjs/styles/github.css?v=bf6c14925e66edb1526b6c9489b3c042">
+<link rel="stylesheet" href="/static/common/css/md.css?v=087ce310ed8e685ac6526e2a54db3c68">
+
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+<script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+<![endif]-->
+<script type="text/javascript" src="/static/vendors/requirejs/require.js?v=6da8be361b9ee26c5e721e76c6d4afce"></script>
+<script type="text/javascript" src="/static/frontend/js/config.js?v=85f0040a930464e1c6dbc61026f79de8"></script>
+<script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="jquery" src="/static/vendors/jquery/dist/jquery.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="jstree" src="/static/vendors/jstree/jstree.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="bootstrap" src="/static/vendors/bootstrap/dist/js/bootstrap.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="validate" src="/static/vendors/jquery-validation/dist/jquery.validate.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="custom" src="/static/vendors/../frontend/js/custom.js"></script></head>
+<body style="height:100%">
+<div id="page" style="height:100%;">
+<header id="header" class="site-header">
+<nav id="navbar" class="site-navbar navbar navbar-static-top" role="navigation">
+<div class="container">
+<div class="navbar-header">
+<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse-1">
+<span class="sr-only">Toggle navigation</span>
+<i class="fa fa-bars" style="font-size: 1.5em; padding: 15px 0;"></i>
+</button>
+<h1 class="navbar-brand">
+<a href="/"><img src="/static/frontend/images/logo.png?v=39c50795cb540b4463114d1bf3135d6e" alt="tushare"></a>
+</h1>
+</div>
+<div class="collapse navbar-collapse" id="navbar-collapse-1">
+<ul id="navigation" class="nav navbar-nav navbar-right">
+<li><a href="/">首页</a></li>
+<li><a href="/document/1">平台介绍</a></li>
+<li><a href="/document/2">数据接口</a></li>
+<!-- <li><a href="/document/41">另类数据</a></li>-->
+<li><a href="/news/sina">资讯数据</a></li>
+<li><a href="/webclient">数据工具</a></li>
+<li><a href="/weborder/#/permission">社区捐助</a></li>
+
+<li class="navbar-tail"><a href="/weborder/#/login" class="nav-login">登录/注册</a></li>
+
+</ul>
+</div>
+</div>
+</nav>
+</header>
+
+
+<section id="document" class="whole">
+<div class="container">
+<div class="document">
+<nav class="sidebar col-md-3 col-sm-4 col-xs-12">
+
+            <div id="jstree" class="jstree jstree-1 jstree-default" role="tree" aria-multiselectable="true" tabindex="0" aria-activedescendant="j1_1" aria-busy="false"><ul class="jstree-container-ul jstree-children jstree-no-icons jstree-wholerow-ul jstree-no-dots" role="group"><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_1_anchor" id="j1_1" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=450" tabindex="-1" id="j1_1_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>Tushare skills</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_2_anchor" aria-expanded="false" id="j1_2" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=5" tabindex="-1" id="j1_2_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>平台介绍</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_8_anchor" aria-expanded="false" id="j1_8" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=37" tabindex="-1" id="j1_8_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>操作手册</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_12_anchor" aria-expanded="false" id="j1_12" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=129" tabindex="-1" id="j1_12_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>获取方式</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_17_anchor" aria-expanded="false" id="j1_17" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=229" tabindex="-1" id="j1_17_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>踩坑记录</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_24_anchor" aria-expanded="false" id="j1_24" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=10" tabindex="-1" id="j1_24_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>平台服务</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_31_anchor" aria-expanded="true" id="j1_31" class="jstree-node   in jstree-open"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=30" tabindex="-1" id="j1_31_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>相关工具</a><ul role="group" class="jstree-children"><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_32_anchor" id="j1_32" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=42" tabindex="-1" id="j1_32_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>IDE开发工具介绍</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_33_anchor" id="j1_33" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=63" tabindex="-1" id="j1_33_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>数据采集预处理与建模</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_34_anchor" id="j1_34" class="jstree-node active jstree-clicked jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=65" tabindex="-1" id="j1_34_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>pip安装超时的解决方案</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_35_anchor" id="j1_35" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=68" tabindex="-1" id="j1_35_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>模型评估与仓位管理</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_36_anchor" id="j1_36" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=90" tabindex="-1" id="j1_36_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>模拟交易与回测</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_37_anchor" id="j1_37" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=89" tabindex="-1" id="j1_37_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>DLL载入问题之查询依赖的DLL</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_38_anchor" id="j1_38" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=91" tabindex="-1" id="j1_38_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>python过滤HTML标签</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_39_anchor" id="j1_39" class="jstree-node  jstree-leaf jstree-last"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=287" tabindex="-1" id="j1_39_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>Excel常用快捷键</a></li></ul></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_40_anchor" aria-expanded="false" id="j1_40" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=167" tabindex="-1" id="j1_40_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>培训课程</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_45_anchor" aria-expanded="false" id="j1_45" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=205" tabindex="-1" id="j1_45_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>机构招聘</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_49_anchor" aria-expanded="false" id="j1_49" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=306" tabindex="-1" id="j1_49_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>高校服务</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_52_anchor" id="j1_52" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=270" tabindex="-1" id="j1_52_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>专业微群</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_53_anchor" id="j1_53" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=243" tabindex="-1" id="j1_53_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>社区捐助</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_54_anchor" aria-expanded="false" id="j1_54" class="jstree-node in jstree-closed jstree-last"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=411" tabindex="-1" id="j1_54_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>社区协议</a></li></ul></div>
+        
+</nav>
+<div class="content col-md-9 col-sm-8 col-xs-12">
+<div class="search-panel">
+<div class="search-container">
+<span class="fa fa-search search-icon"></span>
+<input type="text" class="search-input" placeholder="Search">
+</div>
+</div>
+<h2 id="pip-">pip安装超时的解决方案</h2>
+<p>作者： Tushare社区用户 <b>晓子</b></p>
+<hr>
+<p>在中国大陆使用pip进行python包安装的时候经常会出现socket.timeout: The read operation timed out的问题，下面就讲讲解决方案。</p>
+<h3 id="-font-style-background-color-3daad6-font-"><font style="background-color: #3DAAD6"> &gt;&gt; 解决方案 &lt;&lt; </font></h3>
+<p>使用国内镜像（以安装tushare pro为例）</p>
+<pre><code>pip install tushare -i https://pypi.tuna.tsinghua.edu.cn/simple/</code></pre><h3 id="-font-style-background-color-3daad6-font-"><font style="background-color: #3DAAD6"> &gt;&gt; 深入探讨 &lt;&lt; </font></h3>
+<p>下面仔细说说上述问题并深入探讨下国内镜像的配置。</p>
+<p>出现超时，主要是因为PyPI（pip命令的包）使用的源在国外，导致大陆链接速度过慢，进而引起超时。故而，我们可以使用国内的镜像来下载安装包。下面列举国内常用的一些安装镜像：</p>
+<table>
+<thead>
+<tr>
+<th>镜像</th>
+<th>链接</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>阿里云</td>
+<td><a href="http://mirrors.aliyun.com/pypi/simple/">http://mirrors.aliyun.com/pypi/simple/</a></td>
+</tr>
+<tr>
+<td>中国科技大学</td>
+<td><a href="https://pypi.mirrors.ustc.edu.cn/simple/">https://pypi.mirrors.ustc.edu.cn/simple/</a></td>
+</tr>
+<tr>
+<td>豆瓣(douban)</td>
+<td><a href="http://pypi.douban.com/simple/">http://pypi.douban.com/simple/</a></td>
+</tr>
+<tr>
+<td>清华大学</td>
+<td><a href="https://pypi.tuna.tsinghua.edu.cn/simple/">https://pypi.tuna.tsinghua.edu.cn/simple/</a></td>
+</tr>
+<tr>
+<td>中国科学技术大学</td>
+<td><a href="http://pypi.mirrors.ustc.edu.cn/simple/">http://pypi.mirrors.ustc.edu.cn/simple/</a></td>
+</tr>
+</tbody></table>
+<h4 id="-font-style-background-color-3daad6-font-"><font style="background-color: #3DAAD6"> 镜像的使用方法 </font></h4>
+<p>在使用pip时传递-i及相应的镜像地址即可（见以下tushare pro的安装）</p>
+<pre><code>pip install tushare -i https://pypi.tuna.tsinghua.edu.cn/simple/</code></pre><h4 id="-font-style-background-color-3daad6-not-a-trusted-or-secure-host-font-"><font style="background-color: #3DAAD6"> not a trusted or secure host 问题 </font></h4>
+<p>如果在使用某个镜像时遇到如下的<strong style="background-color:yellow"> not a trusted or secure host </strong>提醒，并且确认该host是可信赖的，可以按照提示添加<strong style="background-color:yellow"> --trusted-host </strong>及该host链接来进行安装。</p>
+<pre><code>The repository located at pypi.douban.com is not a trusted or secure host and is being ignored. If this repository is available via HTTPS we recommend you use HTTPS instead, otherw
+ise you may silence this warning and allow it anyway with '--trusted-host pypi.douban.com'.</code></pre><h4 id="-font-style-background-color-3daad6-font-"><font style="background-color: #3DAAD6"> 配置默认镜像 </font></h4>
+<p>如果觉得每次安装时添加镜像链接比较麻烦，可以将该镜像链接配置成默认源，方法如下：</p>
+<p>需要创建或修改配置文件（一般都是创建，不同系统配置文件路径见下表），</p>
+<table>
+<thead>
+<tr>
+<th>系统</th>
+<th>路径</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>linux</td>
+<td>~/.pip/pip.conf</td>
+</tr>
+<tr>
+<td>windows</td>
+<td>%HOMEPATH%\pip\pip.ini</td>
+</tr>
+</tbody></table>
+<p>注：windows下可以在cmd中使用<strong style="background-color:yellow"> echo %HOMEPATH% </strong>来查看HOMEPATH。</p>
+<p>修改内容为：</p>
+<pre><code>[global]
+index-url = http://pypi.douban.com/simple
+[install]
+trusted-host=pypi.douban.com</code></pre><p>这样在使用pip来安装时，会默认调用该镜像。</p>
+<h4 id="-font-style-background-color-3daad6-python-font-"><font style="background-color: #3DAAD6"> 在python脚本中临时使用镜像 </font></h4>
+<p>临时使用其他源安装软件包的python脚本如下：</p>
+<pre><code>#!/usr/bin/python
+
+import os
+
+package = input("Input the package:\n")
+command = "pip install %s -i http://pypi.mirrors.ustc.edu.cn/simple --trusted-host pypi.mirrors.ustc.edu.cn" % package
+os.system(command)</code></pre>
+</div>
+</div>
+</div>
+</section>
+
+<footer id="footer" class="site-footer">
+<div class="container">
+<div class="row footer-panel">
+<div class="col-md-4">
+<div class=""><img src="/static/frontend/images/wechat_public.png?v=847e8d705d3a409d000dce413ab5c257" alt=""></div>
+</div>
+<div class="col-md-4">
+<div class="title">使用文档</div>
+<div class="content">
+<ul>
+<li><a href="/document/1">平台介绍</a></li>
+<li><a href="/document/2">数据接口</a></li>
+<li><a href="/document/41">区块链</a></li>
+<li><a href="/news">资讯数据</a></li>
+</ul>
+</div>
+</div>
+<div class="col-md-4">
+<div class="title">关注我们</div>
+<div class="content">
+<ul>
+<li>公众号：waditu</li>
+<li>Github：<a href="https://github.com/waditu" target="_blank">https://github.com/waditu</a></li>
+<li>雪 球：<a href="https://xueqiu.com/u/9103835084" target="_blank">https://xueqiu.com/u/9103835084</a></li>
+<li>微 博：<a href="https://weibo.com/u/1304687120" target="_blank">https://weibo.com/u/1304687120</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="row footer-footer">
+<div class="copyright"><p>© 2018 Tushare <a href="https://beian.miit.gov.cn" target="_blank">
+"沪ICP备2020031644号"
+</a></p></div>
+</div>
+</div>
+</footer>
+
+</div>
+<div class="scroll-to-top" data-spy="affix" data-offset-top="200">
+<a href="#page" class="smooth-scroll">置顶</a>
+</div>
+
+<script type="text/javascript">
+require(['custom']);
+</script>
+
+
+<script type="text/javascript">
+require([
+'jquery',
+'jstree'
+], function ($, jstree) {
+$(document).ready(function() {
+const tree = $('#jstree').jstree({
+// plugins : ['state']
+plugins : ['wholerow'],
+core: {
+themes: {
+multiple: false,
+icons: false,
+stripes: false,
+expand_selected_onload: true
+}
+}
+});
+tree.on("select_node.jstree", function (e, data) {
+window.location = `${location.protocol}//${location.host}${data.node.a_attr.href}`;
+});
+const searchInput = document.querySelector('.search-input');
+const searchIcon = document.querySelector('.search-icon');
+const onSearch = () => {
+const query = searchInput.value;
+if (query) {
+window.location = `${location.protocol}//${location.host}/document/search?q=${encodeURIComponent(query)}`;
+}
+}
+searchInput.addEventListener('change', onSearch);
+searchIcon.addEventListener('click', onSearch);
+});
+});
+</script>
+
+
+</body></html>

@@ -1,0 +1,429 @@
+<!-- Page: 积分频次对应表 -->
+<!DOCTYPE html><html lang="en" style="height:100%"><head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tushare数据</title>
+<meta content="免费股票数据,开源股票数据接口,股票数据,股票数据接口,python股票数据,财经数据,金融数据,行业大数据,区块链数据,量化投资,知识图谱" name="keywords">
+<meta name="description" content="Tushare为金融数据分析提供便捷、快速的接口，与投研和量化策略无缝对接">
+<meta content="index,follow" name="robots">
+<meta name="application-name" content="Tushare">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-192x192.png?v=811d9139fa2ea47f5595907da1f3c34d" sizes="192x192">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-160x160.png" sizes="160x160">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-96x96.png?v=4960eb8103c873c586ad41ef3f53db84" sizes="96x96">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-16x16.png?v=f7299bbce2cff4db7e3dfa6fb8c6a73c" sizes="16x16">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-32x32.png?v=a5df4bdd9f96de59f57bb9a7a50d8f96" sizes="32x32">
+<link href="/static/vendors/bootstrap/dist/css/bootstrap.min.css?v=d7ac98c842e4ec59d2c21fef89fce09c" rel="stylesheet">
+<link href="/static/vendors/jstree/themes/default/style.min.css?v=779fc4b400d1748ec2fb99685ad80550" rel="stylesheet">
+<link href="/static/frontend/css/custom.css?v=afa9fcaf1ec38d2c9d46d41a0615a077" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/static/vendors/codemirror/lib/codemirror.css?v=fc217d502b05f65616356459c0ec1d62">
+<link rel="stylesheet" href="/static/vendors/tui-editor/dist/tui-editor.css?v=144c2e273b8a0e79b208d0d86ccd3999">
+<link rel="stylesheet" href="/static/vendors/tui-editor/dist/tui-editor-contents.css?v=3ed3a3154a2304c111075714324b0e7b">
+<link rel="stylesheet" href="/static/vendors/highlightjs/styles/github.css?v=bf6c14925e66edb1526b6c9489b3c042">
+<link rel="stylesheet" href="/static/common/css/md.css?v=087ce310ed8e685ac6526e2a54db3c68">
+
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+<script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+<![endif]-->
+<script type="text/javascript" src="/static/vendors/requirejs/require.js?v=6da8be361b9ee26c5e721e76c6d4afce"></script>
+<script type="text/javascript" src="/static/frontend/js/config.js?v=85f0040a930464e1c6dbc61026f79de8"></script>
+<script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="jquery" src="/static/vendors/jquery/dist/jquery.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="jstree" src="/static/vendors/jstree/jstree.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="bootstrap" src="/static/vendors/bootstrap/dist/js/bootstrap.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="validate" src="/static/vendors/jquery-validation/dist/jquery.validate.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="custom" src="/static/vendors/../frontend/js/custom.js"></script></head>
+<body style="height:100%">
+<div id="page" style="height:100%;">
+<header id="header" class="site-header">
+<nav id="navbar" class="site-navbar navbar navbar-static-top" role="navigation">
+<div class="container">
+<div class="navbar-header">
+<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse-1">
+<span class="sr-only">Toggle navigation</span>
+<i class="fa fa-bars" style="font-size: 1.5em; padding: 15px 0;"></i>
+</button>
+<h1 class="navbar-brand">
+<a href="/"><img src="/static/frontend/images/logo.png?v=39c50795cb540b4463114d1bf3135d6e" alt="tushare"></a>
+</h1>
+</div>
+<div class="collapse navbar-collapse" id="navbar-collapse-1">
+<ul id="navigation" class="nav navbar-nav navbar-right">
+<li><a href="/">首页</a></li>
+<li><a href="/document/1">平台介绍</a></li>
+<li><a href="/document/2">数据接口</a></li>
+<!-- <li><a href="/document/41">另类数据</a></li>-->
+<li><a href="/news/sina">资讯数据</a></li>
+<li><a href="/webclient">数据工具</a></li>
+<li><a href="/weborder/#/permission">社区捐助</a></li>
+
+<li class="navbar-tail"><a href="/weborder/#/login" class="nav-login">登录/注册</a></li>
+
+</ul>
+</div>
+</div>
+</nav>
+</header>
+
+
+<section id="document" class="whole">
+<div class="container">
+<div class="document">
+<nav class="sidebar col-md-3 col-sm-4 col-xs-12">
+
+            <div id="jstree" class="jstree jstree-1 jstree-default" role="tree" aria-multiselectable="true" tabindex="0" aria-activedescendant="j1_1" aria-busy="false"><ul class="jstree-container-ul jstree-children jstree-no-icons jstree-wholerow-ul jstree-no-dots" role="group"><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_1_anchor" id="j1_1" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=450" tabindex="-1" id="j1_1_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>Tushare skills</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_2_anchor" aria-expanded="false" id="j1_2" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=5" tabindex="-1" id="j1_2_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>平台介绍</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_8_anchor" aria-expanded="false" id="j1_8" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=37" tabindex="-1" id="j1_8_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>操作手册</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_12_anchor" aria-expanded="false" id="j1_12" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=129" tabindex="-1" id="j1_12_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>获取方式</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_17_anchor" aria-expanded="false" id="j1_17" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=229" tabindex="-1" id="j1_17_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>踩坑记录</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_24_anchor" aria-expanded="true" id="j1_24" class="jstree-node   in jstree-open"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=10" tabindex="-1" id="j1_24_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>平台服务</a><ul role="group" class="jstree-children"><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_25_anchor" id="j1_25" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=11" tabindex="-1" id="j1_25_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>API服务</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_26_anchor" id="j1_26" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=12" tabindex="-1" id="j1_26_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>定制服务</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_27_anchor" id="j1_27" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=13" tabindex="-1" id="j1_27_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>平台积分</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_28_anchor" id="j1_28" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=108" tabindex="-1" id="j1_28_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>数据更新说明</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_29_anchor" id="j1_29" class="jstree-node active jstree-clicked jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=290" tabindex="-1" id="j1_29_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>积分频次对应表</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_30_anchor" id="j1_30" class="jstree-node  jstree-leaf jstree-last"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=307" tabindex="-1" id="j1_30_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>积分到期查询</a></li></ul></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_31_anchor" aria-expanded="false" id="j1_31" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=30" tabindex="-1" id="j1_31_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>相关工具</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_40_anchor" aria-expanded="false" id="j1_40" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=167" tabindex="-1" id="j1_40_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>培训课程</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_45_anchor" aria-expanded="false" id="j1_45" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=205" tabindex="-1" id="j1_45_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>机构招聘</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_49_anchor" aria-expanded="false" id="j1_49" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=306" tabindex="-1" id="j1_49_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>高校服务</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_52_anchor" id="j1_52" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=270" tabindex="-1" id="j1_52_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>专业微群</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_53_anchor" id="j1_53" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=243" tabindex="-1" id="j1_53_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>社区捐助</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_54_anchor" aria-expanded="false" id="j1_54" class="jstree-node in jstree-closed jstree-last"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/1?doc_id=411" tabindex="-1" id="j1_54_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>社区协议</a></li></ul></div>
+        
+</nav>
+<div class="content col-md-9 col-sm-8 col-xs-12">
+<div class="search-panel">
+<div class="search-container">
+<span class="fa fa-search search-icon"></span>
+<input type="text" class="search-input" placeholder="Search">
+</div>
+</div>
+<h2 id="_1">积分与频次权限对应表</h2>
+<hr>
+<p>积分是平台数据权限的体现，也代表了大家对社区的支持和贡献度。</p>
+<p>由于Pro版是Tushare社区自己生产、开发和维护数据，围绕Tushare社区数据的服务器体系庞大，每年交给云服务厂商的服务器和带宽成本非常高，因此我们设置了积分门槛。</p>
+<p>平台分为两种权限模式：</p>
+<p>1、<strong>需要积分的接口</strong>，此类接口需要达到一定的积分门槛，只要满足积分要求，都可以调取。类似各类资产的日线行情、基础数据等。（见下方表一）</p>
+<p>2、<strong>需要单独开权限的接口</strong>，此类接口是单独开权限，跟积分没有关系，且是分别开权限各自独立。类似分钟数据、新闻舆情、公告等等。（见下方表二）</p>
+<p><br></p>
+<p><strong>表（一）：积分接口</strong>  （<a href="https://tushare.pro/weborder/#/permission"><font color="red">去积分</font></a>），详细信息请<a href="https://docs.qq.com/sheet/DT0FIYUxYakJ5c1FF?tab=BB08J2" ,="" target="_blank">浏览积分明细表</a>。</p>
+<table>
+<thead>
+<tr>
+<th>积分数</th>
+<th>每分钟频次</th>
+<th>每天总量上限</th>
+<th>可以访问的接口<font color="red">（本表格积分不包括分钟权限）</font></th>
+<th>捐助（元/年）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>120</td>
+<td>50</td>
+<td>8000次</td>
+<td>股票非复权日线行情，其他接口无法调取</td>
+<td>0</td>
+</tr>
+<tr>
+<td>2000以上</td>
+<td>200</td>
+<td>100000次/个API</td>
+<td>可参考每个接口文档的积分要求</td>
+<td>200</td>
+</tr>
+<tr>
+<td>5000以上</td>
+<td>500</td>
+<td>常规数据无上限</td>
+<td>可参考每个接口文档的积分要求</td>
+<td>500</td>
+</tr>
+<tr>
+<td>10000以上</td>
+<td>500</td>
+<td>常规数据无上限，特色数据300次每分钟</td>
+<td>特色数据权限，包括盈利预测数据、每日筹码和胜率、筹码分布、券商每月金股等数据</td>
+<td>1000</td>
+</tr>
+<tr>
+<td>15000以上</td>
+<td>500</td>
+<td>特色数据无总量限制</td>
+<td>特色数据专属权限</td>
+<td>1500</td>
+</tr>
+</tbody>
+</table>
+<p>10000积分以上可以有更高的API频次和权限，比如<a href="https://tushare.pro/document/2?doc_id=291">股票特色数据</a></p>
+<p><br></p>
+<p>此外，<font color="red">分钟和港美股数据权限不在积分范畴内，各类分钟单独分别开权限，且不加积分</font>，以下是需要单独权限列表。</p>
+<p><br></p>
+<p><strong>表（二）：独立权限接口</strong>  （<a href="https://tushare.pro/weborder/#/permission"><font color="red">去开通</font></a>）</p>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>包含数据</th>
+<th>历史起始</th>
+<th>捐助（元/年）</th>
+<th>频次</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>股票历史分钟</td>
+<td>1、5、15、30、60分钟</td>
+<td>2009年</td>
+<td>单独2000元</td>
+<td>每分钟500次，每次8000行数据，总量不限制</td>
+</tr>
+<tr>
+<td>股票实时分钟</td>
+<td>1、5、15、30、60分钟</td>
+<td>实时</td>
+<td>1000/月</td>
+<td>每分钟500次，单次可同时请求300个股票</td>
+</tr>
+<tr>
+<td>股票实时日线</td>
+<td>开盘后<a href="https://tushare.pro/document/2?doc_id=372">当日实时日线成交</a>情况</td>
+<td>每天9点半开始</td>
+<td>200/月</td>
+<td>每分钟50次，每次可以提取全市场</td>
+</tr>
+<tr>
+<td>指数实时日线</td>
+<td>开盘后<a href="https://tushare.pro/document/2?doc_id=403">指数实时成交</a>情况</td>
+<td>每天9点半开始</td>
+<td>200/月</td>
+<td>每分钟50次，每次可以提取全市场</td>
+</tr>
+<tr>
+<td>申万指数实时行情</td>
+<td>开盘后<a href="https://tushare.pro/document/2?doc_id=417">申万指数实时行情</a>情况</td>
+<td>每天9点半开始</td>
+<td>200/月</td>
+<td>每分钟50次，每次可以提取全市场</td>
+</tr>
+<tr>
+<td>ETF实时日线</td>
+<td>开盘后<a href="https://tushare.pro/document/2?doc_id=400">当日ETF实时日线成交</a>情况</td>
+<td>每天9点半开始</td>
+<td>200/月</td>
+<td>每分钟50次，每次可以提取全市场</td>
+</tr>
+<tr>
+<td>ETF实时参考</td>
+<td>盘中<a href="https://tushare.pro/document/2?doc_id=454">ETF实时申赎和IOPV</a>情况</td>
+<td>盘中更新</td>
+<td>300/月</td>
+<td>每分钟50次，每次可以提取全市场</td>
+</tr>
+<tr>
+<td>期货历史分钟</td>
+<td>1、5、15、30、60分钟</td>
+<td>2010年</td>
+<td>单独2000元</td>
+<td>每分钟500次，每次8000行数据，总量不限制</td>
+</tr>
+<tr>
+<td>期货实时分钟</td>
+<td>1、5、15、30、60分钟</td>
+<td>全市场日盘夜盘实时更新</td>
+<td>1000/月</td>
+<td>支持SDK/HTTP/WebSocket</td>
+</tr>
+<tr>
+<td>期权历史分钟</td>
+<td>1、5、15、30、60分钟</td>
+<td>2010年</td>
+<td>单独2000元，包含股指和商品期权</td>
+<td>每分钟500次，每次8000行数据，总量不限制</td>
+</tr>
+<tr>
+<td>申万分钟</td>
+<td>同上</td>
+<td>2015年</td>
+<td>单独2000元</td>
+<td>每分钟500次，每次8000行数据，总量不限制</td>
+</tr>
+<tr>
+<td>港股日线</td>
+<td><a href="https://tushare.pro/document/2?doc_id=192">日线</a>，包括<a href="https://tushare.pro/document/2?doc_id=339">复权行情</a></td>
+<td>全历史</td>
+<td>单独1000元</td>
+<td>每分钟500次，每次6000行，总量不限制</td>
+</tr>
+<tr>
+<td>港股分钟</td>
+<td><a href="https://tushare.pro/document/2?doc_id=304">分钟</a></td>
+<td>2015年</td>
+<td>单独2000元</td>
+<td>每分钟500次，每次8000行，总量不限制</td>
+</tr>
+<tr>
+<td>港股财报</td>
+<td><a href="https://tushare.pro/document/2?doc_id=389">财报</a></td>
+<td>2000年</td>
+<td>单独500元</td>
+<td>每分钟500次，每次10000行，总量不限制</td>
+</tr>
+<tr>
+<td>港股实时日线</td>
+<td><a href="https://tushare.pro/document/2?doc_id=383">实时日线</a></td>
+<td>每天9点半开始</td>
+<td>1000/月</td>
+<td>每分钟50次，每次可以提取全市场</td>
+</tr>
+<tr>
+<td>美股日线</td>
+<td><a href="https://tushare.pro/document/2?doc_id=254">日线</a>，包含估值指标、换手率等，提供<a href="https://tushare.pro/document/2?doc_id=338">复权行情</a></td>
+<td>全股票全历史</td>
+<td>单独2000元</td>
+<td>每分钟500次，每次8000行，总量不限制</td>
+</tr>
+<tr>
+<td>美股财报</td>
+<td><a href="https://tushare.pro/document/2?doc_id=394">财报</a></td>
+<td>2000年</td>
+<td>单独500元</td>
+<td>每分钟500次，每次10000行，总量不限制</td>
+</tr>
+<tr>
+<td>新闻资讯</td>
+<td><a href="https://tushare.pro/document/2?doc_id=143">快讯</a>、<a href="https://tushare.pro/document/2?doc_id=195">长篇新闻</a>、<a href="https://tushare.pro/document/2?doc_id=154">新闻联播</a></td>
+<td>3年以上</td>
+<td>单独1000元</td>
+<td>每分钟400次，总量不限制</td>
+</tr>
+<tr>
+<td>公告信息</td>
+<td>包括股票、基金、固收相关的历史和增量公告，包括标题和pdf下载链接</td>
+<td>10年以上</td>
+<td>单独1000元</td>
+<td>每分钟500次</td>
+</tr>
+<tr>
+<td>可转债价格变动</td>
+<td>可转债转股价变动</td>
+<td>全历史</td>
+<td>单独500元</td>
+<td>每分钟500次，总量不限制</td>
+</tr>
+<tr>
+<td>盘前股本</td>
+<td>开盘前<a href="https://tushare.pro/document/2?doc_id=329">当日股本</a>情况</td>
+<td>近2年，每天更新次日数据</td>
+<td>单独500元</td>
+<td>每分钟500次，总量不限制</td>
+</tr>
+<tr>
+<td>上证e互动、深证互动易</td>
+<td>上海和深圳交易所<a href="https://tushare.pro/document/2?doc_id=367">董秘问答</a>文本数据</td>
+<td>历史：深证25年历史 上证2年历史，每天更新数据</td>
+<td>单独500元</td>
+<td>每分钟500次，总量不限制</td>
+</tr>
+<tr>
+<td>集合竞价</td>
+<td>开盘后<a href="https://tushare.pro/document/2?doc_id=369">当日集合竞价成交</a>情况</td>
+<td>每天9点半之前可以提取当日集合成交</td>
+<td>单独500元</td>
+<td>每分钟500次，总量不限制</td>
+</tr>
+<tr>
+<td>政策法规库</td>
+<td><a href="https://tushare.pro/document/2?doc_id=406">国家政策法规库</a></td>
+<td>每天更新一次</td>
+<td>单独1000元</td>
+<td>每分钟500次</td>
+</tr>
+<tr>
+<td>券商研报库</td>
+<td><a href="https://tushare.pro/document/2?doc_id=415">券商研究报告</a></td>
+<td>每天更新两次</td>
+<td>单独500元</td>
+<td>每分钟500次</td>
+</tr>
+</tbody>
+</table>
+<p><br><br>
+<font color="red">注：以上是针对个人的捐助对应表，如果是公司机构，费用为个人的10倍。捐助前请确认是否真的需要，捐助后费用转入阿里云充值，因此不支持退款，请大家谅解。</font><br>
+<br><br>
+<br></p>
+<p>当前获得积分办法：<br>
+1、参与社区贡献，比如提交数据问题、参与数据贡献、编写文章发给群主或积分管理员<br>
+2、200元加入QQ会员群（群号：1059991854），点击<a href="https://tushare.pro/weborder/#/permission" target="_blank">捐助</a>完成<br>
+3、加入微信专业用户群，送5000积分，请参阅<a href="https://tushare.pro/document/1?doc_id=270">活动链接</a><br>
+4、日常捐助（除港美股、数字货币、各类分钟数据外是1：10比例，比如200元可以获得2000积分），可点击<a href="https://tushare.pro/weborder/#/permission" target="_blank">赞助</a>完成</p>
+</div>
+</div>
+</div>
+</section>
+
+<footer id="footer" class="site-footer">
+<div class="container">
+<div class="row footer-panel">
+<div class="col-md-4">
+<div class=""><img src="/static/frontend/images/wechat_public.png?v=847e8d705d3a409d000dce413ab5c257" alt=""></div>
+</div>
+<div class="col-md-4">
+<div class="title">使用文档</div>
+<div class="content">
+<ul>
+<li><a href="/document/1">平台介绍</a></li>
+<li><a href="/document/2">数据接口</a></li>
+<li><a href="/document/41">区块链</a></li>
+<li><a href="/news">资讯数据</a></li>
+</ul>
+</div>
+</div>
+<div class="col-md-4">
+<div class="title">关注我们</div>
+<div class="content">
+<ul>
+<li>公众号：waditu</li>
+<li>Github：<a href="https://github.com/waditu" target="_blank">https://github.com/waditu</a></li>
+<li>雪 球：<a href="https://xueqiu.com/u/9103835084" target="_blank">https://xueqiu.com/u/9103835084</a></li>
+<li>微 博：<a href="https://weibo.com/u/1304687120" target="_blank">https://weibo.com/u/1304687120</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="row footer-footer">
+<div class="copyright"><p>© 2018 Tushare <a href="https://beian.miit.gov.cn" target="_blank">
+"沪ICP备2020031644号"
+</a></p></div>
+</div>
+</div>
+</footer>
+
+</div>
+<div class="scroll-to-top" data-spy="affix" data-offset-top="200">
+<a href="#page" class="smooth-scroll">置顶</a>
+</div>
+
+<script type="text/javascript">
+require(['custom']);
+</script>
+
+
+<script type="text/javascript">
+require([
+'jquery',
+'jstree'
+], function ($, jstree) {
+$(document).ready(function() {
+const tree = $('#jstree').jstree({
+// plugins : ['state']
+plugins : ['wholerow'],
+core: {
+themes: {
+multiple: false,
+icons: false,
+stripes: false,
+expand_selected_onload: true
+}
+}
+});
+tree.on("select_node.jstree", function (e, data) {
+window.location = `${location.protocol}//${location.host}${data.node.a_attr.href}`;
+});
+const searchInput = document.querySelector('.search-input');
+const searchIcon = document.querySelector('.search-icon');
+const onSearch = () => {
+const query = searchInput.value;
+if (query) {
+window.location = `${location.protocol}//${location.host}/document/search?q=${encodeURIComponent(query)}`;
+}
+}
+searchInput.addEventListener('change', onSearch);
+searchIcon.addEventListener('click', onSearch);
+});
+});
+</script>
+
+
+</body></html>

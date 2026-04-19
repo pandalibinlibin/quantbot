@@ -1,0 +1,1250 @@
+<!-- Page: 财务指标数据 -->
+<!DOCTYPE html><html lang="en" style="height:100%"><head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tushare数据</title>
+<meta content="免费股票数据,开源股票数据接口,股票数据,股票数据接口,python股票数据,财经数据,金融数据,行业大数据,区块链数据,量化投资,知识图谱" name="keywords">
+<meta name="description" content="Tushare为金融数据分析提供便捷、快速的接口，与投研和量化策略无缝对接">
+<meta content="index,follow" name="robots">
+<meta name="application-name" content="Tushare">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-192x192.png?v=811d9139fa2ea47f5595907da1f3c34d" sizes="192x192">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-160x160.png" sizes="160x160">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-96x96.png?v=4960eb8103c873c586ad41ef3f53db84" sizes="96x96">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-16x16.png?v=f7299bbce2cff4db7e3dfa6fb8c6a73c" sizes="16x16">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-32x32.png?v=a5df4bdd9f96de59f57bb9a7a50d8f96" sizes="32x32">
+<link href="/static/vendors/bootstrap/dist/css/bootstrap.min.css?v=d7ac98c842e4ec59d2c21fef89fce09c" rel="stylesheet">
+<link href="/static/vendors/jstree/themes/default/style.min.css?v=779fc4b400d1748ec2fb99685ad80550" rel="stylesheet">
+<link href="/static/frontend/css/custom.css?v=afa9fcaf1ec38d2c9d46d41a0615a077" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/static/vendors/codemirror/lib/codemirror.css?v=fc217d502b05f65616356459c0ec1d62">
+<link rel="stylesheet" href="/static/vendors/tui-editor/dist/tui-editor.css?v=144c2e273b8a0e79b208d0d86ccd3999">
+<link rel="stylesheet" href="/static/vendors/tui-editor/dist/tui-editor-contents.css?v=3ed3a3154a2304c111075714324b0e7b">
+<link rel="stylesheet" href="/static/vendors/highlightjs/styles/github.css?v=bf6c14925e66edb1526b6c9489b3c042">
+<link rel="stylesheet" href="/static/common/css/md.css?v=087ce310ed8e685ac6526e2a54db3c68">
+
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+<script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+<![endif]-->
+<script type="text/javascript" src="/static/vendors/requirejs/require.js?v=6da8be361b9ee26c5e721e76c6d4afce"></script>
+<script type="text/javascript" src="/static/frontend/js/config.js?v=85f0040a930464e1c6dbc61026f79de8"></script>
+<script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="jquery" src="/static/vendors/jquery/dist/jquery.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="jstree" src="/static/vendors/jstree/jstree.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="bootstrap" src="/static/vendors/bootstrap/dist/js/bootstrap.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="validate" src="/static/vendors/jquery-validation/dist/jquery.validate.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="custom" src="/static/vendors/../frontend/js/custom.js"></script></head>
+<body style="height:100%">
+<div id="page" style="height:100%;">
+<header id="header" class="site-header">
+<nav id="navbar" class="site-navbar navbar navbar-static-top" role="navigation">
+<div class="container">
+<div class="navbar-header">
+<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse-1">
+<span class="sr-only">Toggle navigation</span>
+<i class="fa fa-bars" style="font-size: 1.5em; padding: 15px 0;"></i>
+</button>
+<h1 class="navbar-brand">
+<a href="/"><img src="/static/frontend/images/logo.png?v=39c50795cb540b4463114d1bf3135d6e" alt="tushare"></a>
+</h1>
+</div>
+<div class="collapse navbar-collapse" id="navbar-collapse-1">
+<ul id="navigation" class="nav navbar-nav navbar-right">
+<li><a href="/">首页</a></li>
+<li><a href="/document/1">平台介绍</a></li>
+<li><a href="/document/2">数据接口</a></li>
+<!-- <li><a href="/document/41">另类数据</a></li>-->
+<li><a href="/news/sina">资讯数据</a></li>
+<li><a href="/webclient">数据工具</a></li>
+<li><a href="/weborder/#/permission">社区捐助</a></li>
+
+<li class="navbar-tail"><a href="/weborder/#/login" class="nav-login">登录/注册</a></li>
+
+</ul>
+</div>
+</div>
+</nav>
+</header>
+
+
+<section id="document" class="whole">
+<div class="container">
+<div class="document">
+<nav class="sidebar col-md-3 col-sm-4 col-xs-12">
+
+            <div id="jstree" class="jstree jstree-1 jstree-default" role="tree" aria-multiselectable="true" tabindex="0" aria-activedescendant="j1_1" aria-busy="false"><ul class="jstree-container-ul jstree-children jstree-no-icons jstree-wholerow-ul jstree-no-dots" role="group"><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_1_anchor" aria-expanded="true" id="j1_1" class="jstree-node   in jstree-open"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=14" tabindex="-1" id="j1_1_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>股票数据</a><ul role="group" class="jstree-children"><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_2_anchor" aria-expanded="false" id="j1_2" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=24" tabindex="-1" id="j1_2_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>基础数据</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_16_anchor" aria-expanded="false" id="j1_16" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=15" tabindex="-1" id="j1_16_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>行情数据</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_40_anchor" aria-expanded="true" id="j1_40" class="jstree-node   in jstree-open"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=16" tabindex="-1" id="j1_40_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>财务数据</a><ul role="group" class="jstree-children"><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_41_anchor" id="j1_41" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=33" tabindex="-1" id="j1_41_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>利润表</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_42_anchor" id="j1_42" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=36" tabindex="-1" id="j1_42_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>资产负债表</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_43_anchor" id="j1_43" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=44" tabindex="-1" id="j1_43_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>现金流量表</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_44_anchor" id="j1_44" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=45" tabindex="-1" id="j1_44_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>业绩预告</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_45_anchor" id="j1_45" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=46" tabindex="-1" id="j1_45_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>业绩快报</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_46_anchor" id="j1_46" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=103" tabindex="-1" id="j1_46_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>分红送股数据</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_47_anchor" id="j1_47" class="jstree-node active jstree-clicked jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=79" tabindex="-1" id="j1_47_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>财务指标数据</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_48_anchor" id="j1_48" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=80" tabindex="-1" id="j1_48_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>财务审计意见</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_49_anchor" id="j1_49" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=81" tabindex="-1" id="j1_49_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>主营业务构成</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_50_anchor" id="j1_50" class="jstree-node  jstree-leaf jstree-last"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=162" tabindex="-1" id="j1_50_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>财报披露日期表</a></li></ul></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_51_anchor" aria-expanded="false" id="j1_51" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=17" tabindex="-1" id="j1_51_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>参考数据</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_66_anchor" aria-expanded="false" id="j1_66" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=291" tabindex="-1" id="j1_66_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>特色数据</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_80_anchor" aria-expanded="false" id="j1_80" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=330" tabindex="-1" id="j1_80_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>两融及转融通</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_88_anchor" aria-expanded="false" id="j1_88" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=342" tabindex="-1" id="j1_88_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>资金流向数据</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_97_anchor" aria-expanded="false" id="j1_97" class="jstree-node in jstree-closed jstree-last"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=346" tabindex="-1" id="j1_97_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>打板专题数据</a></li></ul></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_122_anchor" aria-expanded="false" id="j1_122" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=384" tabindex="-1" id="j1_122_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>ETF专题</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_132_anchor" aria-expanded="false" id="j1_132" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=93" tabindex="-1" id="j1_132_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>指数专题</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_152_anchor" aria-expanded="false" id="j1_152" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=18" tabindex="-1" id="j1_152_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>公募基金</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_161_anchor" aria-expanded="false" id="j1_161" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=134" tabindex="-1" id="j1_161_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>期货数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_176_anchor" aria-expanded="false" id="j1_176" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=283" tabindex="-1" id="j1_176_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>现货数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_179_anchor" aria-expanded="false" id="j1_179" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=157" tabindex="-1" id="j1_179_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>期权数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_183_anchor" aria-expanded="false" id="j1_183" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=184" tabindex="-1" id="j1_183_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>债券专题</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_199_anchor" aria-expanded="false" id="j1_199" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=177" tabindex="-1" id="j1_199_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>外汇数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_202_anchor" aria-expanded="false" id="j1_202" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=190" tabindex="-1" id="j1_202_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>港股数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_214_anchor" aria-expanded="false" id="j1_214" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=251" tabindex="-1" id="j1_214_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>美股数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_224_anchor" aria-expanded="false" id="j1_224" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=82" tabindex="-1" id="j1_224_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>行业经济</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_234_anchor" aria-expanded="false" id="j1_234" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=147" tabindex="-1" id="j1_234_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>宏观经济</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_263_anchor" aria-expanded="false" id="j1_263" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=142" tabindex="-1" id="j1_263_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>大模型语料专题数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_272_anchor" aria-expanded="false" id="j1_272" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=263" tabindex="-1" id="j1_272_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>财富管理</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_276_anchor" id="j1_276" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=209" tabindex="-1" id="j1_276_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>数据索引</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_277_anchor" id="j1_277" class="jstree-node  jstree-leaf jstree-last"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=244" tabindex="-1" id="j1_277_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>社区捐助</a></li></ul></div>
+        
+</nav>
+<div class="content col-md-9 col-sm-8 col-xs-12">
+<div class="search-panel">
+<div class="search-container">
+<span class="fa fa-search search-icon"></span>
+<input type="text" class="search-input" placeholder="Search">
+</div>
+</div>
+<h2 id="财务指标数据">财务指标数据</h2>
+<hr>
+<p>接口：fina_indicator，可以通过<a href="https://tushare.pro/webclient/"><strong>数据工具</strong></a>调试和查看数据。<br>描述：获取上市公司财务指标数据，为避免服务器压力，现阶段每次请求最多返回100条记录，可通过设置日期多次请求获取更多数据。<br>权限：用户需要至少2000积分才可以调取，具体请参阅<a href="https://tushare.pro/document/1?doc_id=13">积分获取办法</a><br><font color="red"><br>提示：当前接口只能按单只股票获取其历史数据，如果需要获取某一季度全部上市公司数据，请使用fina_indicator_vip接口（参数一致），需积攒5000积分。<br></font></p>
+<p><strong>输入参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>必选</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ts_code</td>
+<td>str</td>
+<td>Y</td>
+<td>TS股票代码,e.g. 600001.SH/000001.SZ</td>
+</tr>
+<tr>
+<td>ann_date</td>
+<td>str</td>
+<td>N</td>
+<td>公告日期</td>
+</tr>
+<tr>
+<td>start_date</td>
+<td>str</td>
+<td>N</td>
+<td>报告期开始日期</td>
+</tr>
+<tr>
+<td>end_date</td>
+<td>str</td>
+<td>N</td>
+<td>报告期结束日期</td>
+</tr>
+<tr>
+<td>period</td>
+<td>str</td>
+<td>N</td>
+<td>报告期(每个季度最后一天的日期,比如20171231表示年报)</td>
+</tr>
+</tbody></table>
+<p><strong>输出参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>默认显示</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ts_code</td>
+<td>str</td>
+<td>Y</td>
+<td>TS代码</td>
+</tr>
+<tr>
+<td>ann_date</td>
+<td>str</td>
+<td>Y</td>
+<td>公告日期</td>
+</tr>
+<tr>
+<td>end_date</td>
+<td>str</td>
+<td>Y</td>
+<td>报告期</td>
+</tr>
+<tr>
+<td>eps</td>
+<td>float</td>
+<td>Y</td>
+<td>基本每股收益</td>
+</tr>
+<tr>
+<td>dt_eps</td>
+<td>float</td>
+<td>Y</td>
+<td>稀释每股收益</td>
+</tr>
+<tr>
+<td>total_revenue_ps</td>
+<td>float</td>
+<td>Y</td>
+<td>每股营业总收入</td>
+</tr>
+<tr>
+<td>revenue_ps</td>
+<td>float</td>
+<td>Y</td>
+<td>每股营业收入</td>
+</tr>
+<tr>
+<td>capital_rese_ps</td>
+<td>float</td>
+<td>Y</td>
+<td>每股资本公积</td>
+</tr>
+<tr>
+<td>surplus_rese_ps</td>
+<td>float</td>
+<td>Y</td>
+<td>每股盈余公积</td>
+</tr>
+<tr>
+<td>undist_profit_ps</td>
+<td>float</td>
+<td>Y</td>
+<td>每股未分配利润</td>
+</tr>
+<tr>
+<td>extra_item</td>
+<td>float</td>
+<td>Y</td>
+<td>非经常性损益</td>
+</tr>
+<tr>
+<td>profit_dedt</td>
+<td>float</td>
+<td>Y</td>
+<td>扣除非经常性损益后的净利润（扣非净利润）</td>
+</tr>
+<tr>
+<td>gross_margin</td>
+<td>float</td>
+<td>Y</td>
+<td>毛利</td>
+</tr>
+<tr>
+<td>current_ratio</td>
+<td>float</td>
+<td>Y</td>
+<td>流动比率</td>
+</tr>
+<tr>
+<td>quick_ratio</td>
+<td>float</td>
+<td>Y</td>
+<td>速动比率</td>
+</tr>
+<tr>
+<td>cash_ratio</td>
+<td>float</td>
+<td>Y</td>
+<td>保守速动比率</td>
+</tr>
+<tr>
+<td>invturn_days</td>
+<td>float</td>
+<td>N</td>
+<td>存货周转天数</td>
+</tr>
+<tr>
+<td>arturn_days</td>
+<td>float</td>
+<td>N</td>
+<td>应收账款周转天数</td>
+</tr>
+<tr>
+<td>inv_turn</td>
+<td>float</td>
+<td>N</td>
+<td>存货周转率</td>
+</tr>
+<tr>
+<td>ar_turn</td>
+<td>float</td>
+<td>Y</td>
+<td>应收账款周转率</td>
+</tr>
+<tr>
+<td>ca_turn</td>
+<td>float</td>
+<td>Y</td>
+<td>流动资产周转率</td>
+</tr>
+<tr>
+<td>fa_turn</td>
+<td>float</td>
+<td>Y</td>
+<td>固定资产周转率</td>
+</tr>
+<tr>
+<td>assets_turn</td>
+<td>float</td>
+<td>Y</td>
+<td>总资产周转率</td>
+</tr>
+<tr>
+<td>op_income</td>
+<td>float</td>
+<td>Y</td>
+<td>经营活动净收益</td>
+</tr>
+<tr>
+<td>valuechange_income</td>
+<td>float</td>
+<td>N</td>
+<td>价值变动净收益</td>
+</tr>
+<tr>
+<td>interst_income</td>
+<td>float</td>
+<td>N</td>
+<td>利息费用</td>
+</tr>
+<tr>
+<td>daa</td>
+<td>float</td>
+<td>N</td>
+<td>折旧与摊销</td>
+</tr>
+<tr>
+<td>ebit</td>
+<td>float</td>
+<td>Y</td>
+<td>息税前利润</td>
+</tr>
+<tr>
+<td>ebitda</td>
+<td>float</td>
+<td>Y</td>
+<td>息税折旧摊销前利润</td>
+</tr>
+<tr>
+<td>fcff</td>
+<td>float</td>
+<td>Y</td>
+<td>企业自由现金流量</td>
+</tr>
+<tr>
+<td>fcfe</td>
+<td>float</td>
+<td>Y</td>
+<td>股权自由现金流量</td>
+</tr>
+<tr>
+<td>current_exint</td>
+<td>float</td>
+<td>Y</td>
+<td>无息流动负债</td>
+</tr>
+<tr>
+<td>noncurrent_exint</td>
+<td>float</td>
+<td>Y</td>
+<td>无息非流动负债</td>
+</tr>
+<tr>
+<td>interestdebt</td>
+<td>float</td>
+<td>Y</td>
+<td>带息债务</td>
+</tr>
+<tr>
+<td>netdebt</td>
+<td>float</td>
+<td>Y</td>
+<td>净债务</td>
+</tr>
+<tr>
+<td>tangible_asset</td>
+<td>float</td>
+<td>Y</td>
+<td>有形资产</td>
+</tr>
+<tr>
+<td>working_capital</td>
+<td>float</td>
+<td>Y</td>
+<td>营运资金</td>
+</tr>
+<tr>
+<td>networking_capital</td>
+<td>float</td>
+<td>Y</td>
+<td>营运流动资本</td>
+</tr>
+<tr>
+<td>invest_capital</td>
+<td>float</td>
+<td>Y</td>
+<td>全部投入资本</td>
+</tr>
+<tr>
+<td>retained_earnings</td>
+<td>float</td>
+<td>Y</td>
+<td>留存收益</td>
+</tr>
+<tr>
+<td>diluted2_eps</td>
+<td>float</td>
+<td>Y</td>
+<td>期末摊薄每股收益</td>
+</tr>
+<tr>
+<td>bps</td>
+<td>float</td>
+<td>Y</td>
+<td>每股净资产</td>
+</tr>
+<tr>
+<td>ocfps</td>
+<td>float</td>
+<td>Y</td>
+<td>每股经营活动产生的现金流量净额</td>
+</tr>
+<tr>
+<td>retainedps</td>
+<td>float</td>
+<td>Y</td>
+<td>每股留存收益</td>
+</tr>
+<tr>
+<td>cfps</td>
+<td>float</td>
+<td>Y</td>
+<td>每股现金流量净额</td>
+</tr>
+<tr>
+<td>ebit_ps</td>
+<td>float</td>
+<td>Y</td>
+<td>每股息税前利润</td>
+</tr>
+<tr>
+<td>fcff_ps</td>
+<td>float</td>
+<td>Y</td>
+<td>每股企业自由现金流量</td>
+</tr>
+<tr>
+<td>fcfe_ps</td>
+<td>float</td>
+<td>Y</td>
+<td>每股股东自由现金流量</td>
+</tr>
+<tr>
+<td>netprofit_margin</td>
+<td>float</td>
+<td>Y</td>
+<td>销售净利率</td>
+</tr>
+<tr>
+<td>grossprofit_margin</td>
+<td>float</td>
+<td>Y</td>
+<td>销售毛利率</td>
+</tr>
+<tr>
+<td>cogs_of_sales</td>
+<td>float</td>
+<td>Y</td>
+<td>销售成本率</td>
+</tr>
+<tr>
+<td>expense_of_sales</td>
+<td>float</td>
+<td>Y</td>
+<td>销售期间费用率</td>
+</tr>
+<tr>
+<td>profit_to_gr</td>
+<td>float</td>
+<td>Y</td>
+<td>净利润/营业总收入</td>
+</tr>
+<tr>
+<td>saleexp_to_gr</td>
+<td>float</td>
+<td>Y</td>
+<td>销售费用/营业总收入</td>
+</tr>
+<tr>
+<td>adminexp_of_gr</td>
+<td>float</td>
+<td>Y</td>
+<td>管理费用/营业总收入</td>
+</tr>
+<tr>
+<td>finaexp_of_gr</td>
+<td>float</td>
+<td>Y</td>
+<td>财务费用/营业总收入</td>
+</tr>
+<tr>
+<td>impai_ttm</td>
+<td>float</td>
+<td>Y</td>
+<td>资产减值损失/营业总收入</td>
+</tr>
+<tr>
+<td>gc_of_gr</td>
+<td>float</td>
+<td>Y</td>
+<td>营业总成本/营业总收入</td>
+</tr>
+<tr>
+<td>op_of_gr</td>
+<td>float</td>
+<td>Y</td>
+<td>营业利润/营业总收入</td>
+</tr>
+<tr>
+<td>ebit_of_gr</td>
+<td>float</td>
+<td>Y</td>
+<td>息税前利润/营业总收入</td>
+</tr>
+<tr>
+<td>roe</td>
+<td>float</td>
+<td>Y</td>
+<td>净资产收益率</td>
+</tr>
+<tr>
+<td>roe_waa</td>
+<td>float</td>
+<td>Y</td>
+<td>加权平均净资产收益率</td>
+</tr>
+<tr>
+<td>roe_dt</td>
+<td>float</td>
+<td>Y</td>
+<td>净资产收益率(扣除非经常损益)</td>
+</tr>
+<tr>
+<td>roa</td>
+<td>float</td>
+<td>Y</td>
+<td>总资产报酬率</td>
+</tr>
+<tr>
+<td>npta</td>
+<td>float</td>
+<td>Y</td>
+<td>总资产净利润</td>
+</tr>
+<tr>
+<td>roic</td>
+<td>float</td>
+<td>Y</td>
+<td>投入资本回报率</td>
+</tr>
+<tr>
+<td>roe_yearly</td>
+<td>float</td>
+<td>Y</td>
+<td>年化净资产收益率</td>
+</tr>
+<tr>
+<td>roa2_yearly</td>
+<td>float</td>
+<td>Y</td>
+<td>年化总资产报酬率</td>
+</tr>
+<tr>
+<td>roe_avg</td>
+<td>float</td>
+<td>N</td>
+<td>平均净资产收益率(增发条件)</td>
+</tr>
+<tr>
+<td>opincome_of_ebt</td>
+<td>float</td>
+<td>N</td>
+<td>经营活动净收益/利润总额</td>
+</tr>
+<tr>
+<td>investincome_of_ebt</td>
+<td>float</td>
+<td>N</td>
+<td>价值变动净收益/利润总额</td>
+</tr>
+<tr>
+<td>n_op_profit_of_ebt</td>
+<td>float</td>
+<td>N</td>
+<td>营业外收支净额/利润总额</td>
+</tr>
+<tr>
+<td>tax_to_ebt</td>
+<td>float</td>
+<td>N</td>
+<td>所得税/利润总额</td>
+</tr>
+<tr>
+<td>dtprofit_to_profit</td>
+<td>float</td>
+<td>N</td>
+<td>扣除非经常损益后的净利润/净利润</td>
+</tr>
+<tr>
+<td>salescash_to_or</td>
+<td>float</td>
+<td>N</td>
+<td>销售商品提供劳务收到的现金/营业收入</td>
+</tr>
+<tr>
+<td>ocf_to_or</td>
+<td>float</td>
+<td>N</td>
+<td>经营活动产生的现金流量净额/营业收入</td>
+</tr>
+<tr>
+<td>ocf_to_opincome</td>
+<td>float</td>
+<td>N</td>
+<td>经营活动产生的现金流量净额/经营活动净收益</td>
+</tr>
+<tr>
+<td>capitalized_to_da</td>
+<td>float</td>
+<td>N</td>
+<td>资本支出/折旧和摊销</td>
+</tr>
+<tr>
+<td>debt_to_assets</td>
+<td>float</td>
+<td>Y</td>
+<td>资产负债率</td>
+</tr>
+<tr>
+<td>assets_to_eqt</td>
+<td>float</td>
+<td>Y</td>
+<td>权益乘数</td>
+</tr>
+<tr>
+<td>dp_assets_to_eqt</td>
+<td>float</td>
+<td>Y</td>
+<td>权益乘数(杜邦分析)</td>
+</tr>
+<tr>
+<td>ca_to_assets</td>
+<td>float</td>
+<td>Y</td>
+<td>流动资产/总资产</td>
+</tr>
+<tr>
+<td>nca_to_assets</td>
+<td>float</td>
+<td>Y</td>
+<td>非流动资产/总资产</td>
+</tr>
+<tr>
+<td>tbassets_to_totalassets</td>
+<td>float</td>
+<td>Y</td>
+<td>有形资产/总资产</td>
+</tr>
+<tr>
+<td>int_to_talcap</td>
+<td>float</td>
+<td>Y</td>
+<td>带息债务/全部投入资本</td>
+</tr>
+<tr>
+<td>eqt_to_talcapital</td>
+<td>float</td>
+<td>Y</td>
+<td>归属于母公司的股东权益/全部投入资本</td>
+</tr>
+<tr>
+<td>currentdebt_to_debt</td>
+<td>float</td>
+<td>Y</td>
+<td>流动负债/负债合计</td>
+</tr>
+<tr>
+<td>longdeb_to_debt</td>
+<td>float</td>
+<td>Y</td>
+<td>非流动负债/负债合计</td>
+</tr>
+<tr>
+<td>ocf_to_shortdebt</td>
+<td>float</td>
+<td>Y</td>
+<td>经营活动产生的现金流量净额/流动负债</td>
+</tr>
+<tr>
+<td>debt_to_eqt</td>
+<td>float</td>
+<td>Y</td>
+<td>产权比率</td>
+</tr>
+<tr>
+<td>eqt_to_debt</td>
+<td>float</td>
+<td>Y</td>
+<td>归属于母公司的股东权益/负债合计</td>
+</tr>
+<tr>
+<td>eqt_to_interestdebt</td>
+<td>float</td>
+<td>Y</td>
+<td>归属于母公司的股东权益/带息债务</td>
+</tr>
+<tr>
+<td>tangibleasset_to_debt</td>
+<td>float</td>
+<td>Y</td>
+<td>有形资产/负债合计</td>
+</tr>
+<tr>
+<td>tangasset_to_intdebt</td>
+<td>float</td>
+<td>Y</td>
+<td>有形资产/带息债务</td>
+</tr>
+<tr>
+<td>tangibleasset_to_netdebt</td>
+<td>float</td>
+<td>Y</td>
+<td>有形资产/净债务</td>
+</tr>
+<tr>
+<td>ocf_to_debt</td>
+<td>float</td>
+<td>Y</td>
+<td>经营活动产生的现金流量净额/负债合计</td>
+</tr>
+<tr>
+<td>ocf_to_interestdebt</td>
+<td>float</td>
+<td>N</td>
+<td>经营活动产生的现金流量净额/带息债务</td>
+</tr>
+<tr>
+<td>ocf_to_netdebt</td>
+<td>float</td>
+<td>N</td>
+<td>经营活动产生的现金流量净额/净债务</td>
+</tr>
+<tr>
+<td>ebit_to_interest</td>
+<td>float</td>
+<td>N</td>
+<td>已获利息倍数(EBIT/利息费用)</td>
+</tr>
+<tr>
+<td>longdebt_to_workingcapital</td>
+<td>float</td>
+<td>N</td>
+<td>长期债务与营运资金比率</td>
+</tr>
+<tr>
+<td>ebitda_to_debt</td>
+<td>float</td>
+<td>N</td>
+<td>息税折旧摊销前利润/负债合计</td>
+</tr>
+<tr>
+<td>turn_days</td>
+<td>float</td>
+<td>Y</td>
+<td>营业周期</td>
+</tr>
+<tr>
+<td>roa_yearly</td>
+<td>float</td>
+<td>Y</td>
+<td>年化总资产净利率</td>
+</tr>
+<tr>
+<td>roa_dp</td>
+<td>float</td>
+<td>Y</td>
+<td>总资产净利率(杜邦分析)</td>
+</tr>
+<tr>
+<td>fixed_assets</td>
+<td>float</td>
+<td>Y</td>
+<td>固定资产合计</td>
+</tr>
+<tr>
+<td>profit_prefin_exp</td>
+<td>float</td>
+<td>N</td>
+<td>扣除财务费用前营业利润</td>
+</tr>
+<tr>
+<td>non_op_profit</td>
+<td>float</td>
+<td>N</td>
+<td>非营业利润</td>
+</tr>
+<tr>
+<td>op_to_ebt</td>
+<td>float</td>
+<td>N</td>
+<td>营业利润／利润总额</td>
+</tr>
+<tr>
+<td>nop_to_ebt</td>
+<td>float</td>
+<td>N</td>
+<td>非营业利润／利润总额</td>
+</tr>
+<tr>
+<td>ocf_to_profit</td>
+<td>float</td>
+<td>N</td>
+<td>经营活动产生的现金流量净额／营业利润</td>
+</tr>
+<tr>
+<td>cash_to_liqdebt</td>
+<td>float</td>
+<td>N</td>
+<td>货币资金／流动负债</td>
+</tr>
+<tr>
+<td>cash_to_liqdebt_withinterest</td>
+<td>float</td>
+<td>N</td>
+<td>货币资金／带息流动负债</td>
+</tr>
+<tr>
+<td>op_to_liqdebt</td>
+<td>float</td>
+<td>N</td>
+<td>营业利润／流动负债</td>
+</tr>
+<tr>
+<td>op_to_debt</td>
+<td>float</td>
+<td>N</td>
+<td>营业利润／负债合计</td>
+</tr>
+<tr>
+<td>roic_yearly</td>
+<td>float</td>
+<td>N</td>
+<td>年化投入资本回报率</td>
+</tr>
+<tr>
+<td>total_fa_trun</td>
+<td>float</td>
+<td>N</td>
+<td>固定资产合计周转率</td>
+</tr>
+<tr>
+<td>profit_to_op</td>
+<td>float</td>
+<td>Y</td>
+<td>利润总额／营业收入</td>
+</tr>
+<tr>
+<td>q_opincome</td>
+<td>float</td>
+<td>N</td>
+<td>经营活动单季度净收益</td>
+</tr>
+<tr>
+<td>q_investincome</td>
+<td>float</td>
+<td>N</td>
+<td>价值变动单季度净收益</td>
+</tr>
+<tr>
+<td>q_dtprofit</td>
+<td>float</td>
+<td>N</td>
+<td>扣除非经常损益后的单季度净利润</td>
+</tr>
+<tr>
+<td>q_eps</td>
+<td>float</td>
+<td>N</td>
+<td>每股收益(单季度)</td>
+</tr>
+<tr>
+<td>q_netprofit_margin</td>
+<td>float</td>
+<td>N</td>
+<td>销售净利率(单季度)</td>
+</tr>
+<tr>
+<td>q_gsprofit_margin</td>
+<td>float</td>
+<td>N</td>
+<td>销售毛利率(单季度)</td>
+</tr>
+<tr>
+<td>q_exp_to_sales</td>
+<td>float</td>
+<td>N</td>
+<td>销售期间费用率(单季度)</td>
+</tr>
+<tr>
+<td>q_profit_to_gr</td>
+<td>float</td>
+<td>N</td>
+<td>净利润／营业总收入(单季度)</td>
+</tr>
+<tr>
+<td>q_saleexp_to_gr</td>
+<td>float</td>
+<td>Y</td>
+<td>销售费用／营业总收入 (单季度)</td>
+</tr>
+<tr>
+<td>q_adminexp_to_gr</td>
+<td>float</td>
+<td>N</td>
+<td>管理费用／营业总收入 (单季度)</td>
+</tr>
+<tr>
+<td>q_finaexp_to_gr</td>
+<td>float</td>
+<td>N</td>
+<td>财务费用／营业总收入 (单季度)</td>
+</tr>
+<tr>
+<td>q_impair_to_gr_ttm</td>
+<td>float</td>
+<td>N</td>
+<td>资产减值损失／营业总收入(单季度)</td>
+</tr>
+<tr>
+<td>q_gc_to_gr</td>
+<td>float</td>
+<td>Y</td>
+<td>营业总成本／营业总收入 (单季度)</td>
+</tr>
+<tr>
+<td>q_op_to_gr</td>
+<td>float</td>
+<td>N</td>
+<td>营业利润／营业总收入(单季度)</td>
+</tr>
+<tr>
+<td>q_roe</td>
+<td>float</td>
+<td>Y</td>
+<td>净资产收益率(单季度)</td>
+</tr>
+<tr>
+<td>q_dt_roe</td>
+<td>float</td>
+<td>Y</td>
+<td>净资产单季度收益率(扣除非经常损益)</td>
+</tr>
+<tr>
+<td>q_npta</td>
+<td>float</td>
+<td>Y</td>
+<td>总资产净利润(单季度)</td>
+</tr>
+<tr>
+<td>q_opincome_to_ebt</td>
+<td>float</td>
+<td>N</td>
+<td>经营活动净收益／利润总额(单季度)</td>
+</tr>
+<tr>
+<td>q_investincome_to_ebt</td>
+<td>float</td>
+<td>N</td>
+<td>价值变动净收益／利润总额(单季度)</td>
+</tr>
+<tr>
+<td>q_dtprofit_to_profit</td>
+<td>float</td>
+<td>N</td>
+<td>扣除非经常损益后的净利润／净利润(单季度)</td>
+</tr>
+<tr>
+<td>q_salescash_to_or</td>
+<td>float</td>
+<td>N</td>
+<td>销售商品提供劳务收到的现金／营业收入(单季度)</td>
+</tr>
+<tr>
+<td>q_ocf_to_sales</td>
+<td>float</td>
+<td>Y</td>
+<td>经营活动产生的现金流量净额／营业收入(单季度)</td>
+</tr>
+<tr>
+<td>q_ocf_to_or</td>
+<td>float</td>
+<td>N</td>
+<td>经营活动产生的现金流量净额／经营活动净收益(单季度)</td>
+</tr>
+<tr>
+<td>basic_eps_yoy</td>
+<td>float</td>
+<td>Y</td>
+<td>基本每股收益同比增长率(%)</td>
+</tr>
+<tr>
+<td>dt_eps_yoy</td>
+<td>float</td>
+<td>Y</td>
+<td>稀释每股收益同比增长率(%)</td>
+</tr>
+<tr>
+<td>cfps_yoy</td>
+<td>float</td>
+<td>Y</td>
+<td>每股经营活动产生的现金流量净额同比增长率(%)</td>
+</tr>
+<tr>
+<td>op_yoy</td>
+<td>float</td>
+<td>Y</td>
+<td>营业利润同比增长率(%)</td>
+</tr>
+<tr>
+<td>ebt_yoy</td>
+<td>float</td>
+<td>Y</td>
+<td>利润总额同比增长率(%)</td>
+</tr>
+<tr>
+<td>netprofit_yoy</td>
+<td>float</td>
+<td>Y</td>
+<td>归属母公司股东的净利润同比增长率(%)</td>
+</tr>
+<tr>
+<td>dt_netprofit_yoy</td>
+<td>float</td>
+<td>Y</td>
+<td>归属母公司股东的净利润-扣除非经常损益同比增长率(%)</td>
+</tr>
+<tr>
+<td>ocf_yoy</td>
+<td>float</td>
+<td>Y</td>
+<td>经营活动产生的现金流量净额同比增长率(%)</td>
+</tr>
+<tr>
+<td>roe_yoy</td>
+<td>float</td>
+<td>Y</td>
+<td>净资产收益率(摊薄)同比增长率(%)</td>
+</tr>
+<tr>
+<td>bps_yoy</td>
+<td>float</td>
+<td>Y</td>
+<td>每股净资产相对年初增长率(%)</td>
+</tr>
+<tr>
+<td>assets_yoy</td>
+<td>float</td>
+<td>Y</td>
+<td>资产总计相对年初增长率(%)</td>
+</tr>
+<tr>
+<td>eqt_yoy</td>
+<td>float</td>
+<td>Y</td>
+<td>归属母公司的股东权益相对年初增长率(%)</td>
+</tr>
+<tr>
+<td>tr_yoy</td>
+<td>float</td>
+<td>Y</td>
+<td>营业总收入同比增长率(%)</td>
+</tr>
+<tr>
+<td>or_yoy</td>
+<td>float</td>
+<td>Y</td>
+<td>营业收入同比增长率(%)</td>
+</tr>
+<tr>
+<td>q_gr_yoy</td>
+<td>float</td>
+<td>N</td>
+<td>营业总收入同比增长率(%)(单季度)</td>
+</tr>
+<tr>
+<td>q_gr_qoq</td>
+<td>float</td>
+<td>N</td>
+<td>营业总收入环比增长率(%)(单季度)</td>
+</tr>
+<tr>
+<td>q_sales_yoy</td>
+<td>float</td>
+<td>Y</td>
+<td>营业收入同比增长率(%)(单季度)</td>
+</tr>
+<tr>
+<td>q_sales_qoq</td>
+<td>float</td>
+<td>N</td>
+<td>营业收入环比增长率(%)(单季度)</td>
+</tr>
+<tr>
+<td>q_op_yoy</td>
+<td>float</td>
+<td>N</td>
+<td>营业利润同比增长率(%)(单季度)</td>
+</tr>
+<tr>
+<td>q_op_qoq</td>
+<td>float</td>
+<td>Y</td>
+<td>营业利润环比增长率(%)(单季度)</td>
+</tr>
+<tr>
+<td>q_profit_yoy</td>
+<td>float</td>
+<td>N</td>
+<td>净利润同比增长率(%)(单季度)</td>
+</tr>
+<tr>
+<td>q_profit_qoq</td>
+<td>float</td>
+<td>N</td>
+<td>净利润环比增长率(%)(单季度)</td>
+</tr>
+<tr>
+<td>q_netprofit_yoy</td>
+<td>float</td>
+<td>N</td>
+<td>归属母公司股东的净利润同比增长率(%)(单季度)</td>
+</tr>
+<tr>
+<td>q_netprofit_qoq</td>
+<td>float</td>
+<td>N</td>
+<td>归属母公司股东的净利润环比增长率(%)(单季度)</td>
+</tr>
+<tr>
+<td>equity_yoy</td>
+<td>float</td>
+<td>Y</td>
+<td>净资产同比增长率</td>
+</tr>
+<tr>
+<td>rd_exp</td>
+<td>float</td>
+<td>N</td>
+<td>研发费用</td>
+</tr>
+<tr>
+<td>update_flag</td>
+<td>str</td>
+<td>N</td>
+<td>更新标识</td>
+</tr>
+</tbody></table>
+<p><strong>接口用法</strong></p>
+<pre><code class="language-python">
+pro = ts.pro_api()
+
+df = pro.fina_indicator(ts_code='600000.SH')
+</code></pre>
+<p>或者</p>
+<pre><code class="language-python">
+df = pro.query('fina_indicator', ts_code='600000.SH', start_date='20170101', end_date='20180801')
+</code></pre>
+<p><strong>数据样例</strong></p>
+<pre><code>ts_code  ann_date  end_date   eps  dt_eps  total_revenue_ps  revenue_ps  \
+0  600000.SH  20180830  20180630  0.95    0.95            2.8024      2.8024   
+1  600000.SH  20180428  20180331  0.46    0.46            1.3501      1.3501   
+2  600000.SH  20180428  20171231  1.84    1.84            5.7447      5.7447   
+3  600000.SH  20180428  20171231  1.84    1.84            5.7447      5.7447   
+4  600000.SH  20171028  20170930  1.45    1.45            4.2507      4.2507   
+5  600000.SH  20171028  20170930  1.45    1.45            4.2507      4.2507   
+6  600000.SH  20170830  20170630  0.97    0.97            2.9659      2.9659   
+7  600000.SH  20170427  20170331  0.63    0.63            1.9595      1.9595   
+8  600000.SH  20170427  20170331  0.63    0.63            1.9595      1.9595  
+</code></pre>
+
+</div>
+</div>
+</div>
+</section>
+
+<footer id="footer" class="site-footer">
+<div class="container">
+<div class="row footer-panel">
+<div class="col-md-4">
+<div class=""><img src="/static/frontend/images/wechat_public.png?v=847e8d705d3a409d000dce413ab5c257" alt=""></div>
+</div>
+<div class="col-md-4">
+<div class="title">使用文档</div>
+<div class="content">
+<ul>
+<li><a href="/document/1">平台介绍</a></li>
+<li><a href="/document/2">数据接口</a></li>
+<li><a href="/document/41">区块链</a></li>
+<li><a href="/news">资讯数据</a></li>
+</ul>
+</div>
+</div>
+<div class="col-md-4">
+<div class="title">关注我们</div>
+<div class="content">
+<ul>
+<li>公众号：waditu</li>
+<li>Github：<a href="https://github.com/waditu" target="_blank">https://github.com/waditu</a></li>
+<li>雪 球：<a href="https://xueqiu.com/u/9103835084" target="_blank">https://xueqiu.com/u/9103835084</a></li>
+<li>微 博：<a href="https://weibo.com/u/1304687120" target="_blank">https://weibo.com/u/1304687120</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="row footer-footer">
+<div class="copyright"><p>© 2018 Tushare <a href="https://beian.miit.gov.cn" target="_blank">
+"沪ICP备2020031644号"
+</a></p></div>
+</div>
+</div>
+</footer>
+
+</div>
+<div class="scroll-to-top" data-spy="affix" data-offset-top="200">
+<a href="#page" class="smooth-scroll">置顶</a>
+</div>
+
+<script type="text/javascript">
+require(['custom']);
+</script>
+
+
+<script type="text/javascript">
+require([
+'jquery',
+'jstree'
+], function ($, jstree) {
+$(document).ready(function() {
+const tree = $('#jstree').jstree({
+// plugins : ['state']
+plugins : ['wholerow'],
+core: {
+themes: {
+multiple: false,
+icons: false,
+stripes: false,
+expand_selected_onload: true
+}
+}
+});
+tree.on("select_node.jstree", function (e, data) {
+window.location = `${location.protocol}//${location.host}${data.node.a_attr.href}`;
+});
+const searchInput = document.querySelector('.search-input');
+const searchIcon = document.querySelector('.search-icon');
+const onSearch = () => {
+const query = searchInput.value;
+if (query) {
+window.location = `${location.protocol}//${location.host}/document/search?q=${encodeURIComponent(query)}`;
+}
+}
+searchInput.addEventListener('change', onSearch);
+searchIcon.addEventListener('click', onSearch);
+});
+});
+</script>
+
+
+</body></html>

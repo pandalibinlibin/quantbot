@@ -1,0 +1,373 @@
+<!-- Page: A股实时分钟-日累计 -->
+<!DOCTYPE html><html lang="en" style="height:100%"><head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tushare数据</title>
+<meta content="免费股票数据,开源股票数据接口,股票数据,股票数据接口,python股票数据,财经数据,金融数据,行业大数据,区块链数据,量化投资,知识图谱" name="keywords">
+<meta name="description" content="Tushare为金融数据分析提供便捷、快速的接口，与投研和量化策略无缝对接">
+<meta content="index,follow" name="robots">
+<meta name="application-name" content="Tushare">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-192x192.png?v=811d9139fa2ea47f5595907da1f3c34d" sizes="192x192">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-160x160.png" sizes="160x160">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-96x96.png?v=4960eb8103c873c586ad41ef3f53db84" sizes="96x96">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-16x16.png?v=f7299bbce2cff4db7e3dfa6fb8c6a73c" sizes="16x16">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-32x32.png?v=a5df4bdd9f96de59f57bb9a7a50d8f96" sizes="32x32">
+<link href="/static/vendors/bootstrap/dist/css/bootstrap.min.css?v=d7ac98c842e4ec59d2c21fef89fce09c" rel="stylesheet">
+<link href="/static/vendors/jstree/themes/default/style.min.css?v=779fc4b400d1748ec2fb99685ad80550" rel="stylesheet">
+<link href="/static/frontend/css/custom.css?v=afa9fcaf1ec38d2c9d46d41a0615a077" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/static/vendors/codemirror/lib/codemirror.css?v=fc217d502b05f65616356459c0ec1d62">
+<link rel="stylesheet" href="/static/vendors/tui-editor/dist/tui-editor.css?v=144c2e273b8a0e79b208d0d86ccd3999">
+<link rel="stylesheet" href="/static/vendors/tui-editor/dist/tui-editor-contents.css?v=3ed3a3154a2304c111075714324b0e7b">
+<link rel="stylesheet" href="/static/vendors/highlightjs/styles/github.css?v=bf6c14925e66edb1526b6c9489b3c042">
+<link rel="stylesheet" href="/static/common/css/md.css?v=087ce310ed8e685ac6526e2a54db3c68">
+
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+<script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+<![endif]-->
+<script type="text/javascript" src="/static/vendors/requirejs/require.js?v=6da8be361b9ee26c5e721e76c6d4afce"></script>
+<script type="text/javascript" src="/static/frontend/js/config.js?v=85f0040a930464e1c6dbc61026f79de8"></script>
+<script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="jquery" src="/static/vendors/jquery/dist/jquery.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="jstree" src="/static/vendors/jstree/jstree.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="bootstrap" src="/static/vendors/bootstrap/dist/js/bootstrap.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="validate" src="/static/vendors/jquery-validation/dist/jquery.validate.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="custom" src="/static/vendors/../frontend/js/custom.js"></script></head>
+<body style="height:100%">
+<div id="page" style="height:100%;">
+<header id="header" class="site-header">
+<nav id="navbar" class="site-navbar navbar navbar-static-top" role="navigation">
+<div class="container">
+<div class="navbar-header">
+<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse-1">
+<span class="sr-only">Toggle navigation</span>
+<i class="fa fa-bars" style="font-size: 1.5em; padding: 15px 0;"></i>
+</button>
+<h1 class="navbar-brand">
+<a href="/"><img src="/static/frontend/images/logo.png?v=39c50795cb540b4463114d1bf3135d6e" alt="tushare"></a>
+</h1>
+</div>
+<div class="collapse navbar-collapse" id="navbar-collapse-1">
+<ul id="navigation" class="nav navbar-nav navbar-right">
+<li><a href="/">首页</a></li>
+<li><a href="/document/1">平台介绍</a></li>
+<li><a href="/document/2">数据接口</a></li>
+<!-- <li><a href="/document/41">另类数据</a></li>-->
+<li><a href="/news/sina">资讯数据</a></li>
+<li><a href="/webclient">数据工具</a></li>
+<li><a href="/weborder/#/permission">社区捐助</a></li>
+
+<li class="navbar-tail"><a href="/weborder/#/login" class="nav-login">登录/注册</a></li>
+
+</ul>
+</div>
+</div>
+</nav>
+</header>
+
+
+<section id="document" class="whole">
+<div class="container">
+<div class="document">
+<nav class="sidebar col-md-3 col-sm-4 col-xs-12">
+
+            <div id="jstree" class="jstree jstree-1 jstree-default" role="tree" aria-multiselectable="true" tabindex="0" aria-activedescendant="j1_1" aria-busy="false"><ul class="jstree-container-ul jstree-children jstree-no-icons jstree-wholerow-ul jstree-no-dots" role="group"><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_1_anchor" aria-expanded="true" id="j1_1" class="jstree-node   in jstree-open"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=14" tabindex="-1" id="j1_1_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>股票数据</a><ul role="group" class="jstree-children"><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_2_anchor" aria-expanded="false" id="j1_2" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=24" tabindex="-1" id="j1_2_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>基础数据</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_16_anchor" aria-expanded="true" id="j1_16" class="jstree-node   in jstree-open"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=15" tabindex="-1" id="j1_16_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>行情数据</a><ul role="group" class="jstree-children"><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_17_anchor" id="j1_17" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=27" tabindex="-1" id="j1_17_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>历史日线</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_18_anchor" id="j1_18" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=372" tabindex="-1" id="j1_18_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>实时日线</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_19_anchor" id="j1_19" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=370" tabindex="-1" id="j1_19_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>历史分钟</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_20_anchor" id="j1_20" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=374" tabindex="-1" id="j1_20_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>实时分钟</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_21_anchor" id="j1_21" class="jstree-node active jstree-clicked jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=457" tabindex="-1" id="j1_21_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>A股实时分钟-日累计</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_22_anchor" id="j1_22" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=144" tabindex="-1" id="j1_22_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>周线行情</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_23_anchor" id="j1_23" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=145" tabindex="-1" id="j1_23_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>月线行情</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_24_anchor" id="j1_24" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=146" tabindex="-1" id="j1_24_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>复权行情</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_25_anchor" id="j1_25" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=336" tabindex="-1" id="j1_25_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>周/月线行情(每日更新)</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_26_anchor" id="j1_26" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=365" tabindex="-1" id="j1_26_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>周/月线复权行情(每日更新)</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_27_anchor" id="j1_27" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=28" tabindex="-1" id="j1_27_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>复权因子</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_28_anchor" id="j1_28" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=315" tabindex="-1" id="j1_28_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>实时Tick（爬虫）</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_29_anchor" id="j1_29" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=316" tabindex="-1" id="j1_29_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>实时成交（爬虫）</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_30_anchor" id="j1_30" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=317" tabindex="-1" id="j1_30_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>实时排名（爬虫）</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_31_anchor" id="j1_31" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=32" tabindex="-1" id="j1_31_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>每日指标</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_32_anchor" id="j1_32" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=109" tabindex="-1" id="j1_32_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>通用行情接口</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_33_anchor" id="j1_33" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=183" tabindex="-1" id="j1_33_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>每日涨跌停价格</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_34_anchor" id="j1_34" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=214" tabindex="-1" id="j1_34_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>每日停复牌信息</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_35_anchor" id="j1_35" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=48" tabindex="-1" id="j1_35_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>沪深股通十大成交股</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_36_anchor" id="j1_36" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=49" tabindex="-1" id="j1_36_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>港股通十大成交股</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_37_anchor" id="j1_37" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=196" tabindex="-1" id="j1_37_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>港股通每日成交统计</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_38_anchor" id="j1_38" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=197" tabindex="-1" id="j1_38_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>港股通每月成交统计</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_39_anchor" id="j1_39" class="jstree-node  jstree-leaf jstree-last"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=255" tabindex="-1" id="j1_39_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>备用行情</a></li></ul></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_40_anchor" aria-expanded="false" id="j1_40" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=16" tabindex="-1" id="j1_40_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>财务数据</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_51_anchor" aria-expanded="false" id="j1_51" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=17" tabindex="-1" id="j1_51_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>参考数据</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_66_anchor" aria-expanded="false" id="j1_66" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=291" tabindex="-1" id="j1_66_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>特色数据</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_80_anchor" aria-expanded="false" id="j1_80" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=330" tabindex="-1" id="j1_80_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>两融及转融通</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_88_anchor" aria-expanded="false" id="j1_88" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=342" tabindex="-1" id="j1_88_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>资金流向数据</a></li><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_97_anchor" aria-expanded="false" id="j1_97" class="jstree-node in jstree-closed jstree-last"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=346" tabindex="-1" id="j1_97_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>打板专题数据</a></li></ul></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_122_anchor" aria-expanded="false" id="j1_122" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=384" tabindex="-1" id="j1_122_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>ETF专题</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_132_anchor" aria-expanded="false" id="j1_132" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=93" tabindex="-1" id="j1_132_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>指数专题</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_152_anchor" aria-expanded="false" id="j1_152" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=18" tabindex="-1" id="j1_152_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>公募基金</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_161_anchor" aria-expanded="false" id="j1_161" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=134" tabindex="-1" id="j1_161_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>期货数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_176_anchor" aria-expanded="false" id="j1_176" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=283" tabindex="-1" id="j1_176_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>现货数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_179_anchor" aria-expanded="false" id="j1_179" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=157" tabindex="-1" id="j1_179_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>期权数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_183_anchor" aria-expanded="false" id="j1_183" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=184" tabindex="-1" id="j1_183_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>债券专题</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_199_anchor" aria-expanded="false" id="j1_199" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=177" tabindex="-1" id="j1_199_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>外汇数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_202_anchor" aria-expanded="false" id="j1_202" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=190" tabindex="-1" id="j1_202_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>港股数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_214_anchor" aria-expanded="false" id="j1_214" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=251" tabindex="-1" id="j1_214_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>美股数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_224_anchor" aria-expanded="false" id="j1_224" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=82" tabindex="-1" id="j1_224_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>行业经济</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_234_anchor" aria-expanded="false" id="j1_234" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=147" tabindex="-1" id="j1_234_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>宏观经济</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_263_anchor" aria-expanded="false" id="j1_263" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=142" tabindex="-1" id="j1_263_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>大模型语料专题数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_272_anchor" aria-expanded="false" id="j1_272" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=263" tabindex="-1" id="j1_272_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>财富管理</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_276_anchor" id="j1_276" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=209" tabindex="-1" id="j1_276_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>数据索引</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_277_anchor" id="j1_277" class="jstree-node  jstree-leaf jstree-last"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=244" tabindex="-1" id="j1_277_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>社区捐助</a></li></ul></div>
+        
+</nav>
+<div class="content col-md-9 col-sm-8 col-xs-12">
+<div class="search-panel">
+<div class="search-container">
+<span class="fa fa-search search-icon"></span>
+<input type="text" class="search-input" placeholder="Search">
+</div>
+</div>
+<h1 id="a-">A股实时分钟-日累计</h1>
+<h3 id="_1">接口介绍</h3>
+<p>接口：rt_min_daily<br>
+描述：获取A股当日盘中历史分钟数据，可以提取单只股票当日开盘以来的所有分钟数据<br>
+权限：开通了实时分钟权限自动获得本接口权限</p>
+<h3 id="_2">输入参数</h3>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>必选</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>freq</td>
+<td>str</td>
+<td>Y</td>
+<td>频度：1MIN,5MIN,15MIN,30MIN,60MIN</td>
+</tr>
+<tr>
+<td>ts_code</td>
+<td>str</td>
+<td>Y</td>
+<td>股票代码，如：600000.SH</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_3">输出参数</h3>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>默认显示</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ts_code</td>
+<td>str</td>
+<td>Y</td>
+<td>股票代码</td>
+</tr>
+<tr>
+<td>freq</td>
+<td>None</td>
+<td>Y</td>
+<td>频次</td>
+</tr>
+<tr>
+<td>time</td>
+<td>None</td>
+<td>Y</td>
+<td>交易时间</td>
+</tr>
+<tr>
+<td>open</td>
+<td>float</td>
+<td>Y</td>
+<td>开盘价</td>
+</tr>
+<tr>
+<td>close</td>
+<td>float</td>
+<td>Y</td>
+<td>收盘价</td>
+</tr>
+<tr>
+<td>high</td>
+<td>float</td>
+<td>Y</td>
+<td>最高价</td>
+</tr>
+<tr>
+<td>low</td>
+<td>float</td>
+<td>Y</td>
+<td>最低价</td>
+</tr>
+<tr>
+<td>vol</td>
+<td>float</td>
+<td>Y</td>
+<td>成交量(股）</td>
+</tr>
+<tr>
+<td>amount</td>
+<td>float</td>
+<td>Y</td>
+<td>成交额（元）</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_4">代码示例</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 导入sdk包</span>
+<span class="kn">import</span> <span class="nn">tushare</span> <span class="k">as</span> <span class="nn">ts</span>
+
+<span class="c1"># 配置凭据，如果已全局配置了，可以忽略。</span>
+<span class="n">ts</span><span class="o">.</span><span class="n">set_token</span><span class="p">(</span><span class="s1">'&lt;--your-token--&gt;'</span><span class="p">)</span>
+
+<span class="c1"># 获取接口实例</span>
+<span class="n">pro</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">pro_api</span><span class="p">()</span>
+
+<span class="c1"># 拉取接口(rt_min_daily)数据</span>
+<span class="c1"># 获取浦发银行股票（600000.SH）当日1分钟实时行情</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pro</span><span class="o">.</span><span class="n">rt_min_daily</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="s2">"1MIN"</span><span class="p">,</span> <span class="n">ts_code</span><span class="o">=</span><span class="s2">"600000.SH"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="_5">数据结果</h3>
+<div class="codehilite"><pre><span></span><code>         code  freq                 time   open  close   high    low      vol    amount
+0   600000.SH  1MIN  2026-04-15 09:30:00  10.05  10.05  10.05  10.05   133400   1340670
+1   600000.SH  1MIN  2026-04-15 09:31:00  10.05  10.07  10.07  10.03   514800   5171897
+2   600000.SH  1MIN  2026-04-15 09:32:00  10.06  10.08  10.10  10.06   873200   8802087
+3   600000.SH  1MIN  2026-04-15 09:33:00  10.09  10.08  10.09  10.08   270157   2723770
+4   600000.SH  1MIN  2026-04-15 09:34:00  10.09  10.08  10.09  10.08   261700   2639675
+5   600000.SH  1MIN  2026-04-15 09:35:00  10.09  10.10  10.11  10.08   670100   6765558
+6   600000.SH  1MIN  2026-04-15 09:36:00  10.11  10.09  10.11  10.08   255000   2574232
+7   600000.SH  1MIN  2026-04-15 09:37:00  10.10  10.09  10.10  10.09   111400   1124839
+8   600000.SH  1MIN  2026-04-15 09:38:00  10.09  10.09  10.10  10.09   272200   2748667
+9   600000.SH  1MIN  2026-04-15 09:39:00  10.09  10.07  10.09  10.07   300900   3033691
+10  600000.SH  1MIN  2026-04-15 09:40:00  10.07  10.07  10.08  10.07   387500   3901499
+11  600000.SH  1MIN  2026-04-15 09:41:00  10.07  10.07  10.08  10.06   172500   1737123
+12  600000.SH  1MIN  2026-04-15 09:42:00  10.07  10.09  10.09  10.06   187200   1886743
+13  600000.SH  1MIN  2026-04-15 09:43:00  10.08  10.10  10.10  10.08   134300   1354875
+14  600000.SH  1MIN  2026-04-15 09:44:00  10.09  10.09  10.09  10.08   233500   2355691
+15  600000.SH  1MIN  2026-04-15 09:45:00  10.09  10.09  10.10  10.08   142600   1438956
+16  600000.SH  1MIN  2026-04-15 09:46:00  10.09  10.07  10.09  10.07   303600   3060390
+17  600000.SH  1MIN  2026-04-15 09:47:00  10.07  10.08  10.08  10.07    68700    692305
+18  600000.SH  1MIN  2026-04-15 09:48:00  10.08  10.08  10.08  10.07   196100   1976310
+19  600000.SH  1MIN  2026-04-15 09:49:00  10.08  10.08  10.08  10.07   127000   1279990
+20  600000.SH  1MIN  2026-04-15 09:50:00  10.09  10.07  10.09  10.07   120500   1214595
+21  600000.SH  1MIN  2026-04-15 09:51:00  10.07  10.05  10.07  10.05   454600   4575119
+22  600000.SH  1MIN  2026-04-15 09:52:00  10.05  10.05  10.06  10.05    69800    701651
+23  600000.SH  1MIN  2026-04-15 09:53:00  10.05  10.06  10.07  10.05   125900   1266601
+24  600000.SH  1MIN  2026-04-15 09:54:00  10.06  10.07  10.07  10.06   246000   2476045
+25  600000.SH  1MIN  2026-04-15 09:55:00  10.07  10.08  10.08  10.07    56500    568986
+26  600000.SH  1MIN  2026-04-15 09:56:00  10.07  10.07  10.08  10.07   144100   1451137
+27  600000.SH  1MIN  2026-04-15 09:57:00  10.07  10.07  10.07  10.06   158100   1592051
+28  600000.SH  1MIN  2026-04-15 09:58:00  10.08  10.08  10.08  10.07    43000    433368
+29  600000.SH  1MIN  2026-04-15 09:59:00  10.07  10.08  10.08  10.07    29900    301278
+30  600000.SH  1MIN  2026-04-15 10:00:00  10.07  10.07  10.08  10.06   166100   1672684
+31  600000.SH  1MIN  2026-04-15 10:01:00  10.06  10.06  10.07  10.06    94066    946491
+32  600000.SH  1MIN  2026-04-15 10:02:00  10.06  10.07  10.07  10.06    62100    625160
+33  600000.SH  1MIN  2026-04-15 10:03:00  10.06  10.07  10.08  10.06   195034   1963830
+34  600000.SH  1MIN  2026-04-15 10:04:00  10.06  10.07  10.07  10.06    94200    948103
+35  600000.SH  1MIN  2026-04-15 10:05:00  10.07  10.07  10.08  10.06   132100   1330227
+36  600000.SH  1MIN  2026-04-15 10:06:00  10.07  10.08  10.08  10.07    63300    637739
+37  600000.SH  1MIN  2026-04-15 10:07:00  10.07  10.08  10.09  10.07   403400   4066413
+38  600000.SH  1MIN  2026-04-15 10:08:00  10.09  10.09  10.09  10.08   725100   7316105
+39  600000.SH  1MIN  2026-04-15 10:09:00  10.08  10.08  10.09  10.08    34900    351993
+40  600000.SH  1MIN  2026-04-15 10:10:00  10.08  10.10  10.10  10.08   642300   6481641
+41  600000.SH  1MIN  2026-04-15 10:11:00  10.10  10.09  10.10  10.09    30100    303887
+42  600000.SH  1MIN  2026-04-15 10:12:00  10.10  10.09  10.10  10.09    27100    273584
+43  600000.SH  1MIN  2026-04-15 10:13:00  10.10  10.10  10.10  10.09    61900    625044
+44  600000.SH  1MIN  2026-04-15 10:14:00  10.10  10.10  10.12  10.10  1722900  17408933
+45  600000.SH  1MIN  2026-04-15 10:15:00  10.11  10.10  10.12  10.10    79300    801662
+46  600000.SH  1MIN  2026-04-15 10:16:00  10.10  10.10  10.11  10.10   152700   1542461
+47  600000.SH  1MIN  2026-04-15 10:17:00  10.10  10.09  10.10  10.09    37500    378717
+48  600000.SH  1MIN  2026-04-15 10:18:00  10.09  10.09  10.10  10.09   111700   1127408
+49  600000.SH  1MIN  2026-04-15 10:19:00  10.10  10.09  10.10  10.09   308300   3110372
+50  600000.SH  1MIN  2026-04-15 10:20:00  10.08  10.09  10.09  10.08    44400    447950
+51  600000.SH  1MIN  2026-04-15 10:21:00  10.08  10.08  10.09  10.08    77100    777251
+52  600000.SH  1MIN  2026-04-15 10:22:00  10.08  10.09  10.09  10.08   207925   2096126
+53  600000.SH  1MIN  2026-04-15 10:23:00  10.07  10.08  10.09  10.07    89600    903209
+54  600000.SH  1MIN  2026-04-15 10:24:00  10.09  10.08  10.09  10.08    14300    144234
+55  600000.SH  1MIN  2026-04-15 10:25:00  10.09  10.09  10.09  10.08   409500   4130961
+56  600000.SH  1MIN  2026-04-15 10:26:00  10.09  10.10  10.10  10.08   188400   1900921
+57  600000.SH  1MIN  2026-04-15 10:27:00  10.09  10.09  10.09  10.09    67200    678102
+58  600000.SH  1MIN  2026-04-15 10:28:00  10.09  10.08  10.09  10.08     4900     49416
+59  600000.SH  1MIN  2026-04-15 10:29:00  10.08  10.09  10.09  10.08    24773    249822
+60  600000.SH  1MIN  2026-04-15 10:30:00  10.09  10.09  10.09  10.08    35200    355042
+61  600000.SH  1MIN  2026-04-15 10:31:00  10.09  10.08  10.09  10.08   261600   2639478
+62  600000.SH  1MIN  2026-04-15 10:32:00  10.08  10.08  10.08  10.07   289827   2921257
+63  600000.SH  1MIN  2026-04-15 10:33:00  10.07  10.07  10.08  10.07    22500    226708
+64  600000.SH  1MIN  2026-04-15 10:34:00  10.07  10.07  10.08  10.07    24000    241871
+65  600000.SH  1MIN  2026-04-15 10:35:00  10.08  10.07  10.08  10.06   184800   1861401
+66  600000.SH  1MIN  2026-04-15 10:36:00  10.06  10.06  10.06  10.04   886534   8912607
+67  600000.SH  1MIN  2026-04-15 10:37:00  10.05  10.05  10.06  10.05   263900   2652325
+68  600000.SH  1MIN  2026-04-15 10:38:00  10.05  10.05  10.06  10.05    38900    391142
+69  600000.SH  1MIN  2026-04-15 10:39:00  10.05  10.05  10.06  10.05   252500   2537360
+70  600000.SH  1MIN  2026-04-15 10:40:00  10.05  10.05  10.06  10.05   121500   1221386
+71  600000.SH  1MIN  2026-04-15 10:41:00  10.05  10.05  10.05  10.04   141600   1423022
+72  600000.SH  1MIN  2026-04-15 10:42:00  10.05  10.05  10.05  10.04    79200    795597
+73  600000.SH  1MIN  2026-04-15 10:43:00  10.04  10.04  10.05  10.04   136000   1366617
+74  600000.SH  1MIN  2026-04-15 10:44:00  10.04  10.05  10.05  10.04   243100   2441423
+75  600000.SH  1MIN  2026-04-15 10:45:00  10.05  10.05  10.05  10.04    67800    681025
+76  600000.SH  1MIN  2026-04-15 10:46:00  10.04  10.04  10.05  10.04   217800   2186788
+77  600000.SH  1MIN  2026-04-15 10:47:00  10.03  10.03  10.04  10.03    47600    477753
+78  600000.SH  1MIN  2026-04-15 10:48:00  10.04  10.04  10.04  10.03   225786   2266802
+79  600000.SH  1MIN  2026-04-15 10:49:00  10.04  10.03  10.04  10.03   153200   1536770
+80  600000.SH  1MIN  2026-04-15 10:50:00  10.03  10.03  10.04  10.03   101000   1013256
+81  600000.SH  1MIN  2026-04-15 10:51:00  10.03  10.03  10.04  10.03    62100    623293
+82  600000.SH  1MIN  2026-04-15 10:52:00  10.03  10.05  10.05  10.03   174900   1756367
+83  600000.SH  1MIN  2026-04-15 10:53:00  10.05  10.05  10.05  10.04    54800    550685
+84  600000.SH  1MIN  2026-04-15 10:54:00  10.05  10.04  10.05  10.04    22500    226109
+85  600000.SH  1MIN  2026-04-15 10:55:00  10.05  10.04  10.05  10.04   218000   2188854
+86  600000.SH  1MIN  2026-04-15 10:56:00  10.04  10.04  10.04  10.03    96573    969571
+</code></pre></div>
+</div>
+</div>
+</div>
+</section>
+
+<footer id="footer" class="site-footer">
+<div class="container">
+<div class="row footer-panel">
+<div class="col-md-4">
+<div class=""><img src="/static/frontend/images/wechat_public.png?v=847e8d705d3a409d000dce413ab5c257" alt=""></div>
+</div>
+<div class="col-md-4">
+<div class="title">使用文档</div>
+<div class="content">
+<ul>
+<li><a href="/document/1">平台介绍</a></li>
+<li><a href="/document/2">数据接口</a></li>
+<li><a href="/document/41">区块链</a></li>
+<li><a href="/news">资讯数据</a></li>
+</ul>
+</div>
+</div>
+<div class="col-md-4">
+<div class="title">关注我们</div>
+<div class="content">
+<ul>
+<li>公众号：waditu</li>
+<li>Github：<a href="https://github.com/waditu" target="_blank">https://github.com/waditu</a></li>
+<li>雪 球：<a href="https://xueqiu.com/u/9103835084" target="_blank">https://xueqiu.com/u/9103835084</a></li>
+<li>微 博：<a href="https://weibo.com/u/1304687120" target="_blank">https://weibo.com/u/1304687120</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="row footer-footer">
+<div class="copyright"><p>© 2018 Tushare <a href="https://beian.miit.gov.cn" target="_blank">
+"沪ICP备2020031644号"
+</a></p></div>
+</div>
+</div>
+</footer>
+
+</div>
+<div class="scroll-to-top" data-spy="affix" data-offset-top="200">
+<a href="#page" class="smooth-scroll">置顶</a>
+</div>
+
+<script type="text/javascript">
+require(['custom']);
+</script>
+
+
+<script type="text/javascript">
+require([
+'jquery',
+'jstree'
+], function ($, jstree) {
+$(document).ready(function() {
+const tree = $('#jstree').jstree({
+// plugins : ['state']
+plugins : ['wholerow'],
+core: {
+themes: {
+multiple: false,
+icons: false,
+stripes: false,
+expand_selected_onload: true
+}
+}
+});
+tree.on("select_node.jstree", function (e, data) {
+window.location = `${location.protocol}//${location.host}${data.node.a_attr.href}`;
+});
+const searchInput = document.querySelector('.search-input');
+const searchIcon = document.querySelector('.search-icon');
+const onSearch = () => {
+const query = searchInput.value;
+if (query) {
+window.location = `${location.protocol}//${location.host}/document/search?q=${encodeURIComponent(query)}`;
+}
+}
+searchInput.addEventListener('change', onSearch);
+searchIcon.addEventListener('click', onSearch);
+});
+});
+</script>
+
+
+</body></html>

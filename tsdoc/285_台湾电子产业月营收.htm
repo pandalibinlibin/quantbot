@@ -1,0 +1,545 @@
+<!-- Page: 台湾电子产业月营收 -->
+<!DOCTYPE html><html lang="en" style="height:100%"><head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tushare数据</title>
+<meta content="免费股票数据,开源股票数据接口,股票数据,股票数据接口,python股票数据,财经数据,金融数据,行业大数据,区块链数据,量化投资,知识图谱" name="keywords">
+<meta name="description" content="Tushare为金融数据分析提供便捷、快速的接口，与投研和量化策略无缝对接">
+<meta content="index,follow" name="robots">
+<meta name="application-name" content="Tushare">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-192x192.png?v=811d9139fa2ea47f5595907da1f3c34d" sizes="192x192">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-160x160.png" sizes="160x160">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-96x96.png?v=4960eb8103c873c586ad41ef3f53db84" sizes="96x96">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-16x16.png?v=f7299bbce2cff4db7e3dfa6fb8c6a73c" sizes="16x16">
+<link rel="icon" type="image/png" href="/static/frontend/images/favicon-32x32.png?v=a5df4bdd9f96de59f57bb9a7a50d8f96" sizes="32x32">
+<link href="/static/vendors/bootstrap/dist/css/bootstrap.min.css?v=d7ac98c842e4ec59d2c21fef89fce09c" rel="stylesheet">
+<link href="/static/vendors/jstree/themes/default/style.min.css?v=779fc4b400d1748ec2fb99685ad80550" rel="stylesheet">
+<link href="/static/frontend/css/custom.css?v=afa9fcaf1ec38d2c9d46d41a0615a077" rel="stylesheet">
+
+
+<link rel="stylesheet" href="/static/vendors/codemirror/lib/codemirror.css?v=fc217d502b05f65616356459c0ec1d62">
+<link rel="stylesheet" href="/static/vendors/tui-editor/dist/tui-editor.css?v=144c2e273b8a0e79b208d0d86ccd3999">
+<link rel="stylesheet" href="/static/vendors/tui-editor/dist/tui-editor-contents.css?v=3ed3a3154a2304c111075714324b0e7b">
+<link rel="stylesheet" href="/static/vendors/highlightjs/styles/github.css?v=bf6c14925e66edb1526b6c9489b3c042">
+<link rel="stylesheet" href="/static/common/css/md.css?v=087ce310ed8e685ac6526e2a54db3c68">
+
+<!--[if lt IE 9]>
+<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+<script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+<![endif]-->
+<script type="text/javascript" src="/static/vendors/requirejs/require.js?v=6da8be361b9ee26c5e721e76c6d4afce"></script>
+<script type="text/javascript" src="/static/frontend/js/config.js?v=85f0040a930464e1c6dbc61026f79de8"></script>
+<script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="jquery" src="/static/vendors/jquery/dist/jquery.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="jstree" src="/static/vendors/jstree/jstree.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="bootstrap" src="/static/vendors/bootstrap/dist/js/bootstrap.min.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="validate" src="/static/vendors/jquery-validation/dist/jquery.validate.js"></script><script type="text/javascript" charset="utf-8" async="" data-requirecontext="_" data-requiremodule="custom" src="/static/vendors/../frontend/js/custom.js"></script></head>
+<body style="height:100%">
+<div id="page" style="height:100%;">
+<header id="header" class="site-header">
+<nav id="navbar" class="site-navbar navbar navbar-static-top" role="navigation">
+<div class="container">
+<div class="navbar-header">
+<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse-1">
+<span class="sr-only">Toggle navigation</span>
+<i class="fa fa-bars" style="font-size: 1.5em; padding: 15px 0;"></i>
+</button>
+<h1 class="navbar-brand">
+<a href="/"><img src="/static/frontend/images/logo.png?v=39c50795cb540b4463114d1bf3135d6e" alt="tushare"></a>
+</h1>
+</div>
+<div class="collapse navbar-collapse" id="navbar-collapse-1">
+<ul id="navigation" class="nav navbar-nav navbar-right">
+<li><a href="/">首页</a></li>
+<li><a href="/document/1">平台介绍</a></li>
+<li><a href="/document/2">数据接口</a></li>
+<!-- <li><a href="/document/41">另类数据</a></li>-->
+<li><a href="/news/sina">资讯数据</a></li>
+<li><a href="/webclient">数据工具</a></li>
+<li><a href="/weborder/#/permission">社区捐助</a></li>
+
+<li class="navbar-tail"><a href="/weborder/#/login" class="nav-login">登录/注册</a></li>
+
+</ul>
+</div>
+</div>
+</nav>
+</header>
+
+
+<section id="document" class="whole">
+<div class="container">
+<div class="document">
+<nav class="sidebar col-md-3 col-sm-4 col-xs-12">
+
+            <div id="jstree" class="jstree jstree-1 jstree-default" role="tree" aria-multiselectable="true" tabindex="0" aria-activedescendant="j1_1" aria-busy="false"><ul class="jstree-container-ul jstree-children jstree-no-icons jstree-wholerow-ul jstree-no-dots" role="group"><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_1_anchor" aria-expanded="false" id="j1_1" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=14" tabindex="-1" id="j1_1_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>股票数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_122_anchor" aria-expanded="false" id="j1_122" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=384" tabindex="-1" id="j1_122_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>ETF专题</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_132_anchor" aria-expanded="false" id="j1_132" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=93" tabindex="-1" id="j1_132_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>指数专题</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_152_anchor" aria-expanded="false" id="j1_152" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=18" tabindex="-1" id="j1_152_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>公募基金</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_161_anchor" aria-expanded="false" id="j1_161" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=134" tabindex="-1" id="j1_161_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>期货数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_176_anchor" aria-expanded="false" id="j1_176" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=283" tabindex="-1" id="j1_176_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>现货数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_179_anchor" aria-expanded="false" id="j1_179" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=157" tabindex="-1" id="j1_179_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>期权数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_183_anchor" aria-expanded="false" id="j1_183" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=184" tabindex="-1" id="j1_183_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>债券专题</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_199_anchor" aria-expanded="false" id="j1_199" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=177" tabindex="-1" id="j1_199_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>外汇数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_202_anchor" aria-expanded="false" id="j1_202" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=190" tabindex="-1" id="j1_202_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>港股数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_214_anchor" aria-expanded="false" id="j1_214" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=251" tabindex="-1" id="j1_214_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>美股数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_224_anchor" aria-expanded="true" id="j1_224" class="jstree-node   in jstree-open"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=82" tabindex="-1" id="j1_224_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>行业经济</a><ul role="group" class="jstree-children"><li role="treeitem" aria-selected="false" aria-level="2" aria-labelledby="j1_225_anchor" aria-expanded="true" id="j1_225" class="jstree-node   in jstree-open jstree-last"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=83" tabindex="-1" id="j1_225_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>TMT行业</a><ul role="group" class="jstree-children"><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_226_anchor" id="j1_226" class="jstree-node active jstree-clicked jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=88" tabindex="-1" id="j1_226_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>台湾电子产业月营收</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_227_anchor" id="j1_227" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=87" tabindex="-1" id="j1_227_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>台湾电子产业月营收明细</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_228_anchor" id="j1_228" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=113" tabindex="-1" id="j1_228_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>电影月度票房</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_229_anchor" id="j1_229" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=114" tabindex="-1" id="j1_229_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>电影周度票房</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_230_anchor" id="j1_230" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=115" tabindex="-1" id="j1_230_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>电影日度票房</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_231_anchor" id="j1_231" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=116" tabindex="-1" id="j1_231_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>影院日度票房</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_232_anchor" id="j1_232" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=156" tabindex="-1" id="j1_232_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>全国电影剧本备案数据</a></li><li role="treeitem" aria-selected="false" aria-level="3" aria-labelledby="j1_233_anchor" id="j1_233" class="jstree-node  jstree-leaf jstree-last"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=180" tabindex="-1" id="j1_233_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>全国电视剧备案公示数据</a></li></ul></li></ul></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_234_anchor" aria-expanded="false" id="j1_234" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=147" tabindex="-1" id="j1_234_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>宏观经济</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_263_anchor" aria-expanded="false" id="j1_263" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=142" tabindex="-1" id="j1_263_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>大模型语料专题数据</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_272_anchor" aria-expanded="false" id="j1_272" class="jstree-node in jstree-closed"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=263" tabindex="-1" id="j1_272_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>财富管理</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_276_anchor" id="j1_276" class="jstree-node  jstree-leaf"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=209" tabindex="-1" id="j1_276_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>数据索引</a></li><li role="treeitem" aria-selected="false" aria-level="1" aria-labelledby="j1_277_anchor" id="j1_277" class="jstree-node  jstree-leaf jstree-last"><div unselectable="on" role="presentation" class="jstree-wholerow">&nbsp;</div><i class="jstree-icon jstree-ocl" role="presentation"></i><a class="jstree-anchor" href="/document/2?doc_id=244" tabindex="-1" id="j1_277_anchor"><i class="jstree-icon jstree-themeicon" role="presentation"></i>社区捐助</a></li></ul></div>
+        
+</nav>
+<div class="content col-md-9 col-sm-8 col-xs-12">
+<div class="search-panel">
+<div class="search-container">
+<span class="fa fa-search search-icon"></span>
+<input type="text" class="search-input" placeholder="Search">
+</div>
+</div>
+<h2 id="-">台湾电子产业月营收</h2>
+<hr>
+<p>接口：tmt_twincome<br>描述：获取台湾TMT电子产业领域各类产品月度营收数据。</p>
+<p><strong>输入参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>必选</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>date</td>
+<td>str</td>
+<td>N</td>
+<td>报告期</td>
+</tr>
+<tr>
+<td>item</td>
+<td>str</td>
+<td>Y</td>
+<td>产品代码</td>
+</tr>
+<tr>
+<td>start_date</td>
+<td>str</td>
+<td>N</td>
+<td>报告期开始日期</td>
+</tr>
+<tr>
+<td>end_date</td>
+<td>str</td>
+<td>N</td>
+<td>报告期结束日期</td>
+</tr>
+</tbody></table>
+<p><strong>输出参数</strong></p>
+<table>
+<thead>
+<tr>
+<th>名称</th>
+<th>类型</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>date</td>
+<td>str</td>
+<td>报告期</td>
+</tr>
+<tr>
+<td>item</td>
+<td>str</td>
+<td>产品代码</td>
+</tr>
+<tr>
+<td>op_income</td>
+<td>str</td>
+<td>月度收入</td>
+</tr>
+</tbody></table>
+<p>由于服务器压力，单次最多获取30个月数据，后续再逐步全部开放，目前可根据日期范围多次获取数据。</p>
+<p><strong>调用代码示例</strong></p>
+<pre><code class="language-python">
+pro = ts.pro_api()
+
+#获取PCB月度营收
+df = pro.tmt_twincome(item='8')
+
+#获取PCB月度营收（20120101-20181010）
+df = pro.tmt_twincome(item='8', start_date='20120101', end_date='20181010')
+</code></pre>
+<p><strong>数据样例</strong></p>
+<pre><code>        date item   op_income
+0   20180731    8  35144753.0
+1   20180629    8  30940090.0
+2   20180531    8  30982240.0
+3   20180430    8  30431976.0
+4   20180331    8  29491108.0
+5   20180227    8  24700223.0
+6   20180131    8  32962014.0
+7   20171229    8  32850818.0
+8   20171130    8  34436396.0
+9   20171031    8  33331667.0
+10  20170930    8  34220623.0
+11  20170831    8  32621006.0
+12  20170731    8  30284562.0
+13  20170630    8  29003264.0
+14  20170531    8  28382449.0
+15  20170428    8  27140270.0
+16  20170331    8  29015642.0
+17  20170224    8  26508381.0
+18  20170124    8  26927481.0
+19  20161230    8  29784865.0
+20  20161130    8  31234845.0
+21  20161031    8  30305625.0
+22  20160930    8  30523650.0
+23  20160831    8  30600923.0
+24  20160729    8  29066800.0
+25  20160630    8  27350576.0
+26  20160531    8  27752376.0
+27  20160429    8  26664433.0
+28  20160331    8  27428746.0
+29  20160226    8  22218229.0</code></pre><p><strong>产品代码列表</strong></p>
+<table>
+<thead>
+<tr>
+<th>TS代码</th>
+<th>类别名称</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>PC</td>
+</tr>
+<tr>
+<td>2</td>
+<td>NB</td>
+</tr>
+<tr>
+<td>3</td>
+<td>主机板</td>
+</tr>
+<tr>
+<td>4</td>
+<td>印刷电路板</td>
+</tr>
+<tr>
+<td>5</td>
+<td>IC载板</td>
+</tr>
+<tr>
+<td>6</td>
+<td>PCB组装</td>
+</tr>
+<tr>
+<td>7</td>
+<td>软板</td>
+</tr>
+<tr>
+<td>8</td>
+<td>PCB</td>
+</tr>
+<tr>
+<td>9</td>
+<td>PCB原料</td>
+</tr>
+<tr>
+<td>10</td>
+<td>铜箔基板</td>
+</tr>
+<tr>
+<td>11</td>
+<td>玻纤纱布</td>
+</tr>
+<tr>
+<td>12</td>
+<td>FCCL</td>
+</tr>
+<tr>
+<td>13</td>
+<td>显示卡</td>
+</tr>
+<tr>
+<td>14</td>
+<td>绘图卡</td>
+</tr>
+<tr>
+<td>15</td>
+<td>电视卡</td>
+</tr>
+<tr>
+<td>16</td>
+<td>泛工业电脑</td>
+</tr>
+<tr>
+<td>17</td>
+<td>POS</td>
+</tr>
+<tr>
+<td>18</td>
+<td>工业电脑</td>
+</tr>
+<tr>
+<td>19</td>
+<td>光电IO</td>
+</tr>
+<tr>
+<td>20</td>
+<td>监视器</td>
+</tr>
+<tr>
+<td>21</td>
+<td>扫描器</td>
+</tr>
+<tr>
+<td>22</td>
+<td>PC周边</td>
+</tr>
+<tr>
+<td>23</td>
+<td>储存媒体</td>
+</tr>
+<tr>
+<td>24</td>
+<td>光碟</td>
+</tr>
+<tr>
+<td>25</td>
+<td>硬盘磁盘</td>
+</tr>
+<tr>
+<td>26</td>
+<td>发光二极体</td>
+</tr>
+<tr>
+<td>27</td>
+<td>太阳能</td>
+</tr>
+<tr>
+<td>28</td>
+<td>LCD面板</td>
+</tr>
+<tr>
+<td>29</td>
+<td>背光模组</td>
+</tr>
+<tr>
+<td>30</td>
+<td>LCD原料</td>
+</tr>
+<tr>
+<td>31</td>
+<td>LCD其它</td>
+</tr>
+<tr>
+<td>32</td>
+<td>触控面板</td>
+</tr>
+<tr>
+<td>33</td>
+<td>监控系统</td>
+</tr>
+<tr>
+<td>34</td>
+<td>其它光电</td>
+</tr>
+<tr>
+<td>35</td>
+<td>电子零组件</td>
+</tr>
+<tr>
+<td>36</td>
+<td>二极体整流</td>
+</tr>
+<tr>
+<td>37</td>
+<td>连接器</td>
+</tr>
+<tr>
+<td>38</td>
+<td>电源供应器</td>
+</tr>
+<tr>
+<td>39</td>
+<td>机壳</td>
+</tr>
+<tr>
+<td>40</td>
+<td>被动元件</td>
+</tr>
+<tr>
+<td>41</td>
+<td>石英元件</td>
+</tr>
+<tr>
+<td>42</td>
+<td>3C二次电源</td>
+</tr>
+<tr>
+<td>43</td>
+<td>网路设备</td>
+</tr>
+<tr>
+<td>44</td>
+<td>数据机</td>
+</tr>
+<tr>
+<td>45</td>
+<td>网路卡</td>
+</tr>
+<tr>
+<td>46</td>
+<td>半导体</td>
+</tr>
+<tr>
+<td>47</td>
+<td>晶圆制造</td>
+</tr>
+<tr>
+<td>48</td>
+<td>IC封测</td>
+</tr>
+<tr>
+<td>49</td>
+<td>特用IC</td>
+</tr>
+<tr>
+<td>50</td>
+<td>记忆体模组</td>
+</tr>
+<tr>
+<td>51</td>
+<td>晶圆材料</td>
+</tr>
+<tr>
+<td>52</td>
+<td>IC设计</td>
+</tr>
+<tr>
+<td>53</td>
+<td>IC光罩</td>
+</tr>
+<tr>
+<td>54</td>
+<td>电子设备</td>
+</tr>
+<tr>
+<td>55</td>
+<td>手机</td>
+</tr>
+<tr>
+<td>56</td>
+<td>通讯设备</td>
+</tr>
+<tr>
+<td>57</td>
+<td>电信业</td>
+</tr>
+<tr>
+<td>58</td>
+<td>网路服务</td>
+</tr>
+<tr>
+<td>59</td>
+<td>卫星通讯</td>
+</tr>
+<tr>
+<td>60</td>
+<td>光纤通讯</td>
+</tr>
+<tr>
+<td>61</td>
+<td>3C通路</td>
+</tr>
+<tr>
+<td>62</td>
+<td>消费性电子</td>
+</tr>
+<tr>
+<td>63</td>
+<td>照相机</td>
+</tr>
+<tr>
+<td>64</td>
+<td>软件服务</td>
+</tr>
+<tr>
+<td>65</td>
+<td>系统整合</td>
+</tr>
+</tbody></table>
+
+</div>
+</div>
+</div>
+</section>
+
+<footer id="footer" class="site-footer">
+<div class="container">
+<div class="row footer-panel">
+<div class="col-md-4">
+<div class=""><img src="/static/frontend/images/wechat_public.png?v=847e8d705d3a409d000dce413ab5c257" alt=""></div>
+</div>
+<div class="col-md-4">
+<div class="title">使用文档</div>
+<div class="content">
+<ul>
+<li><a href="/document/1">平台介绍</a></li>
+<li><a href="/document/2">数据接口</a></li>
+<li><a href="/document/41">区块链</a></li>
+<li><a href="/news">资讯数据</a></li>
+</ul>
+</div>
+</div>
+<div class="col-md-4">
+<div class="title">关注我们</div>
+<div class="content">
+<ul>
+<li>公众号：waditu</li>
+<li>Github：<a href="https://github.com/waditu" target="_blank">https://github.com/waditu</a></li>
+<li>雪 球：<a href="https://xueqiu.com/u/9103835084" target="_blank">https://xueqiu.com/u/9103835084</a></li>
+<li>微 博：<a href="https://weibo.com/u/1304687120" target="_blank">https://weibo.com/u/1304687120</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="row footer-footer">
+<div class="copyright"><p>© 2018 Tushare <a href="https://beian.miit.gov.cn" target="_blank">
+"沪ICP备2020031644号"
+</a></p></div>
+</div>
+</div>
+</footer>
+
+</div>
+<div class="scroll-to-top" data-spy="affix" data-offset-top="200">
+<a href="#page" class="smooth-scroll">置顶</a>
+</div>
+
+<script type="text/javascript">
+require(['custom']);
+</script>
+
+
+<script type="text/javascript">
+require([
+'jquery',
+'jstree'
+], function ($, jstree) {
+$(document).ready(function() {
+const tree = $('#jstree').jstree({
+// plugins : ['state']
+plugins : ['wholerow'],
+core: {
+themes: {
+multiple: false,
+icons: false,
+stripes: false,
+expand_selected_onload: true
+}
+}
+});
+tree.on("select_node.jstree", function (e, data) {
+window.location = `${location.protocol}//${location.host}${data.node.a_attr.href}`;
+});
+const searchInput = document.querySelector('.search-input');
+const searchIcon = document.querySelector('.search-icon');
+const onSearch = () => {
+const query = searchInput.value;
+if (query) {
+window.location = `${location.protocol}//${location.host}/document/search?q=${encodeURIComponent(query)}`;
+}
+}
+searchInput.addEventListener('change', onSearch);
+searchIcon.addEventListener('click', onSearch);
+});
+});
+</script>
+
+
+</body></html>
