@@ -9,9 +9,9 @@ import {
   Info,
   BarChart3,
   Zap,
-  Play,
   Loader2,
   Activity,
+  Download,
 } from "lucide-react";
 import {
   Card,
@@ -48,8 +48,8 @@ async function fetchDashboardSummary() {
   return response.json();
 }
 
-async function runRoutine() {
-  const response = await fetch(`${OpenAPI.BASE}/api/v1/online/routine`, {
+async function runTask() {
+  const response = await fetch(`${OpenAPI.BASE}/api/v1/run-task/run`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${localStorage.getItem("access_token")}`,
@@ -58,7 +58,22 @@ async function runRoutine() {
   });
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.detail || "Failed to run routine");
+    throw new Error(error.detail || "Failed to run task");
+  }
+  return response.json();
+}
+
+async function updateData() {
+  const response = await fetch(`${OpenAPI.BASE}/api/v1/update-data/run`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+      "Content-Type": "application/json",
+    },
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || "Failed to update data");
   }
   return response.json();
 }
@@ -159,7 +174,7 @@ function formatNumber(value: number): string {
 }
 
 function Dashboard() {
-  const [dailyTaskStatus, setDailyTaskStatus] = useState<string>("");
+  const [taskStatus, setTaskStatus] = useState<string>("");
 
   const {
     data: dashboardData,
@@ -171,41 +186,72 @@ function Dashboard() {
     refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  const routineMutation = useMutation({
-    mutationFn: runRoutine,
+  const taskMutation = useMutation({
+    mutationFn: runTask,
+  });
+
+  const updateDataMutation = useMutation({
+    mutationFn: updateData,
   });
 
   const backtestMutation = useMutation({
     mutationFn: runBacktest,
   });
 
-  const handleDailyTask = async () => {
+  const handleRunTask = async () => {
     try {
-      // Step 1: Run Routine
-      setDailyTaskStatus("Running routine...");
-      await routineMutation.mutateAsync();
-
-      // Step 2: Run Backtest
-      setDailyTaskStatus("Running backtest...");
-      await backtestMutation.mutateAsync();
-
-      // Done
-      setDailyTaskStatus("Task completed!");
+      setTaskStatus("Running signal generation...");
+      await taskMutation.mutateAsync();
+      setTaskStatus("Signal generation completed!");
       refetch();
-
       // Clear status after 3 seconds
-      setTimeout(() => setDailyTaskStatus(""), 3000);
+      setTimeout(() => setTaskStatus(""), 3000);
     } catch (error) {
-      setDailyTaskStatus(
+      setTaskStatus(
         `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
       // Clear error after 5 seconds
-      setTimeout(() => setDailyTaskStatus(""), 5000);
+      setTimeout(() => setTaskStatus(""), 5000);
     }
   };
 
-  const isDailyTaskRunning =
-    routineMutation.isPending || backtestMutation.isPending;
+  const handleUpdateData = async () => {
+    try {
+      setTaskStatus("Updating data...");
+      await updateDataMutation.mutateAsync();
+      setTaskStatus("Data update completed!");
+      refetch();
+      // Clear status after 3 seconds
+      setTimeout(() => setTaskStatus(""), 3000);
+    } catch (error) {
+      setTaskStatus(
+        `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+      // Clear error after 5 seconds
+      setTimeout(() => setTaskStatus(""), 5000);
+    }
+  };
+
+  const handleRunBacktest = async () => {
+    try {
+      setTaskStatus("Running backtest...");
+      await backtestMutation.mutateAsync();
+      setTaskStatus("Backtest completed!");
+      refetch();
+      // Clear status after 3 seconds
+      setTimeout(() => setTaskStatus(""), 3000);
+    } catch (error) {
+      setTaskStatus(
+        `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+      // Clear error after 5 seconds
+      setTimeout(() => setTaskStatus(""), 5000);
+    }
+  };
+
+  const isTaskRunning = taskMutation.isPending;
+  const isUpdatingData = updateDataMutation.isPending;
+  const isBacktestRunning = backtestMutation.isPending;
 
   const backtest = dashboardData?.backtest;
   const model = dashboardData?.model;
@@ -213,9 +259,8 @@ function Dashboard() {
   const targetPositions = dashboardData?.target_positions || [];
   const alerts = dashboardData?.alerts || [];
 
-  // Calculate return color
+  // Data for dashboard display
   const totalReturn = backtest?.total_return || 0;
-  const isPositive = totalReturn >= 0;
 
   return (
     <div className="container mx-auto space-y-6">
@@ -228,25 +273,51 @@ function Dashboard() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {dailyTaskStatus && (
+          {taskStatus && (
             <span
-              className={`text-sm ${dailyTaskStatus.startsWith("Error") ? "text-red-600" : dailyTaskStatus.includes("completed") ? "text-green-600" : "text-blue-600"}`}
+              className={`text-sm ${taskStatus.startsWith("Error") ? "text-red-600" : taskStatus.includes("completed") ? "text-green-600" : "text-blue-600"}`}
             >
-              {dailyTaskStatus}
+              {taskStatus}
             </span>
           )}
           <Button
-            variant="default"
+            variant="secondary"
             size="sm"
-            onClick={handleDailyTask}
-            disabled={isDailyTaskRunning}
+            onClick={handleUpdateData}
+            disabled={isUpdatingData}
           >
-            {isDailyTaskRunning ? (
+            {isUpdatingData ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
-              <Play className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 mr-2" />
             )}
-            Run Task
+            Update Data
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleRunTask}
+            disabled={isTaskRunning}
+          >
+            {isTaskRunning ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Zap className="h-4 w-4 mr-2" />
+            )}
+            Run Signal
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRunBacktest}
+            disabled={isBacktestRunning}
+          >
+            {isBacktestRunning ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <BarChart3 className="h-4 w-4 mr-2" />
+            )}
+            Run Backtest
           </Button>
         </div>
       </div>

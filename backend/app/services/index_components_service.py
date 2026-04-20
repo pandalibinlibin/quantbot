@@ -124,18 +124,19 @@ class IndexComponentsService:
         if source == "tushare":
             index_code = index_config.get("components_index_code")
             components = self._get_from_tushare(index_code)
-        elif source == "tushare_etf":
-            # ETF universe screening
-            components = self._get_etf_universe(index_config)
         elif source == "eod":
             index_code = index_config.get("components_index_code")
             components = self._get_from_eod(index_code)
         elif source == "file":
             file_path = index_config.get("components_file")
             components = self._get_from_file(file_path)
+        elif source == "tushare_etf":
+            components = self._get_etf_universe(index_config)
+        elif source == "static_list":
+            components = self._get_from_static_list(index_config)
         else:
             raise ValueError(
-                f"Unsupported components source: {source}. Supported: tushare, tushare_etf, eod, file"
+                f"Unsupported components source: {source}. Supported: tushare, eod, file, tushare_etf, static_list"
             )
 
         # Cache results
@@ -318,8 +319,21 @@ class IndexComponentsService:
             etf_with_size = etf_with_size.sort_values("total_size", ascending=False)
             logger.info(f"Found {len(etf_with_size)} ETFs with size data")
 
-            # Select top N ETFs
-            top_etfs = etf_with_size.head(top_n)
+            # Check if balanced selection is enabled
+            selection_strategy = index_config.get("selection_strategy", "simple")
+            min_requirements = index_config.get("min_requirements", {})
+
+            if selection_strategy == "balanced" and min_requirements:
+                logger.info(
+                    "Using balanced selection strategy with minimum requirements"
+                )
+                top_etfs = self._balanced_etf_selection(
+                    etf_with_size, top_n, min_requirements
+                )
+            else:
+                logger.info("Using simple top-N selection by size")
+                # Select top N ETFs
+                top_etfs = etf_with_size.head(top_n)
 
             # Convert to Qlib format
             qualified_etfs = []
@@ -363,8 +377,130 @@ class IndexComponentsService:
                 "SZ159901",
                 "SH512690",
             ]
-            logger.info(f"Using fallback ETF list: {fallback_etfs}")
+            logger.info(f"Using fallback ETF list due to error: {fallback_etfs}")
             return fallback_etfs
+
+    def _balanced_etf_selection(self, etf_df, total_count, min_requirements):
+        """
+        Balanced ETF selection with minimum requirements for each category.
+
+        Args:
+            etf_df: DataFrame with ETF data sorted by size
+            total_count: Total number of ETFs to select
+            min_requirements: Dict with minimum counts per category
+
+        Returns:
+            DataFrame with selected ETFs
+        """
+        import pandas as pd
+
+        # ETF classification function (simplified version)
+        def classify_etf(row):
+            name = str(row.get("extname", "")).upper()
+
+            if any(k in name for k in ["货币", "现金", "理财", "MONEY"]):
+                return "货币ETF"
+            elif any(k in name for k in ["美股", "NASDAQ", "S&P", "标普"]):
+                return "海外ETF"
+            elif any(
+                k in name for k in ["港股", "H股", "恒生", "日本", "德国", "欧洲"]
+            ):
+                return "海外ETF"
+            elif any(k in name for k in ["债", "BOND", "国债", "企债"]):
+                return "债券ETF"
+            elif any(k in name for k in ["黄金", "白银", "原油", "商品", "GOLD"]):
+                return "商品ETF"
+            elif any(k in name for k in ["地产", "REIT"]):
+                return "REIT_ETF"
+            else:
+                return "股票ETF"
+
+        # Apply classification
+        etf_df = etf_df.copy()
+        etf_df["category"] = etf_df.apply(classify_etf, axis=1)
+
+        selected_etfs = []
+        remaining_count = total_count
+
+        # First round: satisfy minimum requirements
+        logger.info("Balanced selection - First round: minimum requirements")
+        for category, min_count in min_requirements.items():
+            category_etfs = etf_df[etf_df["category"] == category]
+            if len(category_etfs) > 0:
+                select_count = min(min_count, len(category_etfs), remaining_count)
+                selected = category_etfs.head(select_count)
+                selected_etfs.extend(selected.index.tolist())
+                remaining_count -= select_count
+                logger.info(
+                    f"  {category}: selected {select_count}/{min_count} (available: {len(category_etfs)})"
+                )
+
+        # Second round: fill remaining slots with largest ETFs not yet selected
+        if remaining_count > 0:
+            logger.info(
+                f"Balanced selection - Second round: fill remaining {remaining_count} slots"
+            )
+            available_etfs = etf_df[~etf_df.index.isin(selected_etfs)]
+            additional = available_etfs.head(remaining_count)
+            selected_etfs.extend(additional.index.tolist())
+
+        # Return selected ETFs sorted by size
+        final_selection = etf_df.loc[selected_etfs].sort_values(
+            "total_size", ascending=False
+        )
+        logger.info(
+            f"Balanced selection completed: {len(final_selection)} ETFs selected"
+        )
+
+        return final_selection
+
+    def _get_from_static_list(self, index_config: dict) -> List[str]:
+        """
+        Get components from static list defined in configuration.
+
+        Args:
+            index_config: Index configuration containing etf_codes list
+
+        Returns:
+            List of ETF codes in Qlib format
+        """
+        try:
+            etf_codes = index_config.get("etf_codes", [])
+
+            if not etf_codes:
+                raise ValueError("No etf_codes found in static_list configuration")
+
+            logger.info(f"Using static ETF list with {len(etf_codes)} ETFs")
+
+            # Validate format
+            valid_codes = []
+            for code in etf_codes:
+                if isinstance(code, str) and (
+                    code.startswith("SH") or code.startswith("SZ")
+                ):
+                    valid_codes.append(code)
+                else:
+                    logger.warning(f"Invalid ETF code format: {code}")
+
+            logger.info(f"Validated {len(valid_codes)} ETF codes from static list")
+
+            if valid_codes:
+                logger.info(f"Sample ETF codes: {valid_codes[:5]}")
+
+            return valid_codes
+
+        except Exception as e:
+            logger.error(f"Error reading static ETF list: {e}")
+            # Fallback to a minimal list
+            fallback_codes = [
+                "SH510300",
+                "SH510310",
+                "SZ159919",
+                "SH510330",
+                "SH510500",
+            ]
+            logger.info(f"Using fallback ETF list: {fallback_codes}")
+            return fallback_codes
 
 
 # Singleton instance

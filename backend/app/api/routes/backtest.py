@@ -1,7 +1,13 @@
 """
-Backtest API routes.
+Backtest API routes - 历史回测分析
 
-This module provides REST API endpoints for backtest operations:
+功能边界:
+- 只影响backtest前端页面，不影响其他页面
+- 独立的完整workflow，可触发数据下载、预处理、因子计算
+- 与Run Signal完全独立，互不依赖
+- 不影响实盘投资组合状态
+
+API endpoints:
 - GET /config: Get backtest configuration from YAML
 - GET /status: Get backtest readiness status
 - GET /latest-result: Get the latest backtest result

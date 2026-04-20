@@ -15,6 +15,8 @@ from app.api.routes import (
     backtest,
     dashboard,
     scheduler,
+    run_task,
+    update_data,
 )
 from app.core.config import settings
 
@@ -38,6 +40,10 @@ api_router.include_router(
 api_router.include_router(backtest.router, prefix="/backtest", tags=["Backtest"])
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
 api_router.include_router(scheduler.router, prefix="/scheduler", tags=["Scheduler"])
+api_router.include_router(
+    update_data.router, prefix="/update-data", tags=["Update Data"]
+)
+api_router.include_router(run_task.router, prefix="/run-task", tags=["Run Task"])
 
 if settings.ENVIRONMENT == "local":
     api_router.include_router(private.router)
