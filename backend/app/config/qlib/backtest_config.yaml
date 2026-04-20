@@ -1,12 +1,12 @@
 # Backtest Configuration
-# This configuration uses the same Enhanced Indexing Strategy as the routine
+# This configuration uses TopkDropoutStrategy with intelligent rebalancing
 # to maintain consistency between routine execution and backtesting.
 
-# Strategy configuration (uses ETF Enhanced Indexing Strategy)
+# Strategy configuration (uses TopK Dropout Strategy for ETF optimization)
 strategy:
-  class: ETFEnhancedIndexingStrategy
-  module_path: app.services.etf_enhanced_indexing_service
-  # Strategy parameters are loaded from system_config.yaml etf_enhanced_indexing section
+  class: TopkDropoutStrategy
+  module_path: qlib.contrib.strategy
+  # Strategy parameters are loaded from system_config.yaml topk_dropout_strategy section
   # This ensures consistency with routine execution
 
 # Backtest parameters

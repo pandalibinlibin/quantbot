@@ -1,0 +1,121 @@
+
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                h2 { color: #333; }
+                h3 { color: #666; margin-top: 20px; }
+                table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+                th, td { border: 1px solid #ddd; padding: 8px; }
+                th { background-color: #2c3e50; color: white; text-align: left; }
+                tr:nth-child(even) { background-color: #f9f9f9; }
+                tr:hover { background-color: #f5f5f5; }
+                .info-box { background-color: #ecf0f1; padding: 15px; border-radius: 5px; margin: 10px 0; }
+                .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0; }
+                .stat-item { background-color: #fff; padding: 10px; border-radius: 5px; border: 1px solid #ddd; text-align: center; }
+                .stat-value { font-size: 24px; font-weight: bold; color: #2c3e50; }
+                .stat-label { font-size: 12px; color: #666; }
+                .overweight { color: #27ae60; }
+                .underweight { color: #e74c3c; }
+            </style>
+        </head>
+        <body>
+            <h2>📊 QuantBot Target Portfolio</h2>
+            
+            <div class="info-box">
+                <p><strong>Benchmark:</strong> 沪深300 (csi300)</p>
+                <p><strong>Target Date:</strong> 2026-03-03</p>
+                <p><strong>Generated At:</strong> 2026-03-03T14:00:00</p>
+                <p><strong>Max Deviation:</strong> 2.0%</p>
+            </div>
+            
+            <h3>📈 Statistics</h3>
+            <table style="width: 50%;">
+                <tr>
+                    <td>Total Stocks</td>
+                    <td style="text-align: right;"><strong>300</strong></td>
+                </tr>
+                <tr>
+                    <td>Overweight (<span class="overweight">超配</span>)</td>
+                    <td style="text-align: right;"><strong class="overweight">150</strong></td>
+                </tr>
+                <tr>
+                    <td>Underweight (<span class="underweight">低配</span>)</td>
+                    <td style="text-align: right;"><strong class="underweight">148</strong></td>
+                </tr>
+                <tr>
+                    <td>Neutral (持平)</td>
+                    <td style="text-align: right;"><strong>2</strong></td>
+                </tr>
+            </table>
+            
+            <h3>📋 Target Portfolio</h3>
+            <table>
+                <tr>
+                    <th style="width: 50px;">Rank</th>
+                    <th>Stock</th>
+                    <th style="width: 100px;">Benchmark</th>
+                    <th style="width: 80px;">Score</th>
+                    <th style="width: 100px;">Target</th>
+                    <th style="width: 80px;">Deviation</th>
+                    <th style="width: 80px;">Action</th>
+                </tr>
+                
+            <tr>
+                <td style="text-align: center;">1</td>
+                <td>SH600519</td>
+                <td style="text-align: right;">6.00%</td>
+                <td style="text-align: right;">0.0312</td>
+                <td style="text-align: right;">7.20%</td>
+                <td style="text-align: right; color: #27ae60;">+1.20%</td>
+                <td style="text-align: center; color: #27ae60;">超配</td>
+            </tr>
+            
+            <tr>
+                <td style="text-align: center;">2</td>
+                <td>SH300750</td>
+                <td style="text-align: right;">4.50%</td>
+                <td style="text-align: right;">0.0089</td>
+                <td style="text-align: right;">4.80%</td>
+                <td style="text-align: right; color: #27ae60;">+0.30%</td>
+                <td style="text-align: center; color: #27ae60;">超配</td>
+            </tr>
+            
+            <tr>
+                <td style="text-align: center;">3</td>
+                <td>SH601318</td>
+                <td style="text-align: right;">3.20%</td>
+                <td style="text-align: right;">-0.0156</td>
+                <td style="text-align: right;">2.50%</td>
+                <td style="text-align: right; color: #e74c3c;">-0.70%</td>
+                <td style="text-align: center; color: #e74c3c;">低配</td>
+            </tr>
+            
+            <tr>
+                <td style="text-align: center;">4</td>
+                <td>SH600036</td>
+                <td style="text-align: right;">2.80%</td>
+                <td style="text-align: right;">0.0001</td>
+                <td style="text-align: right;">2.80%</td>
+                <td style="text-align: right; color: #666;">+0.00%</td>
+                <td style="text-align: center; color: #666;">持平</td>
+            </tr>
+            
+            <tr>
+                <td style="text-align: center;">5</td>
+                <td>SH000001</td>
+                <td style="text-align: right;">2.50%</td>
+                <td style="text-align: right;">-0.0234</td>
+                <td style="text-align: right;">1.80%</td>
+                <td style="text-align: right; color: #e74c3c;">-0.70%</td>
+                <td style="text-align: center; color: #e74c3c;">低配</td>
+            </tr>
+            
+            </table>
+            
+            
+            <hr>
+            <p><small>This is an automated email from QuantBot Enhanced Indexing system.</small></p>
+        </body>
+        </html>
+        

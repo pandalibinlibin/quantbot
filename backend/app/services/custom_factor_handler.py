@@ -6,6 +6,7 @@ Educational Notes:
 - Supports loading custom factors from database
 - Implements standard Qlib DataHandler interface methods
 - Follows Alpha158 implementation pattern for factor definition
+- Integrates data preprocessing pipeline (EMA-5 smoothing, relative change, cross-sectional Z-Score)
 """
 
 import logging
@@ -118,6 +119,11 @@ class CustomFactorHandler(DataHandlerLP):
                 {"class": "CSZScoreNorm", "kwargs": {"fields_group": "label"}},
             ]
 
+        # Build default infer_processors with preprocessing pipeline if not provided
+        # Preprocessing pipeline: EMA-5 smoothing -> Relative change -> Cross-sectional Z-Score
+        if not infer_processors:
+            infer_processors = self._build_preprocessing_pipeline()
+
         infer_processors = check_transform_proc(
             infer_processors, fit_start_time, fit_end_time
         )
@@ -188,10 +194,23 @@ class CustomFactorHandler(DataHandlerLP):
         # Add pre-computed custom factors from bin files (using $field_name format)
         precomputed_exprs, precomputed_names = self._load_precomputed_factors()
         if precomputed_exprs:
-            feature_expressions.extend(precomputed_exprs)
-            feature_names.extend(precomputed_names)
+            # Check for duplicate names and skip duplicates
+            unique_exprs = []
+            unique_names = []
+            existing_names = set(feature_names)
+
+            for expr, name in zip(precomputed_exprs, precomputed_names):
+                if name not in existing_names:
+                    unique_exprs.append(expr)
+                    unique_names.append(name)
+                    existing_names.add(name)
+                else:
+                    logger.warning(f"Skipping duplicate factor name: {name}")
+
+            feature_expressions.extend(unique_exprs)
+            feature_names.extend(unique_names)
             logger.info(
-                f"Added {len(precomputed_exprs)} pre-computed factors from bin files"
+                f"Added {len(unique_exprs)} pre-computed factors from bin files (skipped {len(precomputed_exprs) - len(unique_exprs)} duplicates)"
             )
 
         logger.info(f"Total feature expressions: {len(feature_expressions)}")
@@ -423,6 +442,45 @@ class CustomFactorHandler(DataHandlerLP):
         except Exception as e:
             logger.error(f"Failed to load system config: {e}")
             return {}
+
+    def _build_preprocessing_pipeline(self) -> List:
+        """
+        Build the default preprocessing pipeline for feature data.
+
+        The preprocessing pipeline includes:
+        1. ProcessInf - Handle infinite values
+        2. Fillna - Fill NaN values with 0
+        3. EMA5Processor - 5-day exponential moving average smoothing
+        4. RelativeChangeProcessor - Calculate relative change rate (surprise)
+        5. CSZScoreNorm - Cross-sectional Z-Score normalization
+
+        This pipeline:
+        - Smooths noise using EMA-5
+        - Calculates surprise values (relative change) to capture unexpected movements
+        - Normalizes across stocks to eliminate scale differences
+
+        Returns:
+            List of processor configurations
+        """
+        from app.qlib_extensions.preprocessing import (
+            EMA5Processor,
+            RelativeChangeProcessor,
+        )
+
+        logger.info(
+            "Building preprocessing pipeline: EMA-5 -> RelativeChange -> CSZScoreNorm"
+        )
+
+        return [
+            # Step 1: Fill NaN values with 0 (skip ProcessInf due to index issues)
+            {"class": "Fillna", "kwargs": {"fields_group": "feature", "fill_value": 0}},
+            # Step 2: Apply EMA-5 smoothing to reduce noise
+            EMA5Processor(fields_group="feature", window=5),
+            # Step 3: Calculate relative change rate (Surprise)
+            RelativeChangeProcessor(fields_group="feature"),
+            # Step 4: Apply cross-sectional Z-Score normalization (Qlib built-in)
+            {"class": "CSZScoreNorm", "kwargs": {"fields_group": "feature"}},
+        ]
 
     def get_feature_names(self) -> List[str]:
         """

@@ -482,6 +482,11 @@ def _execute_tushare_pipeline(
                         if df.empty:
                             continue
 
+                        # Apply automatic data classification and broadcast if needed
+                        df = _apply_tushare_data_classification(
+                            df, instrument, range_start, range_end
+                        )
+
                         # Use normalized instrument format
                         normalized_instrument = collector.normalize_symbol(instrument)
                         csv_file = csv_dir / f"{normalized_instrument}.csv"
@@ -830,3 +835,101 @@ def _execute_eod_pipeline(
         error_msg = f"EOD pipeline execution failed: {str(e)}"
         logger.error(error_msg, exc_info=True)
         return False, error_msg
+
+
+def _apply_tushare_data_classification(
+    df: pd.DataFrame, instrument: str, start_date: str, end_date: str
+) -> pd.DataFrame:
+    """
+    Apply automatic data classification and broadcast mechanism for Tushare data.
+
+    This function automatically detects the data type (stock daily, macro, industry)
+    and applies appropriate broadcast mechanisms based on the Tushare data classifier.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Raw data from Tushare API
+    instrument : str
+        Instrument symbol (e.g., "000001.SZ")
+    start_date : str
+        Start date for data collection
+    end_date : str
+        End date for data collection
+
+    Returns
+    -------
+    pd.DataFrame
+        Processed data with broadcast applied if needed
+    """
+    try:
+        from app.qlib_extensions.tushare_data_classifier import (
+            create_tushare_classifier,
+        )
+        from app.services.data_collectors.tushare_collector import TushareDataCollector
+
+        # Create classifier instance
+        classifier = create_tushare_classifier()
+
+        # For Tushare stock data, we need to simulate API name based on instrument type
+        # Stock data from TushareDataCollector.get_data() is always daily stock data
+        api_name = "daily"  # Tushare daily stock API
+
+        # Classify the data type
+        data_type = classifier.classify_data(df, api_name=api_name)
+
+        logger.debug(f"Classified {instrument} as {data_type.value}")
+
+        # Get broadcast configuration
+        config = classifier.get_broadcast_config(data_type)
+
+        # For stock daily data, no broadcast is needed - return as is
+        if not (
+            config["needs_time_broadcast"]
+            or config["needs_stock_broadcast"]
+            or config["needs_industry_broadcast"]
+        ):
+            logger.debug(f"No broadcast needed for {instrument}")
+            return df
+
+        # If broadcast is needed (for macro/industry data), apply it
+        # Note: This is primarily for future extension when we add macro/industry APIs
+        if config["needs_time_broadcast"] or config["needs_stock_broadcast"]:
+            logger.info(
+                f"Applying broadcast for {instrument} (type: {data_type.value})"
+            )
+
+            # Get trading calendar for broadcast
+            try:
+                calendar_dates = TushareDataCollector.get_trading_calendar(
+                    start_date, end_date
+                )
+                calendar = pd.to_datetime(calendar_dates)
+
+                # Get all instruments for stock broadcast
+                # This would be used for macro data broadcasting
+                instruments = ["SH000001", "SZ399001"]  # Placeholder for now
+
+                # Apply broadcast
+                processed_df = classifier.apply_broadcast(
+                    df, data_type, calendar, instruments
+                )
+
+                logger.info(
+                    f"Broadcast applied to {instrument}: {df.shape} -> {processed_df.shape}"
+                )
+                return processed_df
+
+            except Exception as e:
+                logger.warning(
+                    f"Broadcast failed for {instrument}: {e}, using original data"
+                )
+                return df
+
+        return df
+
+    except Exception as e:
+        logger.warning(
+            f"Data classification failed for {instrument}: {e}, using original data"
+        )
+        return df

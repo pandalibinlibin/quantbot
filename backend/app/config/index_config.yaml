@@ -3,7 +3,8 @@
 # VeighNa will also read this file to ensure consistency
 
 # Currently active index for stock selection
-active_index: csi300
+# Options: csi300, csi500, dividend, csi1000, sp500, nasdaq100, etf_universe
+active_index: etf_universe
 
 # Index definitions
 # Data sources: tushare (A-shares), eod (US stocks), file (local file)
@@ -58,3 +59,15 @@ indexes:
     etf_code: QQQ
     components_source: eod
     components_index_code: "NDX.INDX"
+
+  # ========== ETF Universe (Top ETFs by Fund Size) ==========
+  etf_universe:
+    name: Top ETF Universe by Size
+    name_en: Top ETF Universe by Size
+    benchmark_code: 510300.SH # CSI300 ETF as benchmark
+    etf_code: SH510300
+    components_source: tushare_etf
+    # ETF selection parameters (much simpler and faster)
+    top_n_etfs: 150 # Select top N ETFs by fund size
+    exclude_types: [] # Include all ETF types
+    update_frequency: weekly # Update frequency: daily, weekly, monthly

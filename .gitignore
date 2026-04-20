@@ -9,6 +9,6 @@ node_modules/
 qlib-source/
 
 # Temporary scripts and test results - exclude from git
-temp_scripts/
+# temp_scripts/
 
 .env

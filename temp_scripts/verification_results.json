@@ -1,0 +1,673 @@
+{
+  "timestamp": "2026-02-17T10:30:29.706662",
+  "test_samples": [
+    {
+      "stock": "000596.sz",
+      "date": "2026-02-10",
+      "interval": "1d"
+    },
+    {
+      "stock": "000596.sz",
+      "date": "2026-02-10",
+      "interval": "1m"
+    },
+    {
+      "stock": "000596.sz",
+      "date": "2026-02-10",
+      "interval": "1d"
+    },
+    {
+      "stock": "000596.sz",
+      "date": "2026-02-10",
+      "interval": "1m"
+    },
+    {
+      "stock": "000596.sz",
+      "date": "2026-02-10",
+      "interval": "1d"
+    },
+    {
+      "stock": "000596.sz",
+      "date": "2026-02-10",
+      "interval": "1m"
+    },
+    {
+      "stock": "000999.sz",
+      "date": "2026-02-10",
+      "interval": "1d"
+    },
+    {
+      "stock": "000999.sz",
+      "date": "2026-02-10",
+      "interval": "1d"
+    },
+    {
+      "stock": "000999.sz",
+      "date": "2026-02-10",
+      "interval": "1d"
+    },
+    {
+      "stock": "000301.sz",
+      "date": "2026-02-10",
+      "interval": "1d"
+    },
+    {
+      "stock": "000301.sz",
+      "date": "2026-02-10",
+      "interval": "1d"
+    },
+    {
+      "stock": "000301.sz",
+      "date": "2026-02-10",
+      "interval": "1d"
+    }
+  ],
+  "summary": {
+    "total_tests": 36,
+    "passed_tests": 3,
+    "failed_tests": 24,
+    "warnings": 9
+  },
+  "detailed_results": [
+    {
+      "sample": {
+        "stock": "000596.sz",
+        "date": "2026-02-10",
+        "interval": "1d"
+      },
+      "yahoo_csv": {
+        "comparison": "Yahoo API vs CSV",
+        "status": "FAIL",
+        "issues": [
+          "One dataset is None: Yahoo API=False, CSV=True"
+        ],
+        "statistics": {}
+      },
+      "csv_qlib": {
+        "comparison": "CSV vs Qlib",
+        "status": "FAIL",
+        "issues": [
+          "One dataset is None: CSV=True, Qlib=False"
+        ],
+        "statistics": {}
+      },
+      "yahoo_qlib": {
+        "comparison": "Yahoo API vs Qlib",
+        "status": "SKIP",
+        "issues": [
+          "Both datasets are None"
+        ],
+        "statistics": {}
+      }
+    },
+    {
+      "sample": {
+        "stock": "000596.sz",
+        "date": "2026-02-10",
+        "interval": "1m"
+      },
+      "yahoo_csv": {
+        "comparison": "Yahoo API vs CSV",
+        "status": "FAIL",
+        "issues": [
+          "Shape mismatch: Yahoo API=(331, 5), CSV=(330, 5)"
+        ],
+        "statistics": {
+          "close": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 3.8756876496005463e-16,
+            "records_compared": 330
+          },
+          "low": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 5.167583532800728e-16,
+            "records_compared": 330
+          },
+          "volume": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          },
+          "high": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 4.306319610667274e-17,
+            "records_compared": 330
+          },
+          "open": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 2.153159805333637e-16,
+            "records_compared": 330
+          }
+        }
+      },
+      "csv_qlib": {
+        "comparison": "CSV vs Qlib",
+        "status": "PASS",
+        "issues": [],
+        "statistics": {
+          "close": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 3.8756876496005463e-16,
+            "records_compared": 330
+          },
+          "low": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 5.167583532800728e-16,
+            "records_compared": 330
+          },
+          "volume": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          },
+          "high": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 4.306319610667274e-17,
+            "records_compared": 330
+          },
+          "open": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 2.153159805333637e-16,
+            "records_compared": 330
+          }
+        }
+      },
+      "yahoo_qlib": {
+        "comparison": "Yahoo API vs Qlib",
+        "status": "FAIL",
+        "issues": [
+          "Shape mismatch: Yahoo API=(331, 5), Qlib=(330, 5)"
+        ],
+        "statistics": {
+          "close": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          },
+          "low": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          },
+          "volume": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          },
+          "high": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          },
+          "open": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          }
+        }
+      }
+    },
+    {
+      "sample": {
+        "stock": "000596.sz",
+        "date": "2026-02-10",
+        "interval": "1d"
+      },
+      "yahoo_csv": {
+        "comparison": "Yahoo API vs CSV",
+        "status": "FAIL",
+        "issues": [
+          "One dataset is None: Yahoo API=False, CSV=True"
+        ],
+        "statistics": {}
+      },
+      "csv_qlib": {
+        "comparison": "CSV vs Qlib",
+        "status": "FAIL",
+        "issues": [
+          "One dataset is None: CSV=True, Qlib=False"
+        ],
+        "statistics": {}
+      },
+      "yahoo_qlib": {
+        "comparison": "Yahoo API vs Qlib",
+        "status": "SKIP",
+        "issues": [
+          "Both datasets are None"
+        ],
+        "statistics": {}
+      }
+    },
+    {
+      "sample": {
+        "stock": "000596.sz",
+        "date": "2026-02-10",
+        "interval": "1m"
+      },
+      "yahoo_csv": {
+        "comparison": "Yahoo API vs CSV",
+        "status": "FAIL",
+        "issues": [
+          "Shape mismatch: Yahoo API=(331, 5), CSV=(330, 5)"
+        ],
+        "statistics": {
+          "close": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 3.8756876496005463e-16,
+            "records_compared": 330
+          },
+          "low": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 5.167583532800728e-16,
+            "records_compared": 330
+          },
+          "volume": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          },
+          "high": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 4.306319610667274e-17,
+            "records_compared": 330
+          },
+          "open": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 2.153159805333637e-16,
+            "records_compared": 330
+          }
+        }
+      },
+      "csv_qlib": {
+        "comparison": "CSV vs Qlib",
+        "status": "PASS",
+        "issues": [],
+        "statistics": {
+          "close": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 3.8756876496005463e-16,
+            "records_compared": 330
+          },
+          "low": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 5.167583532800728e-16,
+            "records_compared": 330
+          },
+          "volume": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          },
+          "high": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 4.306319610667274e-17,
+            "records_compared": 330
+          },
+          "open": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 2.153159805333637e-16,
+            "records_compared": 330
+          }
+        }
+      },
+      "yahoo_qlib": {
+        "comparison": "Yahoo API vs Qlib",
+        "status": "FAIL",
+        "issues": [
+          "Shape mismatch: Yahoo API=(331, 5), Qlib=(330, 5)"
+        ],
+        "statistics": {
+          "close": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          },
+          "low": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          },
+          "volume": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          },
+          "high": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          },
+          "open": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          }
+        }
+      }
+    },
+    {
+      "sample": {
+        "stock": "000596.sz",
+        "date": "2026-02-10",
+        "interval": "1d"
+      },
+      "yahoo_csv": {
+        "comparison": "Yahoo API vs CSV",
+        "status": "FAIL",
+        "issues": [
+          "One dataset is None: Yahoo API=False, CSV=True"
+        ],
+        "statistics": {}
+      },
+      "csv_qlib": {
+        "comparison": "CSV vs Qlib",
+        "status": "FAIL",
+        "issues": [
+          "One dataset is None: CSV=True, Qlib=False"
+        ],
+        "statistics": {}
+      },
+      "yahoo_qlib": {
+        "comparison": "Yahoo API vs Qlib",
+        "status": "SKIP",
+        "issues": [
+          "Both datasets are None"
+        ],
+        "statistics": {}
+      }
+    },
+    {
+      "sample": {
+        "stock": "000596.sz",
+        "date": "2026-02-10",
+        "interval": "1m"
+      },
+      "yahoo_csv": {
+        "comparison": "Yahoo API vs CSV",
+        "status": "FAIL",
+        "issues": [
+          "Shape mismatch: Yahoo API=(331, 5), CSV=(330, 5)"
+        ],
+        "statistics": {
+          "close": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 3.8756876496005463e-16,
+            "records_compared": 330
+          },
+          "low": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 5.167583532800728e-16,
+            "records_compared": 330
+          },
+          "volume": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          },
+          "high": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 4.306319610667274e-17,
+            "records_compared": 330
+          },
+          "open": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 2.153159805333637e-16,
+            "records_compared": 330
+          }
+        }
+      },
+      "csv_qlib": {
+        "comparison": "CSV vs Qlib",
+        "status": "PASS",
+        "issues": [],
+        "statistics": {
+          "close": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 3.8756876496005463e-16,
+            "records_compared": 330
+          },
+          "low": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 5.167583532800728e-16,
+            "records_compared": 330
+          },
+          "volume": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          },
+          "high": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 4.306319610667274e-17,
+            "records_compared": 330
+          },
+          "open": {
+            "max_difference": 1.4210854715202004e-14,
+            "mean_difference": 2.153159805333637e-16,
+            "records_compared": 330
+          }
+        }
+      },
+      "yahoo_qlib": {
+        "comparison": "Yahoo API vs Qlib",
+        "status": "FAIL",
+        "issues": [
+          "Shape mismatch: Yahoo API=(331, 5), Qlib=(330, 5)"
+        ],
+        "statistics": {
+          "close": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          },
+          "low": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          },
+          "volume": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          },
+          "high": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          },
+          "open": {
+            "max_difference": 0.0,
+            "mean_difference": 0.0,
+            "records_compared": 330
+          }
+        }
+      }
+    },
+    {
+      "sample": {
+        "stock": "000999.sz",
+        "date": "2026-02-10",
+        "interval": "1d"
+      },
+      "yahoo_csv": {
+        "comparison": "Yahoo API vs CSV",
+        "status": "FAIL",
+        "issues": [
+          "One dataset is None: Yahoo API=False, CSV=True"
+        ],
+        "statistics": {}
+      },
+      "csv_qlib": {
+        "comparison": "CSV vs Qlib",
+        "status": "FAIL",
+        "issues": [
+          "One dataset is None: CSV=True, Qlib=False"
+        ],
+        "statistics": {}
+      },
+      "yahoo_qlib": {
+        "comparison": "Yahoo API vs Qlib",
+        "status": "SKIP",
+        "issues": [
+          "Both datasets are None"
+        ],
+        "statistics": {}
+      }
+    },
+    {
+      "sample": {
+        "stock": "000999.sz",
+        "date": "2026-02-10",
+        "interval": "1d"
+      },
+      "yahoo_csv": {
+        "comparison": "Yahoo API vs CSV",
+        "status": "FAIL",
+        "issues": [
+          "One dataset is None: Yahoo API=False, CSV=True"
+        ],
+        "statistics": {}
+      },
+      "csv_qlib": {
+        "comparison": "CSV vs Qlib",
+        "status": "FAIL",
+        "issues": [
+          "One dataset is None: CSV=True, Qlib=False"
+        ],
+        "statistics": {}
+      },
+      "yahoo_qlib": {
+        "comparison": "Yahoo API vs Qlib",
+        "status": "SKIP",
+        "issues": [
+          "Both datasets are None"
+        ],
+        "statistics": {}
+      }
+    },
+    {
+      "sample": {
+        "stock": "000999.sz",
+        "date": "2026-02-10",
+        "interval": "1d"
+      },
+      "yahoo_csv": {
+        "comparison": "Yahoo API vs CSV",
+        "status": "FAIL",
+        "issues": [
+          "One dataset is None: Yahoo API=False, CSV=True"
+        ],
+        "statistics": {}
+      },
+      "csv_qlib": {
+        "comparison": "CSV vs Qlib",
+        "status": "FAIL",
+        "issues": [
+          "One dataset is None: CSV=True, Qlib=False"
+        ],
+        "statistics": {}
+      },
+      "yahoo_qlib": {
+        "comparison": "Yahoo API vs Qlib",
+        "status": "SKIP",
+        "issues": [
+          "Both datasets are None"
+        ],
+        "statistics": {}
+      }
+    },
+    {
+      "sample": {
+        "stock": "000301.sz",
+        "date": "2026-02-10",
+        "interval": "1d"
+      },
+      "yahoo_csv": {
+        "comparison": "Yahoo API vs CSV",
+        "status": "FAIL",
+        "issues": [
+          "One dataset is None: Yahoo API=False, CSV=True"
+        ],
+        "statistics": {}
+      },
+      "csv_qlib": {
+        "comparison": "CSV vs Qlib",
+        "status": "FAIL",
+        "issues": [
+          "One dataset is None: CSV=True, Qlib=False"
+        ],
+        "statistics": {}
+      },
+      "yahoo_qlib": {
+        "comparison": "Yahoo API vs Qlib",
+        "status": "SKIP",
+        "issues": [
+          "Both datasets are None"
+        ],
+        "statistics": {}
+      }
+    },
+    {
+      "sample": {
+        "stock": "000301.sz",
+        "date": "2026-02-10",
+        "interval": "1d"
+      },
+      "yahoo_csv": {
+        "comparison": "Yahoo API vs CSV",
+        "status": "FAIL",
+        "issues": [
+          "One dataset is None: Yahoo API=False, CSV=True"
+        ],
+        "statistics": {}
+      },
+      "csv_qlib": {
+        "comparison": "CSV vs Qlib",
+        "status": "FAIL",
+        "issues": [
+          "One dataset is None: CSV=True, Qlib=False"
+        ],
+        "statistics": {}
+      },
+      "yahoo_qlib": {
+        "comparison": "Yahoo API vs Qlib",
+        "status": "SKIP",
+        "issues": [
+          "Both datasets are None"
+        ],
+        "statistics": {}
+      }
+    },
+    {
+      "sample": {
+        "stock": "000301.sz",
+        "date": "2026-02-10",
+        "interval": "1d"
+      },
+      "yahoo_csv": {
+        "comparison": "Yahoo API vs CSV",
+        "status": "FAIL",
+        "issues": [
+          "One dataset is None: Yahoo API=False, CSV=True"
+        ],
+        "statistics": {}
+      },
+      "csv_qlib": {
+        "comparison": "CSV vs Qlib",
+        "status": "FAIL",
+        "issues": [
+          "One dataset is None: CSV=True, Qlib=False"
+        ],
+        "statistics": {}
+      },
+      "yahoo_qlib": {
+        "comparison": "Yahoo API vs Qlib",
+        "status": "SKIP",
+        "issues": [
+          "Both datasets are None"
+        ],
+        "statistics": {}
+      }
+    }
+  ]
+}

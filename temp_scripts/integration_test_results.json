@@ -1,0 +1,127 @@
+[
+  {
+    "test_name": "database_factor_status",
+    "active_factors_count": 2,
+    "factors": [
+      {
+        "name": "Daily_Return",
+        "status": "active",
+        "expression": "($close / Ref($close, 1)) - 1",
+        "description": "Daily return factor for integration testing"
+      },
+      {
+        "name": "MA5",
+        "status": "active",
+        "expression": "Mean($close, 5)",
+        "description": "5-day moving average for integration testing"
+      }
+    ],
+    "timestamp": "2026-02-18T10:18:35.775682"
+  },
+  {
+    "test_name": "factor_pipeline_components",
+    "pipeline_status": {
+      "pipeline_info": {
+        "type": "simplified",
+        "strategy": "follow_data_collector",
+        "freq": "day",
+        "max_workers": 2,
+        "components": {
+          "processor": "FactorProcessor",
+          "storage": "FactorStorage",
+          "computation_manager": "FactorFullComputationManager"
+        }
+      },
+      "computation_status": {
+        "total_factors": 2,
+        "by_status": {
+          "ComputationStatus.COMPLETED": 2
+        },
+        "factors": [
+          {
+            "name": "Daily_Return",
+            "status": "active",
+            "computation_status": "completed",
+            "has_stored_data": false,
+            "last_updated": "2026-02-18 10:13:56.649514",
+            "data_info": null
+          },
+          {
+            "name": "MA5",
+            "status": "active",
+            "computation_status": "completed",
+            "has_stored_data": false,
+            "last_updated": "2026-02-18 10:13:56.696013",
+            "data_info": null
+          }
+        ]
+      },
+      "storage_status": {
+        "total_factors": 0,
+        "total_size_mb": 0.0,
+        "storage_dir": ".",
+        "freq": "day",
+        "factors": []
+      }
+    },
+    "components_count": 3,
+    "timestamp": "2026-02-18T10:18:38.565611"
+  },
+  {
+    "test_name": "full_data_factor_integration",
+    "success": true,
+    "factor_triggered": true,
+    "status": "completed",
+    "message": "Successfully completed full refresh: Pipeline completed: downloaded 1 ranges, 296 instrument-range combinations, normalized and converted to Qlib format + Factor computation: 2 factors computed",
+    "timestamp": "2026-02-18T10:20:20.861478"
+  },
+  {
+    "test_name": "incremental_data_factor_integration",
+    "success": true,
+    "factor_triggered": true,
+    "status": "completed",
+    "message": "Successfully completed incremental update: Pipeline completed: downloaded 1 ranges, 296 instrument-range combinations, normalized and converted to Qlib format + Factor computation: 2 factors computed",
+    "timestamp": "2026-02-18T10:21:59.424591"
+  },
+  {
+    "test_name": "qlib_data_structure",
+    "structure_info": {
+      "qlib_data_exists": true,
+      "features_dir_exists": true,
+      "calendars_dir_exists": true,
+      "instruments_dir_exists": true,
+      "bin_files_count": 2072,
+      "directories": [
+        "calendars",
+        "factor_metadata",
+        "features",
+        "instruments"
+      ]
+    },
+    "timestamp": "2026-02-18T10:21:59.451801"
+  },
+  {
+    "test_name": "factor_data_consistency",
+    "results": [
+      {
+        "factor_name": "Daily_Return",
+        "data_exists": true,
+        "data_shape": [
+          888,
+          1
+        ],
+        "date_range": "('000001.SZ', Timestamp('2023-12-01 00:00:00')) to ('688981.SS', Timestamp('2023-12-05 00:00:00'))"
+      },
+      {
+        "factor_name": "MA5",
+        "data_exists": true,
+        "data_shape": [
+          888,
+          1
+        ],
+        "date_range": "('000001.SZ', Timestamp('2023-12-01 00:00:00')) to ('688981.SS', Timestamp('2023-12-05 00:00:00'))"
+      }
+    ],
+    "timestamp": "2026-02-18T10:22:00.495406"
+  }
+]

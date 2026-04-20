@@ -162,14 +162,39 @@ builtin_factor_libraries:
 label_config:
   # China A-shares: T+1 trading rule
   # Today's signal → Buy tomorrow → Sell day after tomorrow
-  # Label = Ref($close, -2) / Ref($close, -1) - 1 (T+2 return)
+  # Label = CSRankNorm(Ref($close, -2) / $close - 1) (T+2 return with cross-sectional ranking)
   cn:
-    expression: "Ref($close, -2)/Ref($close, -1) - 1"
-    description: "T+2 return for A-shares (T+1 trading rule)"
+    expression: "CSRankNorm(Ref($close, -2) / $close - 1)"
+    description: "T+2 return with cross-sectional ranking for A-shares (T+1 trading rule)"
 
   # US stocks: T+0 trading rule
   # Today's signal → Buy tomorrow → Can sell tomorrow
-  # Label = Ref($close, -1) / $close - 1 (T+1 return)
+  # Label = CSRankNorm(Ref($close, -1) / $close - 1) (T+1 return with cross-sectional ranking)
   us:
-    expression: "Ref($close, -1)/$close - 1"
-    description: "T+1 return for US stocks (T+0 trading rule)"
+    expression: "CSRankNorm(Ref($close, -1) / $close - 1)"
+    description: "T+1 return with cross-sectional ranking for US stocks (T+0 trading rule)"
+
+# TopK Dropout Strategy Configuration (ETF Optimized)
+# Uses TopkDropoutStrategy with n_drop=topk for intelligent complete reselection capability
+topk_dropout_strategy:
+  # Whether to enable TopK Amount strategy
+  enabled: true
+
+  # Strategy parameters - ETF optimized with intelligent rebalancing
+  topk: 10 # Hold top 10 ETFs (configurable, default for ETF portfolio)
+  n_drop: 10 # Maximum stocks to replace per rebalance (=topk for full flexibility)
+
+  # Rebalancing period in trading days (1 = daily, 5 = weekly)
+  rebalance_period_days: 5
+
+  # Weight allocation method for ETF
+  # "equal": Equal weight (1/topk each)
+  # "score_weighted": Weight by prediction score (recommended for ETF)
+  weight_method: "score_weighted"
+
+  # Output directory for target portfolio files
+  output_dir: "/app/data/target_portfolio"
+
+  # Email notification
+  email_notification:
+    enabled: true

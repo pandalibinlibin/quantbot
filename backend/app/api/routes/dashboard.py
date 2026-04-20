@@ -4,6 +4,7 @@ Dashboard API endpoints for aggregated system status and metrics.
 
 import json
 import logging
+import math
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -12,6 +13,20 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app.services.online_serving_service import get_online_serving_service
+
+
+def _safe_float(value, default=0.0):
+    """Safely convert a value to float, handling nan and inf values."""
+    if value is None:
+        return default
+    try:
+        f = float(value)
+        if math.isnan(f) or math.isinf(f):
+            return default
+        return f
+    except (ValueError, TypeError):
+        return default
+
 
 logger = logging.getLogger(__name__)
 
@@ -211,14 +226,16 @@ def get_dashboard_summary():
                 with open(BACKTEST_RESULT_FILE, "r") as f:
                     backtest_data = json.load(f)
 
-                total_return = backtest_data.get("total_return", 0)
-                net_return = backtest_data.get("net_return", 0)
+                total_return = _safe_float(backtest_data.get("total_return", 0))
+                net_return = _safe_float(backtest_data.get("net_return", 0))
                 risk_metrics = backtest_data.get("risk_metrics", {})
-                annualized_return = risk_metrics.get("annualized_return", 0)
-                cagr = risk_metrics.get("cagr", 0)
-                net_cagr = risk_metrics.get("net_cagr", 0)
-                max_drawdown = risk_metrics.get("max_drawdown", 0)
-                sharpe_ratio = risk_metrics.get("sharpe_ratio", 0)
+                annualized_return = _safe_float(
+                    risk_metrics.get("annualized_return", 0)
+                )
+                cagr = _safe_float(risk_metrics.get("cagr", 0))
+                net_cagr = _safe_float(risk_metrics.get("net_cagr", 0))
+                max_drawdown = _safe_float(risk_metrics.get("max_drawdown", 0))
+                sharpe_ratio = _safe_float(risk_metrics.get("sharpe_ratio", 0))
 
                 backtest_summary = BacktestSummary(
                     has_results=True,

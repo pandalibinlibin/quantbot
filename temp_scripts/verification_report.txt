@@ -1,0 +1,161 @@
+================================================================================
+DATA CONSISTENCY VERIFICATION REPORT
+================================================================================
+Generated: 2026-02-17T10:30:29.706662
+
+SUMMARY:
+  Total Tests: 36
+  Passed: 3
+  Failed: 24
+  Warnings: 9
+  Success Rate: 8.3%
+
+DETAILED RESULTS:
+----------------------------------------
+
+Sample 1: 000596.sz on 2026-02-10 (1d)
+  ❌ Yahoo API vs CSV: FAIL
+    - One dataset is None: Yahoo API=False, CSV=True
+  ❌ CSV vs Qlib: FAIL
+    - One dataset is None: CSV=True, Qlib=False
+  ⚠️ Yahoo API vs Qlib: SKIP
+    - Both datasets are None
+
+Sample 2: 000596.sz on 2026-02-10 (1m)
+  ❌ Yahoo API vs CSV: FAIL
+    - Shape mismatch: Yahoo API=(331, 5), CSV=(330, 5)
+    Statistics:
+      close: max_diff=0.000000, mean_diff=0.000000
+      low: max_diff=0.000000, mean_diff=0.000000
+      volume: max_diff=0.000000, mean_diff=0.000000
+      high: max_diff=0.000000, mean_diff=0.000000
+      open: max_diff=0.000000, mean_diff=0.000000
+  ✅ CSV vs Qlib: PASS
+    Statistics:
+      close: max_diff=0.000000, mean_diff=0.000000
+      low: max_diff=0.000000, mean_diff=0.000000
+      volume: max_diff=0.000000, mean_diff=0.000000
+      high: max_diff=0.000000, mean_diff=0.000000
+      open: max_diff=0.000000, mean_diff=0.000000
+  ❌ Yahoo API vs Qlib: FAIL
+    - Shape mismatch: Yahoo API=(331, 5), Qlib=(330, 5)
+    Statistics:
+      close: max_diff=0.000000, mean_diff=0.000000
+      low: max_diff=0.000000, mean_diff=0.000000
+      volume: max_diff=0.000000, mean_diff=0.000000
+      high: max_diff=0.000000, mean_diff=0.000000
+      open: max_diff=0.000000, mean_diff=0.000000
+
+Sample 3: 000596.sz on 2026-02-10 (1d)
+  ❌ Yahoo API vs CSV: FAIL
+    - One dataset is None: Yahoo API=False, CSV=True
+  ❌ CSV vs Qlib: FAIL
+    - One dataset is None: CSV=True, Qlib=False
+  ⚠️ Yahoo API vs Qlib: SKIP
+    - Both datasets are None
+
+Sample 4: 000596.sz on 2026-02-10 (1m)
+  ❌ Yahoo API vs CSV: FAIL
+    - Shape mismatch: Yahoo API=(331, 5), CSV=(330, 5)
+    Statistics:
+      close: max_diff=0.000000, mean_diff=0.000000
+      low: max_diff=0.000000, mean_diff=0.000000
+      volume: max_diff=0.000000, mean_diff=0.000000
+      high: max_diff=0.000000, mean_diff=0.000000
+      open: max_diff=0.000000, mean_diff=0.000000
+  ✅ CSV vs Qlib: PASS
+    Statistics:
+      close: max_diff=0.000000, mean_diff=0.000000
+      low: max_diff=0.000000, mean_diff=0.000000
+      volume: max_diff=0.000000, mean_diff=0.000000
+      high: max_diff=0.000000, mean_diff=0.000000
+      open: max_diff=0.000000, mean_diff=0.000000
+  ❌ Yahoo API vs Qlib: FAIL
+    - Shape mismatch: Yahoo API=(331, 5), Qlib=(330, 5)
+    Statistics:
+      close: max_diff=0.000000, mean_diff=0.000000
+      low: max_diff=0.000000, mean_diff=0.000000
+      volume: max_diff=0.000000, mean_diff=0.000000
+      high: max_diff=0.000000, mean_diff=0.000000
+      open: max_diff=0.000000, mean_diff=0.000000
+
+Sample 5: 000596.sz on 2026-02-10 (1d)
+  ❌ Yahoo API vs CSV: FAIL
+    - One dataset is None: Yahoo API=False, CSV=True
+  ❌ CSV vs Qlib: FAIL
+    - One dataset is None: CSV=True, Qlib=False
+  ⚠️ Yahoo API vs Qlib: SKIP
+    - Both datasets are None
+
+Sample 6: 000596.sz on 2026-02-10 (1m)
+  ❌ Yahoo API vs CSV: FAIL
+    - Shape mismatch: Yahoo API=(331, 5), CSV=(330, 5)
+    Statistics:
+      close: max_diff=0.000000, mean_diff=0.000000
+      low: max_diff=0.000000, mean_diff=0.000000
+      volume: max_diff=0.000000, mean_diff=0.000000
+      high: max_diff=0.000000, mean_diff=0.000000
+      open: max_diff=0.000000, mean_diff=0.000000
+  ✅ CSV vs Qlib: PASS
+    Statistics:
+      close: max_diff=0.000000, mean_diff=0.000000
+      low: max_diff=0.000000, mean_diff=0.000000
+      volume: max_diff=0.000000, mean_diff=0.000000
+      high: max_diff=0.000000, mean_diff=0.000000
+      open: max_diff=0.000000, mean_diff=0.000000
+  ❌ Yahoo API vs Qlib: FAIL
+    - Shape mismatch: Yahoo API=(331, 5), Qlib=(330, 5)
+    Statistics:
+      close: max_diff=0.000000, mean_diff=0.000000
+      low: max_diff=0.000000, mean_diff=0.000000
+      volume: max_diff=0.000000, mean_diff=0.000000
+      high: max_diff=0.000000, mean_diff=0.000000
+      open: max_diff=0.000000, mean_diff=0.000000
+
+Sample 7: 000999.sz on 2026-02-10 (1d)
+  ❌ Yahoo API vs CSV: FAIL
+    - One dataset is None: Yahoo API=False, CSV=True
+  ❌ CSV vs Qlib: FAIL
+    - One dataset is None: CSV=True, Qlib=False
+  ⚠️ Yahoo API vs Qlib: SKIP
+    - Both datasets are None
+
+Sample 8: 000999.sz on 2026-02-10 (1d)
+  ❌ Yahoo API vs CSV: FAIL
+    - One dataset is None: Yahoo API=False, CSV=True
+  ❌ CSV vs Qlib: FAIL
+    - One dataset is None: CSV=True, Qlib=False
+  ⚠️ Yahoo API vs Qlib: SKIP
+    - Both datasets are None
+
+Sample 9: 000999.sz on 2026-02-10 (1d)
+  ❌ Yahoo API vs CSV: FAIL
+    - One dataset is None: Yahoo API=False, CSV=True
+  ❌ CSV vs Qlib: FAIL
+    - One dataset is None: CSV=True, Qlib=False
+  ⚠️ Yahoo API vs Qlib: SKIP
+    - Both datasets are None
+
+Sample 10: 000301.sz on 2026-02-10 (1d)
+  ❌ Yahoo API vs CSV: FAIL
+    - One dataset is None: Yahoo API=False, CSV=True
+  ❌ CSV vs Qlib: FAIL
+    - One dataset is None: CSV=True, Qlib=False
+  ⚠️ Yahoo API vs Qlib: SKIP
+    - Both datasets are None
+
+Sample 11: 000301.sz on 2026-02-10 (1d)
+  ❌ Yahoo API vs CSV: FAIL
+    - One dataset is None: Yahoo API=False, CSV=True
+  ❌ CSV vs Qlib: FAIL
+    - One dataset is None: CSV=True, Qlib=False
+  ⚠️ Yahoo API vs Qlib: SKIP
+    - Both datasets are None
+
+Sample 12: 000301.sz on 2026-02-10 (1d)
+  ❌ Yahoo API vs CSV: FAIL
+    - One dataset is None: Yahoo API=False, CSV=True
+  ❌ CSV vs Qlib: FAIL
+    - One dataset is None: CSV=True, Qlib=False
+  ⚠️ Yahoo API vs Qlib: SKIP
+    - Both datasets are None

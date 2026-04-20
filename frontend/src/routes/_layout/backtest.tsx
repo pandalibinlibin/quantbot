@@ -290,7 +290,28 @@ function BacktestPage() {
                     <Label className="text-muted-foreground mb-2 block">
                       Strategy Parameters
                     </Label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {/* TopK Dropout Strategy Parameters (ETF Optimized) */}
+                      {strategyConfig?.class === "TopkDropoutStrategy" && (
+                        <>
+                          <div className="bg-muted/50 rounded-md p-2 text-sm">
+                            <span className="text-muted-foreground">topk:</span>{" "}
+                            <span className="font-medium">10</span>
+                          </div>
+                          <div className="bg-muted/50 rounded-md p-2 text-sm">
+                            <span className="text-muted-foreground">
+                              n_drop:
+                            </span>{" "}
+                            <span className="font-medium">10</span>
+                          </div>
+                          <div className="bg-muted/50 rounded-md p-2 text-sm">
+                            <span className="text-muted-foreground">mode:</span>{" "}
+                            <span className="font-medium">Intelligent ETF</span>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Common Parameters */}
                       <div className="bg-muted/50 rounded-md p-2 text-sm">
                         <span className="text-muted-foreground">account:</span>{" "}
                         <span className="font-medium">

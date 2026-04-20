@@ -1194,6 +1194,250 @@ class NotificationService:
         </html>
         """
 
+    def send_topk_portfolio_email(
+        self,
+        portfolio_data: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Send TopK Strategy portfolio email after routine execution.
+
+        Args:
+            portfolio_data: TopK portfolio data including:
+                - buy_positions: List of stocks to buy
+                - sell_positions: List of stocks to sell
+                - hold_positions: List of stocks to hold
+                - final_positions: Complete portfolio (30 stocks)
+                - summary: Portfolio summary statistics
+
+        Returns:
+            Result of sending emails
+        """
+        # Check if emails are enabled in settings
+        if not settings.emails_enabled:
+            return {
+                "success": False,
+                "error": "Email sending is not configured.",
+            }
+
+        config = self._load_config()
+
+        if not config.get("enabled"):
+            return {
+                "success": False,
+                "error": "Notifications are disabled",
+            }
+
+        if not config.get("recipients"):
+            return {
+                "success": False,
+                "error": "No recipients configured",
+            }
+
+        # Build email content
+        html_content = self._build_topk_portfolio_html(portfolio_data)
+        signal_for_date = portfolio_data.get(
+            "signal_for_date", datetime.now().strftime("%Y-%m-%d")
+        )
+
+        sent_count = 0
+        errors = []
+
+        for recipient in config["recipients"]:
+            try:
+                send_email(
+                    email_to=recipient,
+                    subject=f"QuantBot: TopK策略信号 {signal_for_date}",
+                    html_content=html_content,
+                )
+                sent_count += 1
+            except Exception as e:
+                errors.append(f"{recipient}: {str(e)}")
+
+        if sent_count == len(config["recipients"]):
+            return {
+                "success": True,
+                "message": f"TopK portfolio sent to {sent_count} recipients",
+            }
+        elif sent_count > 0:
+            return {
+                "success": True,
+                "message": f"TopK portfolio sent to {sent_count}/{len(config['recipients'])} recipients",
+                "errors": errors,
+            }
+        else:
+            return {
+                "success": False,
+                "error": "Failed to send to any recipients",
+                "errors": errors,
+            }
+
+    def _build_topk_portfolio_html(self, portfolio_data: Dict[str, Any]) -> str:
+        """Build HTML email body for TopK Strategy portfolio."""
+        generated_at = portfolio_data.get("generated_at", datetime.now().isoformat())
+        trade_date = portfolio_data.get("trade_date", "")
+        signal_for_date = portfolio_data.get("signal_for_date", "")
+        total_value = portfolio_data.get("total_value", 1000000)
+
+        # Summary
+        summary = portfolio_data.get("summary", {})
+        buy_count = summary.get("buy_count", 0)
+        sell_count = summary.get("sell_count", 0)
+        hold_count = summary.get("hold_count", 0)
+        total_positions = summary.get("total_positions", 30)
+
+        # Position lists
+        buy_positions = portfolio_data.get("buy_positions", [])
+        sell_positions = portfolio_data.get("sell_positions", [])
+        hold_positions = portfolio_data.get("hold_positions", [])
+        final_positions = portfolio_data.get("final_positions", [])
+
+        # Build buy positions table
+        buy_table_rows = ""
+        for pos in buy_positions:
+            symbol = pos.get("symbol", "")
+            name = pos.get("name", symbol)
+            score = pos.get("score", 0)
+            weight = pos.get("weight", 0)
+            target_value = pos.get("target_value", 0)
+
+            buy_table_rows += f"""
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd;">{symbol}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">{name}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">{score:.4f}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">{weight:.2f}%</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">¥{target_value:,.0f}</td>
+            </tr>
+            """
+
+        # Build sell positions table
+        sell_table_rows = ""
+        for pos in sell_positions:
+            symbol = pos.get("symbol", "")
+            name = pos.get("name", symbol)
+            reason = pos.get("reason", "排名下降")
+            original_weight = pos.get("original_weight", 0)
+
+            sell_table_rows += f"""
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd;">{symbol}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">{name}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">{reason}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">{original_weight:.2f}%</td>
+            </tr>
+            """
+
+        # Build hold positions table (top 10)
+        hold_table_rows = ""
+        for i, pos in enumerate(hold_positions[:10]):
+            symbol = pos.get("symbol", "")
+            name = pos.get("name", symbol)
+            score = pos.get("score", 0)
+            weight = pos.get("weight", 0)
+
+            hold_table_rows += f"""
+            <tr>
+                <td style="padding: 8px; border: 1px solid #ddd;">{i+1}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">{symbol}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">{name}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">{score:.4f}</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">{weight:.2f}%</td>
+            </tr>
+            """
+
+        return f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>QuantBot TopK策略信号</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">
+        
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+            <h1 style="margin: 0; font-size: 24px;">📊 QuantBot TopK策略信号</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">交易日期: {signal_for_date} | 生成时间: {generated_at[:19]}</p>
+        </div>
+
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <h2 style="color: #495057; margin-top: 0;">📈 策略参数</h2>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                <div><strong>持仓数量:</strong> {total_positions}只</div>
+                <div><strong>调仓数量:</strong> 买入{buy_count}只, 卖出{sell_count}只</div>
+                <div><strong>持有数量:</strong> {hold_count}只</div>
+                <div><strong>总资金:</strong> ¥{total_value:,.0f}</div>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h2 style="color: #28a745;">🟢 买入股票 ({buy_count}只)</h2>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                <thead>
+                    <tr style="background-color: #e8f5e8;">
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">代码</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">名称</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">预测分数</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">目标权重</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">目标金额</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {buy_table_rows}
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h2 style="color: #dc3545;">🔴 卖出股票 ({sell_count}只)</h2>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                <thead>
+                    <tr style="background-color: #f8e8e8;">
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">代码</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">名称</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">卖出原因</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">原权重</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {sell_table_rows}
+                </tbody>
+            </table>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h2 style="color: #ffc107;">🟡 持有股票 (前10只)</h2>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                <thead>
+                    <tr style="background-color: #fff8e1;">
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">排名</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">代码</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">名称</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">预测分数</th>
+                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">权重</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {hold_table_rows}
+                </tbody>
+            </table>
+            {f'<p style="color: #666; font-size: 14px;">* 显示前10只持有股票，共{hold_count}只</p>' if hold_count > 10 else ''}
+        </div>
+
+        <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <h3 style="color: #1976d2; margin-top: 0;">💡 操作建议</h3>
+            <ul style="margin: 0; padding-left: 20px;">
+                <li>请在开盘后按照买入/卖出清单执行交易</li>
+                <li>建议分批执行，避免对市场造成冲击</li>
+                <li>如遇涨跌停或流动性不足，可适当调整执行时间</li>
+                <li>持有股票无需操作，继续持有即可</li>
+            </ul>
+        </div>
+
+        <p><small style="color: #888;">这是QuantBot TopK策略系统的自动邮件通知。</small></p>
+        </body>
+        </html>
+        """
+
     def send_backtest_report_email(
         self,
         backtest_result: Dict[str, Any],

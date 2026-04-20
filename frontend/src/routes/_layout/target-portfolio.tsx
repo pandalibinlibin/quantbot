@@ -1,18 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
-  Mail,
-  Plus,
-  Trash2,
-  Send,
-  XCircle,
-  Loader2,
-  Settings,
   Bell,
-  Download,
+  Loader2,
   TrendingUp,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -21,44 +13,44 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { OpenAPI } from "@/client";
-import { toast } from "sonner";
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 
-// Types for ETF Enhanced Indexing Strategy
-interface PortfolioPosition {
+// Types for TopK Strategy
+interface TopKPosition {
   rank: number;
   symbol: string;
   name: string;
-  type: "etf" | "stock";
+  type: "stock";
   weight: number;
-  score?: number;
+  score: number;
   target_value: number;
-  reference_price: number;
   target_shares: number;
-  current_shares: number;
   action: "buy" | "sell" | "hold";
-  action_shares: number;
-  action_lots: number;
+  reason?: string;
+  original_weight?: number;
 }
 
-interface PortfolioWeights {
-  etf_weight: number;
-  alpha_weight: number;
-  score_spread: number;
-  weight_mode: string;
-}
-
-interface PortfolioSummary {
+interface TopKSummary {
   total_positions: number;
-  etf_positions: number;
-  stock_positions: number;
   buy_count: number;
   sell_count: number;
   hold_count: number;
+}
+
+interface TopKPortfolioData {
+  trade_date: string;
+  signal_for_date: string;
+  generated_at: string;
+  total_value: number;
+  rebalance_summary: TopKSummary;
+  buy_positions: TopKPosition[];
+  sell_positions: TopKPosition[];
+  hold_positions: TopKPosition[];
+  final_positions: TopKPosition[];
+  summary: TopKSummary;
 }
 
 interface RoutineResult {
@@ -159,22 +151,258 @@ async function fetchLatestPortfolio() {
   return response.json();
 }
 
-// Trading Orders Section Component - Shows buy/sell/hold orders separately
-function TradingOrdersSection({
-  positions,
+// TopK Strategy Portfolio Section Component - Shows buy/sell/hold/final positions separately
+function TopKPortfolioSection({
+  portfolioData,
 }: {
-  positions: PortfolioPosition[];
+  portfolioData: TopKPortfolioData | null;
 }) {
-  const buyPositions = positions.filter((p) => p.action === "buy");
-  const sellPositions = positions.filter((p) => p.action === "sell");
-  const holdPositions = positions.filter((p) => p.action === "hold");
+  if (!portfolioData) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center py-8 text-muted-foreground">
+            <div className="text-4xl mb-2">📊</div>
+            <p className="font-medium">No Portfolio Data</p>
+            <p className="text-sm">Run Daily Task to generate TopK portfolio</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
-  const hasOrders = buyPositions.length > 0 || sellPositions.length > 0;
+  const { buy_positions, sell_positions, hold_positions, final_positions, summary } = portfolioData;
 
-  // Render a single action table
-  const renderActionTable = (
-    items: PortfolioPosition[],
-    actionType: "buy" | "sell" | "hold",
+  // Render position table for each section
+  const renderPositionTable = (
+    positions: TopKPosition[],
+    sectionType: "buy" | "sell" | "hold" | "final"
+  ) => {
+    if (positions.length === 0 && sectionType !== "final") {
+      return (
+        <div className="text-center py-4 text-muted-foreground">
+          <p className="text-sm">No {sectionType} positions</p>
+        </div>
+      );
+    }
+
+    const config = {
+      buy: {
+        title: "买入股票",
+        emoji: "🟢",
+        headerBg: "bg-green-600",
+        borderColor: "border-green-200 dark:border-green-800",
+        columns: ["代码", "名称", "预测分数", "目标权重", "目标金额"],
+      },
+      sell: {
+        title: "卖出股票", 
+        emoji: "🔴",
+        headerBg: "bg-red-600",
+        borderColor: "border-red-200 dark:border-red-800",
+        columns: ["代码", "名称", "卖出原因", "原权重"],
+      },
+      hold: {
+        title: "持有股票",
+        emoji: "🟡", 
+        headerBg: "bg-yellow-600",
+        borderColor: "border-yellow-200 dark:border-yellow-800",
+        columns: ["排名", "代码", "名称", "预测分数", "权重"],
+      },
+      final: {
+        title: "最新持仓总览",
+        emoji: "📊",
+        headerBg: "bg-blue-600", 
+        borderColor: "border-blue-200 dark:border-blue-800",
+        columns: ["排名", "代码", "名称", "预测分数", "权重", "目标金额"],
+      },
+    };
+
+    const c = config[sectionType];
+
+    return (
+      <div className="mb-6">
+        <div className={`${c.headerBg} text-white px-4 py-3 rounded-t-lg font-semibold flex items-center gap-2`}>
+          <span>{c.emoji}</span>
+          <span>{c.title} ({positions.length}只)</span>
+        </div>
+        <div className={`border ${c.borderColor} border-t-0 rounded-b-lg overflow-hidden`}>
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 dark:bg-gray-800/50">
+              <tr>
+                {c.columns.map((col, idx) => (
+                  <th key={idx} className="h-10 px-3 text-left font-medium">
+                    {col}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {positions.map((pos, index) => (
+                <tr
+                  key={pos.symbol || index}
+                  className="border-t border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/30"
+                >
+                  {sectionType === "buy" && (
+                    <>
+                      <td className="px-3 py-3 font-mono font-bold">{pos.symbol}</td>
+                      <td className="px-3 py-3">{pos.name}</td>
+                      <td className="px-3 py-3 text-right font-medium">{pos.score?.toFixed(4)}</td>
+                      <td className="px-3 py-3 text-right font-medium">{pos.weight?.toFixed(2)}%</td>
+                      <td className="px-3 py-3 text-right">¥{pos.target_value?.toLocaleString()}</td>
+                    </>
+                  )}
+                  {sectionType === "sell" && (
+                    <>
+                      <td className="px-3 py-3 font-mono font-bold">{pos.symbol}</td>
+                      <td className="px-3 py-3">{pos.name}</td>
+                      <td className="px-3 py-3">{pos.reason || "排名下降"}</td>
+                      <td className="px-3 py-3 text-right">{pos.original_weight?.toFixed(2)}%</td>
+                    </>
+                  )}
+                  {sectionType === "hold" && (
+                    <>
+                      <td className="px-3 py-3 text-center font-bold">{pos.rank}</td>
+                      <td className="px-3 py-3 font-mono font-bold">{pos.symbol}</td>
+                      <td className="px-3 py-3">{pos.name}</td>
+                      <td className="px-3 py-3 text-right font-medium">{pos.score?.toFixed(4)}</td>
+                      <td className="px-3 py-3 text-right font-medium">{pos.weight?.toFixed(2)}%</td>
+                    </>
+                  )}
+                  {sectionType === "final" && (
+                    <>
+                      <td className="px-3 py-3 text-center font-bold">{pos.rank}</td>
+                      <td className="px-3 py-3 font-mono font-bold">{pos.symbol}</td>
+                      <td className="px-3 py-3">{pos.name}</td>
+                      <td className="px-3 py-3 text-right font-medium">{pos.score?.toFixed(4)}</td>
+                      <td className="px-3 py-3 text-right font-medium">{pos.weight?.toFixed(2)}%</td>
+                      <td className="px-3 py-3 text-right">¥{pos.target_value?.toLocaleString()}</td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Portfolio Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-blue-600" />
+            TopK策略组合 - {portfolioData.signal_for_date}
+          </CardTitle>
+          <CardDescription>
+            生成时间: {portfolioData.generated_at} | 总资金: ¥{portfolioData.total_value?.toLocaleString()}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3">
+              <div className="text-sm text-muted-foreground">买入</div>
+              <div className="text-2xl font-bold text-green-600">{summary.buy_count}</div>
+            </div>
+            <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-3">
+              <div className="text-sm text-muted-foreground">卖出</div>
+              <div className="text-2xl font-bold text-red-600">{summary.sell_count}</div>
+            </div>
+            <div className="bg-yellow-50 dark:bg-yellow-950/30 rounded-lg p-3">
+              <div className="text-sm text-muted-foreground">持有</div>
+              <div className="text-2xl font-bold text-yellow-600">{summary.hold_count}</div>
+            </div>
+            <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3">
+              <div className="text-sm text-muted-foreground">总持仓</div>
+              <div className="text-2xl font-bold text-blue-600">{summary.total_positions}</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Buy Positions */}
+      {renderPositionTable(buy_positions, "buy")}
+
+      {/* Sell Positions */}
+      {renderPositionTable(sell_positions, "sell")}
+
+      {/* Hold Positions (show top 10) */}
+      {renderPositionTable(hold_positions.slice(0, 10), "hold")}
+      {hold_positions.length > 10 && (
+        <div className="text-center text-sm text-muted-foreground mb-4">
+          * 显示前10只持有股票，共{hold_positions.length}只
+        </div>
+      )}
+
+      {/* Final Positions Overview */}
+      {renderPositionTable(final_positions, "final")}
+    </div>
+  );
+}
+
+export const Route = createFileRoute("/_layout/target-portfolio")({
+  component: TargetPortfolioPage,
+  head: () => ({
+    meta: [{ title: "Target Portfolio - QuantBot" }],
+  }),
+});
+
+function TargetPortfolioPage() {
+  const queryClient = useQueryClient();
+  const [newEmail, setNewEmail] = useState("");
+
+  // Fetch latest portfolio from API
+  const {
+    data: latestPortfolio,
+    isLoading: portfolioLoading,
+    error: portfolioError,
+  } = useQuery({
+    queryKey: ["latestPortfolio"],
+    queryFn: fetchLatestPortfolio,
+    refetchOnWindowFocus: true,
+    staleTime: 30000, // 30 seconds
+  });
+
+  // Transform API data to TopK format
+  const topkPortfolioData: TopKPortfolioData | null = useMemo(() => {
+    if (!latestPortfolio?.success) return null;
+    
+    // For now, create mock data structure until backend provides TopK format
+    // TODO: Update when backend provides proper TopK portfolio data
+    return {
+      trade_date: latestPortfolio.trade_date || "",
+      signal_for_date: latestPortfolio.signal_for_date || "",
+      generated_at: latestPortfolio.generated_at || "",
+      total_value: latestPortfolio.total_value || 1000000,
+      rebalance_summary: {
+        total_positions: 30,
+        buy_count: 5,
+        sell_count: 5,
+        hold_count: 20,
+      },
+      buy_positions: [], // TODO: Get from backend
+      sell_positions: [], // TODO: Get from backend  
+      hold_positions: [], // TODO: Get from backend
+      final_positions: latestPortfolio.positions || [],
+      summary: {
+        total_positions: 30,
+        buy_count: 5,
+        sell_count: 5,
+        hold_count: 20,
+      },
+    };
+  }, [latestPortfolio]);
+
+  // Query for notification config
+  const {
+    data: configData,
+    isLoading: configLoading,
+    error: configError,
+  } = useQuery({
+    queryKey: ["notificationConfig"],
+    queryFn: fetchNotificationConfig,
   ) => {
     if (items.length === 0) return null;
 
