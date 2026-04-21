@@ -1,7 +1,7 @@
 # QuantBot 技术规格文档
 
-**版本**: 4.2 (Three-Button Workflow Design)  
-**最后更新**: 2026-04-20
+**版本**: 4.5 (Broadcast Field Bug Fixes & Feature Name Mapping)  
+**最后更新**: 2026-04-21
 
 ---
 
@@ -262,6 +262,90 @@ with R.start(experiment_name=f"exp_{task_id}"):
 ---
 
 ## 🎯 关键技术决策
+
+### 数据术语定义：Field / Feature / Label (2026-04-21)
+
+**设计规则**：系统中存在三个严格区分的数据概念，不可混用。
+
+| 概念                | 定义                                     | 来源                             | 示例                                 |
+| ------------------- | ---------------------------------------- | -------------------------------- | ------------------------------------ |
+| **Field（字段）**   | 从数据源下载的原始数据列                 | 数据下载 Pipeline（阶段1）       | close, open, high, low, volume, vwap |
+| **Feature（特征）** | 经过因子公式定义、用于模型训练的输入特征 | Factors 页面定义 或 内置因子集合 | `$close`, `MACD(...)`, Alpha158 等   |
+| **Label（标签）**   | 模型预测的目标值                         | system_config.yaml 中配置        | `Ref($close,-2)/$close-1`            |
+
+**核心规则**：
+
+1. **Field ≠ Feature**：下载一个新的 field 不会自动成为 feature
+2. **Feature 只有两种来源**：
+   - 在 Factors 页面显式定义了公式的因子（包括系统内置的 OHLCV 因子 `$close` 等）
+   - 启用的内置因子集合（如 Alpha158）
+3. **Field 不进入阶段2（因子计算）**：只有被定义为 feature 的字段才参与模型训练
+4. **新增 Field 的流程**：下载新 field → 存为 bin 文件 → 用户在 Factors 页面定义因子公式 → 才成为 feature
+
+**数据处理流程对应**：
+
+```
+阶段1：下载原始 OHLCV → normalize → 存为 bin 文件  → 这些是 Fields
+                                                      ↓ (原始价格)
+阶段2：因子计算（在Factors页面定义的公式）→ 存为 bin  → 这些是 computed factors
+                                                      ↓ (原始价格 + 计算因子)
+阶段3：CustomFactorHandler 加载所有数据
+        ├─ Features: Factors页面定义的因子 + Alpha158表达式
+        │    └─ infer_processors: Fillna → EMA-5 → RelativeChange → CSZScoreNorm
+        └─ Labels: 从 system_config.yaml 配置的标签表达式
+             └─ learn_processors: DropnaLabel → CSZScoreNorm
+```
+
+**前端展示规则**：
+
+- **Dashboard 第一行**：显示 Fields 数量 和 Features 数量
+- **Data Sources 页面**：详细列出所有 Fields（原始数据字段）
+- **Factors 页面**：列出所有 Features（因子定义列表）
+
+### Broadcast Field 广播机制 (2026-04-21)
+
+**设计原则**：非 daily 的数据自动 resample 到 daily，非 per-instrument 的数据自动广播到所有 instrument。广播发生在 pipeline 最早阶段（Collect 之后、Normalize 之前），完成后数据与 OHLCV 无异，走完全相同的后续流程。
+
+**核心函数**：`broadcast_field(raw_df, date_col, value_col, field_name, csv_dir)`
+
+**自动检测规则**：
+
+| 属性   | 检测方法                           | 处理                    |
+| ------ | ---------------------------------- | ----------------------- |
+| 频率   | 日期列间距中位数 > 7 天 → 非 daily | ffill 到 daily          |
+| 作用域 | 无 `ts_code` 列 → global           | 写入所有 instrument CSV |
+
+**数据流**：
+
+```
+用户请求下载 field (e.g., shibor 7天)
+    │
+    ▼
+调 tushare API → 自动检测 freq/scope → resample + broadcast
+    │
+    ▼
+注入到每个 instrument CSV 中（新增一列）
+    │
+    ▼
+走现有 pipeline: normalize → dump_bin → {field_name}.day.bin
+```
+
+**不需要配置文件**：用户通过告诉 Cascade 添加新 field，Cascade 修改 `inject_broadcast_fields()` 中的代码。
+
+**已解决的关键问题**：
+
+1. **Pipeline 提前返回** (2026-04-21): 将 broadcast injection 移到 `total_collected==0` 检查之前，确保周末/假日也能执行广播注入。
+2. **Dashboard 过早显示** (2026-04-21): dashboard 只显示 `.bin` 文件实际存在的 broadcast fields。
+3. **`.bin` 文件缺失** (2026-04-21): `dump_update`（增量模式）只处理 `last_end_date` 之后的新日期，不会为新列创建 `.bin` 文件。修复：当 `broadcast_changed=True` 时强制使用 `dump_all`（全量模式），确保新列的 `.bin` 文件覆盖完整日期范围。
+4. **Feature name `Column_5`** (2026-04-21): `model_metrics_service.py` 的 `_map_feature_names()` 中 `ohlcv_fields` 列表缺少 `vwap`，与模型训练时使用的 6 个 OHLCV 特征不一致。已修复。
+
+**文件**：
+
+- 新增: `backend/app/services/data_collectors/broadcast_field_collector.py`
+- 修改: `pipeline/service.py` (调用 `inject_broadcast_fields()` 在 Collect 和 Normalize 之间; broadcast 时强制 `dump_all`)
+- 修改: `factor_storage.py` (broadcast field 被识别为 raw field)
+- 修改: `dashboard.py` (field_names 仅包含 `.bin` 实际存在的 broadcast fields)
+- 修改: `model_metrics_service.py` (修复 `Column_5` → `vwap` 映射)
 
 ### 数据对齐策略
 
@@ -7105,6 +7189,104 @@ qlib_data/
 ---
 
 ## 📝 更新日志
+
+### 2026-04-21: Signal Persistence & Update Data Short-Circuit Optimization
+
+**重大性能优化**：实现信号持久化和增量更新短路机制，避免数据未变化时重复执行模型训练和信号生成。
+
+#### 🎯 **问题背景**
+
+1. **信号丢失**: 开发环境热更新(hot-reload)导致backend重启，内存中的signals丢失，Dashboard显示signal_count=0
+2. **重复计算**: 每次点击Update Data都执行完整pipeline（~270s），即使数据没有变化
+3. **因子变更检测缺失**: 需要在数据未变但因子定义变更时仍执行完整pipeline
+
+#### 🔧 **实现方案**
+
+**1. Signal Persistence (信号持久化)**
+
+```
+/app/data/signals/
+├── _latest_signals.pkl    # Signals DataFrame (pickle)
+└── _signals_meta.json     # Metadata (signal_count, last_routine_time, factor_fingerprint)
+```
+
+- `_persist_signals_state()`: 在update_data成功生成signals后，将DataFrame和元数据写入磁盘
+- `_restore_persisted_state()`: 在`__init__`中恢复signal_count和last_routine_time，确保Dashboard热更新后仍显示正确数据
+- `get_status()`: 当OnlineManager未初始化时，返回持久化的signal_count
+
+**2. Incremental Update Data Change Detection (增量更新数据变更检测)**
+
+在`_perform_incremental_update()`中检测两种"数据未变"场景：
+
+```python
+no_new_data = result.message and (
+    "No missing data found" in result.message       # Calendar无gap
+    or "No new data available" in result.message     # 有gap但市场休市
+)
+return {"data_changed": not no_new_data, ...}
+```
+
+**3. Factor Fingerprint (因子指纹)**
+
+```python
+def _get_factor_fingerprint(self) -> str:
+    # Query active factors from DB, sort by name
+    # Build string: "name1|expr1|type1;name2|expr2|type2"
+    # Return MD5 hex digest
+```
+
+- 对比当前因子配置与上次持久化时的指纹
+- 因子定义变更（增删改）→ fingerprint变化 → 强制执行完整pipeline
+
+**4. Short-Circuit Logic (短路机制)**
+
+```
+update_data() 流程:
+  Step 1: 增量数据更新 → data_changed?
+  Short-circuit check:
+    IF data_changed=False
+       AND factors_changed=False
+       AND (signals_in_memory OR persisted_signals)
+    THEN → 直接返回，跳过Steps 2-5 (秒级完成)
+    ELSE → 继续执行完整pipeline
+```
+
+#### 📊 **性能对比**
+
+| 场景                    | 优化前               | 优化后           |
+| ----------------------- | -------------------- | ---------------- |
+| 数据无变化 + 因子无变化 | ~270s (完整pipeline) | ~3s (短路返回)   |
+| 数据无变化 + 因子有变化 | ~270s                | ~270s (强制执行) |
+| 数据有变化              | ~270s                | ~270s (正常执行) |
+| 热更新后首次            | signals丢失          | 从磁盘恢复       |
+
+#### 📁 **修改文件清单**
+
+**后端文件**:
+
+- `backend/app/services/online_serving_service.py` - 核心改动：
+  - 新增 `SIGNALS_PERSIST_DIR`, `SIGNALS_PERSIST_FILE`, `SIGNALS_META_FILE` 常量
+  - 新增 `_get_factor_fingerprint()` 方法
+  - 新增 `_persist_signals_state()` 方法
+  - 新增 `_restore_persisted_state()` 方法
+  - 修改 `__init__()` 调用 `_restore_persisted_state()`
+  - 修改 `update_data()` 添加短路逻辑
+  - 修改 `_perform_incremental_update()` 返回 `data_changed` 标志
+  - 修改 `_download_default_data()` 返回 `data_changed: True`
+  - 修改 `get_status()` 返回持久化的signal_count
+- `backend/app/api/routes/dashboard.py` - 修改Dashboard API读取持久化signal_count
+
+#### 📈 **数据处理验证**
+
+通过日志验证确认完整的数据预处理pipeline正常工作：
+
+- **Feature预处理**: Fillna → EMA5去噪 → RelativeChange → **CSZScoreNorm** (截面Z标准化)
+- **Label预处理**: DropnaLabel → **CSZScoreNorm** (截面Z标准化)
+- **Signal统计**: 107,181 signals, 724 trading days, 167 instruments
+- **Signal覆盖率**: 107,181 / (724×167) = 88.6% (部分ETF无数据导致缺失)
+- **模型**: LGBModel, 37个rolling windows, 6个特征 (close, open, volume, high, low, Column_5)
+
+---
 
 ### 2026-04-20: 三按钮工作流设计实现
 

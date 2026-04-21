@@ -85,6 +85,8 @@ class DataInfoSummary(BaseModel):
     data_range_end: Optional[str] = None
     trading_days: int = 0
     instruments_count: int = 0
+    fields_count: int = 0
+    field_names: List[str] = []
     features_count: int = 0
     feature_names: List[str] = []
     label_expression: str = ""
@@ -531,9 +533,35 @@ def get_dashboard_summary():
             else:
                 logger.warning(f"Features dir not found: {storage.features_dir}")
 
-            # Feature count: base data fields + stored factors + Alpha158
-            stored_factors = storage.list_stored_factors()
+            # Fields: raw downloaded data columns (OHLCV + vwap + broadcast fields)
+            # Only include broadcast fields that actually exist as .bin files
             base_data_names = ["open", "high", "low", "close", "volume", "vwap"]
+            try:
+                from app.services.data_collectors.broadcast_field_collector import (
+                    get_broadcast_field_names,
+                )
+
+                broadcast_registered = get_broadcast_field_names()
+                # Check which broadcast fields actually have .bin data
+                broadcast_names = []
+                if storage.features_dir.exists():
+                    sample_dirs = [
+                        d for d in storage.features_dir.iterdir() if d.is_dir()
+                    ]
+                    if sample_dirs:
+                        sample_dir = sample_dirs[0]
+                        for name in sorted(broadcast_registered):
+                            bin_file = sample_dir / f"{name}.day.bin"
+                            if bin_file.exists():
+                                broadcast_names.append(name)
+                all_field_names = base_data_names + broadcast_names
+            except ImportError:
+                all_field_names = base_data_names
+            data_info.fields_count = len(all_field_names)
+            data_info.field_names = all_field_names
+
+            # Features: computed factors used as model input
+            stored_factors = storage.list_stored_factors()
             all_features = base_data_names + stored_factors
 
             alpha158_count = 0

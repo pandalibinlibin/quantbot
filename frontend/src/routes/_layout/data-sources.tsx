@@ -258,26 +258,99 @@ function DataSourcesPage() {
                       </p>
                     </div>
                     <div className="col-span-4">
-                      <Label className="text-sm font-medium">Features</Label>
+                      <Label className="text-sm font-medium">
+                        Fields (Raw Data)
+                      </Label>
                       <div className="flex flex-wrap gap-1 mt-1">
-                        {status.features
-                          ?.filter(
-                            (f) => !status.label || !f.startsWith(status.label),
-                          )
-                          .map((feature) => (
-                            <Badge
-                              key={feature}
-                              variant="secondary"
-                              className="text-xs"
-                            >
-                              {feature}
-                            </Badge>
-                          )) || (
-                          <span className="text-sm text-muted-foreground">
-                            No features available
-                          </span>
-                        )}
+                        {(() => {
+                          const RAW_FIELDS = [
+                            "close",
+                            "open",
+                            "high",
+                            "low",
+                            "volume",
+                            "vwap",
+                          ];
+                          const rawFields = (status.features || []).filter(
+                            (f) => {
+                              const baseName = f
+                                .replace(/\.(day|1min)$/, "")
+                                .toLowerCase();
+                              return RAW_FIELDS.includes(baseName);
+                            },
+                          );
+                          const computedFactors = (
+                            status.features || []
+                          ).filter((f) => {
+                            const baseName = f
+                              .replace(/\.(day|1min)$/, "")
+                              .toLowerCase();
+                            return (
+                              !RAW_FIELDS.includes(baseName) &&
+                              (!status.label || !f.startsWith(status.label))
+                            );
+                          });
+                          return (
+                            <>
+                              {rawFields.length > 0 ? (
+                                rawFields.map((field) => (
+                                  <Badge
+                                    key={field}
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
+                                    {field}
+                                  </Badge>
+                                ))
+                              ) : (
+                                <span className="text-sm text-muted-foreground">
+                                  No fields available
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
+                      {(() => {
+                        const RAW_FIELDS = [
+                          "close",
+                          "open",
+                          "high",
+                          "low",
+                          "volume",
+                          "vwap",
+                        ];
+                        const computedFactors = (status.features || []).filter(
+                          (f) => {
+                            const baseName = f
+                              .replace(/\.(day|1min)$/, "")
+                              .toLowerCase();
+                            return (
+                              !RAW_FIELDS.includes(baseName) &&
+                              (!status.label || !f.startsWith(status.label))
+                            );
+                          },
+                        );
+                        if (computedFactors.length === 0) return null;
+                        return (
+                          <div className="mt-3">
+                            <Label className="text-sm font-medium">
+                              Computed Factors (stored as bin)
+                            </Label>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {computedFactors.map((factor) => (
+                                <Badge
+                                  key={factor}
+                                  variant="outline"
+                                  className="text-xs"
+                                >
+                                  {factor}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()}
                       <div className="mt-3">
                         <Label className="text-sm font-medium">
                           Label (Prediction Target)

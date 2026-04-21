@@ -475,11 +475,6 @@ def _execute_tushare_pipeline(
                         if df.empty:
                             continue
 
-                        # Apply automatic data classification and broadcast if needed
-                        df = _apply_tushare_data_classification(
-                            df, instrument, range_start, range_end
-                        )
-
                         # Use normalized instrument format
                         normalized_instrument = collector.normalize_symbol(instrument)
                         csv_file = csv_dir / f"{normalized_instrument}.csv"
@@ -520,7 +515,27 @@ def _execute_tushare_pipeline(
                 f"Range {range_start} to {range_end}: collected {range_collected}/{len(instruments)} instruments"
             )
 
-        if total_collected == 0:
+        # Broadcast field injection: download non-per-instrument / non-daily fields
+        # and inject them into each instrument CSV before normalization.
+        # Must run even when total_collected==0 (weekends/holidays) because
+        # broadcast fields cover the full CSV date range, not just the incremental range.
+        broadcast_changed = False
+        csv_files_exist = any(csv_dir.glob("*.csv"))
+        if csv_files_exist:
+            try:
+                from app.services.data_collectors.broadcast_field_collector import (
+                    inject_broadcast_fields,
+                )
+
+                broadcast_changed = inject_broadcast_fields(
+                    csv_dir=csv_dir,
+                    start_date=download_ranges[0][0],
+                    end_date=download_ranges[-1][1],
+                )
+            except Exception as e:
+                logger.warning(f"Broadcast field injection failed (non-fatal): {e}")
+
+        if total_collected == 0 and not broadcast_changed:
             # For incremental updates, no new data is normal (weekends, holidays, or already up-to-date)
             if incremental:
                 return (
@@ -566,11 +581,20 @@ def _execute_tushare_pipeline(
         logger.info("Data normalization completed successfully")
 
         # Convert to Qlib format
+        # When broadcast fields changed (new columns), force full dump so that
+        # dump_all creates .bin files for the new columns. dump_update only
+        # appends rows for dates > last_end_date and won't create new .bin files
+        # when there are no new trading dates.
         from app.services.data_utils import convert_csv_to_qlib_format_impl
 
         qlib_freq = "day"
+        dump_incremental = incremental and not broadcast_changed
+        if broadcast_changed and incremental:
+            logger.info(
+                "Broadcast fields changed: forcing full dump to generate new .bin files"
+            )
         convert_success, convert_message = convert_csv_to_qlib_format_impl(
-            csv_dir=str(csv_dir), freq=qlib_freq, incremental=incremental
+            csv_dir=str(csv_dir), freq=qlib_freq, incremental=dump_incremental
         )
         if not convert_success:
             return False, f"Qlib format conversion failed: {convert_message}"
@@ -828,75 +852,3 @@ def _execute_eod_pipeline(
         error_msg = f"EOD pipeline execution failed: {str(e)}"
         logger.error(error_msg, exc_info=True)
         return False, error_msg
-
-
-def _apply_tushare_data_classification(
-    df: pd.DataFrame, instrument: str, start_date: str, end_date: str
-) -> pd.DataFrame:
-    """
-    Apply automatic data classification and broadcast mechanism for Tushare data.
-
-    This function automatically detects the data type (stock daily, macro, industry)
-    and applies appropriate broadcast mechanisms based on the Tushare data classifier.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Raw data from Tushare API
-    instrument : str
-        Instrument symbol (e.g., "000001.SZ")
-    start_date : str
-        Start date for data collection
-    end_date : str
-        End date for data collection
-
-    Returns
-    -------
-    pd.DataFrame
-        Processed data with broadcast applied if needed
-    """
-    try:
-        from app.qlib_extensions.tushare_data_classifier import (
-            create_tushare_classifier,
-        )
-        from app.services.data_collectors.tushare_collector import TushareDataCollector
-
-        # Create classifier instance
-        classifier = create_tushare_classifier()
-
-        # Determine API name for data type classification
-        # ETF/stock daily data from TushareDataCollector uses the "daily" API
-        api_name = "daily"
-
-        # Classify the data type
-        data_type = classifier.classify_data(df, api_name=api_name)
-
-        logger.debug(f"Classified {instrument} as {data_type.value}")
-
-        # Get broadcast configuration
-        config = classifier.get_broadcast_config(data_type)
-
-        # For stock daily data, no broadcast is needed - return as is
-        if not (
-            config["needs_time_broadcast"]
-            or config["needs_stock_broadcast"]
-            or config["needs_industry_broadcast"]
-        ):
-            logger.debug(f"No broadcast needed for {instrument}")
-            return df
-
-        # Broadcast is not needed for ETF daily data (our primary use case)
-        # Log a warning if broadcast was requested - this indicates unexpected data type
-        if config["needs_time_broadcast"] or config["needs_stock_broadcast"]:
-            logger.warning(
-                f"Broadcast requested for {instrument} (type: {data_type.value}) "
-                f"but not implemented for ETF universe. Returning original data."
-            )
-
-        return df
-
-    except Exception as e:
-        logger.warning(
-            f"Data classification failed for {instrument}: {e}, using original data"
-        )
-        return df

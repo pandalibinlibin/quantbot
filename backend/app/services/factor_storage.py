@@ -354,6 +354,16 @@ class FactorStorage:
                 "vwap",
             }
 
+            # Include broadcast fields (macro/industry data) as raw fields
+            try:
+                from app.services.data_collectors.broadcast_field_collector import (
+                    get_broadcast_field_names,
+                )
+
+                raw_fields |= get_broadcast_field_names()
+            except ImportError:
+                pass
+
             if self.features_dir.exists():
                 # Look in first symbol directory to find factor files
                 symbol_dirs = [d for d in self.features_dir.iterdir() if d.is_dir()]

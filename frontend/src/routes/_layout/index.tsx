@@ -16,6 +16,7 @@ import {
   Tag,
   Calendar,
   Layers,
+  HardDrive,
 } from "lucide-react";
 import {
   Card,
@@ -349,7 +350,7 @@ function Dashboard() {
       </div>
 
       {/* Row 0: Data & Factor Info */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Data Range Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -396,6 +397,28 @@ function Dashboard() {
           </CardContent>
         </Card>
 
+        {/* Fields Card */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Fields</CardTitle>
+            <HardDrive className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="h-8 bg-muted animate-pulse rounded" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">
+                  {dataInfo?.fields_count || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {dataInfo?.field_names?.join(", ") || "Raw data columns"}
+                </p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Features Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -411,7 +434,21 @@ function Dashboard() {
                   {dataInfo?.features_count || 0}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {dataInfo?.feature_names?.join(", ") || "N/A"}
+                  {(() => {
+                    const names = dataInfo?.feature_names || [];
+                    const alphaEntry = names.find((n) => n.startsWith("+ "));
+                    const regularNames = names.filter(
+                      (n) => !n.startsWith("+ "),
+                    );
+                    const parts: string[] = [];
+                    if (regularNames.length > 0) {
+                      parts.push(`${regularNames.length} factors`);
+                    }
+                    if (alphaEntry) {
+                      parts.push(alphaEntry);
+                    }
+                    return parts.join(", ") || "Model input features";
+                  })()}
                 </p>
               </>
             )}
@@ -432,7 +469,7 @@ function Dashboard() {
             ) : (
               <>
                 <div
-                  className="text-sm font-mono font-bold truncate"
+                  className="text-sm font-mono font-bold break-all"
                   title={dataInfo?.label_expression || ""}
                 >
                   {dataInfo?.label_expression || "N/A"}

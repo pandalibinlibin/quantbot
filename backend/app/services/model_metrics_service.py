@@ -702,8 +702,8 @@ class ModelMetricsService:
             # Build feature names list in the same order as CustomFactorHandler
             feature_names = []
 
-            # 1. OHLCV fields (always first)
-            ohlcv_fields = ["open", "high", "low", "close", "volume"]
+            # 1. OHLCV fields (always first, must match custom_factor_handler order)
+            ohlcv_fields = ["open", "high", "low", "close", "volume", "vwap"]
             feature_names.extend(ohlcv_fields)
 
             # 2. Pre-computed factors from storage (excluding label)
