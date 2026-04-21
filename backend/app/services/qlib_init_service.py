@@ -66,8 +66,6 @@ class QlibInitService:
                 # Map region string to Qlib constant
                 region = REG_CN if self.settings.QLIB_REGION == "cn" else REG_US
 
-                # Use day-level data directory only
-                # Minute data is handled by separate timing/execution system
                 provider_uri = self.settings.QLIB_DATA_DIR
 
                 logger.info(

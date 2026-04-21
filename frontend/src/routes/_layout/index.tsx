@@ -12,6 +12,10 @@ import {
   Loader2,
   Activity,
   Download,
+  Database,
+  Tag,
+  Calendar,
+  Layers,
 } from "lucide-react";
 import {
   Card,
@@ -121,6 +125,18 @@ interface ModelSummary {
   has_metrics: boolean;
 }
 
+interface DataInfoSummary {
+  data_range_start?: string;
+  data_range_end?: string;
+  trading_days: number;
+  instruments_count: number;
+  features_count: number;
+  feature_names: string[];
+  label_expression: string;
+  label_description: string;
+  last_update_time?: string;
+}
+
 interface RebalanceInfo {
   rebalance_period_days: number;
   is_rebalance_day: boolean;
@@ -156,6 +172,7 @@ interface AlertItem {
 
 interface DashboardData {
   success: boolean;
+  data_info: DataInfoSummary;
   backtest: BacktestSummary;
   model: ModelSummary;
   system: SystemSummary;
@@ -253,6 +270,7 @@ function Dashboard() {
   const isUpdatingData = updateDataMutation.isPending;
   const isBacktestRunning = backtestMutation.isPending;
 
+  const dataInfo = dashboardData?.data_info;
   const backtest = dashboardData?.backtest;
   const model = dashboardData?.model;
   const system = dashboardData?.system;
@@ -267,9 +285,17 @@ function Dashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">Dashboard</h1>
+            <Badge
+              variant={system?.is_initialized ? "default" : "secondary"}
+              className="text-xs"
+            >
+              {system?.is_initialized ? "Online" : "Offline"}
+            </Badge>
+          </div>
           <p className="text-muted-foreground">
-            ETF Enhanced Indexing Strategy Overview
+            Quantitative Investment Platform Overview
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -322,12 +348,136 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* KPI Cards - Row 1: Backtest Results */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {/* Net Return Card - actual investor return after costs */}
+      {/* Row 0: Data & Factor Info */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        {/* Data Range Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Net Return</CardTitle>
+            <CardTitle className="text-sm font-medium">Data Range</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="h-8 bg-muted animate-pulse rounded" />
+            ) : (
+              <>
+                <div className="text-lg font-bold">
+                  {dataInfo?.data_range_start && dataInfo?.data_range_end
+                    ? `${dataInfo.data_range_start} ~ ${dataInfo.data_range_end}`
+                    : "N/A"}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Trading Days: {dataInfo?.trading_days || 0}
+                </p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Instruments Card */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Instruments</CardTitle>
+            <Database className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="h-8 bg-muted animate-pulse rounded" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">
+                  {dataInfo?.instruments_count || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Stocks in dataset
+                </p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Features Card */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Features</CardTitle>
+            <Layers className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="h-8 bg-muted animate-pulse rounded" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">
+                  {dataInfo?.features_count || 0}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {dataInfo?.feature_names?.join(", ") || "N/A"}
+                </p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Label Card */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Label (Target)
+            </CardTitle>
+            <Tag className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="h-8 bg-muted animate-pulse rounded" />
+            ) : (
+              <>
+                <div
+                  className="text-sm font-mono font-bold truncate"
+                  title={dataInfo?.label_expression || ""}
+                >
+                  {dataInfo?.label_expression || "N/A"}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {dataInfo?.label_description || ""}
+                </p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Signal Card */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Signals</CardTitle>
+            <Zap className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="h-8 bg-muted animate-pulse rounded" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">
+                  {formatNumber(system?.signal_count || 0)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {system?.last_routine_time
+                    ? `Last: ${system.last_routine_time}`
+                    : "No signals generated yet"}
+                </p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* KPI Cards - Row 1: Backtest Results */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {/* Backtest Net Return Card - actual investor return after costs */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Backtest Net Return
+            </CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -351,7 +501,9 @@ function Dashboard() {
         {/* Max Drawdown Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Max Drawdown</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Backtest Max Drawdown
+            </CardTitle>
             <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -373,7 +525,9 @@ function Dashboard() {
         {/* Sharpe Ratio Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Sharpe Ratio</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Backtest Sharpe Ratio
+            </CardTitle>
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -400,56 +554,29 @@ function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* System Status Card */}
+        {/* Backtest Info Card */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">System Status</CardTitle>
-            <Zap className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Backtest Info</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             {isLoading ? (
               <div className="h-8 bg-muted animate-pulse rounded" />
             ) : (
               <>
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant={system?.is_initialized ? "default" : "secondary"}
-                  >
-                    {system?.is_initialized ? "Online" : "Offline"}
-                  </Badge>
-                  {system?.rebalance && (
-                    <Badge
-                      variant={
-                        system.rebalance.is_rebalance_day
-                          ? "default"
-                          : "outline"
-                      }
-                      className={
-                        system.rebalance.is_rebalance_day ? "bg-green-600" : ""
-                      }
-                    >
-                      {system.rebalance.is_rebalance_day
-                        ? "Rebalance Day"
-                        : "Not Rebalance Day"}
-                    </Badge>
-                  )}
+                <div className="text-sm font-medium">
+                  {backtest?.backtest_date
+                    ? `Date: ${backtest.backtest_date}`
+                    : "No backtest yet"}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Signals: {formatNumber(system?.signal_count || 0)}
-                  {system?.rebalance && (
-                    <span className="ml-2">
-                      | Period: {system.rebalance.rebalance_period_days}d |
-                      Next: {system.rebalance.next_rebalance_date || "N/A"}
-                      {!system.rebalance.is_rebalance_day &&
-                        system.rebalance.days_until_rebalance > 0 && (
-                          <span>
-                            {" "}
-                            ({system.rebalance.days_until_rebalance} trading
-                            days)
-                          </span>
-                        )}
-                    </span>
-                  )}
+                  {system?.rebalance
+                    ? `Rebalance: every ${system.rebalance.rebalance_period_days} days`
+                    : ""}
+                  {system?.rebalance?.next_rebalance_date
+                    ? ` | Next: ${system.rebalance.next_rebalance_date}`
+                    : ""}
                 </p>
               </>
             )}

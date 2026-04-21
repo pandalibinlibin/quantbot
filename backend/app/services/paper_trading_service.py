@@ -126,22 +126,38 @@ class PaperTradingService:
         """
         portfolio = self._load_portfolio()
 
-        # Calculate position values (would need price data in real implementation)
+        # Calculate position values using current market prices
         total_position_value = 0.0
         position_details = []
+
+        # Fetch current prices from Qlib for accurate valuation
+        position_instruments = list(portfolio.get("positions", {}).keys())
+        current_prices = (
+            self._get_latest_prices(position_instruments)
+            if position_instruments
+            else {}
+        )
 
         for instrument, pos in portfolio.get("positions", {}).items():
             shares = pos.get("shares", 0)
             avg_cost = pos.get("avg_cost", 0.0)
-            # In real implementation, fetch current price
-            # For now, use avg_cost as current price estimate
-            current_value = shares * avg_cost
+            current_price = current_prices.get(instrument)
+            if current_price is not None:
+                current_value = shares * current_price
+            else:
+                # Fallback to avg_cost if no current price available
+                logger.warning(
+                    f"No current price for {instrument}, using avg_cost for valuation"
+                )
+                current_value = shares * avg_cost
+                current_price = avg_cost
             total_position_value += current_value
             position_details.append(
                 {
                     "instrument": instrument,
                     "shares": shares,
                     "avg_cost": avg_cost,
+                    "current_price": current_price,
                     "current_value": current_value,
                 }
             )
@@ -216,12 +232,10 @@ class PaperTradingService:
         except Exception as e:
             logger.warning(f"Error fetching prices: {e}")
 
-        # Fill missing prices with default value
-        default_price = 10.0
+        # Log missing prices (do not fill with fake values)
         for inst in instruments:
             if inst not in prices:
-                prices[inst] = default_price
-                logger.debug(f"Using default price {default_price} for {inst}")
+                logger.warning(f"Could not fetch price for {inst} from Qlib")
 
         return prices
 
@@ -859,10 +873,20 @@ class PaperTradingService:
         trades = self._load_trades()
 
         initial_cash = qlib_config.initial_cash
-        current_value = portfolio.get("cash", 0) + sum(
-            p.get("shares", 0) * p.get("avg_cost", 0)
-            for p in portfolio.get("positions", {}).values()
+
+        # Use real current prices for accurate performance calculation
+        position_instruments = list(portfolio.get("positions", {}).keys())
+        current_prices = (
+            self._get_latest_prices(position_instruments)
+            if position_instruments
+            else {}
         )
+        position_value = 0.0
+        for inst, pos in portfolio.get("positions", {}).items():
+            shares = pos.get("shares", 0)
+            price = current_prices.get(inst, pos.get("avg_cost", 0))
+            position_value += shares * price
+        current_value = portfolio.get("cash", 0) + position_value
 
         total_return = (
             (current_value - initial_cash) / initial_cash if initial_cash > 0 else 0
@@ -882,12 +906,32 @@ class PaperTradingService:
         win_rate = None
         win_rate_pct = None
 
-        # Calculate win rate from trades
+        # Calculate win rate from completed sell trades
         if sell_trades:
-            # For now, consider a sell trade "winning" if it's part of the strategy
-            # In a real scenario, you'd compare sell price vs buy price
-            win_rate = 0.0  # Placeholder - need actual P&L calculation
-            win_rate_pct = "N/A"
+            profitable_trades = 0
+            total_evaluated = 0
+            for trade in sell_trades:
+                sell_price = trade.get("price", 0)
+                instrument = trade.get("instrument", "")
+                # Find the matching buy trade to compare
+                matching_buys = [
+                    b
+                    for b in buy_trades
+                    if b.get("instrument") == instrument
+                    and b.get("date", "") <= trade.get("date", "")
+                ]
+                if matching_buys and sell_price > 0:
+                    last_buy_price = matching_buys[-1].get("price", 0)
+                    if last_buy_price > 0:
+                        total_evaluated += 1
+                        if sell_price > last_buy_price:
+                            profitable_trades += 1
+            if total_evaluated > 0:
+                win_rate = profitable_trades / total_evaluated
+                win_rate_pct = f"{win_rate * 100:.1f}%"
+            else:
+                win_rate = None
+                win_rate_pct = "N/A"
 
         if trading_days > 0:
             # Annualized return (assuming 252 trading days per year)

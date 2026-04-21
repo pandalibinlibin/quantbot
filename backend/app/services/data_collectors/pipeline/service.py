@@ -218,7 +218,7 @@ def execute_data_pipeline(request: DownloadDataRequest) -> DownloadTaskResponse:
                                 line.strip() for line in f if line.strip()
                             ]
                         if calendar_dates:
-                            # Extract date part (for minute data, dates include time)
+                            # Extract date part from calendar
                             factor_start = calendar_dates[0].split()[0]
                             factor_end = calendar_dates[-1].split()[0]
                             logger.info(
@@ -291,7 +291,7 @@ def _get_missing_date_ranges(
     Args:
         requested_start: Start date string (YYYY-MM-DD)
         requested_end: End date string (YYYY-MM-DD)
-        interval: Data interval ("1d" for day, "1m" for minute)
+        interval: Data interval (only "1d" is supported)
 
     Returns:
         List of (start_date, end_date) tuples for missing periods
@@ -299,7 +299,6 @@ def _get_missing_date_ranges(
     try:
         from app.services.qlib_init_service import get_qlib_init_service
 
-        # Use day-level data directory (minute data handled by separate timing system)
         qlib_data_path = Path(settings.QLIB_DATA_PATH)
         calendar_file = qlib_data_path / "calendars" / "day.txt"
 
@@ -325,11 +324,9 @@ def _get_missing_date_ranges(
                 logger.info("Calendar file is empty, will download full range")
                 return [(requested_start, requested_end)]
 
-            # Extract dates from calendar (for minute data, extract just the date part)
+            # Extract dates from calendar
             existing_dates = set()
             for line in calendar_lines:
-                # For minute data: "2026-02-11 09:30:00" -> "2026-02-11"
-                # For day data: "2026-02-11" -> "2026-02-11"
                 date_part = line.split()[0]
                 existing_dates.add(date_part)
 
@@ -412,7 +409,7 @@ def _execute_tushare_pipeline(
     Parameters
     ----------
     stock_pool : str
-        Stock pool name (csi300, csi500, csi800, csi1000, dividend)
+        Stock pool name (etf_universe)
     download_ranges : List[Tuple[str, str]]
         List of (start_date, end_date) tuples
     incremental : bool
@@ -428,18 +425,14 @@ def _execute_tushare_pipeline(
     try:
         from app.services.data_collectors.tushare_collector import TushareDataCollector
 
-        # Map stock_pool to index name
-        index_map = {
-            "csi300": "CSI300",
-            "csi500": "CSI500",
-            "csi800": "CSI800",
-            "csi1000": "CSI1000",
-            "dividend": "DIVIDEND",
-        }
+        # Only ETF_UNIVERSE is supported
+        if stock_pool.lower() != "etf_universe":
+            return (
+                False,
+                f"Unsupported stock pool for Tushare: {stock_pool}. Only 'etf_universe' is supported.",
+            )
 
-        index_name = index_map.get(stock_pool.lower())
-        if not index_name:
-            return False, f"Unsupported stock pool for Tushare: {stock_pool}"
+        index_name = "ETF_UNIVERSE"
 
         # Setup directories
         csv_dir = Path(settings.CSV_DATA_PATH) / "cn_data"
@@ -871,9 +864,9 @@ def _apply_tushare_data_classification(
         # Create classifier instance
         classifier = create_tushare_classifier()
 
-        # For Tushare stock data, we need to simulate API name based on instrument type
-        # Stock data from TushareDataCollector.get_data() is always daily stock data
-        api_name = "daily"  # Tushare daily stock API
+        # Determine API name for data type classification
+        # ETF/stock daily data from TushareDataCollector uses the "daily" API
+        api_name = "daily"
 
         # Classify the data type
         data_type = classifier.classify_data(df, api_name=api_name)
@@ -892,39 +885,13 @@ def _apply_tushare_data_classification(
             logger.debug(f"No broadcast needed for {instrument}")
             return df
 
-        # If broadcast is needed (for macro/industry data), apply it
-        # Note: This is primarily for future extension when we add macro/industry APIs
+        # Broadcast is not needed for ETF daily data (our primary use case)
+        # Log a warning if broadcast was requested - this indicates unexpected data type
         if config["needs_time_broadcast"] or config["needs_stock_broadcast"]:
-            logger.info(
-                f"Applying broadcast for {instrument} (type: {data_type.value})"
+            logger.warning(
+                f"Broadcast requested for {instrument} (type: {data_type.value}) "
+                f"but not implemented for ETF universe. Returning original data."
             )
-
-            # Get trading calendar for broadcast
-            try:
-                calendar_dates = TushareDataCollector.get_trading_calendar(
-                    start_date, end_date
-                )
-                calendar = pd.to_datetime(calendar_dates)
-
-                # Get all instruments for stock broadcast
-                # This would be used for macro data broadcasting
-                instruments = ["SH000001", "SZ399001"]  # Placeholder for now
-
-                # Apply broadcast
-                processed_df = classifier.apply_broadcast(
-                    df, data_type, calendar, instruments
-                )
-
-                logger.info(
-                    f"Broadcast applied to {instrument}: {df.shape} -> {processed_df.shape}"
-                )
-                return processed_df
-
-            except Exception as e:
-                logger.warning(
-                    f"Broadcast failed for {instrument}: {e}, using original data"
-                )
-                return df
 
         return df
 

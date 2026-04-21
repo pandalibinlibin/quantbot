@@ -78,6 +78,20 @@ class RebalanceInfo(BaseModel):
     days_until_rebalance: int = 0  # Trading days until next rebalance
 
 
+class DataInfoSummary(BaseModel):
+    """Data and factor information summary for dashboard."""
+
+    data_range_start: Optional[str] = None
+    data_range_end: Optional[str] = None
+    trading_days: int = 0
+    instruments_count: int = 0
+    features_count: int = 0
+    feature_names: List[str] = []
+    label_expression: str = ""
+    label_description: str = ""
+    last_update_time: Optional[str] = None
+
+
 class SystemSummary(BaseModel):
     """System status summary for dashboard."""
 
@@ -114,6 +128,7 @@ class DashboardResponse(BaseModel):
     """Complete dashboard summary response."""
 
     success: bool
+    data_info: DataInfoSummary
     backtest: BacktestSummary
     model: ModelSummary
     system: SystemSummary
@@ -219,6 +234,7 @@ def get_dashboard_summary():
         system_summary = SystemSummary()
         target_positions: List[TargetPositionItem] = []
         alerts: List[AlertItem] = []
+        status: Dict[str, Any] = {}
 
         # 1. Get Backtest Results
         try:
@@ -355,7 +371,7 @@ def get_dashboard_summary():
             online_service = get_online_serving_service()
             status = online_service.get_status()
 
-            # Get rebalance info from ETF service
+            # Get rebalance info from ETF service (only if enabled)
             rebalance_info = None
             try:
                 from app.services.etf_enhanced_indexing_service import (
@@ -363,20 +379,21 @@ def get_dashboard_summary():
                 )
 
                 etf_service = get_etf_enhanced_indexing_service()
-                rebalance_period = etf_service.rebalance_period_days
+                if etf_service.enabled:
+                    rebalance_period = etf_service.rebalance_period_days
 
-                # Get today's date for rebalance check
-                today = datetime.now().strftime("%Y-%m-%d")
-                is_rebalance = etf_service.is_rebalance_day(today)
-                next_rebalance = etf_service.get_next_rebalance_day(today)
-                days_until = etf_service.get_days_until_rebalance(today)
+                    # Get today's date for rebalance check
+                    today = datetime.now().strftime("%Y-%m-%d")
+                    is_rebalance = etf_service.is_rebalance_day(today)
+                    next_rebalance = etf_service.get_next_rebalance_day(today)
+                    days_until = etf_service.get_days_until_rebalance(today)
 
-                rebalance_info = RebalanceInfo(
-                    rebalance_period_days=rebalance_period,
-                    is_rebalance_day=is_rebalance,
-                    next_rebalance_date=next_rebalance,
-                    days_until_rebalance=days_until,
-                )
+                    rebalance_info = RebalanceInfo(
+                        rebalance_period_days=rebalance_period,
+                        is_rebalance_day=is_rebalance,
+                        next_rebalance_date=next_rebalance,
+                        days_until_rebalance=days_until,
+                    )
             except Exception as e:
                 logger.warning(f"Failed to get rebalance info: {e}")
 
@@ -401,8 +418,8 @@ def get_dashboard_summary():
                 # Routine was run before but service restarted
                 system_summary = SystemSummary(
                     is_initialized=True,
-                    signal_count=0,
-                    last_routine_time=None,
+                    signal_count=status.get("signal_count", 0),
+                    last_routine_time=status.get("last_routine_time"),
                     data_range_start=None,
                     data_range_end=None,
                     rebalance=rebalance_info,
@@ -410,8 +427,8 @@ def get_dashboard_summary():
             else:
                 system_summary = SystemSummary(
                     is_initialized=False,
-                    signal_count=0,
-                    last_routine_time=None,
+                    signal_count=status.get("signal_count", 0),
+                    last_routine_time=status.get("last_routine_time"),
                     data_range_start=None,
                     data_range_end=None,
                     rebalance=rebalance_info,
@@ -476,8 +493,83 @@ def get_dashboard_summary():
                     ),
                 )
 
+        # 5. Get Data & Factor Info
+        # Single source for each piece of data — no fallback, errors are logged explicitly
+        data_info = DataInfoSummary()
+        try:
+            import yaml
+            from app.core.config import settings
+            from app.services.factor_storage import FactorStorage
+
+            # Load system config once (single source of truth)
+            config_path = Path("/app/app/config/qlib/system_config.yaml")
+            sys_config = {}
+            if config_path.exists():
+                with open(config_path, "r") as f:
+                    sys_config = yaml.safe_load(f)
+            else:
+                logger.error(f"System config not found: {config_path}")
+
+            # Data range: read calendar file directly (no qlib.init() needed)
+            cal_file = Path(settings.QLIB_DATA_PATH) / "calendars" / "day.txt"
+            if cal_file.exists():
+                with open(cal_file, "r", encoding="utf-8") as f:
+                    dates = [line.strip() for line in f if line.strip()]
+                if dates:
+                    data_info.data_range_start = dates[0][:10]
+                    data_info.data_range_end = dates[-1][:10]
+                    data_info.trading_days = len(dates)
+            else:
+                logger.warning(f"Calendar file not found: {cal_file}")
+
+            # Instruments count: count feature directories
+            storage = FactorStorage(freq="day")
+            if storage.features_dir.exists():
+                data_info.instruments_count = sum(
+                    1 for d in storage.features_dir.iterdir() if d.is_dir()
+                )
+            else:
+                logger.warning(f"Features dir not found: {storage.features_dir}")
+
+            # Feature count: base data fields + stored factors + Alpha158
+            stored_factors = storage.list_stored_factors()
+            base_data_names = ["open", "high", "low", "close", "volume", "vwap"]
+            all_features = base_data_names + stored_factors
+
+            alpha158_count = 0
+            alpha158_enabled = (
+                sys_config.get("builtin_factor_libraries", {})
+                .get("alpha158", {})
+                .get("enabled", False)
+            )
+            if alpha158_enabled:
+                alpha158_count = 158
+
+            data_info.features_count = len(all_features) + alpha158_count
+            data_info.feature_names = list(all_features)
+            if alpha158_count > 0:
+                data_info.feature_names.append(f"+ {alpha158_count} Alpha158 factors")
+
+            # Label expression from system config
+            region = sys_config.get("data", {}).get("region", "cn")
+            label_cfg = sys_config.get("label_config", {}).get(region, {})
+            data_info.label_expression = label_cfg.get("expression", "")
+            data_info.label_description = label_cfg.get("description", "")
+            if not data_info.label_expression:
+                logger.warning(
+                    f"No label expression found for region '{region}' in system config"
+                )
+
+            # Last update time
+            if system_summary.last_routine_time:
+                data_info.last_update_time = system_summary.last_routine_time
+
+        except Exception as e:
+            logger.error(f"Failed to get data info: {e}", exc_info=True)
+
         return DashboardResponse(
             success=True,
+            data_info=data_info,
             backtest=backtest_summary,
             model=model_summary,
             system=system_summary,

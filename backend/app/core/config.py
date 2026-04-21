@@ -57,13 +57,12 @@ class Settings(BaseSettings):
     POSTGRES_DB: str = ""
 
     # Data paths configuration
-    # Day-level data directory (minute data handled by separate timing system)
     QLIB_DATA_PATH: str = "/app/qlib_data"
     CSV_DATA_PATH: str = "/app/csv_data"
     DEFAULT_CSV_FILE_NAME: str = "csv_data_cn.zip"
     # MLflow runs directory for model artifacts and metrics
     MLRUNS_PATH: str = "/app/mlruns"
-    
+
     # Index configuration for VeighNa integration
     INDEX_CONFIG_PATH: str = "/app/app/config/index_config.yaml"
     # Signal output directory for VeighNa to read

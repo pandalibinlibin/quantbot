@@ -6,22 +6,17 @@
 # 1. Detect the configuration change
 # 2. Clean up existing data
 # 3. Re-download data based on new configuration
-#
-# NOTE: Only day-level data is supported in this stock selection system.
-# Minute-level data should be handled by a separate timing/execution system.
 
 data:
-  # Data frequency (only "day" is supported)
+  # Data frequency
   freq: "day"
 
   # Data source
   # Options: "tushare" (A-shares), "eod" (US stocks via EOD Historical Data)
   source: "tushare"
 
-  # Stock pool
-  # China (tushare): "csi300", "csi500", "csi800", "csi1000", "dividend", "all"
-  # US (eod): "sp500", "nasdaq100", "djia"
-  stock_pool: "csi300"
+  # Stock pool (ETF universe defined in index_config.yaml)
+  stock_pool: "etf_universe"
 
   # Market region
   # Options: "cn" (China A-shares) or "us" (US stocks)
@@ -85,31 +80,11 @@ data_quality:
   # A value of 0 means no missing values are allowed
   missing_data_threshold: 0
 
-# Enhanced Indexing Strategy Configuration (Legacy - kept for backward compatibility)
-enhanced_indexing:
-  # Whether to enable enhanced indexing strategy in routine
-  enabled: false # Disabled in favor of ETF Enhanced Indexing
-
-  # Maximum deviation from benchmark weight per stock (default 2%)
-  # e.g., if benchmark weight is 6%, target weight will be in [4%, 8%]
-  max_deviation: 0.02
-
-  # Minimum weight threshold (weights below this are set to 0)
-  # Set to 0 to include all stocks in the portfolio
-  min_weight: 0
-
-  # Benchmark index selection
-  # Options: "auto" (detect from data), "csi300", "csi500", "sp500", "nasdaq100"
-  benchmark: "auto"
-
-  # Output directory for target portfolio files
-  output_dir: "/app/data/target_portfolio"
-
 # ETF Enhanced Indexing Strategy Configuration
 # A capital-efficient strategy: 1 ETF + 9 alpha stocks = 10 positions
 etf_enhanced_indexing:
   # Whether to enable ETF enhanced indexing strategy
-  enabled: true
+  enabled: false
 
   # Dynamic weight mode
   # "dynamic": adjust ETF/Alpha weights based on score spread
@@ -162,17 +137,17 @@ builtin_factor_libraries:
 label_config:
   # China A-shares: T+1 trading rule
   # Today's signal → Buy tomorrow → Sell day after tomorrow
-  # Label = CSRankNorm(Ref($close, -2) / $close - 1) (T+2 return with cross-sectional ranking)
+  # Cross-sectional normalization is applied by learn_processors (CSZScoreNorm)
   cn:
-    expression: "CSRankNorm(Ref($close, -2) / $close - 1)"
-    description: "T+2 return with cross-sectional ranking for A-shares (T+1 trading rule)"
+    expression: "Ref($close, -2) / $close - 1"
+    description: "T+2 return for A-shares (T+1 trading rule)"
 
   # US stocks: T+0 trading rule
   # Today's signal → Buy tomorrow → Can sell tomorrow
-  # Label = CSRankNorm(Ref($close, -1) / $close - 1) (T+1 return with cross-sectional ranking)
+  # Cross-sectional normalization is applied by learn_processors (CSZScoreNorm)
   us:
-    expression: "CSRankNorm(Ref($close, -1) / $close - 1)"
-    description: "T+1 return with cross-sectional ranking for US stocks (T+0 trading rule)"
+    expression: "Ref($close, -1) / $close - 1"
+    description: "T+1 return for US stocks (T+0 trading rule)"
 
 # TopK Dropout Strategy Configuration (ETF Optimized)
 # Uses TopkDropoutStrategy with n_drop=topk for intelligent complete reselection capability

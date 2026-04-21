@@ -31,7 +31,7 @@ def test_execute_training_workflow():
                             "end_time": "2020-09-25",
                             "fit_start_time": "2019-01-01",
                             "fit_end_time": "2019-12-31",
-                            "instruments": "csi300",
+                            "instruments": "all",
                         },
                     },
                     "segments": {

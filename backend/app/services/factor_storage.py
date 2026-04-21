@@ -4,8 +4,6 @@ Factor Storage Manager for bin file operations
 This module implements the storage layer for computed factor data,
 writing factor bin files directly to each symbol's directory.
 
-Note: Only day-level data is supported in this stock selection system.
-Minute-level data should be handled by a separate timing/execution system.
 """
 
 import logging
@@ -62,9 +60,6 @@ class FactorStorage:
     def _get_storage_dir_for_freq(self, freq: str) -> Path:
         """
         Get the storage directory for day-level data.
-
-        Note: Only day-level data is supported in this stock selection system.
-        Minute-level data should be handled by a separate timing/execution system.
 
         Args:
             freq: Data frequency (only 'day' is supported)

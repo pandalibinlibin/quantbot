@@ -396,86 +396,38 @@ class ETFEnhancedIndexingService:
 
     def detect_benchmark(self) -> str:
         """
-        Auto-detect benchmark index from data configuration.
+        Detect benchmark index. Returns 'csi300' (CSI300 ETF is the benchmark
+        for ETF Enhanced Indexing strategy).
 
         Returns:
-            str: Detected benchmark index (csi300, csi500, sp500, nasdaq100)
+            str: 'csi300'
         """
-        stock_pool = qlib_config.stock_pool
-        region = qlib_config.region
-
-        benchmark_map = {
-            "csi300": "csi300",
-            "csi500": "csi500",
-            "csi800": "csi500",
-            "csi1000": "csi1000",
-            "dividend": "dividend",
-            "sp500": "sp500",
-            "nasdaq100": "nasdaq100",
-        }
-
-        detected = benchmark_map.get(stock_pool)
-        if detected:
-            logger.info(
-                f"Auto-detected benchmark: {detected} (from stock_pool={stock_pool})"
-            )
-            return detected
-
-        if region == "us":
-            logger.info("Auto-detected benchmark: sp500 (from region=us)")
-            return "sp500"
-        else:
-            logger.info("Auto-detected benchmark: csi300 (default for region=cn)")
-            return "csi300"
+        logger.info("Benchmark: csi300 (CSI300 ETF SH510300)")
+        return "csi300"
 
     def get_etf_code(self, benchmark: str) -> str:
         """
-        Get ETF code for the given benchmark index.
+        Get ETF code for the benchmark.
 
         Args:
-            benchmark: Benchmark index name (csi300, sp500, etc.)
+            benchmark: Benchmark index name (always 'csi300' for ETF strategy)
 
         Returns:
-            ETF code in Qlib format (e.g., SH510300)
+            ETF code in Qlib format (SH510300)
         """
         indexes = self._index_config.get("indexes", {})
-        index_info = indexes.get(benchmark, {})
-        etf_code = index_info.get("etf_code", "")
-
-        if not etf_code:
-            # Fallback defaults
-            defaults = {
-                "csi300": "SH510300",
-                "csi500": "SH510500",
-                "sp500": "SPY",
-                "nasdaq100": "QQQ",
-            }
-            etf_code = defaults.get(benchmark, "SH510300")
-            logger.warning(
-                f"ETF code not found for {benchmark}, using default: {etf_code}"
-            )
-
+        etf_universe = indexes.get("etf_universe", {})
+        etf_code = etf_universe.get("etf_code", "SH510300")
         return etf_code
 
     def get_etf_name(self, benchmark: str) -> str:
         """
-        Get ETF name for the given benchmark index.
-
-        Args:
-            benchmark: Benchmark index name
+        Get ETF name for the benchmark.
 
         Returns:
-            ETF name (e.g., "沪深300ETF")
+            ETF name ("沪深300ETF")
         """
-        etf_names = {
-            "csi300": "沪深300ETF",
-            "csi500": "中证500ETF",
-            "csi1000": "中证1000ETF",
-            "dividend": "红利ETF",
-            "sp500": "SPDR S&P 500 ETF",
-            "nasdaq100": "Invesco QQQ Trust",
-        }
-        return etf_names.get(benchmark, f"{benchmark} ETF")
+        return "沪深300ETF"
 
     # ===== Dynamic Weight Calculation =====
 
@@ -803,7 +755,10 @@ class ETFEnhancedIndexingService:
         positions = []
 
         # ETF position
-        etf_price = prices.get(etf_code, 4.0)  # Placeholder
+        etf_price = prices.get(etf_code)
+        if etf_price is None:
+            logger.error(f"No price data for ETF {etf_code}, cannot build portfolio")
+            raise ValueError(f"No price data for ETF {etf_code}")
         etf_target_value = total_value * etf_weight
         etf_target_shares = self.round_to_lot(etf_target_value / etf_price)
         etf_current_shares = current_holdings.get(etf_code, 0)
@@ -831,7 +786,10 @@ class ETFEnhancedIndexingService:
         # Alpha stock positions
         for rank, (symbol, weight) in enumerate(stock_weights, start=1):
             score = signal_dict.get(symbol, 0.0)
-            price = prices.get(symbol, 100.0)  # Placeholder
+            price = prices.get(symbol)
+            if price is None:
+                logger.warning(f"No price data for {symbol}, skipping position")
+                continue
             target_value = total_value * weight
             target_shares = self.round_to_lot(target_value / price)
             current_shares = current_holdings.get(symbol, 0)
@@ -866,7 +824,12 @@ class ETFEnhancedIndexingService:
                 if price is None:
                     # Fetch price for this symbol
                     extra_prices = self._get_latest_prices([symbol])
-                    price = extra_prices.get(symbol, 100.0)
+                    price = extra_prices.get(symbol)
+                if price is None:
+                    logger.warning(
+                        f"No price data for {symbol}, using 0 for sell calculation"
+                    )
+                    price = 0.0
 
                 action_lots = current_shares // self.lot_size
                 positions.append(
@@ -1114,13 +1077,25 @@ class ETFEnhancedIndexingService:
         Returns:
             Next trading date string
         """
-        # TODO: Implement actual trading calendar lookup
-        # For now, just return the next day
         from datetime import timedelta
 
         dt = datetime.strptime(date, "%Y-%m-%d")
+
+        # Try to use Qlib's trading calendar for accurate lookup
+        try:
+            from qlib.data import D
+
+            # Get trading calendar for a small window after the given date
+            start_str = (dt + timedelta(days=1)).strftime("%Y-%m-%d")
+            end_str = (dt + timedelta(days=10)).strftime("%Y-%m-%d")
+            cal = D.calendar(start_time=start_str, end_time=end_str, freq="day")
+            if cal is not None and len(cal) > 0:
+                return cal[0].strftime("%Y-%m-%d")
+        except Exception as e:
+            logger.debug(f"Qlib calendar lookup failed, using weekday skip: {e}")
+
+        # Fallback: skip weekends
         next_dt = dt + timedelta(days=1)
-        # Skip weekends
         while next_dt.weekday() >= 5:
             next_dt += timedelta(days=1)
         return next_dt.strftime("%Y-%m-%d")

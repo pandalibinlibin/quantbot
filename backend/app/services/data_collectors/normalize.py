@@ -103,13 +103,11 @@ class UniversalNormalize(BaseNormalize):
     # Standard OHLCV fields - matches BaseDataCollector._field_metadata
     COLUMNS = ["open", "high", "low", "close", "volume"]
 
-    # Time format constants for different data frequencies
+    # Time format for daily data
     DAILY_FORMAT = "%Y-%m-%d"
-    MINUTE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
-    # Anomaly detection thresholds for different frequencies
+    # Anomaly detection threshold for daily data
     DAILY_ANOMALY_THRESHOLD = (89, 111)  # 89x to 111x change detection
-    MINUTE_ANOMALY_THRESHOLD = (5, 20)  # 5x to 20x change detection for minute data
 
     # Class-level calendar cache to avoid repeated API calls
     _calendar_cache = {}
@@ -145,7 +143,7 @@ class UniversalNormalize(BaseNormalize):
         Educational Notes:
         - Based on Qlib's normalize pattern for price change calculation
         - Calculates price change series for anomaly detection
-        - Handles both daily and minute-level data
+        - Handles daily data
         - Uses forward fill to handle missing values
         - Change ratio = current_close / previous_close - 1
 
@@ -180,7 +178,7 @@ class UniversalNormalize(BaseNormalize):
         - Uses Tushare API for CN market trading calendar
         - Falls back to pandas business days for US market or if API fails
         - Supports both CN and US market calendars
-        - Market-specific trading hours handled in generate_1min_from_daily
+        - Market-specific trading calendar handling
 
         Returns
         -------
@@ -309,7 +307,7 @@ class UniversalNormalize(BaseNormalize):
         Educational Notes:
         - CN symbols: end with .SZ, .SH, or 6-digit numbers
         - US symbols: typically alphabetic or end with common US suffixes
-        - Used to determine appropriate trading hours for minute data
+        - Used to determine market-specific processing rules
 
         Parameters
         ----------
@@ -338,9 +336,6 @@ class UniversalNormalize(BaseNormalize):
         # Default to US market for other patterns
         return "US"
 
-    # NOTE: generate_1min_from_daily method removed
-    # Minute-level data should be handled by a separate timing/execution system
-
     @staticmethod
     def normalize_universal(
         df: pd.DataFrame,
@@ -355,7 +350,7 @@ class UniversalNormalize(BaseNormalize):
         Educational Notes:
         - Based on Qlib's normalize pattern for OHLCV data
         - Handles time index processing, calendar alignment, and anomaly detection
-        - Supports both daily and minute-level data
+        - Supports daily OHLCV data
         - Processes standard OHLCV fields with data cleaning
 
         Parameters
@@ -452,9 +447,6 @@ class UniversalNormalize(BaseNormalize):
     def _clean_anomalous_timestamps(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Clean anomalous timestamps that are outside expected date ranges.
-
-        Note: Only day-level data is supported in this stock selection system.
-        Minute-level data should be handled by a separate timing/execution system.
 
         Parameters
         ----------

@@ -23,8 +23,8 @@ import { User } from "./User";
 
 const baseItems: Item[] = [
   { icon: Home, title: "Dashboard", path: "/" },
-  { icon: FlaskConical, title: "Factors", path: "/factors" },
   { icon: Database, title: "Data Sources", path: "/data-sources" },
+  { icon: FlaskConical, title: "Factors", path: "/factors" },
   { icon: Brain, title: "Model", path: "/models" },
   { icon: RefreshCw, title: "Routine", path: "/routine" },
   { icon: Bell, title: "Target Portfolio", path: "/target-portfolio" },

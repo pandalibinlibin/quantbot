@@ -53,14 +53,11 @@ class DataInterval(Enum):
     Enumeration of supported data intervals.
 
     Educational Notes:
-    - Only includes the two most commonly used intervals in stock trading
-    - DAILY: For daily OHLCV data , most common for backtesting
-    - MINUTE_1: For high-frequency trading and detailed analysis
+    - DAILY: For daily OHLCV data, used for ETF stock selection
     - Maps directly to Qlib's interval format
     """
 
     DAILY = "1d"
-    MINUTE_1 = "1min"
 
 
 class BaseDataCollector(BaseCollector):
@@ -190,7 +187,7 @@ class BaseDataCollector(BaseCollector):
             symbol: Instrument symbol (normalized)
             start_time: Start date (YYYY-MM-DD format)
             end_time: End date (YYYY-MM-DD format)
-            interval: Data interval (daily or minute)
+            interval: Data interval (only daily is supported)
             **kwargs: Additional parameters specific to data source
 
         Returns:

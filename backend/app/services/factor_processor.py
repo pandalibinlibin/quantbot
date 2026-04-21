@@ -45,15 +45,15 @@ class FactorProcessor:
     """
 
     def __init__(
-        self, data_dir: Optional[str] = None, freq: str = "day", market: str = "csi300"
+        self, data_dir: Optional[str] = None, freq: str = "day", market: str = "all"
     ):
         """
         Initialize Factor Processor
 
         Args:
             data_dir: Directory for storing computed factor data
-            freq: Data frequency (day, 1min, etc.)
-            market: Market identifier (csi300, csi500, etc.)
+            freq: Data frequency (only 'day' is supported)
+            market: Market identifier (all, etf_universe, etc.)
         """
         self.data_dir = Path(data_dir) if data_dir else Path("./factor_data")
         self.freq = freq
@@ -170,7 +170,7 @@ class FactorProcessor:
                     instruments = D.instruments(market="all")
             elif isinstance(instruments, str):
                 # If instruments is a string (like market name), get instruments for that market
-                if instruments in ["csi300", "csi500", "all"]:
+                if instruments in ["all", "etf_universe"]:
                     # Load instruments from file (day-level data only)
                     from app.core.config import settings
 

@@ -163,8 +163,8 @@ function FactorsPage() {
     },
   });
 
-  // OHLCV base field names (without frequency suffix)
-  const OHLCV_FIELDS = ["close", "open", "high", "low", "volume"];
+  // OHLCV + vwap base field names (without frequency suffix)
+  const OHLCV_FIELDS = ["close", "open", "high", "low", "volume", "vwap"];
 
   // Get custom factor names (normalized to base name without .day/.1min suffix)
   const customFactorBaseNames = new Set(
@@ -186,7 +186,11 @@ function FactorsPage() {
       id: `builtin-${name}`,
       name: name,
       expression: `$${name.replace(/\.(day|1min)$/, "")}`,
-      description: "Built-in OHLCV field",
+      description: OHLCV_FIELDS.slice(0, 5).includes(
+        name.replace(/\.(day|1min)$/, "").toLowerCase(),
+      )
+        ? "Built-in OHLCV field"
+        : "Built-in data field",
       factor_type: "feature" as const,
       status: "active" as const,
       created_by: "system",
@@ -418,7 +422,11 @@ function FactorsPage() {
                     (labelConfig ? 1 : 0)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Features + Labels combined
+                  {features?.length || 0} data fields
+                  {alpha158Info?.enabled
+                    ? ` + ${alpha158Info?.factor_count} Alpha158`
+                    : ""}
+                  {labelConfig ? " + 1 label" : ""}
                 </p>
               </CardContent>
             </Card>
@@ -435,20 +443,41 @@ function FactorsPage() {
                       : 0)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Input variables (X) for training
+                  {features
+                    ?.filter((f) => (f as ExtendedFactor)._isBuiltin)
+                    .map((f) => f.name.replace(/\.(day|1min)$/, ""))
+                    .join(", ")}
+                  {alpha158Info?.enabled
+                    ? `, + ${alpha158Info?.factor_count} Alpha158 factors`
+                    : ""}
                 </p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Labels</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Label (Target)
+                </CardTitle>
                 <Tag className="h-4 w-4 text-green-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{labelConfig ? 1 : 0}</div>
-                <p className="text-xs text-muted-foreground">
-                  Target variable (Y) to predict
-                </p>
+                {labelConfig ? (
+                  <>
+                    <p className="text-sm font-bold font-mono">
+                      {labelConfig.expression}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {labelConfig.description}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">0</div>
+                    <p className="text-xs text-muted-foreground">
+                      No label configured
+                    </p>
+                  </>
+                )}
               </CardContent>
             </Card>
           </div>

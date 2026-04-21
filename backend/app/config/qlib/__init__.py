@@ -108,8 +108,8 @@ class QlibConfig:
 
     @property
     def stock_pool(self) -> str:
-        """Get stock pool: 'csi300', 'csi500', 'csi800', 'all', 'sp500', 'nasdaq100'."""
-        return self.data.get("stock_pool", "csi300")
+        """Get stock pool: 'etf_universe'."""
+        return self.data.get("stock_pool", "etf_universe")
 
     @property
     def region(self) -> str:
@@ -135,11 +135,6 @@ class QlibConfig:
         from app.core.config import settings
 
         return settings.QLIB_DATA_PATH
-
-    @property
-    def qlib_data_path_1min(self) -> str:
-        """Deprecated: Minute data handled by separate timing system."""
-        return self.qlib_data_path_day
 
     @property
     def csv_data_path(self) -> str:

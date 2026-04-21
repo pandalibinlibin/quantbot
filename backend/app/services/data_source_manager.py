@@ -4,7 +4,7 @@ Data source management service for handling data source configuration and automa
 This service reads configuration from system_config.yaml and detects changes to:
 - freq (day)
 - source (tushare/eod)
-- stock_pool (csi300/csi500/csi800/csi1000/dividend/sp500/nasdaq100/djia)
+- stock_pool (etf_universe)
 - region (cn/us)
 
 When any of these change, existing data is cleaned up and will be re-downloaded
@@ -106,9 +106,6 @@ class DataSourceManager:
                         else:
                             item.unlink()
                             logger.info(f"Removed file: {item}")
-
-            # NOTE: Minute-level data cleanup removed
-            # Minute data is handled by separate timing/execution system
 
             # Clean up CSV data directory
             csv_data_path = Path(qlib_config.csv_data_path)

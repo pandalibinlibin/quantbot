@@ -22,9 +22,6 @@ def clear_qlib_data_impl(
     """
     Clear qlib_data and csv_data directories for complete data source switching.
 
-    Note: Only day-level data is supported in this stock selection system.
-    Minute-level data should be handled by a separate timing/execution system.
-
     Args:
         qlib_data_path: Path to day-level qlib data directory
         csv_data_path: Path to CSV data directory
@@ -107,9 +104,6 @@ def get_qlib_dir_for_freq(freq: str = "day") -> str:
     """
     Get the Qlib data directory.
 
-    Note: Only day-level data is supported in this stock selection system.
-    Minute-level data should be handled by a separate timing/execution system.
-
     Args:
         freq: Data frequency (only 'day' is supported)
 
@@ -130,18 +124,9 @@ def _remove_benchmarks_from_instruments(qlib_path: Path) -> None:
     Args:
         qlib_path: Path to the Qlib data directory
     """
-    # Benchmark symbols for both A-shares and US stocks
+    # Benchmark symbol for ETF Enhanced Indexing strategy
     BENCHMARK_SYMBOLS = {
-        # A-share benchmarks (Tushare)
-        "SH510300",  # CSI300 ETF
-        "SH510500",  # CSI500 ETF
-        "SH510800",  # CSI800 ETF
-        "SH512100",  # CSI1000 ETF
-        "SH510880",  # Dividend ETF
-        # US stock benchmarks (EOD)
-        "SPY",  # S&P 500 ETF
-        "QQQ",  # NASDAQ 100 ETF
-        "DIA",  # Dow Jones ETF
+        "SH510300",  # CSI300 ETF (benchmark)
     }
 
     instruments_file = qlib_path / "instruments" / "all.txt"
@@ -192,9 +177,6 @@ def convert_csv_to_qlib_format_impl(
 ) -> Tuple[bool, str]:
     """
     Convert CSV data to Qlib .bin format using Qlib's dump_bin utility.
-
-    Note: Only day-level data is supported in this stock selection system.
-    Minute-level data should be handled by a separate timing/execution system.
 
     Args:
         csv_dir: Directory containing CSV files
@@ -307,11 +289,10 @@ def get_data_source_status_impl() -> dict:
     - Implements main business logic for data status analysis
     - Uses helper functions for specific parsing tasks
     - Returns dict that can be converted to DataSourceStatus model
-    - Checks both day-level and minute-level data directories
     """
     import pickle
 
-    # Use day-level data directory only (minute data handled by separate timing system)
+    # Use Qlib data directory
     qlib_data_path = Path(settings.QLIB_DATA_PATH)
 
     # Get current data source from configuration
@@ -383,136 +364,95 @@ def get_data_source_status_impl() -> dict:
     features = None
 
     if data_exists:
-        # Parse calendar for date range - check for different frequency files
+        # Parse calendar for date range
         try:
-            # Try different calendar file types in order of preference
-            calendar_files = ["1min.txt", "day.txt"]
-            for calendar_filename in calendar_files:
-                calendar_file = calendars_dir / calendar_filename
-                if calendar_file.exists():
-                    with open(calendar_file, "r", encoding="utf-8") as f:
-                        dates = [line.strip() for line in f if line.strip()]
-                    if dates:
-                        # For minute data, extract just the date part
-                        if calendar_filename == "1min.txt":
-                            date_start = dates[0].split()[
-                                0
-                            ]  # Extract date from "2026-02-10 09:30:00"
-                            date_end = dates[-1].split()[
-                                0
-                            ]  # Extract date from "2026-02-10 14:59:00"
-                        else:
-                            date_start = dates[0]
-                            date_end = dates[-1]
-                        break
-        except Exception:
-            pass
+            calendar_file = calendars_dir / "day.txt"
+            if calendar_file.exists():
+                with open(calendar_file, "r", encoding="utf-8") as f:
+                    dates = [line.strip() for line in f if line.strip()]
+                if dates:
+                    date_start = dates[0]
+                    date_end = dates[-1]
+            else:
+                logger.error(f"Calendar file not found: {calendar_file}")
+        except Exception as e:
+            logger.error(f"Failed to parse calendar: {e}")
 
-        # Parse instruments
+        # Parse instruments: single source = feature directories on disk
         try:
-            all_file = instruments_dir / "all.txt"
-            if all_file.exists():
-                with open(all_file, "r") as f:
-                    lines = [line.strip() for line in f if line.strip()]
+            if features_dir.exists():
+                instrument_dirs = [d for d in features_dir.iterdir() if d.is_dir()]
+                instruments_count = len(instrument_dirs)
+                instruments = (
+                    [d.name for d in instrument_dirs[:10]]
+                    if len(instrument_dirs) > 10
+                    else [d.name for d in instrument_dirs]
+                )
+            else:
+                logger.error(f"Features directory not found: {features_dir}")
 
-                instruments_data = []
-                for line in lines:
-                    parts = line.split("\t")
-                    if len(parts) >= 1:
-                        instruments_data.append(parts[0])  # Stock code
+            # Stock pool: single source = metadata.json
+            if instruments_count is not None:
+                try:
+                    import json
 
-                if instruments_data:
-                    instruments = (
-                        instruments_data[:10]
-                        if len(instruments_data) > 10
-                        else instruments_data
-                    )
-                    instruments_count = len(instruments_data)
+                    metadata_file = qlib_data_path / "metadata.json"
+                    if metadata_file.exists():
+                        with open(metadata_file, "r") as f:
+                            metadata = json.load(f)
+                            stock_pool = metadata.get("stock_pool")
 
-                    # Try to read stock_pool from metadata file first
-                    stock_pool = None
-                    try:
-                        import json
-
-                        metadata_file = qlib_data_path / "metadata.json"
-                        if metadata_file.exists():
-                            with open(metadata_file, "r") as f:
-                                metadata = json.load(f)
-                                stock_pool = metadata.get("stock_pool")
-                    except Exception:
-                        pass
-
-                    # Fallback to inference if metadata not available
                     if not stock_pool:
-                        # Detect market type from stock code format
-                        # A-shares: start with 'sh' or 'sz' (e.g., sh600000)
-                        # US stocks: pure letters (e.g., aapl)
-                        sample_code = (
-                            instruments_data[0].lower() if instruments_data else ""
-                        )
+                        # Infer from instrument code format
+                        sample_code = instruments[0].lower() if instruments else ""
                         is_us_market = sample_code and not (
                             sample_code.startswith("sh") or sample_code.startswith("sz")
                         )
+                        stock_pool = "us_all" if is_us_market else "etf_universe"
+                except Exception as e:
+                    logger.error(f"Failed to determine stock_pool: {e}")
+        except Exception as e:
+            logger.error(f"Failed to parse instruments: {e}")
 
-                        if is_us_market:
-                            if instruments_count <= 110:
-                                stock_pool = "nasdaq100"
-                            elif instruments_count <= 510:
-                                stock_pool = "sp500"
-                            else:
-                                stock_pool = "us_all"
-                        else:
-                            if instruments_count <= 120:
-                                stock_pool = "csi100"
-                            elif instruments_count <= 350:
-                                stock_pool = "csi300"
-                            elif instruments_count <= 600:
-                                stock_pool = "csi500"
-                            elif instruments_count > 1000:
-                                stock_pool = "csi1000"
-                            else:
-                                stock_pool = "all"
-        except Exception:
-            pass
-
-        # Parse features from day-level data directory
+        # Parse features: single source = bin files in first instrument directory
         try:
             features = []
-            features_dir_day = qlib_data_path / "features"
-            if features_dir_day.exists():
-                symbol_dirs = [d for d in features_dir_day.iterdir() if d.is_dir()]
+            if features_dir.exists():
+                symbol_dirs = [d for d in features_dir.iterdir() if d.is_dir()]
                 if symbol_dirs:
                     first_symbol_dir = symbol_dirs[0]
                     feature_files = list(first_symbol_dir.glob("*.bin"))
                     for f in feature_files:
-                        # Extract feature name with frequency suffix
                         # e.g., "close.day.bin" -> "close.day"
-                        feature_name = f.stem
-                        features.append(feature_name)
+                        features.append(f.stem)
 
-            features = list(set(features))  # Remove duplicates
-            features.sort()
+            features = sorted(set(features))
             features = features[:20] if len(features) > 20 else features
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Failed to parse features: {e}")
 
-        # Get label name from database to separate from features
+        # Label: single source = system_config.yaml (label is defined there, not in DB)
         label_name = None
         try:
-            from sqlmodel import Session, select
-            from app.core.db import engine
-            from app.models import Factor, FactorStatus, FactorType
+            import yaml as _yaml
 
-            with Session(engine) as session:
-                statement = select(Factor).where(
-                    Factor.factor_type == FactorType.LABEL,
-                    Factor.status == FactorStatus.ACTIVE,
-                )
-                label = session.exec(statement).first()
-                if label:
-                    label_name = label.name
-        except Exception:
-            pass
+            _cfg_path = Path("/app/app/config/qlib/system_config.yaml")
+            if _cfg_path.exists():
+                with open(_cfg_path, "r") as _f:
+                    _sys_cfg = _yaml.safe_load(_f)
+                _region = _sys_cfg.get("data", {}).get("region", "cn")
+                _label_cfg = _sys_cfg.get("label_config", {}).get(_region, {})
+                _label_expr = _label_cfg.get("expression", "")
+                if _label_expr:
+                    label_name = f"LABEL0: {_label_expr}"
+                else:
+                    logger.error(
+                        f"No label expression for region '{_region}' in system config"
+                    )
+            else:
+                logger.error(f"System config not found: {_cfg_path}")
+        except Exception as e:
+            logger.error(f"Failed to read label config: {e}")
 
     return {
         "source_name": current_source,

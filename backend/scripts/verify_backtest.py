@@ -1,6 +1,6 @@
 """
 Verify backtest results by checking:
-1. Benchmark (CSI300) return for comparison
+1. Benchmark return for comparison
 2. Prediction score distribution
 3. Model information
 """

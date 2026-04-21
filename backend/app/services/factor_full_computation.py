@@ -53,7 +53,7 @@ class FactorFullComputationManager:
         Initialize Full Computation Manager
 
         Args:
-            freq: Data frequency (day, 1min, etc.)
+            freq: Data frequency (only 'day' is supported)
             max_workers: Maximum number of concurrent workers (set to 1 to avoid Redis lock conflicts)
         """
         self.freq = freq

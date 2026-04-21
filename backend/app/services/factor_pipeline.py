@@ -58,7 +58,7 @@ class FactorPipeline:
         Initialize Simplified Factor Pipeline Manager
 
         Args:
-            freq: Data frequency (day, 1min, etc.)
+            freq: Data frequency (only 'day' is supported)
             max_workers: Maximum number of concurrent workers
         """
         self.freq = freq

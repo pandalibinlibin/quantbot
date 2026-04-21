@@ -2,15 +2,15 @@
 Tushare Data Collector for A-Share (China) Market.
 
 This collector uses Tushare Pro API to fetch:
-- Daily OHLCV data for A-shares
-- Index constituent stocks (CSI300, CSI500, etc.)
-- Trading calendar
+- Daily OHLCV data for ETFs (via fund_daily API)
+- Daily OHLCV data for A-shares (via daily API)
+- Index data (via index_daily API)
 
 Educational Notes:
-- Tushare is the primary data source for China A-shares
+- Tushare is the primary data source for China A-shares and ETFs
 - Requires API token from https://tushare.pro/
 - Data format follows Tushare standard, needs normalization to Qlib format
-- Supports various indices: CSI300, CSI500, CSI800, CSI1000, etc.
+- Only supports ETF_UNIVERSE (reads from index_config.yaml)
 """
 
 import logging
@@ -32,55 +32,28 @@ MARKET_CONFIG = {
     "CN": {
         "timezone": "Asia/Shanghai",
         "exchange": "SSE",  # Shanghai Stock Exchange
-        "supported_indices": ["CSI300", "CSI500", "CSI800", "CSI1000", "DIVIDEND"],
+        "supported_indices": [
+            "ETF_UNIVERSE",
+        ],
     }
 }
 
-# Index code mapping for Tushare
-INDEX_CODE_MAP = {
-    "CSI300": "000300.SH",
-    "CSI500": "000905.SH",
-    "CSI800": "000906.SH",
-    "CSI1000": "000852.SH",
-    "DIVIDEND": "000015.SH",
-}
 
-# Benchmark ETF mapping
-BENCHMARK_CONFIG = {
-    "CSI300": {
-        "tushare_code": "510300.SH",
-        "qlib_symbol": "SH510300",
-        "name": "沪深300ETF",
-    },
-    "CSI500": {
-        "tushare_code": "510500.SH",
-        "qlib_symbol": "SH510500",
-        "name": "中证500ETF",
-    },
-    "CSI800": {
-        "tushare_code": "510800.SH",
-        "qlib_symbol": "SH510800",
-        "name": "中证800ETF",
-    },
-    "CSI1000": {
-        "tushare_code": "512100.SH",
-        "qlib_symbol": "SH512100",
-        "name": "中证1000ETF",
-    },
-    "DIVIDEND": {
-        "tushare_code": "510880.SH",
-        "qlib_symbol": "SH510880",
-        "name": "红利ETF",
-    },
-    "SZSE_300": {
-        "tushare_code": "159919.SZ",
-        "qlib_symbol": "SZ159919",
-        "name": "沪深300ETF(深交所)",
-    },
-}
+def _is_etf_code(symbol: str) -> bool:
+    """
+    Detect if a Tushare symbol is an ETF based on code pattern.
 
-# ETF code set for quick lookup
-ETF_CODES = {config["tushare_code"] for config in BENCHMARK_CONFIG.values()}
+    Shanghai ETFs: codes starting with '5' (51xxxx, 56xxxx, 58xxxx)
+    Shenzhen ETFs: codes starting with '159'
+    """
+    if "." not in symbol:
+        return False
+    code, exchange = symbol.split(".")
+    if exchange == "SH":
+        return code.startswith("5")
+    elif exchange == "SZ":
+        return code.startswith("159")
+    return False
 
 
 class TushareDataCollector(BaseDataCollector):
@@ -88,12 +61,12 @@ class TushareDataCollector(BaseDataCollector):
     Tushare Data Collector for China A-Share Market.
 
     This collector fetches daily OHLCV data from Tushare Pro API.
-    Supports CSI300, CSI500, CSI800, CSI1000, and other A-share indices.
+    Collects ETF universe daily data via fund_daily API.
 
     Educational Notes:
     - Inherits from BaseDataCollector for standard workflow integration
-    - Uses Tushare Pro API for reliable A-share data
-    - Automatically converts stock codes to Qlib format (e.g., 000001.SZ -> SZ000001)
+    - Uses Tushare Pro API for reliable A-share and ETF data
+    - Automatically converts stock codes to Qlib format (e.g., 510300.SH -> SH510300)
     - Handles trading calendar and market holidays automatically
     """
 
@@ -108,7 +81,7 @@ class TushareDataCollector(BaseDataCollector):
         delay: float = 0.1,
         check_data_length: int = None,
         limit_nums: int = None,
-        index_name: str = "CSI300",
+        index_name: str = "ETF_UNIVERSE",
     ):
         """
         Initialize Tushare data collector.
@@ -133,8 +106,8 @@ class TushareDataCollector(BaseDataCollector):
             Minimum required data length for validation
         limit_nums : int, optional
             Limit number of instruments for debugging
-        index_name : str, default "CSI300"
-            Index selection: "CSI300", "CSI500", "CSI800", "CSI1000", "DIVIDEND"
+        index_name : str, default "ETF_UNIVERSE"
+            Index selection: only "ETF_UNIVERSE" is supported
         """
         # Validate index parameter
         index = index_name.upper()
@@ -207,92 +180,68 @@ class TushareDataCollector(BaseDataCollector):
 
     def get_instrument_list(self) -> List[str]:
         """
-        Get list of constituent stocks for the specified index.
-        Also automatically includes the index itself for benchmark comparison.
+        Get list of instruments for ETF Universe.
+
+        Reads the static ETF list from index_config.yaml.
 
         Returns
         -------
         List[str]
-            List of Tushare stock codes including index (e.g., ['000001.SZ', '600519.SH', '000300.SH'])
+            List of Tushare ETF codes (e.g., ['510300.SH', '159919.SZ'])
+        """
+        if self.index != "ETF_UNIVERSE":
+            raise ValueError(
+                f"Unsupported index: {self.index}. Only ETF_UNIVERSE is supported."
+            )
+        return self._get_etf_universe_instruments()
 
-        Educational Notes:
-        - Uses Tushare index_weight API to get current index constituents
-        - Automatically adds the index code for benchmark data
-        - Returns codes in Tushare format for data collection
-        - Will be normalized to Qlib format later
+    def _get_etf_universe_instruments(self) -> List[str]:
+        """
+        Get ETF instrument list from index_config.yaml (static_list source).
+
+        Reads the etf_universe entry and converts Qlib-format codes (SH510300)
+        to Tushare format (510300.SH) for data collection.
+
+        Also adds the benchmark index (000300.SH) for reference.
+
+        Returns
+        -------
+        List[str]
+            List of Tushare-format ETF codes
         """
         try:
-            pro = self._get_pro_api()
-            # Handle case-insensitive lookup (config uses csi300, INDEX_CODE_MAP uses CSI300)
-            index_code = INDEX_CODE_MAP.get(self.index) or INDEX_CODE_MAP.get(
-                self.index.upper()
+            from app.services.index_components_service import (
+                get_index_components_service,
             )
 
-            if not index_code:
-                raise ValueError(f"Unknown index: {self.index}")
+            service = get_index_components_service()
+            # Returns Qlib-format codes like ['SH510300', 'SZ159919', ...]
+            qlib_codes = service.get_components("etf_universe")
 
-            logger.info(f"Fetching {self.index} constituent stocks from Tushare...")
+            # Convert Qlib format → Tushare format: SH510300 → 510300.SH
+            tushare_codes = []
+            for code in qlib_codes:
+                if len(code) > 2 and code[:2] in ("SH", "SZ"):
+                    stock_num = code[2:]
+                    exchange = code[:2]
+                    tushare_codes.append(f"{stock_num}.{exchange}")
+                else:
+                    logger.warning(f"Unexpected ETF code format: {code}, skipping")
 
-            # Get index constituents using index_weight API
-            # Use the most recent trading date
-            end_date = datetime.now().strftime("%Y%m%d")
-            start_date = (datetime.now() - timedelta(days=30)).strftime("%Y%m%d")
-
-            df = pro.index_weight(
-                index_code=index_code,
-                start_date=start_date,
-                end_date=end_date,
-            )
-
-            if df is None or df.empty:
-                # Fallback: try index_member API
-                logger.warning(
-                    f"index_weight returned empty, trying index_member for {index_code}"
-                )
-                df = pro.index_member(index_code=index_code)
-
-            if df is None or df.empty:
-                raise DataCollectionError(
-                    f"Failed to get constituents for {self.index}"
-                )
-
-            # Extract unique stock codes
-            if "con_code" in df.columns:
-                symbols = df["con_code"].unique().tolist()
-            elif "ts_code" in df.columns:
-                symbols = df["ts_code"].unique().tolist()
-            else:
-                raise DataValidationError(
-                    f"Unexpected column format: {df.columns.tolist()}"
-                )
-
-            # Add the index itself for benchmark comparison
-            symbols.append(index_code)
-
-            # Add the corresponding ETF for ETF Enhanced Indexing Strategy
-            # Handle case-insensitive lookup (config uses csi300, BENCHMARK_CONFIG uses CSI300)
-            etf_config = BENCHMARK_CONFIG.get(self.index) or BENCHMARK_CONFIG.get(
-                self.index.upper()
-            )
-            if etf_config:
-                etf_code = etf_config["tushare_code"]
-                symbols.append(etf_code)
-                logger.info(
-                    f"Added ETF {etf_code} ({etf_config['name']}) for ETF Enhanced Indexing"
-                )
+            # Add benchmark index for reference
+            tushare_codes.append("000300.SH")
 
             logger.info(
-                f"Retrieved {len(symbols)-2} constituent stocks for {self.index}"
+                f"ETF Universe: {len(tushare_codes) - 1} ETFs + 1 benchmark index"
             )
-            logger.info(f"Added index {index_code} and ETF for benchmark/strategy data")
-            logger.info(f"Sample stocks: {symbols[:5]}")
+            logger.info(f"Sample ETFs: {tushare_codes[:5]}")
 
-            return symbols
+            return tushare_codes
 
         except Exception as e:
-            logger.error(f"Error fetching {self.index} constituents: {e}")
+            logger.error(f"Error loading ETF universe from index_config.yaml: {e}")
             raise DataSourceError(
-                source=f"tushare/{self.index}",
+                source="tushare/ETF_UNIVERSE",
                 operation="get_instrument_list",
                 original_error=e,
             )
@@ -370,10 +319,11 @@ class TushareDataCollector(BaseDataCollector):
 
             logger.debug(f"Fetching data for {symbol}: {start_date} to {end_date}")
 
-            # Check if this is an index (based on known index codes)
-            is_index = symbol in INDEX_CODE_MAP.values()
-            # Check if this is an ETF
-            is_etf = symbol in ETF_CODES
+            # Check if this is an index (000xxx.SH pattern, e.g., 000300.SH)
+            code_part = symbol.split(".")[0] if "." in symbol else ""
+            is_index = code_part.startswith("000") and symbol.endswith(".SH")
+            # Check if this is an ETF (pattern-based detection)
+            is_etf = _is_etf_code(symbol)
 
             if is_index:
                 # Fetch index data using index_daily API
@@ -692,15 +642,15 @@ class TushareDataCollector(BaseDataCollector):
             logger.info(f"Retrieved {len(instruments)} instruments for collection")
 
             # Log instrument breakdown
-            etf_codes = [config["tushare_code"] for config in BENCHMARK_CONFIG.values()]
-            etf_count = sum(1 for code in instruments if code in etf_codes)
+            etf_count = sum(1 for code in instruments if _is_etf_code(code))
             index_count = sum(
-                1 for code in instruments if code in INDEX_CODE_MAP.values()
+                1
+                for code in instruments
+                if "." in code
+                and code.split(".")[0].startswith("000")
+                and code.endswith(".SH")
             )
-            stock_count = len(instruments) - etf_count - index_count
-            logger.info(
-                f"Breakdown: {stock_count} stocks, {index_count} indices, {etf_count} ETFs"
-            )
+            logger.info(f"Breakdown: {etf_count} ETFs, {index_count} benchmark indices")
 
         except Exception as e:
             logger.error(f"Failed to get instrument list: {e}")

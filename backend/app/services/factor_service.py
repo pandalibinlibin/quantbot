@@ -272,15 +272,10 @@ class FactorService:
 
     def validate_factor_expression(self, expression: str) -> Dict[str, Any]:
         """
-        Validate factor expression syntax
-
-        Educational Notes:
-        - This will be enhanced with actual Qlib expression validation
-        - For now, performs basic syntax checks
-        - Returns validation result with details
+        Validate factor expression syntax using Qlib's expression parser.
 
         Args:
-            expression: Qlib expression string
+            expression: Qlib expression string (e.g., "Ref($close, 5) / $close - 1")
 
         Returns:
             Dictionary with validation results
@@ -293,18 +288,30 @@ class FactorService:
                 return {"valid": False, "error": "Expression cannot be empty"}
 
             # Check for basic Qlib syntax patterns
-            if not any(op in expression for op in ["$", "Ref(", "Mean(", "Std(", "+"]):
+            if "$" not in expression:
                 return {
                     "valid": False,
-                    "error": "Expression should contain Qlib operators like $close, Ref(), Mean(), etc.",
+                    "error": "Expression must reference data fields with $ prefix (e.g., $close, $volume)",
                 }
 
-            # TODO: Implement actual Qlib expression validation
-            # This would involve parsing the expression with Qlib's parser
+            # Use Qlib's expression parser for real validation
+            from qlib.utils import parse_field
 
-            logger.info("Factor expression validation passed")
+            parsed = parse_field(expression)
+            logger.info(
+                f"Factor expression parsed successfully: {type(parsed).__name__}"
+            )
             return {"valid": True, "message": "Expression syntax is valid"}
 
+        except ImportError:
+            # Qlib not available, fall back to basic syntax check
+            logger.warning(
+                "Qlib not available for expression validation, using basic check"
+            )
+            return {
+                "valid": True,
+                "message": "Basic syntax check passed (Qlib parser unavailable)",
+            }
         except Exception as e:
             logger.error(f"Factor expression validation failed: {e}")
             return {"valid": False, "error": str(e)}
@@ -322,7 +329,7 @@ class FactorService:
 
         Args:
             factor_id: UUID of the factor to compute
-            freq: Data frequency (day, 1min)
+            freq: Data frequency (only 'day' is supported)
 
         Returns:
             Dictionary with computation results
@@ -394,7 +401,7 @@ class FactorService:
         Args:
             factor_id: UUID of the factor to update
             factor_data: Update data
-            freq: Data frequency (day, 1min)
+            freq: Data frequency (only 'day' is supported)
 
         Returns:
             Dictionary with update results
@@ -489,7 +496,7 @@ class FactorService:
 
         Args:
             factor_id: UUID of the factor to delete
-            freq: Data frequency (day, 1min)
+            freq: Data frequency (only 'day' is supported)
 
         Returns:
             Dictionary with deletion results

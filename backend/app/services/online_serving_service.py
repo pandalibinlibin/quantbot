@@ -49,7 +49,6 @@ def _safe_float(value, default=0.0):
 
 
 from app.services.qlib_init_service import get_qlib_init_service
-from app.services.enhanced_indexing_service import get_enhanced_indexing_service
 from app.services.etf_enhanced_indexing_service import get_etf_enhanced_indexing_service
 from app.services.notification_service import get_notification_service
 
@@ -67,6 +66,11 @@ class OnlineServingService:
     - Signal generation
     """
 
+    # Persistence paths for surviving hot-reload / restart
+    SIGNALS_PERSIST_DIR = Path("/app/data/signals")
+    SIGNALS_PERSIST_FILE = Path("/app/data/signals/_latest_signals.pkl")
+    SIGNALS_META_FILE = Path("/app/data/signals/_signals_meta.json")
+
     def __init__(self):
         """Initialize the Online Serving service."""
         self._online_manager = None
@@ -77,17 +81,124 @@ class OnlineServingService:
         self._experiment_name: str = qlib_config.experiment_name
         self.logger = logger
 
+        # Restore persisted state from disk (survives hot-reload)
+        self._restore_persisted_state()
+
     @property
     def is_initialized(self) -> bool:
         """Check if OnlineManager is initialized."""
         return self._is_initialized and self._online_manager is not None
 
+    def _get_factor_fingerprint(self) -> str:
+        """
+        Compute a fingerprint (hash) of active factor configuration.
+        Used to detect factor definition changes between update_data runs.
+
+        Returns:
+            Hex digest string representing the current factor config
+        """
+        import hashlib
+
+        try:
+            from app.models import Factor, FactorStatus
+            from app.core.db import engine
+            from sqlmodel import Session, select
+
+            with Session(engine) as session:
+                statement = (
+                    select(Factor)
+                    .where(Factor.status == FactorStatus.ACTIVE)
+                    .order_by(Factor.name)
+                )
+                active_factors = session.exec(statement).all()
+
+            # Build a stable string from factor names, expressions, and types
+            parts = []
+            for f in active_factors:
+                parts.append(f"{f.name}|{f.expression}|{f.factor_type}")
+            fingerprint_str = ";".join(parts)
+            return hashlib.md5(fingerprint_str.encode()).hexdigest()
+
+        except Exception as e:
+            self.logger.warning(f"Failed to compute factor fingerprint: {e}")
+            return "unknown"
+
+    def _persist_signals_state(self, signals: pd.DataFrame, signal_count: int) -> None:
+        """
+        Persist signals and metadata to disk so they survive hot-reload/restart.
+
+        Args:
+            signals: The signals DataFrame to persist
+            signal_count: Number of signals generated
+        """
+        import json
+        import pickle
+
+        try:
+            self.SIGNALS_PERSIST_DIR.mkdir(parents=True, exist_ok=True)
+
+            # Save signals DataFrame
+            with open(self.SIGNALS_PERSIST_FILE, "wb") as f:
+                pickle.dump(signals, f)
+
+            # Save metadata (signal_count, timestamp, factor fingerprint, etc.)
+            meta = {
+                "signal_count": signal_count,
+                "last_routine_time": (
+                    self._last_routine_time.isoformat()
+                    if self._last_routine_time
+                    else None
+                ),
+                "factor_fingerprint": self._get_factor_fingerprint(),
+                "persisted_at": datetime.now().isoformat(),
+            }
+            with open(self.SIGNALS_META_FILE, "w") as f:
+                json.dump(meta, f)
+
+            self.logger.info(
+                f"Persisted {signal_count} signals to {self.SIGNALS_PERSIST_FILE}"
+            )
+
+        except Exception as e:
+            self.logger.error(f"Failed to persist signals: {e}", exc_info=True)
+
+    def _restore_persisted_state(self) -> None:
+        """
+        Restore persisted signals metadata on startup (after hot-reload/restart).
+        Only restores signal_count and last_routine_time for Dashboard display.
+        Full OnlineManager re-initialization happens on next update_data() call.
+        """
+        import json
+
+        try:
+            if self.SIGNALS_META_FILE.exists():
+                with open(self.SIGNALS_META_FILE, "r") as f:
+                    meta = json.load(f)
+
+                self._persisted_signal_count = meta.get("signal_count", 0)
+                self._persisted_factor_fingerprint = meta.get("factor_fingerprint", "")
+                last_time = meta.get("last_routine_time")
+                if last_time:
+                    self._last_routine_time = datetime.fromisoformat(last_time)
+
+                self.logger.info(
+                    f"Restored persisted state: signal_count={self._persisted_signal_count}, "
+                    f"last_routine_time={self._last_routine_time}, "
+                    f"factor_fingerprint={self._persisted_factor_fingerprint}"
+                )
+            else:
+                self._persisted_signal_count = 0
+                self._persisted_factor_fingerprint = ""
+                self.logger.info("No persisted signal state found")
+
+        except Exception as e:
+            self._persisted_signal_count = 0
+            self._persisted_factor_fingerprint = ""
+            self.logger.error(f"Failed to restore persisted state: {e}")
+
     def _get_data_frequency(self) -> str:
         """
         Get data frequency for stock selection system.
-
-        Note: Only day-level data is supported in this stock selection system.
-        Minute-level data should be handled by a separate timing/execution system.
 
         Returns:
             "day" frequency
@@ -137,7 +248,7 @@ class OnlineServingService:
 
         This template defines the model, dataset, and record configuration
         for rolling training tasks. Uses dynamic detection for:
-        - Data frequency (day/1min)
+        - Data frequency (day)
         - Time range (from actual data)
         - Instruments (all available stocks)
 
@@ -544,15 +655,19 @@ class OnlineServingService:
             self.logger.error(f"Failed to initialize Online Serving: {e}")
             raise
 
-    def routine(self, cur_time: Optional[str] = None) -> Dict[str, Any]:
+    def update_data(self, cur_time: Optional[str] = None) -> Dict[str, Any]:
         """
-        Execute daily routine (main entry point).
+        Execute data update workflow (steps 1-5).
 
         This method:
-        1. Auto-initializes if not yet initialized
-        2. Updates data incrementally
-        3. Calls OnlineManager.routine() - checks training, updates models, generates signals
-        4. Returns execution result with step timing
+        1. Updates data incrementally (download + preprocess + factors)
+        2. Auto-initializes Qlib if not yet initialized
+        3. Calls OnlineManager.routine() - rolling model training + prediction
+        4. Retrieves generated signals for verification
+        5. Calculates model performance metrics (updates Models page)
+
+        Does NOT include portfolio optimization or signal export.
+        Those belong to Run Signal (generate_portfolio).
 
         Args:
             cur_time: Current time string (YYYY-MM-DD), None for latest
@@ -562,7 +677,7 @@ class OnlineServingService:
         """
         import time
 
-        routine_start = time.time()
+        start_time = time.time()
         result = {
             "success": False,
             "cur_time": cur_time,
@@ -590,13 +705,77 @@ class OnlineServingService:
                 }
             )
 
-            # Fail fast if data update failed - do not continue with stale data
+            # Fail fast if data update failed
             if not data_update_success:
                 error_msg = data_update_result.get("error", "Unknown error")
                 self.logger.error(f"Data update failed: {error_msg}")
-                result["success"] = False
                 result["error"] = f"Data update failed: {error_msg}"
+                result["total_duration_seconds"] = round(time.time() - start_time, 2)
                 return result
+
+            # Short-circuit: if data didn't change AND factors didn't change
+            # AND signals already exist, skip expensive Steps 2-5
+            data_changed = data_update_result.get("data_changed", True)
+            has_signals_in_memory = (
+                self.is_initialized
+                and self._online_manager is not None
+                and self._online_manager.get_signals() is not None
+                and len(self._online_manager.get_signals()) > 0
+            )
+            has_persisted_signals = getattr(self, "_persisted_signal_count", 0) > 0
+
+            # Check if factor definitions changed since last signal generation
+            current_factor_fp = self._get_factor_fingerprint()
+            persisted_factor_fp = getattr(self, "_persisted_factor_fingerprint", "")
+            factors_changed = current_factor_fp != persisted_factor_fp
+
+            self.logger.info(
+                f"Short-circuit check: data_changed={data_changed}, "
+                f"factors_changed={factors_changed} "
+                f"(current={current_factor_fp}, persisted={persisted_factor_fp}), "
+                f"has_signals_in_memory={has_signals_in_memory}, "
+                f"has_persisted_signals={has_persisted_signals}"
+            )
+
+            if (
+                not data_changed
+                and not factors_changed
+                and (has_signals_in_memory or has_persisted_signals)
+            ):
+                signal_count = (
+                    len(self._online_manager.get_signals())
+                    if has_signals_in_memory
+                    else self._persisted_signal_count
+                )
+                self.logger.info(
+                    f"No new data and no factor changes detected. "
+                    f"{signal_count} signals already exist. "
+                    f"Skipping model training and signal generation."
+                )
+                result["success"] = True
+                result["message"] = "No new data - using existing signals"
+                result["skipped_reason"] = "data_unchanged"
+                result["total_duration_seconds"] = round(time.time() - start_time, 2)
+                result["steps"].append(
+                    {
+                        "step": "Short-circuit",
+                        "success": True,
+                        "duration_seconds": 0,
+                        "details": {
+                            "description": "Data and factors unchanged, reusing existing signals",
+                            "signal_count": signal_count,
+                            "source": (
+                                "memory" if has_signals_in_memory else "persisted"
+                            ),
+                        },
+                    }
+                )
+                return result
+
+            if factors_changed:
+                self.logger.info(
+                    "Factor configuration changed, proceeding with full pipeline"
+                )
 
             # Step 2: Auto-initialize if needed (after data is available)
             if not self.is_initialized:
@@ -616,24 +795,20 @@ class OnlineServingService:
                     }
                 )
 
-            # Step 3: Execute OnlineManager routine
+            # Step 3: Execute OnlineManager routine (model training + prediction)
             step_start = time.time()
-
-            # Use latest data date if cur_time is None or invalid
             effective_cur_time = cur_time
             if effective_cur_time is None:
-                # Get latest date from data
                 effective_cur_time = self._get_latest_data_date()
                 self.logger.info(
                     f"cur_time not provided, using latest data date: {effective_cur_time}"
                 )
             else:
-                # Validate cur_time - if it's earlier than data range, use latest data date
                 latest_data_date = self._get_latest_data_date()
                 if latest_data_date and effective_cur_time < latest_data_date:
                     self.logger.warning(
-                        f"Provided cur_time {effective_cur_time} is earlier than latest data date {latest_data_date}, "
-                        f"using latest data date instead"
+                        f"Provided cur_time {effective_cur_time} is earlier than "
+                        f"latest data date {latest_data_date}, using latest data date"
                     )
                     effective_cur_time = latest_data_date
 
@@ -641,9 +816,6 @@ class OnlineServingService:
                 f"Executing OnlineManager routine with cur_time={effective_cur_time}..."
             )
             self._online_manager.routine(cur_time=effective_cur_time)
-
-            # Re-prepare signals with online-only filter to fix the issue where
-            # offline recorders' predictions override online recorders' predictions
             self._prepare_signals_with_online_filter()
 
             step_duration = time.time() - step_start
@@ -663,6 +835,17 @@ class OnlineServingService:
             step_start = time.time()
             signals = self._online_manager.get_signals()
             signal_count = len(signals) if signals is not None else 0
+            self.logger.info(
+                f"update_data Step 4: signal_count={signal_count}, "
+                f"signals type={type(signals)}, "
+                f"signals is None={signals is None}"
+            )
+            if signals is not None and signal_count > 0 and hasattr(signals, "index"):
+                dates = signals.index.get_level_values("datetime").unique()
+                self.logger.info(
+                    f"update_data Step 4: signal dates {dates.min()} to {dates.max()}, "
+                    f"unique dates={len(dates)}"
+                )
             step_duration = time.time() - step_start
             result["steps"].append(
                 {
@@ -676,7 +859,7 @@ class OnlineServingService:
                 }
             )
 
-            # Step 5: Calculate model metrics
+            # Step 5: Calculate model metrics (updates Models page)
             step_start = time.time()
             metrics_result = self._calculate_model_metrics(signals)
             step_duration = time.time() - step_start
@@ -692,7 +875,80 @@ class OnlineServingService:
                 }
             )
 
-            # Step 6: Enhanced Indexing Strategy - Calculate target portfolio
+            self._last_routine_time = datetime.now()
+            result["success"] = True
+            result["message"] = "Data update completed successfully"
+            result["total_duration_seconds"] = round(time.time() - start_time, 2)
+
+            # Persist signals to disk (survives hot-reload / restart)
+            if signals is not None and signal_count > 0:
+                self._persist_signals_state(signals, signal_count)
+
+            self.logger.info(
+                f"Data update completed, generated {signal_count} signals "
+                f"in {result['total_duration_seconds']}s"
+            )
+
+        except Exception as e:
+            result["success"] = False
+            result["error"] = str(e)
+            result["total_duration_seconds"] = round(time.time() - start_time, 2)
+            self.logger.error(f"Data update failed: {e}")
+
+        return result
+
+    def generate_portfolio(self, cur_time: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Generate portfolio and export signals (Run Signal workflow).
+
+        This method uses the signals already produced by update_data() to:
+        1. Calculate target portfolio via Enhanced Indexing Strategy
+        2. Export trading signals for VeighNa
+
+        Prerequisite: update_data() must have been run first so that
+        signals are available in OnlineManager.
+
+        Args:
+            cur_time: Current time string (YYYY-MM-DD), None for latest
+
+        Returns:
+            Execution result dictionary with portfolio and signal export details
+        """
+        import time
+
+        start_time = time.time()
+        result = {
+            "success": False,
+            "cur_time": cur_time,
+            "executed_at": datetime.now().isoformat(),
+            "steps": [],
+            "total_duration_seconds": 0,
+        }
+
+        try:
+            # Check that system is initialized and signals exist
+            if not self.is_initialized:
+                result["error"] = (
+                    "System not initialized. Please run Update Data first."
+                )
+                return result
+
+            signals = self._online_manager.get_signals()
+            if signals is None or len(signals) == 0:
+                result["error"] = "No signals available. Please run Update Data first."
+                return result
+
+            signal_count = len(signals)
+            self.logger.info(
+                f"Starting portfolio generation with {signal_count} signals..."
+            )
+
+            # Determine effective cur_time
+            effective_cur_time = cur_time
+            if effective_cur_time is None:
+                effective_cur_time = self._get_latest_data_date()
+
+            # Step 1: Enhanced Indexing Strategy - Calculate target portfolio
             step_start = time.time()
             enhanced_indexing_result = self._calculate_enhanced_indexing(
                 signals, effective_cur_time
@@ -715,15 +971,11 @@ class OnlineServingService:
                 result["target_portfolio"] = enhanced_indexing_result.get(
                     "target_portfolio", []
                 )
-                # Normalize summary format for frontend compatibility
                 raw_summary = enhanced_indexing_result.get("summary", {})
                 strategy = enhanced_indexing_result.get("strategy", "enhanced_indexing")
-
-                # Add strategy to top-level result for frontend detection
                 result["strategy"] = strategy
 
                 if strategy == "etf_enhanced_indexing":
-                    # Add all top-level fields from ETF Enhanced Indexing result
                     result["generated_at"] = enhanced_indexing_result.get(
                         "generated_at", datetime.now().isoformat()
                     )
@@ -739,8 +991,6 @@ class OnlineServingService:
                     result["region"] = enhanced_indexing_result.get("region", "cn")
                     result["lot_size"] = enhanced_indexing_result.get("lot_size", 100)
                     result["weights"] = enhanced_indexing_result.get("weights", {})
-
-                    # Convert ETF Enhanced Indexing summary to frontend format
                     result["portfolio_summary"] = {
                         "total_positions": raw_summary.get("total_positions", 10),
                         "etf_positions": raw_summary.get("etf_positions", 1),
@@ -750,10 +1000,9 @@ class OnlineServingService:
                         "hold_count": raw_summary.get("hold_count", 0),
                     }
                 else:
-                    # Legacy Enhanced Indexing format
                     result["portfolio_summary"] = raw_summary
 
-            # Step 7: Export Trading Signals (only if Portfolio Optimization succeeded)
+            # Step 2: Export Trading Signals
             step_start = time.time()
             signal_export_result = self._export_trading_signals(
                 enhanced_indexing_result, effective_cur_time
@@ -771,20 +1020,62 @@ class OnlineServingService:
                 }
             )
 
-            self._last_routine_time = datetime.now()
             result["success"] = True
-            result["message"] = "Routine completed successfully"
-            result["total_duration_seconds"] = round(time.time() - routine_start, 2)
+            result["message"] = "Portfolio generation completed successfully"
+            result["total_duration_seconds"] = round(time.time() - start_time, 2)
 
             self.logger.info(
-                f"Routine completed successfully, generated {signal_count} signals"
+                f"Portfolio generation completed in {result['total_duration_seconds']}s"
             )
 
         except Exception as e:
             result["success"] = False
             result["error"] = str(e)
-            result["total_duration_seconds"] = round(time.time() - routine_start, 2)
-            self.logger.error(f"Routine failed: {e}")
+            result["total_duration_seconds"] = round(time.time() - start_time, 2)
+            self.logger.error(f"Portfolio generation failed: {e}")
+
+        return result
+
+    def routine(self, cur_time: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Execute daily routine (main entry point).
+
+        Composes update_data() + generate_portfolio() into a single workflow.
+        Used by scheduled tasks that need the full pipeline.
+
+        Args:
+            cur_time: Current time string (YYYY-MM-DD), None for latest
+
+        Returns:
+            Combined execution result dictionary
+        """
+        import time
+
+        routine_start = time.time()
+
+        # Phase 1: Data update (steps 1-5)
+        update_result = self.update_data(cur_time)
+        if not update_result.get("success"):
+            return update_result
+
+        # Phase 2: Portfolio generation (steps 6-7)
+        portfolio_result = self.generate_portfolio(cur_time)
+
+        # Merge results: combine steps from both phases
+        result = {
+            **portfolio_result,
+            "cur_time": cur_time,
+            "executed_at": update_result["executed_at"],
+            "steps": update_result["steps"] + portfolio_result["steps"],
+            "total_duration_seconds": round(time.time() - routine_start, 2),
+            "message": (
+                "Routine completed successfully"
+                if portfolio_result.get("success")
+                else portfolio_result.get("error")
+            ),
+        }
+
+        self.logger.info(f"Routine completed in {result['total_duration_seconds']}s")
 
         return result
 
@@ -792,11 +1083,9 @@ class OnlineServingService:
         self, signals: pd.DataFrame, cur_time: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Calculate target portfolio using enhanced indexing strategy.
+        Calculate target portfolio using ETF Enhanced Indexing strategy.
 
-        Supports two strategies:
-        1. ETFEnhancedIndexingService (default): 1 ETF + 9 alpha stocks
-        2. EnhancedIndexingService (legacy): Full index replication with weight adjustments
+        Strategy: 1 ETF + 9 alpha stocks (via ETFEnhancedIndexingService)
 
         Args:
             signals: Model prediction signals DataFrame
@@ -1131,7 +1420,7 @@ class OnlineServingService:
 
         Logic:
         1. If bin data exists: perform incremental update on existing data
-        2. If no data exists: download CSI300 daily data (past 1 year) as default
+        2. If no data exists: download data based on system_config.yaml settings
 
         Returns:
             Data update result dictionary
@@ -1181,8 +1470,7 @@ class OnlineServingService:
             # Get date range from config
             start_date_str, end_date_str = data_source_manager.get_download_date_range()
 
-            # Get interval based on freq
-            interval = "1d" if qlib_config.freq == "day" else "1m"
+            interval = "1d"
 
             request = DownloadDataRequest(
                 stock_pool=qlib_config.stock_pool,
@@ -1215,6 +1503,7 @@ class OnlineServingService:
                 )
                 return {
                     "success": True,
+                    "data_changed": True,
                     "message": f"Downloaded {qlib_config.stock_pool} {interval} data",
                     "task_id": result.task_id,
                     "stock_pool": qlib_config.stock_pool,
@@ -1249,7 +1538,7 @@ class OnlineServingService:
 
             # Use config values directly
             stock_pool = qlib_config.stock_pool
-            interval = "1d" if qlib_config.freq == "day" else "1m"
+            interval = "1d"
 
             # For incremental update, use the last 30 days as the range
             # The pipeline will detect and fill gaps
@@ -1278,11 +1567,21 @@ class OnlineServingService:
             is_success = result.status in ("completed", "started")
 
             if is_success:
+                # Detect whether data actually changed based on pipeline message
+                # Two scenarios where data didn't change:
+                # 1. "No missing data found" - calendar has no gaps
+                # 2. "No new data available" - gaps exist but market was closed
+                no_new_data = result.message and (
+                    "No missing data found" in result.message
+                    or "No new data available" in result.message
+                )
                 self.logger.info(
-                    f"Incremental update completed successfully: {result.message}"
+                    f"Incremental update completed successfully: {result.message} "
+                    f"(data_changed={not no_new_data})"
                 )
                 return {
                     "success": True,
+                    "data_changed": not no_new_data,
                     "message": result.message or "Incremental update completed",
                     "task_id": result.task_id,
                     "stock_pool": stock_pool,
@@ -1386,7 +1685,7 @@ class OnlineServingService:
         4. Calculates returns and metrics
 
         Args:
-            benchmark: Benchmark symbol (default: CSI300 for CN market)
+            benchmark: Benchmark symbol (default: SH000300)
             account: Initial account value (default from config)
 
         Returns:
@@ -1541,7 +1840,7 @@ class OnlineServingService:
             from qlib.data import D
 
             instruments = signals_df["instrument"].unique().tolist()
-            # Add benchmark index (CSI300) for chart comparison
+            # Add benchmark index for chart comparison
             if "SH000300" not in instruments:
                 instruments = instruments + ["SH000300"]
 
@@ -1692,8 +1991,8 @@ class OnlineServingService:
                                 etf_return = (idx_next - idx_today) / idx_today
                                 daily_return += etf_weight * etf_return
                 except Exception:
-                    # Fallback to small positive bias if index not available
-                    daily_return += etf_weight * 0.0001
+                    # No index data available, assume zero return for ETF portion
+                    pass
 
             except Exception as e:
                 self.logger.warning(f"Error calculating return for {date}: {e}")
@@ -2198,9 +2497,22 @@ class OnlineServingService:
         if self.is_initialized and self._online_manager is not None:
             try:
                 signals = self._online_manager.get_signals()
-                status["signal_count"] = len(signals) if signals is not None else 0
+                if signals is not None:
+                    status["signal_count"] = len(signals)
+                    self.logger.debug(
+                        f"get_status: signal_count={len(signals)}, type={type(signals)}"
+                    )
+                else:
+                    status["signal_count"] = 0
+                    self.logger.warning("get_status: get_signals() returned None")
             except Exception as e:
+                self.logger.error(
+                    f"get_status: Failed to get signal count: {e}", exc_info=True
+                )
                 status["signal_count"] = 0
+        else:
+            # OnlineManager not in memory (e.g., after hot-reload) — use persisted count
+            status["signal_count"] = getattr(self, "_persisted_signal_count", 0)
 
         return status
 
@@ -2232,7 +2544,11 @@ class OnlineServingService:
                     else str(end_date)[:10]
                 )
 
-                return {"start_date": start_str, "end_date": end_str}
+                return {
+                    "start_date": start_str,
+                    "end_date": end_str,
+                    "trading_days": len(calendar),
+                }
             return None
         except Exception as e:
             self.logger.warning(f"Failed to get data range: {e}")
@@ -2427,7 +2743,7 @@ class OnlineServingService:
 
         Args:
             report_df: Backtest report DataFrame with 'return' column
-            freq: Data frequency ('day' or '1min')
+            freq: Data frequency (only 'day' is supported)
 
         Returns:
             Dictionary of risk metrics
@@ -2637,7 +2953,7 @@ class OnlineServingService:
 
         Args:
             signals: Prediction signals from Online Serving
-            benchmark: Benchmark symbol (default: 000300.SH for CSI300)
+            benchmark: Benchmark symbol (default: 000300.SH)
             account: Initial account value
 
         Returns:
@@ -2662,7 +2978,7 @@ class OnlineServingService:
 
             # Set default benchmark for CN market
             if benchmark is None:
-                benchmark = "000300.SH"  # CSI300 index
+                benchmark = "000300.SH"  # Default benchmark index
 
             self.logger.info(
                 f"TopK Dropout Strategy config: topk={topk}, n_drop={n_drop}, account={account}"

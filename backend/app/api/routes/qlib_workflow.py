@@ -62,7 +62,7 @@ def check_data_status(freq: str = "day"):
     Check if data is available for training.
 
     Args:
-        freq: Data frequency ("day" or "1min")
+        freq: Data frequency (only "day" is supported)
 
     Returns:
         Data availability status

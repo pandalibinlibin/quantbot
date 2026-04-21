@@ -584,7 +584,7 @@ class BacktestBase(SQLModel):
     )
     # Backtest configuration
     benchmark: str = Field(
-        max_length=50, description="Benchmark symbol (e.g., 000300.SH for CSI300)"
+        max_length=50, description="Benchmark symbol (e.g., 000300.SH)"
     )
     account: float = Field(default=100000000.0, description="Initial account balance")
     exchange_config: str = Field(
@@ -1181,7 +1181,8 @@ class DataSourceStatus(SQLModel):
     )
     instruments_count: int | None = Field(default=None, description="Number of stocks")
     stock_pool: str | None = Field(
-        default=None, description="Stock pool name (e.g., 'csi300', 'csi500', 'all')"
+        default=None,
+        description="Stock pool name (e.g., 'etf_universe')",
     )
     features: list[str] | None = Field(
         default=None,
@@ -1208,8 +1209,8 @@ class DownloadDataRequest(SQLModel):
     """
 
     stock_pool: str = Field(
-        default="csi300",
-        description="Stock pool to download (e.g., 'csi300', 'csi500')",
+        default="etf_universe",
+        description="Stock pool to download (e.g., 'etf_universe')",
     )
     start_date: str = Field(description="Start date in YYYY-MM-DD format")
     end_date: str = Field(description="End date in YYYY-MM-DD format")
@@ -1219,7 +1220,7 @@ class DownloadDataRequest(SQLModel):
     )
     interval: Optional[str] = Field(
         default="1d",
-        description="Data interval: '1d' for daily data, '1m' for minute data",
+        description="Data interval: '1d' for daily data",
     )
 
 
@@ -1563,7 +1564,7 @@ class ModelMetricsResponse(SQLModel):
 
     model_type: str = Field(description="Model type (e.g., 'Rolling Ensemble')")
     calculated_at: str = Field(description="When metrics were calculated")
-    frequency: str = Field(description="Data frequency ('day' or '1min')")
+    frequency: str = Field(description="Data frequency ('day')")
 
     # Core metrics
     ic_metrics: ICMetrics = Field(description="IC analysis metrics")

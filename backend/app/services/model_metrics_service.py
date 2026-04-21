@@ -66,7 +66,7 @@ class ModelMetricsService:
             pred: Prediction series (MultiIndex: [instrument, datetime])
             label: Label series (MultiIndex: [instrument, datetime])
             model: Latest trained model for feature importance (optional)
-            freq: Data frequency ("day" or "1min")
+            freq: Data frequency (only "day" is supported)
 
         Returns:
             Dictionary containing all metrics and chart data
@@ -366,8 +366,8 @@ class ModelMetricsService:
         long_short_r = daily_returns["long_short"]
         long_avg_r = daily_returns["long_avg"]
 
-        # Annualization scaler
-        scaler = 252 if freq == "day" else 252 * 240  # 240 minutes per day
+        # Annualization scaler (252 trading days per year)
+        scaler = 252
 
         # Calculate annualized metrics
         ls_ann_return = float(long_short_r.mean() * scaler)

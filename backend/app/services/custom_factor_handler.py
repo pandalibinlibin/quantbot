@@ -43,7 +43,7 @@ class CustomFactorHandler(DataHandlerLP):
 
     def __init__(
         self,
-        instruments="csi300",
+        instruments="all",
         start_time=None,
         end_time=None,
         freq="day",
@@ -68,10 +68,10 @@ class CustomFactorHandler(DataHandlerLP):
         - Implements check_transform_proc for processor validation
 
         Args:
-            instruments: Stock universe (e.g., "csi300", "csi500")
+            instruments: Stock universe (e.g., "all", "etf_universe")
             start_time: Start time for data range
             end_time: End time for data range
-            freq: Data frequency ("day", "1min", etc.)
+            freq: Data frequency (only "day" is supported)
             infer_processors: Processors for inference phase
             learn_processors: Processors for learning phase
             fit_start_time: Start time for fitting processors
@@ -240,8 +240,8 @@ class CustomFactorHandler(DataHandlerLP):
 
             # Add OHLCV raw data fields if requested
             if include_ohlcv:
-                ohlcv_fields = ["$open", "$high", "$low", "$close", "$volume"]
-                ohlcv_names = ["OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"]
+                ohlcv_fields = ["$open", "$high", "$low", "$close", "$volume", "$vwap"]
+                ohlcv_names = ["OPEN", "HIGH", "LOW", "CLOSE", "VOLUME", "VWAP"]
                 feature_expressions.extend(ohlcv_fields)
                 feature_names.extend(ohlcv_names)
                 logger.info(f"Added {len(ohlcv_fields)} OHLCV fields")
@@ -269,13 +269,7 @@ class CustomFactorHandler(DataHandlerLP):
 
         except Exception as e:
             logger.error(f"Failed to load pre-computed factors: {e}")
-            # Fallback to OHLCV only
-            if include_ohlcv:
-                return (
-                    ["$open", "$high", "$low", "$close", "$volume"],
-                    ["OPEN", "HIGH", "LOW", "CLOSE", "VOLUME"],
-                )
-            return ([], [])
+            raise
 
     def _load_custom_factors_from_db(self):
         """
@@ -284,8 +278,8 @@ class CustomFactorHandler(DataHandlerLP):
         Educational Notes:
         - Loads all active factors from Factor table
         - Returns list of factor dictionaries with name and expression
-        - This will be enhanced with actual database integration later
-        - For now, returns empty list as placeholder
+        - Queries the Factor table for all active factors
+        - Returns empty list if no active factors exist or on error
 
         Returns:
             List of factor dictionaries: [{"name": "factor_name", "expression": "qlib_expr"}]
@@ -356,24 +350,22 @@ class CustomFactorHandler(DataHandlerLP):
         label_config = self._system_config.get("label_config", {})
         region_config = label_config.get(self.region, {})
 
-        if region_config:
-            label_expression = region_config.get(
-                "expression", "Ref($close, -1)/$close - 1"  # Default T+1 return
+        if not region_config:
+            raise ValueError(
+                f"No label_config found for region '{self.region}' in system_config.yaml. "
+                f"Available regions: {list(label_config.keys())}"
             )
-            description = region_config.get("description", "")
-            logger.info(
-                f"Using region '{self.region}' label: {label_expression} ({description})"
+
+        label_expression = region_config.get("expression")
+        if not label_expression:
+            raise ValueError(
+                f"No 'expression' defined in label_config.{self.region} in system_config.yaml"
             )
-        else:
-            # Fallback based on region
-            if self.region == "cn":
-                # A-shares: T+2 return (T+1 trading rule)
-                label_expression = "Ref($close, -2)/Ref($close, -1) - 1"
-                logger.info(f"Using default CN label (T+2): {label_expression}")
-            else:
-                # US stocks: T+1 return (T+0 trading rule)
-                label_expression = "Ref($close, -1)/$close - 1"
-                logger.info(f"Using default US label (T+1): {label_expression}")
+
+        description = region_config.get("description", "")
+        logger.info(
+            f"Using region '{self.region}' label: {label_expression} ({description})"
+        )
 
         # Return in Qlib format: ([expressions], [names])
         return [label_expression], ["LABEL0"]
@@ -500,11 +492,10 @@ class CustomFactorHandler(DataHandlerLP):
                 # Use factor names as feature names
                 return [factor["name"] for factor in custom_factors]
             else:
-                # Fallback to generic names if no factors
-                return ["feature_0"]
+                return []
         except Exception as e:
             logger.error(f"Failed to get feature names: {e}")
-            return ["feature_0"]
+            raise
 
     def get_label_names(self) -> List[str]:
         """
@@ -555,8 +546,10 @@ class CustomFactorHandler(DataHandlerLP):
         - Our customization is in get_feature_config() and get_label_config()
         """
         logger.info("Setting up CustomFactorHandler data...")
+        feature_config = self.get_feature_config()
+        label_config = self.get_label_config()
         logger.info(
-            f"Loading data with {len(self.get_feature_config())} features and {len(self.get_label_config())} labels"
+            f"Loading data with {len(feature_config[0])} features and {len(label_config[0])} labels"
         )
 
         # Call parent class setup_data - this is CRITICAL

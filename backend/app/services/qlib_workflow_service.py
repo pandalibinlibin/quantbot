@@ -7,7 +7,7 @@ Design follows qrun's _exe_task implementation pattern from qlib/model/trainer.p
 Key Features:
 - Load training configuration from YAML file (no frontend config needed)
 - Check data availability before training
-- Support both day and minute frequency data
+- Daily frequency data for ETF stock selection
 - Execute Record templates (SignalRecord for predictions)
 - Save trained models to filesystem for later use
 
@@ -162,9 +162,6 @@ class QlibWorkflowService:
         """
         Get the provider_uri for day-level data.
 
-        Note: Only day-level data is supported in this stock selection system.
-        Minute-level data should be handled by a separate timing/execution system.
-
         Returns:
             Path to the Qlib data directory
         """
@@ -282,7 +279,7 @@ class QlibWorkflowService:
                 }
             experiment_name: Name of the experiment for tracking
             model_name: Name for the saved model file (auto-generated if None)
-            freq: Data frequency ("day" or "1min")
+            freq: Data frequency (only "day" is supported)
 
         Returns:
             Dictionary containing:
@@ -308,11 +305,10 @@ class QlibWorkflowService:
                 )
             self.logger.info(f"Data check passed: {data_status['message']}")
 
-        # Step 2: Initialize Qlib (uses multi-frequency provider_uri from settings)
+        # Step 2: Initialize Qlib
         with timer.step("qlib_init"):
-            provider_uri = self.get_provider_uri(freq)
+            provider_uri = self.get_provider_uri()
             qlib_service = get_qlib_init_service()
-            # Initialize Qlib (it handles multi-frequency internally)
             qlib_service.initialize()
             self.logger.info(f"Qlib initialized, using provider_uri: {provider_uri}")
 
@@ -357,7 +353,7 @@ class QlibWorkflowService:
             config: Workflow configuration dictionary
             timer: Timer for tracking execution time
             model_name: Name for the saved model file
-            freq: Data frequency ("day" or "1min")
+            freq: Data frequency (only "day" is supported)
 
         Returns:
             Dictionary with workflow results including metrics and model path
@@ -623,7 +619,7 @@ class QlibWorkflowService:
         Args:
             task_config: Original task configuration
             time_range: Dictionary with 'start_time' and 'end_time'
-            freq: Data frequency ("day" or "1min")
+            freq: Data frequency (only "day" is supported)
 
         Returns:
             Updated task configuration with dynamic time ranges and freq
@@ -974,18 +970,11 @@ class QlibWorkflowService:
         # so we need to shift back by 1 period to avoid index out of bounds error
         dt_values = pred.index.get_level_values("datetime")
         start_time = str(dt_values.min())[:10]
-        if freq == "day":
-            end_time = str(dt_values.max() - pd.Timedelta(days=1))[:10]
-        else:
-            # For minute data, shift back by 1 minute
-            end_time = str(dt_values.max() - pd.Timedelta(minutes=1))
+        end_time = str(dt_values.max() - pd.Timedelta(days=1))[:10]
 
-        self.logger.info(f"Backtest period: {start_time} to {end_time}, freq={freq}")
+        self.logger.info(f"Backtest period: {start_time} to {end_time}")
 
         # Step 6: Create strategy and execute backtest
-        # Note: TopkDropoutStrategy will rebalance at each time step (day or minute)
-        # For minute-level data, this may result in high trading costs
-        # TODO: Implement better strategies for minute-level trading
         strategy = TopkDropoutStrategy(
             signal=pred,
             topk=topk,

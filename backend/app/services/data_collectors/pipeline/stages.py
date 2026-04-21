@@ -203,38 +203,9 @@ class DumpStage:
                     error="Normalization stage must be completed first",
                 )
 
-            # Detect data frequency from the first CSV file
-            import pandas as pd
-
-            freq = "day"  # Default frequency
-            try:
-                # Read first few rows of first CSV file to detect frequency
-                sample_file = normalized_files[0]
-                sample_df = pd.read_csv(sample_file, nrows=5)
-
-                if "date" in sample_df.columns:
-                    # Parse date column to detect if it contains time information
-                    sample_dates = pd.to_datetime(sample_df["date"])
-
-                    # Check if any timestamp has non-zero time component
-                    has_time = any(
-                        date.hour != 0 or date.minute != 0 or date.second != 0
-                        for date in sample_dates
-                        if pd.notna(date)
-                    )
-
-                    if has_time:
-                        freq = "1min"
-                        logger.info("Detected minute-level data, using freq='1min'")
-                    else:
-                        freq = "day"
-                        logger.info("Detected daily data, using freq='day'")
-
-            except Exception as e:
-                logger.warning(
-                    f"Could not detect frequency from data, using default 'day': {e}"
-                )
-                freq = "day"
+            # Only daily data is supported in this stock selection system
+            freq = "day"
+            logger.info("Using freq='day' for Qlib binary dump")
 
             # Import Qlib's dump functionality
             import sys

@@ -12,7 +12,7 @@ strategy:
 # Backtest parameters
 backtest:
   account: 1000000 # Initial account value (1 million for ETF Enhanced Indexing)
-  benchmark: auto # Use auto-detection like routine (will resolve to SH000300 for CSI300)
+  benchmark: auto # Use auto-detection (resolves to SH000300 for CN market)
 
   # A-share trading costs
   exchange_kwargs:

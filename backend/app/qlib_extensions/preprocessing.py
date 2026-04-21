@@ -12,7 +12,7 @@ Processing Flow:
 
 Usage:
     handler = PreprocessedDataHandler(
-        instruments="csi300",
+        instruments="all",
         start_time="2020-01-01",
         end_time="2023-12-31"
     )
@@ -204,7 +204,7 @@ class PreprocessedDataHandler(DataHandlerLP):
 
     def __init__(
         self,
-        instruments: Union[str, List[str]] = "csi300",
+        instruments: Union[str, List[str]] = "all",
         start_time: str = None,
         end_time: str = None,
         **kwargs
@@ -215,7 +215,7 @@ class PreprocessedDataHandler(DataHandlerLP):
         Parameters
         ----------
         instruments : str or list
-            Universe of instruments to load (default: "csi300")
+            Universe of instruments to load (default: "all")
         start_time : str
             Start date for data loading
         end_time : str
@@ -295,7 +295,7 @@ class PreprocessedDataHandler(DataHandlerLP):
 
 
 def create_preprocessed_handler(
-    instruments: Union[str, List[str]] = "csi300",
+    instruments: Union[str, List[str]] = "all",
     start_time: str = "2020-01-01",
     end_time: str = "2023-12-31",
 ) -> PreprocessedDataHandler:
@@ -305,7 +305,7 @@ def create_preprocessed_handler(
     Parameters
     ----------
     instruments : str or list
-        Universe of instruments (default: "csi300")
+        Universe of instruments (default: "all")
     start_time : str
         Start date (default: "2020-01-01")
     end_time : str
