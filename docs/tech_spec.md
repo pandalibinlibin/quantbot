@@ -518,6 +518,17 @@ BROADCAST_FIELD_NAMES: set = {
    - Dashboard "Run Signal" 按钮重命名为 "Update Portfolio"（更贴近业务语义）
    - 从侧边栏隐藏 Routine 页面（其功能已被 Dashboard + Target Portfolio 页面覆盖）
    - Routine 页面的 Configuration 按方案 B 拆分：模型相关配置（experiment_name, rolling_step, rolling_type, mlruns_path, mongodb_uri）移至 Model 页面；数据相关配置（source, stock_pool）在 Data Sources 页面已有展示，不重复。
+7. **TopK Portfolio Strategy & Page Redesign** (2026-04-22):
+   - **Strategy switch**: `generate_portfolio()` now checks `topk_dropout_strategy.enabled` first; when `true`, uses pure TopK (select top K ETFs from 166-ETF universe by model score, score-weighted allocation). Falls back to ETF Enhanced Indexing when disabled.
+   - **New backend method**: `_calculate_topk_portfolio()` in `online_serving_service.py` — extracts signals, selects top K, calculates confidence (score spread mapped to 0-1), assigns weights, saves `topk_portfolio_{date}.json`.
+   - **API update**: `/latest-portfolio` reads both `topk_portfolio_*.json` and `etf_enhanced_*.json`, returns most recent. Response model adds `strategy`, `confidence`, `topk`, `weight_method` fields.
+   - **Frontend redesign**: Target Portfolio page shows Signal Overview (5 cards: Signal Date, Trade Date, Positions, Confidence badge, Weight Mode) + 5-column Target Holdings table (Rank, Symbol, Name, Score, Weight) + footer notes for traders. Removed total_value / target_shares / buy-sell-hold actions (irrelevant when trader's portfolio scale differs).
+   - **Email redesign**: Same content as frontend — Signal Overview + 5-column table + notes + disclaimer.
+   - **Confidence percentile** (2026-04-22 update): Confidence alone is meaningless without history. System maintains `confidence_history.json` — populated by Run Backtest (source=backtest) for all historical dates, and appended by Update Portfolio (source=live). Percentile rank maps to 5 levels with Chinese interpretation: 极强/较强/正常/较弱/极弱. Tells traders how reliable today's recommendations are vs history.
+   - **Standard workflow**: Update Data → Run Backtest → Update Portfolio. Backtest generates confidence history baseline; portfolio uses it for percentile.
+   - **Responsive email**: Mobile-friendly via `@media` queries. Overview cards stack vertically on small screens, table cells shrink padding. All text in Chinese.
+   - **Design rationale**: Traders' actual holdings differ from system's assumed portfolio, so we provide _what to hold_ and _weight ratios_ rather than specific share counts. Confidence percentile replaces raw score_spread for actionable trader guidance.
+8. **Dashboard button order** (2026-04-22): Reordered from "Update Data → Update Portfolio → Run Backtest" to "Update Data → Run Backtest → Update Portfolio" to match the standard data flow. Backtest generates confidence history baseline that Update Portfolio depends on.
 
 ### 数据对齐策略
 

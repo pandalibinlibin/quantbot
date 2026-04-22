@@ -948,64 +948,78 @@ class OnlineServingService:
             if effective_cur_time is None:
                 effective_cur_time = self._get_latest_data_date()
 
-            # Step 1: Enhanced Indexing Strategy - Calculate target portfolio
+            # Step 1: Calculate target portfolio
+            # Try TopK strategy first, then fall back to ETF Enhanced Indexing
             step_start = time.time()
-            enhanced_indexing_result = self._calculate_enhanced_indexing(
-                signals, effective_cur_time
-            )
+            topk_config = qlib_config._config.get("topk_dropout_strategy", {})
+            topk_enabled = topk_config.get("enabled", False)
+
+            if topk_enabled:
+                portfolio_result = self._calculate_topk_portfolio(
+                    signals, effective_cur_time
+                )
+                strategy_desc = "Generate target portfolio using TopK strategy"
+            else:
+                portfolio_result = self._calculate_enhanced_indexing(
+                    signals, effective_cur_time
+                )
+                strategy_desc = (
+                    "Generate target portfolio using ETF Enhanced Indexing strategy"
+                )
+
             step_duration = time.time() - step_start
             result["steps"].append(
                 {
                     "step": "Portfolio Optimization",
-                    "success": enhanced_indexing_result.get("success", False),
+                    "success": portfolio_result.get("success", False),
                     "duration_seconds": round(step_duration, 2),
                     "details": {
-                        "description": "Generate target portfolio weights using enhanced indexing strategy",
-                        **enhanced_indexing_result.get("summary", {}),
+                        "description": strategy_desc,
+                        **portfolio_result.get("summary", {}),
                     },
                 }
             )
 
             # Add target portfolio to result
-            if enhanced_indexing_result.get("success"):
-                result["target_portfolio"] = enhanced_indexing_result.get(
+            if portfolio_result.get("success"):
+                result["target_portfolio"] = portfolio_result.get(
                     "target_portfolio", []
                 )
-                raw_summary = enhanced_indexing_result.get("summary", {})
-                strategy = enhanced_indexing_result.get("strategy", "enhanced_indexing")
-                result["strategy"] = strategy
+                result["strategy"] = portfolio_result.get("strategy", "unknown")
+                result["generated_at"] = portfolio_result.get(
+                    "generated_at", datetime.now().isoformat()
+                )
+                result["trade_date"] = portfolio_result.get("trade_date", "")
+                result["signal_for_date"] = portfolio_result.get("signal_for_date", "")
+                result["portfolio_summary"] = portfolio_result.get("summary", {})
 
-                if strategy == "etf_enhanced_indexing":
-                    result["generated_at"] = enhanced_indexing_result.get(
-                        "generated_at", datetime.now().isoformat()
+                # Strategy-specific fields
+                if portfolio_result.get("strategy") == "topk":
+                    result["confidence"] = portfolio_result.get("confidence", 0)
+                    result["confidence_percentile"] = portfolio_result.get(
+                        "confidence_percentile"
                     )
-                    result["trade_date"] = enhanced_indexing_result.get(
-                        "trade_date", ""
+                    result["confidence_label"] = portfolio_result.get(
+                        "confidence_label", ""
                     )
-                    result["signal_for_date"] = enhanced_indexing_result.get(
-                        "signal_for_date", ""
+                    result["confidence_interpretation"] = portfolio_result.get(
+                        "confidence_interpretation", ""
                     )
-                    result["total_value"] = enhanced_indexing_result.get(
-                        "total_value", 1000000
+                    result["topk"] = portfolio_result.get("topk", 10)
+                    result["weight_method"] = portfolio_result.get(
+                        "weight_method", "score_weighted"
                     )
-                    result["region"] = enhanced_indexing_result.get("region", "cn")
-                    result["lot_size"] = enhanced_indexing_result.get("lot_size", 100)
-                    result["weights"] = enhanced_indexing_result.get("weights", {})
-                    result["portfolio_summary"] = {
-                        "total_positions": raw_summary.get("total_positions", 10),
-                        "etf_positions": raw_summary.get("etf_positions", 1),
-                        "stock_positions": raw_summary.get("stock_positions", 9),
-                        "buy_count": raw_summary.get("buy_count", 0),
-                        "sell_count": raw_summary.get("sell_count", 0),
-                        "hold_count": raw_summary.get("hold_count", 0),
-                    }
                 else:
-                    result["portfolio_summary"] = raw_summary
+                    # ETF Enhanced Indexing specific fields
+                    result["total_value"] = portfolio_result.get("total_value", 1000000)
+                    result["region"] = portfolio_result.get("region", "cn")
+                    result["lot_size"] = portfolio_result.get("lot_size", 100)
+                    result["weights"] = portfolio_result.get("weights", {})
 
             # Step 2: Export Trading Signals
             step_start = time.time()
             signal_export_result = self._export_trading_signals(
-                enhanced_indexing_result, effective_cur_time
+                portfolio_result, effective_cur_time
             )
             step_duration = time.time() - step_start
             result["steps"].append(
@@ -1078,6 +1092,378 @@ class OnlineServingService:
         self.logger.info(f"Routine completed in {result['total_duration_seconds']}s")
 
         return result
+
+    # ===== Confidence History Helpers =====
+
+    def _get_confidence_history_path(self) -> Path:
+        """Get path to confidence_history.json."""
+        topk_config = qlib_config._config.get("topk_dropout_strategy", {})
+        output_dir = topk_config.get("output_dir", "/app/data/target_portfolio")
+        return Path(output_dir) / "confidence_history.json"
+
+    def _load_confidence_history(self) -> List[Dict[str, Any]]:
+        """Load confidence history from JSON file."""
+        import json
+
+        path = self._get_confidence_history_path()
+        if not path.exists():
+            return []
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return data.get("history", [])
+        except Exception as e:
+            self.logger.warning(f"Failed to load confidence history: {e}")
+            return []
+
+    def _save_confidence_history(self, history: List[Dict[str, Any]]) -> None:
+        """Save confidence history to JSON file."""
+        import json
+
+        path = self._get_confidence_history_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump({"history": history}, f, ensure_ascii=False, indent=2)
+        self.logger.info(f"Saved confidence history: {len(history)} entries to {path}")
+
+    def _append_confidence_history(
+        self, date: str, confidence: float, source: str = "live"
+    ) -> None:
+        """Append a confidence entry to history, avoiding duplicates."""
+        history = self._load_confidence_history()
+        # Remove existing entry for the same date (in case of re-run)
+        history = [h for h in history if h.get("date") != date]
+        history.append(
+            {"date": date, "confidence": round(confidence, 4), "source": source}
+        )
+        # Sort by date
+        history.sort(key=lambda x: x["date"])
+        self._save_confidence_history(history)
+
+    def _calculate_confidence_percentile(self, confidence: float) -> Dict[str, Any]:
+        """
+        Calculate percentile rank and interpretation for a confidence value.
+
+        Returns:
+            Dict with percentile, label, and interpretation text
+        """
+        import numpy as np
+
+        history = self._load_confidence_history()
+        historical_values = [h["confidence"] for h in history]
+
+        min_history = 5
+        if len(historical_values) < min_history:
+            return {
+                "percentile": None,
+                "label": "历史数据不足",
+                "interpretation": (
+                    f"需要至少{min_history}次历史记录才能计算百分位"
+                    f"（当前{len(historical_values)}次）。"
+                    "请先运行 Run Backtest 生成历史基线。"
+                ),
+            }
+
+        # Calculate percentile: what % of historical values are <= current
+        rank = sum(1 for v in historical_values if v <= confidence)
+        percentile = round(rank / len(historical_values) * 100, 1)
+
+        # Map to label and interpretation
+        if percentile >= 90:
+            label = "极强"
+            interpretation = (
+                "模型区分度极高，推荐持仓可信度很强。" "建议严格按照系统推荐持仓执行。"
+            )
+        elif percentile >= 75:
+            label = "较强"
+            interpretation = (
+                "模型区分度良好，推荐持仓可信度较高。" "建议紧密跟随系统推荐。"
+            )
+        elif percentile >= 25:
+            label = "正常"
+            interpretation = "模型区分度正常，推荐持仓处于常规可信水平。"
+        elif percentile >= 10:
+            label = "较弱"
+            interpretation = (
+                "模型区分度较低，推荐持仓可信度下降。"
+                "可适当偏离系统推荐，结合自身判断。"
+            )
+        else:
+            label = "极弱"
+            interpretation = (
+                "模型区分度很低，推荐持仓可靠性不足。" "建议以自主判断为主。"
+            )
+
+        return {
+            "percentile": percentile,
+            "label": label,
+            "interpretation": interpretation,
+        }
+
+    @staticmethod
+    def _calculate_confidence_from_signals(
+        signal_dict: Dict[str, float], topk: int
+    ) -> tuple:
+        """
+        Calculate confidence and score_spread from a signal dictionary.
+
+        Returns:
+            (confidence, score_spread) tuple
+        """
+        import numpy as np
+
+        if len(signal_dict) >= topk * 2:
+            all_scores = sorted(signal_dict.values(), reverse=True)
+            top_avg = float(np.mean(all_scores[:topk]))
+            bottom_avg = float(np.mean(all_scores[-topk:]))
+            score_spread = top_avg - bottom_avg
+            confidence = float(np.clip(score_spread / 2.0, 0, 1))
+        else:
+            score_spread = 0.0
+            confidence = 0.0
+        return confidence, score_spread
+
+    def _generate_confidence_history_from_signals(
+        self, signals: pd.DataFrame, topk: int
+    ) -> None:
+        """
+        Generate confidence_history.json from backtest signals.
+
+        Iterates through each date in the signals DataFrame,
+        calculates confidence for that date, and saves the full history.
+        This rebuilds the history from scratch (backtest source).
+        """
+        try:
+            etf_service = get_etf_enhanced_indexing_service()
+
+            # Get all unique dates from signals
+            if not isinstance(signals.index, pd.MultiIndex):
+                self.logger.warning("Signals not MultiIndex, cannot generate history")
+                return
+
+            dates = signals.index.get_level_values(0).unique().sort_values()
+            history = []
+
+            for date in dates:
+                try:
+                    date_signals = signals.loc[date]
+                    signal_dict = etf_service._extract_signals(date_signals)
+                    if not signal_dict:
+                        continue
+                    confidence, _ = self._calculate_confidence_from_signals(
+                        signal_dict, topk
+                    )
+                    date_str = str(date.date()) if hasattr(date, "date") else str(date)
+                    history.append(
+                        {
+                            "date": date_str,
+                            "confidence": round(confidence, 4),
+                            "source": "backtest",
+                        }
+                    )
+                except Exception:
+                    continue
+
+            if history:
+                # Merge with existing live entries (keep live, replace backtest)
+                existing = self._load_confidence_history()
+                live_entries = [h for h in existing if h.get("source") == "live"]
+                live_dates = {h["date"] for h in live_entries}
+                # Add backtest entries only for dates without live data
+                merged = [h for h in history if h["date"] not in live_dates]
+                merged.extend(live_entries)
+                merged.sort(key=lambda x: x["date"])
+                self._save_confidence_history(merged)
+                self.logger.info(
+                    f"Generated confidence history: {len(history)} backtest entries, "
+                    f"{len(live_entries)} live entries preserved"
+                )
+
+        except Exception as e:
+            self.logger.error(f"Failed to generate confidence history: {e}")
+
+    def _calculate_topk_portfolio(
+        self, signals: pd.DataFrame, cur_time: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Calculate target portfolio using pure TopK strategy.
+
+        Strategy: Select top K ETFs from signal scores, assign score-weighted weights.
+        When topk == n_drop, this is a full-position rebalance each time.
+
+        Args:
+            signals: Model prediction signals DataFrame
+            cur_time: Current time string for date reference
+
+        Returns:
+            Dict containing positions, summary, confidence, and success status
+        """
+        import json
+        import numpy as np
+
+        try:
+            from app.config.qlib import qlib_config
+
+            # Load TopK config from system_config.yaml
+            topk_config = qlib_config._config.get("topk_dropout_strategy", {})
+            topk = topk_config.get("topk", 10)
+            weight_method = topk_config.get("weight_method", "score_weighted")
+            output_dir = topk_config.get("output_dir", "/app/data/target_portfolio")
+
+            date_str = cur_time if cur_time else datetime.now().strftime("%Y-%m-%d")
+
+            # Reuse ETF service for signal extraction, price lookup, and stock names
+            etf_service = get_etf_enhanced_indexing_service()
+            signal_dict = etf_service._extract_signals(signals)
+
+            if not signal_dict:
+                return {"success": False, "error": "No signals", "positions": []}
+
+            # Sort by score descending, select top K
+            sorted_signals = sorted(
+                signal_dict.items(), key=lambda x: x[1], reverse=True
+            )
+            top_k = sorted_signals[:topk]
+
+            # Calculate confidence from score spread
+            confidence, score_spread = self._calculate_confidence_from_signals(
+                signal_dict, topk
+            )
+
+            # Calculate percentile against historical confidence
+            confidence_context = self._calculate_confidence_percentile(confidence)
+
+            # Append today's confidence to history
+            self._append_confidence_history(date_str, confidence, source="live")
+
+            # Calculate weights
+            if weight_method == "score_weighted":
+                total_score = sum(score for _, score in top_k)
+                if total_score <= 0:
+                    # Fallback to equal weights
+                    weights_list = [(symbol, 1.0 / topk) for symbol, _ in top_k]
+                else:
+                    weights_list = [
+                        (symbol, score / total_score) for symbol, score in top_k
+                    ]
+            else:
+                # Equal weight
+                weights_list = [(symbol, 1.0 / topk) for symbol, _ in top_k]
+
+            # Batch fetch stock names and prices
+            all_symbols = [s for s, _ in top_k]
+            etf_service._batch_fetch_stock_names(all_symbols)
+            prices = etf_service._get_latest_prices(all_symbols)
+
+            # Build positions list
+            positions = []
+            for rank, (symbol, weight) in enumerate(weights_list, start=1):
+                score = signal_dict.get(symbol, 0.0)
+                price = prices.get(symbol)
+                name = etf_service.get_stock_name(symbol)
+
+                positions.append(
+                    {
+                        "rank": rank,
+                        "symbol": symbol,
+                        "name": name,
+                        "score": round(score, 6),
+                        "weight": round(weight, 6),
+                    }
+                )
+
+            # Calculate signal_for_date (next trading date)
+            signal_for_date = etf_service._get_next_trading_date(date_str)
+
+            # Build portfolio data
+            portfolio_data = {
+                "strategy": "topk",
+                "generated_at": datetime.now().isoformat(),
+                "trade_date": date_str,
+                "signal_for_date": signal_for_date,
+                "topk": topk,
+                "weight_method": weight_method,
+                "confidence": round(confidence, 4),
+                "score_spread": round(score_spread, 4),
+                "confidence_percentile": confidence_context.get("percentile"),
+                "confidence_label": confidence_context.get("label", ""),
+                "confidence_interpretation": confidence_context.get(
+                    "interpretation", ""
+                ),
+                "positions": positions,
+                "summary": {
+                    "total_positions": len(positions),
+                },
+            }
+
+            # Save portfolio JSON file
+            output_path = Path(output_dir)
+            output_path.mkdir(parents=True, exist_ok=True)
+            output_file = output_path / f"topk_portfolio_{date_str}.json"
+            with open(output_file, "w", encoding="utf-8") as f:
+                json.dump(portfolio_data, f, ensure_ascii=False, indent=2)
+
+            self.logger.info(
+                f"TopK portfolio saved to {output_file}: "
+                f"{len(positions)} positions, confidence={confidence:.2f}"
+            )
+
+            # Send email notification
+            self._send_topk_portfolio_email(portfolio_data)
+
+            return {
+                "success": True,
+                "strategy": "topk",
+                "target_portfolio": positions,
+                "summary": portfolio_data["summary"],
+                "generated_at": portfolio_data["generated_at"],
+                "trade_date": date_str,
+                "signal_for_date": signal_for_date,
+                "confidence": round(confidence, 4),
+                "score_spread": round(score_spread, 4),
+                "confidence_percentile": confidence_context.get("percentile"),
+                "confidence_label": confidence_context.get("label", ""),
+                "confidence_interpretation": confidence_context.get(
+                    "interpretation", ""
+                ),
+                "topk": topk,
+                "weight_method": weight_method,
+            }
+
+        except Exception as e:
+            self.logger.error(f"TopK portfolio calculation failed: {e}")
+            import traceback
+
+            self.logger.error(traceback.format_exc())
+            return {
+                "success": False,
+                "error": str(e),
+                "target_portfolio": [],
+                "summary": {},
+            }
+
+    def _send_topk_portfolio_email(self, portfolio_data: Dict[str, Any]) -> None:
+        """Send TopK portfolio email notification."""
+        try:
+            topk_config = qlib_config._config.get("topk_dropout_strategy", {})
+            email_config = topk_config.get("email_notification", {})
+
+            if not email_config.get("enabled", False):
+                self.logger.info("TopK portfolio email notification is disabled")
+                return
+
+            notification_service = get_notification_service()
+            result = notification_service.send_topk_portfolio_email(portfolio_data)
+
+            if result.get("success"):
+                self.logger.info(f"TopK portfolio email sent: {result.get('message')}")
+            else:
+                self.logger.warning(
+                    f"Failed to send TopK portfolio email: {result.get('error')}"
+                )
+
+        except Exception as e:
+            self.logger.error(f"Error sending TopK portfolio email: {e}")
 
     def _calculate_enhanced_indexing(
         self, signals: pd.DataFrame, cur_time: Optional[str] = None
@@ -3036,6 +3422,9 @@ class OnlineServingService:
                 (report_df["cum_return"].iloc[-1] if len(report_df) > 0 else 0)
             )
             trading_days = len(report_df)
+
+            # Generate confidence history from backtest signals
+            self._generate_confidence_history_from_signals(signals, topk)
 
             # Build API result
             api_result = {

@@ -321,19 +321,6 @@ function Dashboard() {
             Update Data
           </Button>
           <Button
-            variant="default"
-            size="sm"
-            onClick={handleRunTask}
-            disabled={isTaskRunning}
-          >
-            {isTaskRunning ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Zap className="h-4 w-4 mr-2" />
-            )}
-            Update Portfolio
-          </Button>
-          <Button
             variant="outline"
             size="sm"
             onClick={handleRunBacktest}
@@ -345,6 +332,19 @@ function Dashboard() {
               <BarChart3 className="h-4 w-4 mr-2" />
             )}
             Run Backtest
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={handleRunTask}
+            disabled={isTaskRunning}
+          >
+            {isTaskRunning ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Zap className="h-4 w-4 mr-2" />
+            )}
+            Update Portfolio
           </Button>
         </div>
       </div>

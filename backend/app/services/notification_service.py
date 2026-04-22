@@ -1246,7 +1246,7 @@ class NotificationService:
             try:
                 send_email(
                     email_to=recipient,
-                    subject=f"QuantBot: TopK策略信号 {signal_for_date}",
+                    subject=f"QuantBot: Target Portfolio {signal_for_date}",
                     html_content=html_content,
                 )
                 sent_count += 1
@@ -1272,168 +1272,166 @@ class NotificationService:
             }
 
     def _build_topk_portfolio_html(self, portfolio_data: Dict[str, Any]) -> str:
-        """Build HTML email body for TopK Strategy portfolio."""
+        """Build responsive HTML email for TopK portfolio with confidence percentile."""
         generated_at = portfolio_data.get("generated_at", datetime.now().isoformat())
         trade_date = portfolio_data.get("trade_date", "")
         signal_for_date = portfolio_data.get("signal_for_date", "")
-        total_value = portfolio_data.get("total_value", 1000000)
+        confidence = portfolio_data.get("confidence", 0)
+        topk = portfolio_data.get("topk", 10)
+        weight_method = portfolio_data.get("weight_method", "score_weighted")
+        positions = portfolio_data.get("positions", [])
+        total_positions = len(positions)
+        conf_percentile = portfolio_data.get("confidence_percentile")
+        conf_label = portfolio_data.get("confidence_label", "")
+        conf_interpretation = portfolio_data.get("confidence_interpretation", "")
 
-        # Summary
-        summary = portfolio_data.get("summary", {})
-        buy_count = summary.get("buy_count", 0)
-        sell_count = summary.get("sell_count", 0)
-        hold_count = summary.get("hold_count", 0)
-        total_positions = summary.get("total_positions", 30)
+        # Confidence color
+        label_color_map = {
+            "极强": ("#27ae60", "#e8f5e9"),
+            "较强": ("#2ecc71", "#e8f5e9"),
+            "正常": ("#3498db", "#e3f2fd"),
+            "较弱": ("#f39c12", "#fff8e1"),
+            "极弱": ("#e74c3c", "#ffebee"),
+        }
+        conf_color, conf_bg = label_color_map.get(conf_label, ("#999", "#f8f9fa"))
 
-        # Position lists
-        buy_positions = portfolio_data.get("buy_positions", [])
-        sell_positions = portfolio_data.get("sell_positions", [])
-        hold_positions = portfolio_data.get("hold_positions", [])
-        final_positions = portfolio_data.get("final_positions", [])
+        # Percentile display
+        if conf_percentile is not None:
+            percentile_text = f"Top {100 - conf_percentile:.0f}%"
+        else:
+            percentile_text = ""
 
-        # Build buy positions table
-        buy_table_rows = ""
-        for pos in buy_positions:
+        # Build positions table rows
+        position_rows = ""
+        for pos in positions:
+            rank = pos.get("rank", "")
             symbol = pos.get("symbol", "")
             name = pos.get("name", symbol)
             score = pos.get("score", 0)
             weight = pos.get("weight", 0)
-            target_value = pos.get("target_value", 0)
-
-            buy_table_rows += f"""
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd;">{symbol}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{name}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{score:.4f}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{weight:.2f}%</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">¥{target_value:,.0f}</td>
+            position_rows += f"""
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 10px 6px; text-align: center; font-weight: bold;">{rank}</td>
+                <td style="padding: 10px 6px; font-family: monospace; font-weight: bold;">{symbol}</td>
+                <td style="padding: 10px 6px;">{name}</td>
+                <td style="padding: 10px 6px; text-align: right; font-family: monospace;">{score:.4f}</td>
+                <td style="padding: 10px 6px; text-align: right; font-weight: bold;">{weight:.1%}</td>
             </tr>
             """
 
-        # Build sell positions table
-        sell_table_rows = ""
-        for pos in sell_positions:
-            symbol = pos.get("symbol", "")
-            name = pos.get("name", symbol)
-            reason = pos.get("reason", "排名下降")
-            original_weight = pos.get("original_weight", 0)
-
-            sell_table_rows += f"""
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd;">{symbol}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{name}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{reason}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{original_weight:.2f}%</td>
-            </tr>
-            """
-
-        # Build hold positions table (top 10)
-        hold_table_rows = ""
-        for i, pos in enumerate(hold_positions[:10]):
-            symbol = pos.get("symbol", "")
-            name = pos.get("name", symbol)
-            score = pos.get("score", 0)
-            weight = pos.get("weight", 0)
-
-            hold_table_rows += f"""
-            <tr>
-                <td style="padding: 8px; border: 1px solid #ddd;">{i+1}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{symbol}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{name}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{score:.4f}</td>
-                <td style="padding: 8px; border: 1px solid #ddd;">{weight:.2f}%</td>
-            </tr>
-            """
+        weight_mode_display = weight_method.replace("_", " ").title()
 
         return f"""
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="UTF-8">
-            <title>QuantBot TopK策略信号</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                @media only screen and (max-width: 480px) {{
+                    .email-container {{ padding: 10px !important; }}
+                    .email-card {{ border-radius: 8px !important; }}
+                    .email-header {{ padding: 18px 16px !important; }}
+                    .email-header h1 {{ font-size: 18px !important; }}
+                    .email-section {{ padding: 14px 16px !important; }}
+                    .overview-cell {{ display: block !important; width: 100% !important; margin-bottom: 8px !important; }}
+                    .overview-spacer {{ display: none !important; }}
+                    .holdings-table {{ font-size: 13px !important; }}
+                    .holdings-table td, .holdings-table th {{ padding: 8px 4px !important; }}
+                }}
+            </style>
         </head>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px;">
-        
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-            <h1 style="margin: 0; font-size: 24px;">📊 QuantBot TopK策略信号</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9;">交易日期: {signal_for_date} | 生成时间: {generated_at[:19]}</p>
-        </div>
+        <body style="font-family: 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+            <div class="email-container" style="max-width: 700px; margin: 0 auto;">
+            <div class="email-card" style="background-color: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
 
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-            <h2 style="color: #495057; margin-top: 0;">📈 策略参数</h2>
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-                <div><strong>持仓数量:</strong> {total_positions}只</div>
-                <div><strong>调仓数量:</strong> 买入{buy_count}只, 卖出{sell_count}只</div>
-                <div><strong>持有数量:</strong> {hold_count}只</div>
-                <div><strong>总资金:</strong> ¥{total_value:,.0f}</div>
+                <!-- Header -->
+                <div class="email-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px 30px;">
+                    <h1 style="margin: 0; font-size: 22px;">📊 QuantBot 目标持仓</h1>
+                    <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 14px;">
+                        信号日期: <strong>{signal_for_date}</strong> ｜
+                        交易日期: {trade_date}
+                    </p>
+                </div>
+
+                <!-- Signal Overview -->
+                <div class="email-section" style="padding: 20px 30px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <tr>
+                            <td class="overview-cell" style="padding: 12px; background: #f8f9fa; border-radius: 8px; text-align: center; width: 30%;">
+                                <div style="font-size: 24px; font-weight: bold; color: #333;">{total_positions}</div>
+                                <div style="font-size: 12px; color: #666; margin-top: 4px;">持仓数量</div>
+                            </td>
+                            <td class="overview-spacer" style="width: 10px;"></td>
+                            <td class="overview-cell" style="padding: 12px; background: {conf_bg}; border-radius: 8px; text-align: center; width: 40%;">
+                                <div style="font-size: 22px; font-weight: bold; color: {conf_color};">
+                                    {conf_label} {percentile_text}
+                                </div>
+                                <div style="font-size: 12px; color: #666; margin-top: 4px;">置信度</div>
+                            </td>
+                            <td class="overview-spacer" style="width: 10px;"></td>
+                            <td class="overview-cell" style="padding: 12px; background: #f8f9fa; border-radius: 8px; text-align: center; width: 30%;">
+                                <div style="font-size: 16px; font-weight: bold; color: #333;">{weight_mode_display}</div>
+                                <div style="font-size: 12px; color: #666; margin-top: 4px;">权重模式</div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Interpretation -->
+                {"" if not conf_interpretation else f'''
+                <div class="email-section" style="padding: 0 30px 16px 30px;">
+                    <div style="background: {conf_bg}; border-left: 4px solid {conf_color}; padding: 12px 16px; border-radius: 0 8px 8px 0;">
+                        <div style="font-size: 13px; color: #666; margin-bottom: 4px;">💡 信号解读</div>
+                        <div style="font-size: 15px; color: #333; line-height: 1.5;">{conf_interpretation}</div>
+                    </div>
+                </div>
+                '''}
+
+                <!-- Target Holdings Table -->
+                <div class="email-section" style="padding: 0 30px 20px 30px;">
+                    <h2 style="font-size: 16px; color: #333; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #667eea;">
+                        目标持仓 (Top {topk})
+                    </h2>
+                    <table class="holdings-table" style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                        <thead>
+                            <tr style="background: #667eea; color: white;">
+                                <th style="padding: 10px 6px; text-align: center; width: 40px;">排名</th>
+                                <th style="padding: 10px 6px; text-align: left; width: 90px;">代码</th>
+                                <th style="padding: 10px 6px; text-align: left;">名称</th>
+                                <th style="padding: 10px 6px; text-align: right; width: 70px;">分数</th>
+                                <th style="padding: 10px 6px; text-align: right; width: 70px;">权重</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {position_rows}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Notes -->
+                <div class="email-section" style="padding: 15px 30px; background: #f8f9fa; font-size: 13px; color: #666; line-height: 1.6;">
+                    <p style="margin: 0 0 6px 0;">
+                        <strong>说明:</strong>
+                        权重为模型推荐的配置比例，请按自身资金规模等比例缩放。
+                    </p>
+                    <p style="margin: 0;">
+                        分数越高代表模型预期收益越高。置信度百分位基于历史信号强度分布，反映模型对本次推荐的区分能力。
+                    </p>
+                </div>
+
+                <!-- Disclaimer -->
+                <div style="padding: 12px 30px; background: #fef3c7; border-top: 1px solid #f59e0b; font-size: 11px; color: #92400e; line-height: 1.5;">
+                    <strong>免责声明:</strong>
+                    本邮件仅供学习和研究参考，不构成任何投资建议。
+                </div>
+
+                <!-- Footer -->
+                <div style="padding: 12px 30px; font-size: 11px; color: #aaa; border-top: 1px solid #eee;">
+                    生成时间: {generated_at[:19]} ｜ 策略: TopK (k={topk}) ｜ QuantBot
+                </div>
             </div>
-        </div>
-
-        <div style="margin-bottom: 20px;">
-            <h2 style="color: #28a745;">🟢 买入股票 ({buy_count}只)</h2>
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
-                <thead>
-                    <tr style="background-color: #e8f5e8;">
-                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">代码</th>
-                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">名称</th>
-                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">预测分数</th>
-                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">目标权重</th>
-                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">目标金额</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {buy_table_rows}
-                </tbody>
-            </table>
-        </div>
-
-        <div style="margin-bottom: 20px;">
-            <h2 style="color: #dc3545;">🔴 卖出股票 ({sell_count}只)</h2>
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
-                <thead>
-                    <tr style="background-color: #f8e8e8;">
-                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">代码</th>
-                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">名称</th>
-                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">卖出原因</th>
-                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">原权重</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {sell_table_rows}
-                </tbody>
-            </table>
-        </div>
-
-        <div style="margin-bottom: 20px;">
-            <h2 style="color: #ffc107;">🟡 持有股票 (前10只)</h2>
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
-                <thead>
-                    <tr style="background-color: #fff8e1;">
-                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">排名</th>
-                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">代码</th>
-                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">名称</th>
-                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">预测分数</th>
-                        <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">权重</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {hold_table_rows}
-                </tbody>
-            </table>
-            {f'<p style="color: #666; font-size: 14px;">* 显示前10只持有股票，共{hold_count}只</p>' if hold_count > 10 else ''}
-        </div>
-
-        <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
-            <h3 style="color: #1976d2; margin-top: 0;">💡 操作建议</h3>
-            <ul style="margin: 0; padding-left: 20px;">
-                <li>请在开盘后按照买入/卖出清单执行交易</li>
-                <li>建议分批执行，避免对市场造成冲击</li>
-                <li>如遇涨跌停或流动性不足，可适当调整执行时间</li>
-                <li>持有股票无需操作，继续持有即可</li>
-            </ul>
-        </div>
-
-        <p><small style="color: #888;">这是QuantBot TopK策略系统的自动邮件通知。</small></p>
+            </div>
         </body>
         </html>
         """

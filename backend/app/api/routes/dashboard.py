@@ -158,13 +158,22 @@ class LatestPortfolioResponse(BaseModel):
     """Response for latest portfolio endpoint."""
 
     success: bool
+    strategy: Optional[str] = None
     trade_date: Optional[str] = None
     signal_for_date: Optional[str] = None
     generated_at: Optional[str] = None
-    total_value: float = 0
     positions: List[Dict[str, Any]] = []
-    weights: Dict[str, Any] = {}
     summary: Dict[str, Any] = {}
+    # TopK strategy fields
+    confidence: Optional[float] = None
+    confidence_percentile: Optional[float] = None
+    confidence_label: Optional[str] = None
+    confidence_interpretation: Optional[str] = None
+    topk: Optional[int] = None
+    weight_method: Optional[str] = None
+    # ETF Enhanced Indexing fields (legacy)
+    total_value: float = 0
+    weights: Dict[str, Any] = {}
     error: Optional[str] = None
 
 
@@ -173,9 +182,7 @@ def get_latest_portfolio():
     """
     Get the latest target portfolio from file.
 
-    This reads directly from the most recent etf_enhanced_*.json file,
-    and recalculates actions based on current holdings to ensure
-    accurate buy/sell/hold status.
+    Reads the most recent portfolio JSON (topk_portfolio_* or etf_enhanced_*).
     """
     try:
         if not TARGET_PORTFOLIO_DIR.exists():
@@ -183,38 +190,52 @@ def get_latest_portfolio():
                 success=False, error="Portfolio directory not found"
             )
 
-        # Find the latest portfolio file
-        portfolio_files = sorted(
-            TARGET_PORTFOLIO_DIR.glob("etf_enhanced_*.json"), reverse=True
-        )
+        # Find the latest portfolio file from either strategy
+        topk_files = list(TARGET_PORTFOLIO_DIR.glob("topk_portfolio_*.json"))
+        etf_files = list(TARGET_PORTFOLIO_DIR.glob("etf_enhanced_*.json"))
+        all_files = topk_files + etf_files
 
-        if not portfolio_files:
+        if not all_files:
             return LatestPortfolioResponse(
                 success=False, error="No portfolio files found"
             )
 
-        latest_file = portfolio_files[0]
+        # Sort by modification time (newest first)
+        all_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
+        latest_file = all_files[0]
 
         with open(latest_file, "r", encoding="utf-8") as f:
             portfolio_data = json.load(f)
 
-        # Use the portfolio file data directly - it contains the correct
-        # current_shares (snapshot at generation time) and action calculations.
-        # Do NOT recalculate from current_holdings.json, as that file
-        # is updated to target_shares after signal generation for next rebalance.
         positions = portfolio_data.get("positions", [])
         summary = portfolio_data.get("summary", {})
+        strategy = portfolio_data.get("strategy", "")
 
-        return LatestPortfolioResponse(
+        response = LatestPortfolioResponse(
             success=True,
+            strategy=strategy,
             trade_date=portfolio_data.get("trade_date"),
             signal_for_date=portfolio_data.get("signal_for_date"),
             generated_at=portfolio_data.get("generated_at"),
-            total_value=portfolio_data.get("total_value", 0),
             positions=positions,
-            weights=portfolio_data.get("weights", {}),
             summary=summary,
         )
+
+        # Populate strategy-specific fields
+        if strategy == "topk":
+            response.confidence = portfolio_data.get("confidence")
+            response.confidence_percentile = portfolio_data.get("confidence_percentile")
+            response.confidence_label = portfolio_data.get("confidence_label")
+            response.confidence_interpretation = portfolio_data.get(
+                "confidence_interpretation"
+            )
+            response.topk = portfolio_data.get("topk")
+            response.weight_method = portfolio_data.get("weight_method")
+        else:
+            response.total_value = portfolio_data.get("total_value", 0)
+            response.weights = portfolio_data.get("weights", {})
+
+        return response
 
     except Exception as e:
         logger.error(f"Failed to get latest portfolio: {e}")
