@@ -331,7 +331,7 @@ function Dashboard() {
             ) : (
               <Zap className="h-4 w-4 mr-2" />
             )}
-            Run Signal
+            Update Portfolio
           </Button>
           <Button
             variant="outline"

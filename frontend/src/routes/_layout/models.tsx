@@ -25,7 +25,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ModelsService } from "@/client";
+import { ModelsService, OnlineServingService } from "@/client";
+import { Settings } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -174,6 +175,13 @@ function ModelsPage() {
     queryKey: ["featureImportance"],
     queryFn: () => ModelsService.getFeatureImportance({ limit: 20 }),
     enabled: !!metricsData,
+  });
+
+  // Query for online serving config (model-related settings)
+  const { data: onlineStatus } = useQuery({
+    queryKey: ["onlineStatus"],
+    queryFn: () => OnlineServingService.getStatus(),
+    retry: false,
   });
 
   // Loading state
@@ -1526,6 +1534,52 @@ function ModelsPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Model Configuration */}
+          {onlineStatus?.config &&
+            (() => {
+              const MODEL_CONFIG_KEYS = [
+                "experiment_name",
+                "rolling_step",
+                "rolling_type",
+                "mlruns_path",
+                "mongodb_uri",
+              ];
+              const modelConfig = Object.entries(onlineStatus.config).filter(
+                ([key]) => MODEL_CONFIG_KEYS.includes(key),
+              );
+              if (modelConfig.length === 0) return null;
+              return (
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Settings className="h-5 w-5 text-muted-foreground" />
+                      <CardTitle>Model Configuration</CardTitle>
+                    </div>
+                    <CardDescription>
+                      Current model training and serving configuration
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                      {modelConfig.map(([key, value]) => (
+                        <div key={key} className="bg-muted/50 rounded-lg p-3">
+                          <div className="text-sm text-muted-foreground">
+                            {key}
+                          </div>
+                          <div
+                            className="font-medium truncate"
+                            title={String(value)}
+                          >
+                            {String(value) || "-"}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
         </div>
       </div>
     </div>

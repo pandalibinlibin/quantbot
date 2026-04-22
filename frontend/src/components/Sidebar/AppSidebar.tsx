@@ -4,7 +4,6 @@ import {
   Brain,
   Database,
   FlaskConical,
-  RefreshCw,
   Bell,
   BarChart3,
 } from "lucide-react";
@@ -26,7 +25,6 @@ const baseItems: Item[] = [
   { icon: Database, title: "Data Sources", path: "/data-sources" },
   { icon: FlaskConical, title: "Factors", path: "/factors" },
   { icon: Brain, title: "Model", path: "/models" },
-  { icon: RefreshCw, title: "Routine", path: "/routine" },
   { icon: Bell, title: "Target Portfolio", path: "/target-portfolio" },
   { icon: BarChart3, title: "Backtest", path: "/backtest" },
 ];

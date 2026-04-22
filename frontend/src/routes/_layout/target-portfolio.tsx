@@ -122,7 +122,7 @@ function TargetPortfolioPage() {
               <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-30" />
               <p className="text-lg font-medium">No Portfolio Data</p>
               <p className="text-sm mt-1">
-                Run Signal to generate target portfolio
+                Click Update Portfolio to generate target portfolio
               </p>
             </div>
           </CardContent>

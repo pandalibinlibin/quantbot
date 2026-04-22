@@ -514,6 +514,10 @@ BROADCAST_FIELD_NAMES: set = {
 3. **`.bin` 文件缺失** (2026-04-21): `dump_update`（增量模式）只处理 `last_end_date` 之后的新日期，不会为新列创建 `.bin` 文件。修复：当 `broadcast_changed=True` 时强制使用 `dump_all`（全量模式），确保新列的 `.bin` 文件覆盖完整日期范围。
 4. **Feature name `Column_5`** (2026-04-21): `model_metrics_service.py` 的 `_map_feature_names()` 中 `ohlcv_fields` 列表缺少 `vwap`，已修复。
 5. **Data Sources 页面 broadcast fields 分类错误** (2026-04-22): 前端硬编码 `RAW_FIELDS` 只包含 OHLCV，导致 `shibor_1y`、`afre_monthly_flow` 被误归为 "Computed Factors"。修复：后端 `DataSourceStatus` 新增 `field_names` 字段（OHLCV + broadcast fields），前端直接使用；同时移除 Data Sources 页面的 "Computed Factors" 区块（该职责属于 Factors 页面）。
+6. **UI 导航重组** (2026-04-22):
+   - Dashboard "Run Signal" 按钮重命名为 "Update Portfolio"（更贴近业务语义）
+   - 从侧边栏隐藏 Routine 页面（其功能已被 Dashboard + Target Portfolio 页面覆盖）
+   - Routine 页面的 Configuration 按方案 B 拆分：模型相关配置（experiment_name, rolling_step, rolling_type, mlruns_path, mongodb_uri）移至 Model 页面；数据相关配置（source, stock_pool）在 Data Sources 页面已有展示，不重复。
 
 ### 数据对齐策略
 
