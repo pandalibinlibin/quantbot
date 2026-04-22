@@ -1188,6 +1188,10 @@ class DataSourceStatus(SQLModel):
         default=None,
         description="List of available features (e.g., ['open', 'close', 'high', 'low', 'volume'])",
     )
+    field_names: list[str] | None = Field(
+        default=None,
+        description="Raw data field names (OHLCV + broadcast fields like shibor_1y)",
+    )
     label: str | None = Field(
         default=None,
         description="Active label name for prediction target (e.g., 'return_1d')",

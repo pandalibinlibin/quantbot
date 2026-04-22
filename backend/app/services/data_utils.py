@@ -454,6 +454,25 @@ def get_data_source_status_impl() -> dict:
         except Exception as e:
             logger.error(f"Failed to read label config: {e}")
 
+    # Build raw field_names list (OHLCV + broadcast fields)
+    field_names = None
+    if data_exists and features:
+        base_data_names = {"open", "high", "low", "close", "volume", "vwap"}
+        try:
+            from app.services.data_collectors.broadcast_field_collector import (
+                get_broadcast_field_names,
+            )
+
+            base_data_names |= get_broadcast_field_names()
+        except ImportError:
+            pass
+        # Keep only features that are raw fields, preserve .day/.1min suffix
+        field_names = [
+            f
+            for f in features
+            if f.replace(".day", "").replace(".1min", "").lower() in base_data_names
+        ]
+
     return {
         "source_name": current_source,
         "data_exists": data_exists,
@@ -463,6 +482,7 @@ def get_data_source_status_impl() -> dict:
         "instruments_count": instruments_count,
         "stock_pool": stock_pool,
         "features": features,
+        "field_names": field_names,
         "label": label_name,
         "data_size_mb": data_size_mb,
         "last_updated": last_updated,

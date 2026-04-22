@@ -3,7 +3,155 @@
 import type { CancelablePromise } from './core/CancelablePromise';
 import { OpenAPI } from './core/OpenAPI';
 import { request as __request } from './core/request';
-import type { DataSourceGetDataSourceStatusEndpointResponse, DataSourceClearDataSourceEndpointResponse, DataSourceDownloadDataSourceEndpointData, DataSourceDownloadDataSourceEndpointResponse, DataSourceExportDataEndpointResponse, DataSourceGetDataHealthEndpointResponse, FactorsCreateFactorData, FactorsCreateFactorResponse, FactorsGetFactorsData, FactorsGetFactorsResponse, FactorsGetFactorData, FactorsGetFactorResponse, FactorsUpdateFactorData, FactorsUpdateFactorResponse, FactorsDeleteFactorData, FactorsDeleteFactorResponse, FactorsValidateFactorExpressionData, FactorsValidateFactorExpressionResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, ModelsGetActiveModelMetricsResponse, ModelsGetIcSeriesChartResponse, ModelsGetMonthlyIcChartResponse, ModelsGetGroupReturnsChartResponse, ModelsGetLongShortSeriesChartResponse, ModelsGetAutoCorrelationChartResponse, ModelsGetFeatureImportanceData, ModelsGetFeatureImportanceResponse, OnlineServingExecuteRoutineData, OnlineServingExecuteRoutineResponse, OnlineServingGetStatusResponse, OnlineServingGetSignalsResponse, OnlineServingResetStateResponse, OnlineServingExecuteBacktestData, OnlineServingExecuteBacktestResponse, PaperTradingGetPortfolioResponse, PaperTradingGetTradingPlanData, PaperTradingGetTradingPlanResponse, PaperTradingExecuteTradesData, PaperTradingExecuteTradesResponse, PaperTradingGetTradeHistoryData, PaperTradingGetTradeHistoryResponse, PaperTradingGetPerformanceResponse, PaperTradingResetPaperTradingResponse, PrivateCreateUserData, PrivateCreateUserResponse, TrainingCheckDataStatusData, TrainingCheckDataStatusResponse, TrainingStartTrainingResponse, TrainingGetTrainingConfigResponse, TrainingListModelsResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+import type { BacktestGetBacktestConfigurationResponse, BacktestGetBacktestStatusResponse, BacktestGetLatestBacktestResultResponse, BacktestRunBacktestData, BacktestRunBacktestResponse, DashboardGetLatestPortfolioResponse, DashboardGetLatestPortfolio1Response, DashboardGetDashboardSummaryResponse, DashboardGetDashboardSummary1Response, DataSourceGetDataSourceStatusEndpointResponse, DataSourceClearDataSourceEndpointResponse, DataSourceDownloadDataSourceEndpointData, DataSourceDownloadDataSourceEndpointResponse, DataSourceExportDataEndpointResponse, DataSourceGetDataHealthEndpointResponse, FactorsCreateFactorData, FactorsCreateFactorResponse, FactorsGetFactorsData, FactorsGetFactorsResponse, FactorsGetAlpha158InfoResponse, FactorsGetLabelConfigResponse, FactorsGetFactorData, FactorsGetFactorResponse, FactorsUpdateFactorData, FactorsUpdateFactorResponse, FactorsDeleteFactorData, FactorsDeleteFactorResponse, FactorsValidateFactorExpressionData, FactorsValidateFactorExpressionResponse, ItemsReadItemsData, ItemsReadItemsResponse, ItemsCreateItemData, ItemsCreateItemResponse, ItemsReadItemData, ItemsReadItemResponse, ItemsUpdateItemData, ItemsUpdateItemResponse, ItemsDeleteItemData, ItemsDeleteItemResponse, LoginLoginAccessTokenData, LoginLoginAccessTokenResponse, LoginTestTokenResponse, LoginRecoverPasswordData, LoginRecoverPasswordResponse, LoginResetPasswordData, LoginResetPasswordResponse, LoginRecoverPasswordHtmlContentData, LoginRecoverPasswordHtmlContentResponse, ModelsGetActiveModelMetricsResponse, ModelsGetIcSeriesChartResponse, ModelsGetMonthlyIcChartResponse, ModelsGetGroupReturnsChartResponse, ModelsGetLongShortSeriesChartResponse, ModelsGetAutoCorrelationChartResponse, ModelsGetFeatureImportanceData, ModelsGetFeatureImportanceResponse, OnlineServingExecuteRoutineData, OnlineServingExecuteRoutineResponse, OnlineServingGetStatusResponse, OnlineServingGetSignalsResponse, OnlineServingResetStateResponse, OnlineServingGetHoldingsResponse, OnlineServingUpdateHoldingsData, OnlineServingUpdateHoldingsResponse, OnlineServingClearHoldingsResponse, PaperTradingGetPortfolioResponse, PaperTradingGetTradingPlanData, PaperTradingGetTradingPlanResponse, PaperTradingExecuteTradesData, PaperTradingExecuteTradesResponse, PaperTradingGetTradeHistoryData, PaperTradingGetTradeHistoryResponse, PaperTradingGetPerformanceResponse, PaperTradingResetPaperTradingResponse, PaperTradingGetNotificationConfigResponse, PaperTradingUpdateNotificationConfigData, PaperTradingUpdateNotificationConfigResponse, PaperTradingAddRecipientData, PaperTradingAddRecipientResponse, PaperTradingRemoveRecipientData, PaperTradingRemoveRecipientResponse, PaperTradingSendTestEmailData, PaperTradingSendTestEmailResponse, PrivateCreateUserData, PrivateCreateUserResponse, RunTaskRunTaskResponse, SchedulerGetSchedulerStatusResponse, SchedulerGetSchedulerStatus1Response, TrainingCheckDataStatusData, TrainingCheckDataStatusResponse, TrainingStartTrainingResponse, TrainingGetTrainingConfigResponse, TrainingListModelsResponse, UpdateDataUpdateDataResponse, UpdateDataGetDataStatusResponse, UsersReadUsersData, UsersReadUsersResponse, UsersCreateUserData, UsersCreateUserResponse, UsersReadUserMeResponse, UsersDeleteUserMeResponse, UsersUpdateUserMeData, UsersUpdateUserMeResponse, UsersUpdatePasswordMeData, UsersUpdatePasswordMeResponse, UsersRegisterUserData, UsersRegisterUserResponse, UsersReadUserByIdData, UsersReadUserByIdResponse, UsersUpdateUserData, UsersUpdateUserResponse, UsersDeleteUserData, UsersDeleteUserResponse, UtilsTestEmailData, UtilsTestEmailResponse, UtilsHealthCheckResponse } from './types.gen';
+
+export class BacktestService {
+    /**
+     * Get Backtest Configuration
+     * Get backtest configuration from backtest_config.yaml.
+     *
+     * Returns the actual strategy configuration and backtest parameters.
+     * @returns BacktestConfigResponse Successful Response
+     * @throws ApiError
+     */
+    public static getBacktestConfiguration(): CancelablePromise<BacktestGetBacktestConfigurationResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/backtest/config'
+        });
+    }
+    
+    /**
+     * Get Backtest Status
+     * Get backtest readiness status.
+     *
+     * Checks if Online Serving is initialized and has signals available
+     * for backtesting.
+     * @returns BacktestStatusResponse Successful Response
+     * @throws ApiError
+     */
+    public static getBacktestStatus(): CancelablePromise<BacktestGetBacktestStatusResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/backtest/status'
+        });
+    }
+    
+    /**
+     * Get Latest Backtest Result
+     * Get the latest backtest result.
+     *
+     * Returns the most recent backtest result that was persisted to disk.
+     * This allows the frontend to display results across page navigations.
+     * @returns LatestResultResponse Successful Response
+     * @throws ApiError
+     */
+    public static getLatestBacktestResult(): CancelablePromise<BacktestGetLatestBacktestResultResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/backtest/latest-result'
+        });
+    }
+    
+    /**
+     * Run Backtest
+     * Execute a new backtest.
+     *
+     * This endpoint:
+     * 1. Uses signals from Online Serving
+     * 2. Executes backtest using Enhanced Indexing strategy
+     * 3. Persists the result for later retrieval
+     *
+     * Args:
+     * request: Backtest configuration (all fields optional with defaults)
+     *
+     * Returns:
+     * Backtest results including returns, metrics, and configuration
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns BacktestRunResponse Successful Response
+     * @throws ApiError
+     */
+    public static runBacktest(data: BacktestRunBacktestData = {}): CancelablePromise<BacktestRunBacktestResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/backtest/run',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+}
+
+export class DashboardService {
+    /**
+     * Get Latest Portfolio
+     * Get the latest target portfolio from file.
+     *
+     * This reads directly from the most recent etf_enhanced_*.json file,
+     * and recalculates actions based on current holdings to ensure
+     * accurate buy/sell/hold status.
+     * @returns LatestPortfolioResponse Successful Response
+     * @throws ApiError
+     */
+    public static getLatestPortfolio(): CancelablePromise<DashboardGetLatestPortfolioResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/dashboard/latest-portfolio'
+        });
+    }
+    
+    /**
+     * Get Latest Portfolio
+     * Get the latest target portfolio from file.
+     *
+     * This reads directly from the most recent etf_enhanced_*.json file,
+     * and recalculates actions based on current holdings to ensure
+     * accurate buy/sell/hold status.
+     * @returns LatestPortfolioResponse Successful Response
+     * @throws ApiError
+     */
+    public static getLatestPortfolio1(): CancelablePromise<DashboardGetLatestPortfolio1Response> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/dashboard/latest-portfolio'
+        });
+    }
+    
+    /**
+     * Get Dashboard Summary
+     * Get aggregated dashboard summary.
+     *
+     * Returns backtest results, model metrics, system status,
+     * target positions, and alerts.
+     * @returns DashboardResponse Successful Response
+     * @throws ApiError
+     */
+    public static getDashboardSummary(): CancelablePromise<DashboardGetDashboardSummaryResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/dashboard/summary'
+        });
+    }
+    
+    /**
+     * Get Dashboard Summary
+     * Get aggregated dashboard summary.
+     *
+     * Returns backtest results, model metrics, system status,
+     * target positions, and alerts.
+     * @returns DashboardResponse Successful Response
+     * @throws ApiError
+     */
+    public static getDashboardSummary1(): CancelablePromise<DashboardGetDashboardSummary1Response> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/dashboard/summary'
+        });
+    }
+}
 
 export class DataSourceService {
     /**
@@ -192,6 +340,38 @@ export class FactorsService {
             errors: {
                 422: 'Validation Error'
             }
+        });
+    }
+    
+    /**
+     * Get Alpha158 Info
+     * Get Alpha158 factor library information and status
+     *
+     * Returns:
+     * Alpha158 configuration, status, and factor list
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getAlpha158Info(): CancelablePromise<FactorsGetAlpha158InfoResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/factors/builtin-libraries/alpha158'
+        });
+    }
+    
+    /**
+     * Get Label Config
+     * Get current label configuration based on market region
+     *
+     * Returns:
+     * Label configuration including expression and description
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getLabelConfig(): CancelablePromise<FactorsGetLabelConfigResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/factors/label-config'
         });
     }
     
@@ -797,36 +977,57 @@ export class OnlineServingService {
     }
     
     /**
-     * Execute Backtest
-     * Execute backtest using trained model on full historical data.
+     * Get Holdings
+     * Get current holdings state.
      *
-     * This endpoint:
-     * 1. Loads the latest trained model from Online Serving or MLflow
-     * 2. Creates a dataset with full historical data
-     * 3. Uses the model to generate predictions (signals) for all days
-     * 4. Executes backtest using the predictions with TopkDropout strategy
-     *
-     * This is independent of /routine - it only requires a trained model to exist.
-     *
-     * Args:
-     * request: Backtest configuration (all fields optional with defaults)
-     *
-     * Returns:
-     * Backtest results including returns, metrics, and configuration
-     * @param data The data for the request.
-     * @param data.requestBody
-     * @returns BacktestResponse Successful Response
+     * Returns the persisted holdings that will be used for calculating
+     * the next day's trading signals.
+     * @returns HoldingsResponse Successful Response
      * @throws ApiError
      */
-    public static executeBacktest(data: OnlineServingExecuteBacktestData = {}): CancelablePromise<OnlineServingExecuteBacktestResponse> {
+    public static getHoldings(): CancelablePromise<OnlineServingGetHoldingsResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/online/holdings'
+        });
+    }
+    
+    /**
+     * Update Holdings
+     * Update current holdings state.
+     *
+     * Use this to manually set holdings if they differ from the
+     * auto-applied trades (e.g., partial fills, manual adjustments).
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns HoldingsResponse Successful Response
+     * @throws ApiError
+     */
+    public static updateHoldings(data: OnlineServingUpdateHoldingsData): CancelablePromise<OnlineServingUpdateHoldingsResponse> {
         return __request(OpenAPI, {
             method: 'POST',
-            url: '/api/v1/online/backtest',
+            url: '/api/v1/online/holdings',
             body: data.requestBody,
             mediaType: 'application/json',
             errors: {
                 422: 'Validation Error'
             }
+        });
+    }
+    
+    /**
+     * Clear Holdings
+     * Clear all holdings (reset to empty portfolio).
+     *
+     * Use with caution - this will make the next signal calculation
+     * assume you have no existing positions.
+     * @returns HoldingsResponse Successful Response
+     * @throws ApiError
+     */
+    public static clearHoldings(): CancelablePromise<OnlineServingClearHoldingsResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/online/holdings'
         });
     }
 }
@@ -956,6 +1157,106 @@ export class PaperTradingService {
             url: '/api/v1/paper-trading/reset'
         });
     }
+    
+    /**
+     * Get Notification Config
+     * Get current notification configuration.
+     *
+     * Returns notification settings including enabled status, recipients, and SMTP config.
+     * @returns NotificationConfigResponse Successful Response
+     * @throws ApiError
+     */
+    public static getNotificationConfig(): CancelablePromise<PaperTradingGetNotificationConfigResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/paper-trading/notification/config'
+        });
+    }
+    
+    /**
+     * Update Notification Config
+     * Update notification configuration.
+     *
+     * Allows updating enabled status, recipients, and SMTP settings.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns NotificationConfigResponse Successful Response
+     * @throws ApiError
+     */
+    public static updateNotificationConfig(data: PaperTradingUpdateNotificationConfigData): CancelablePromise<PaperTradingUpdateNotificationConfigResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/v1/paper-trading/notification/config',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Add Recipient
+     * Add a recipient email address.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns RecipientResponse Successful Response
+     * @throws ApiError
+     */
+    public static addRecipient(data: PaperTradingAddRecipientData): CancelablePromise<PaperTradingAddRecipientResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/paper-trading/notification/recipient',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Remove Recipient
+     * Remove a recipient email address.
+     * @param data The data for the request.
+     * @param data.email
+     * @returns RecipientResponse Successful Response
+     * @throws ApiError
+     */
+    public static removeRecipient(data: PaperTradingRemoveRecipientData): CancelablePromise<PaperTradingRemoveRecipientResponse> {
+        return __request(OpenAPI, {
+            method: 'DELETE',
+            url: '/api/v1/paper-trading/notification/recipient/{email}',
+            path: {
+                email: data.email
+            },
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
+    
+    /**
+     * Send Test Email
+     * Send a test email to verify notification configuration.
+     *
+     * Optionally specify a recipient, otherwise uses the first configured recipient.
+     * @param data The data for the request.
+     * @param data.requestBody
+     * @returns TestEmailResponse Successful Response
+     * @throws ApiError
+     */
+    public static sendTestEmail(data: PaperTradingSendTestEmailData = {}): CancelablePromise<PaperTradingSendTestEmailResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/paper-trading/notification/test',
+            body: data.requestBody,
+            mediaType: 'application/json',
+            errors: {
+                422: 'Validation Error'
+            }
+        });
+    }
 }
 
 export class PrivateService {
@@ -980,13 +1281,67 @@ export class PrivateService {
     }
 }
 
+export class RunTaskService {
+    /**
+     * Run Task
+     * Execute Run Signal - Portfolio optimization and signal export.
+     *
+     * Prerequisite: Update Data must have been run first.
+     *
+     * Workflow:
+     * 1. Generate target portfolio via Enhanced Indexing Strategy
+     * 2. Export trading signals for VeighNa
+     * 3. Send email notification (handled inside portfolio optimization)
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static runTask(): CancelablePromise<RunTaskRunTaskResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/run-task/run'
+        });
+    }
+}
+
+export class SchedulerService {
+    /**
+     * Get Scheduler Status
+     * Get current scheduler status.
+     *
+     * Returns scheduler running state, configuration, and scheduled jobs.
+     * @returns SchedulerStatusResponse Successful Response
+     * @throws ApiError
+     */
+    public static getSchedulerStatus(): CancelablePromise<SchedulerGetSchedulerStatusResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/scheduler/status'
+        });
+    }
+    
+    /**
+     * Get Scheduler Status
+     * Get current scheduler status.
+     *
+     * Returns scheduler running state, configuration, and scheduled jobs.
+     * @returns SchedulerStatusResponse Successful Response
+     * @throws ApiError
+     */
+    public static getSchedulerStatus1(): CancelablePromise<SchedulerGetSchedulerStatus1Response> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/scheduler/status'
+        });
+    }
+}
+
 export class TrainingService {
     /**
      * Check Data Status
      * Check if data is available for training.
      *
      * Args:
-     * freq: Data frequency ("day" or "1min")
+     * freq: Data frequency (only "day" is supported)
      *
      * Returns:
      * Data availability status
@@ -1053,6 +1408,46 @@ export class TrainingService {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/v1/training/models'
+        });
+    }
+}
+
+export class UpdateDataService {
+    /**
+     * Update Data
+     * Execute data update - full data preparation workflow.
+     *
+     * Steps:
+     * 1. Incremental data download
+     * 2. Qlib initialization (if needed)
+     * 3. OnlineManager routine (rolling model training + prediction)
+     * 4. Signal generation
+     * 5. Model performance metrics
+     *
+     * Prepares data for Run Signal and Run Backtest.
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static updateData(): CancelablePromise<UpdateDataUpdateDataResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/update-data/run'
+        });
+    }
+    
+    /**
+     * Get Data Status
+     * Get data readiness status.
+     *
+     * Returns initialization state, last update time,
+     * signal availability, and data coverage.
+     * @returns unknown Successful Response
+     * @throws ApiError
+     */
+    public static getDataStatus(): CancelablePromise<UpdateDataGetDataStatusResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/update-data/status'
         });
     }
 }

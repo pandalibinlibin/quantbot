@@ -412,11 +412,13 @@ convert_csv_to_qlib_format_impl(csv_dir=str(csv_dir), freq="day", incremental=du
 
 #### 5. 下游系统集成
 
-| 系统组件                   | 如何处理 broadcast fields                                                                                                        |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `factor_storage.py`        | `list_stored_factors()` 中 `raw_fields` 集合通过 `get_broadcast_field_names()` 动态包含 broadcast fields，避免将其误认为计算因子 |
-| `dashboard.py`             | `field_names` 仅包含 `.bin` 文件实际存在的 broadcast fields（检查 qlib_data features 目录），避免下载未完成时过早显示            |
-| `model_metrics_service.py` | `_map_feature_names()` 中 `ohlcv_fields` 列表需与 `custom_factor_handler.py` 训练时使用的特征顺序一致                            |
+| 系统组件                   | 如何处理 broadcast fields                                                                                                               |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `factor_storage.py`        | `list_stored_factors()` 中 `raw_fields` 集合通过 `get_broadcast_field_names()` 动态包含 broadcast fields，避免将其误认为计算因子        |
+| `dashboard.py`             | `field_names` 仅包含 `.bin` 文件实际存在的 broadcast fields（检查 qlib_data features 目录），避免下载未完成时过早显示                   |
+| `data_utils.py`            | `get_data_source_status_impl()` 返回 `field_names`（OHLCV + broadcast fields），供 Data Sources 页面区分 raw fields 和 computed factors |
+| `data-sources.tsx`         | Fields (Raw Data) 使用后端 `field_names` 显示，不再硬编码 OHLCV 列表；已移除 "Computed Factors" 区块（该职责属于 Factors 页面）         |
+| `model_metrics_service.py` | `_map_feature_names()` 中 `ohlcv_fields` 列表需与 `custom_factor_handler.py` 训练时使用的特征顺序一致                                   |
 
 #### 6. 文件系统布局
 
@@ -511,6 +513,7 @@ BROADCAST_FIELD_NAMES: set = {
 2. **Dashboard 过早显示** (2026-04-21): dashboard 只显示 `.bin` 文件实际存在的 broadcast fields。
 3. **`.bin` 文件缺失** (2026-04-21): `dump_update`（增量模式）只处理 `last_end_date` 之后的新日期，不会为新列创建 `.bin` 文件。修复：当 `broadcast_changed=True` 时强制使用 `dump_all`（全量模式），确保新列的 `.bin` 文件覆盖完整日期范围。
 4. **Feature name `Column_5`** (2026-04-21): `model_metrics_service.py` 的 `_map_feature_names()` 中 `ohlcv_fields` 列表缺少 `vwap`，已修复。
+5. **Data Sources 页面 broadcast fields 分类错误** (2026-04-22): 前端硬编码 `RAW_FIELDS` 只包含 OHLCV，导致 `shibor_1y`、`afre_monthly_flow` 被误归为 "Computed Factors"。修复：后端 `DataSourceStatus` 新增 `field_names` 字段（OHLCV + broadcast fields），前端直接使用；同时移除 Data Sources 页面的 "Computed Factors" 区块（该职责属于 Factors 页面）。
 
 ### 数据对齐策略
 
