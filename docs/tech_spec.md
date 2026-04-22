@@ -550,6 +550,7 @@ BROADCAST_FIELD_NAMES: set = {
     - **Problem**: SVG chart showed only Y-axis labels but no lines on mobile (WeChat). Fixed-width SVG (700px) was clipped.
     - **Fix**: SVG uses `viewBox` for responsive scaling + base64-encoded `<img>` tag fallback. Most email clients (including WeChat) render base64 data-URI images. Container uses `width:100%;overflow:hidden`.
 14. **Removed Avg Turnover** (2026-04-22): Removed the Avg Daily Turnover metric card from the frontend backtest Risk Metrics section. Turnover rate is not actionable for end users.
+15. **Email report cleanup** (2026-04-22): Removed Annualized Return from the backtest email Risk Metrics table — redundant with CAGR (Net) already shown in Backtest Results section. Final email Risk Metrics layout: Max Drawdown | Sharpe Ratio, Volatility | Calmar Ratio, Win Rate | P/L Ratio, Alpha | Beta (4 rows × 2 columns).
 
 ### 数据对齐策略
 

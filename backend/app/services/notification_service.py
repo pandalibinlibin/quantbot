@@ -1895,24 +1895,20 @@ class NotificationService:
                     <div style="font-size:15px;font-weight:600;color:#334155;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #e2e8f0;">⚡ Risk Metrics</div>
                     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
                         <tr>
-                            {metric_cell("📈 Annualized Return", fmt_pct(annualized_return), annual_return_color)}
-                            {metric_cell("📉 Max Drawdown", fmt_pct(max_drawdown), "#dc2626")}
-                        </tr>
-                        <tr>
+                            {metric_cell("� Max Drawdown", fmt_pct(max_drawdown), "#dc2626")}
                             {metric_cell("🎯 Sharpe Ratio", fmt_ratio(sharpe_ratio), sharpe_color)}
+                        </tr>
+                        <tr>
                             {metric_cell("📊 Volatility", fmt_pct(volatility), "#64748b")}
-                        </tr>
-                        <tr>
                             {metric_cell("⚖️ Calmar Ratio", fmt_ratio(calmar_ratio))}
+                        </tr>
+                        <tr>
                             {metric_cell("🏆 Win Rate", fmt_pct(win_rate))}
-                        </tr>
-                        <tr>
                             {metric_cell("📊 P/L Ratio", fmt_ratio(profit_loss_ratio))}
-                            {metric_cell("� Alpha", f"{alpha:.3f}", "#16a34a" if alpha >= 0 else "#dc2626")}
                         </tr>
                         <tr>
+                            {metric_cell("📈 Alpha", f"{alpha:.3f}", "#16a34a" if alpha >= 0 else "#dc2626")}
                             {metric_cell("📉 Beta", f"{beta:.3f}")}
-                            <td style="padding:8px;width:50%;"></td>
                         </tr>
                     </table>
 
