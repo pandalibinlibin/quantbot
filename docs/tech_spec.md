@@ -304,48 +304,213 @@ with R.start(experiment_name=f"exp_{task_id}"):
 
 ### Broadcast Field 广播机制 (2026-04-21)
 
-**设计原则**：非 daily 的数据自动 resample 到 daily，非 per-instrument 的数据自动广播到所有 instrument。广播发生在 pipeline 最早阶段（Collect 之后、Normalize 之前），完成后数据与 OHLCV 无异，走完全相同的后续流程。
+#### 1. 设计原则
 
-**核心函数**：`broadcast_field(raw_df, date_col, value_col, field_name, csv_dir)`
+广播机制用于将 **非标准** 数据（非 daily、非 per-instrument、或两者兼具）注入到每个 instrument 的 CSV 中，使其与 OHLCV 数据一样，无缝走完后续的 normalize → dump_bin pipeline。
 
-**自动检测规则**：
+核心思想：**不改现有 pipeline，只在 Collect 和 Normalize 之间加一步注入**。
 
-| 属性   | 检测方法                           | 处理                    |
-| ------ | ---------------------------------- | ----------------------- |
-| 频率   | 日期列间距中位数 > 7 天 → 非 daily | ffill 到 daily          |
-| 作用域 | 无 `ts_code` 列 → global           | 写入所有 instrument CSV |
+**四种数据类型完整覆盖**：
 
-**数据流**：
+|            | per-instrument（有 `ts_code`）        | 全局（无 `ts_code`）                   |
+| ---------- | ------------------------------------- | -------------------------------------- |
+| **日频**   | ① 标准 OHLCV（主 pipeline 处理）      | ③ broadcast：直接广播到所有 CSV        |
+| **非日频** | ② broadcast：分组 resample + 匹配注入 | ④ broadcast：resample + 广播到所有 CSV |
+
+- **①** 由 `tushare_collector.py` 处理，不经过广播机制
+- **②③④** 全部由 `broadcast_field()` 自动检测并处理
 
 ```
-用户请求下载 field (e.g., shibor 7天)
-    │
-    ▼
-调 tushare API → 自动检测 freq/scope → resample + broadcast
-    │
-    ▼
-注入到每个 instrument CSV 中（新增一列）
-    │
-    ▼
-走现有 pipeline: normalize → dump_bin → {field_name}.day.bin
+                     现有 Pipeline（不改）
+                     ┌─────────────────────────────┐
+                     │                             │
+用户请求下载 field    │  Collect   Normalize  Dump  │
+  (api, column,     │  ──────>  ────────>  ────>  │
+   name)            │                             │
+    │               └──────▲──────────────────────┘
+    ▼                      │
+┌──────────┐    ┌──────────┴──────────┐
+│ 调tushare │───>│ broadcast_field()   │
+│ 下载数据   │    │ 自动检测 → 注入CSV  │
+└──────────┘    └─────────────────────┘
+  ▼ 自动检测:
+  · 频率: 非daily → resample_to_daily (ffill)
+  · 作用域: 无ts_code → 复制到全部CSV
+            有ts_code → 按ts_code匹配到对应CSV
 ```
 
-**不需要配置文件**：用户通过告诉 Cascade 添加新 field，Cascade 修改 `inject_broadcast_fields()` 中的代码。
+#### 2. 自动检测规则
 
-**已解决的关键问题**：
+| 属性   | 检测方法                                                 | 处理                                                                                                   |
+| ------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| 频率   | `detect_frequency()`: 日期列间距中位数 > 7 天 → 非 daily | `resample_to_daily()`: ffill 到交易日历                                                                |
+| 作用域 | `raw_df` 中无 `ts_code` 列 → global                      | global：写入所有 instrument CSV；per-instrument：按 `ts_code` 匹配对应 CSV（`_ts_code_to_csv_stem()`） |
+
+频率分类阈值：
+
+- `median_gap ≤ 7` → `daily`（无需 resample）
+- `7 < median_gap ≤ 45` → `monthly`（需 resample）
+- `median_gap > 45` → `quarterly`（需 resample）
+
+#### 3. 核心文件与 API
+
+**主文件**: `backend/app/services/data_collectors/broadcast_field_collector.py`
+
+| 函数/常量                                                                             | 作用                                                                                     |
+| ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `BROADCAST_FIELD_NAMES: set`                                                          | 注册表。所有 broadcast field 名称在此注册，被 `factor_storage.py` 和 `dashboard.py` 读取 |
+| `detect_frequency(df, date_col)`                                                      | 自动检测频率，返回 `'daily'`/`'monthly'`/`'quarterly'`                                   |
+| `extend_start_for_resample(start_date, freq)`                                         | 按频率扩展下载起始日期（monthly→-1月, quarterly→-3月），防止 ffill 开头 NaN              |
+| `resample_to_daily(series, trading_calendar)`                                         | 将非 daily series 通过 ffill 转为 daily，对齐到交易日历                                  |
+| `_ts_code_to_csv_stem(ts_code)`                                                       | Tushare `ts_code`（`600519.SH`）→ Qlib CSV stem（`SH600519`），用于 per-instrument 匹配  |
+| `broadcast_field(raw_df, date_col, value_col, field_name, csv_dir, trading_calendar)` | **核心函数**：自动检测 → resample → 注入 CSV。global 广播到全部，per-inst 匹配注入       |
+| `get_trading_calendar_for_broadcast()`                                                | 获取交易日历（优先 Qlib calendar 文件，fallback Tushare API）                            |
+| `inject_broadcast_fields(csv_dir, start_date, end_date)`                              | **Pipeline 入口**：统一扩展起始日期，下载并注入所有注册的 broadcast fields               |
+| `_get_csv_date_range(csv_dir, fallback_start, fallback_end)`                          | 从 CSV 文件读取完整日期范围（增量更新时 pipeline 只传增量日期，但广播需要覆盖完整历史）  |
+
+**`broadcast_field()` 函数详细流程**：
+
+```python
+def broadcast_field(raw_df, date_col, value_col, field_name, csv_dir, trading_calendar=None) -> int:
+    # Step 1: 提取 value series，设置日期索引，去重
+    # Step 2: detect_frequency() 自动检测频率
+    # Step 3: 若非 daily → resample_to_daily(series, trading_calendar)  [仅 global 分支]
+    # Step 4: 检测 scope（raw_df 中无 ts_code → global）
+    # Step 5a (global):    遍历所有 *.csv，用同一个 series 注入
+    # Step 5b (per-inst):  按 ts_code 分组，每组单独构建 series →
+    #                      若非 daily 则 resample → 匹配对应 CSV → 注入
+    # 返回更新的 CSV 数量
+```
+
+**per-instrument 分支的 ts_code 匹配**：Tushare 的 `600519.SH` 通过 `_ts_code_to_csv_stem()` 转换为 Qlib 格式 `SH600519`，再与 CSV 文件名匹配。
+
+#### 4. Pipeline 集成
+
+在 `pipeline/service.py` 的 `_execute_tushare_pipeline()` 中：
+
+```
+1. Collect data (download OHLCV from tushare)
+2. ★ inject_broadcast_fields(csv_dir, start, end)   ← 广播注入点
+3. Check total_collected==0 AND broadcast_changed==False → 早退
+4. Normalize (UniversalNormalize)
+5. Convert to Qlib .bin (dump_bin)
+```
+
+**关键设计决策**：
+
+- **广播在早退检查之前**：即使 `total_collected==0`（周末/假日无新交易数据），只要 broadcast field 有变更，pipeline 仍会继续执行 normalize 和 dump_bin。
+- **增量更新时强制 full dump**：当 `broadcast_changed=True` 且 `incremental=True` 时，`dump_incremental` 被设为 `False`，强制使用 `dump_all`（全量模式）。原因：`dump_update` 只处理 `last_end_date` 之后的新日期，无法为新增列创建 `.bin` 文件。
+- **日期范围扩展**：`_get_csv_date_range()` 从 CSV 文件中读取完整日期范围（而非只用 pipeline 传入的增量日期范围），确保广播数据覆盖与 OHLCV 相同的历史。
+
+```python
+# pipeline/service.py 关键代码
+dump_incremental = incremental and not broadcast_changed
+if broadcast_changed and incremental:
+    logger.info("Broadcast fields changed: forcing full dump to generate new .bin files")
+convert_csv_to_qlib_format_impl(csv_dir=str(csv_dir), freq="day", incremental=dump_incremental)
+```
+
+#### 5. 下游系统集成
+
+| 系统组件                   | 如何处理 broadcast fields                                                                                                        |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `factor_storage.py`        | `list_stored_factors()` 中 `raw_fields` 集合通过 `get_broadcast_field_names()` 动态包含 broadcast fields，避免将其误认为计算因子 |
+| `dashboard.py`             | `field_names` 仅包含 `.bin` 文件实际存在的 broadcast fields（检查 qlib_data features 目录），避免下载未完成时过早显示            |
+| `model_metrics_service.py` | `_map_feature_names()` 中 `ohlcv_fields` 列表需与 `custom_factor_handler.py` 训练时使用的特征顺序一致                            |
+
+#### 6. 文件系统布局
+
+```
+csv_data/cn_data/
+  ├── SH000300.csv           ← 每个 CSV 中包含 broadcast 列（如 shibor_1y）
+  ├── SH510300.csv
+  ├── SZ159915.csv
+  └── ...
+
+qlib_data/features/
+  ├── sh000300/              ← dump_bin 统一转为小写目录名
+  │   ├── close.day.bin
+  │   ├── open.day.bin
+  │   ├── shibor_1y.day.bin  ← broadcast field 的 .bin 文件
+  │   ├── afre_monthly_flow.day.bin
+  │   └── ...
+  ├── sh510300/
+  │   ├── close.day.bin
+  │   ├── shibor_1y.day.bin  ← 每个 instrument 都有一份
+  │   ├── afre_monthly_flow.day.bin
+  │   └── ...
+  └── ...
+```
+
+#### 7. 添加新 broadcast field 的流程
+
+**不需要任何配置文件**。用户告诉 Cascade 添加 field，Cascade 修改代码：
+
+**Step 1**：在 `broadcast_field_collector.py` 中添加下载函数：
+
+```python
+def _download_and_broadcast_xxx(csv_dir, start_date, end_date, trading_calendar) -> int:
+    # start_date 已由 inject_broadcast_fields() 自动扩展，无需手动处理
+    # 1. 调用 tushare API 获取数据
+    df = pro.xxx_api(start_m=ts_start, end_m=ts_end)
+    # 2. 调用 broadcast_field() 注入
+    count = broadcast_field(
+        raw_df=df, date_col="month", value_col="target_column",
+        field_name="xxx_field", csv_dir=csv_dir, trading_calendar=trading_calendar
+    )
+    return count
+```
+
+> ℹ️ **起始日期自动扩展机制**：`inject_broadcast_fields()` 在调用所有下载函数之前，
+> 统一将 `start_date` 提前 3 个月（通过 `extend_start_for_resample(full_start, "quarterly")`）。
+> 这确保月度/季度数据的 ffill 在 CSV 起始日期之前有锚点，防止开头出现 NaN。
+> 日频字段不受影响（只是多下载少量数据）。**下载函数无需关心此逻辑。**
+
+**Step 2**：在 `inject_broadcast_fields()` 中调用新函数：
+
+```python
+count = _download_and_broadcast_xxx(csv_dir, extended_start, full_end, trading_calendar)
+if count and count > 0:
+    changed = True
+```
+
+**Step 3**：在 `BROADCAST_FIELD_NAMES` 中注册：
+
+```python
+BROADCAST_FIELD_NAMES: set = {
+    "shibor_1y",
+    "xxx_field",   # ← 新增
+}
+```
+
+完成后 `Update Data` 会自动下载、注入、normalize、生成 `.bin`，dashboard 也会自动显示。
+
+#### 8. 已注册的 Broadcast Fields
+
+| field_name          | Tushare API      | 源列        | 频率    | 作用域 | 含义                       |
+| ------------------- | ---------------- | ----------- | ------- | ------ | -------------------------- |
+| `shibor_1y`         | `pro.shibor()`   | `1y`        | daily   | global | Shibor 1年期利率           |
+| `afre_monthly_flow` | `pro.sf_month()` | `inc_month` | monthly | global | 社融增量当月值（亿元）AFRE |
+
+#### 9. 测试验证 (2026-04-22)
+
+全链路测试通过，验证脚本：`temp_scripts/test_broadcast_fields.py`
+
+| 检查项                     | 结果               | 详情                                                                  |
+| -------------------------- | ------------------ | --------------------------------------------------------------------- |
+| CSV 注入（全量扫描）       | ✅ 167/167         | `shibor_1y` 和 `afre_monthly_flow` 均已注入全部 instrument CSV        |
+| `shibor_1y` 覆盖率         | ✅ 100% (724/724)  | daily 数据，无需 ffill，无 NaN                                        |
+| `afre_monthly_flow` 覆盖率 | ✅ 96.7% (700/724) | 月度数据 ffill 后，仅头部 24 天无前值（正常）                         |
+| Normalized CSV             | ✅ 字段完整保留    | 归一化后 broadcast 列与 OHLCV 列共存                                  |
+| Qlib `.bin` 文件           | ✅ 均已生成        | `shibor_1y.day.bin` 和 `afre_monthly_flow.day.bin`，大小与 OHLCV 一致 |
+| 数据质量                   | ✅ 合理            | shibor: 1.49~2.65%；afre: 23 个唯一月度值，ffill 后无大间隙           |
+
+#### 10. 已解决的关键问题
 
 1. **Pipeline 提前返回** (2026-04-21): 将 broadcast injection 移到 `total_collected==0` 检查之前，确保周末/假日也能执行广播注入。
 2. **Dashboard 过早显示** (2026-04-21): dashboard 只显示 `.bin` 文件实际存在的 broadcast fields。
 3. **`.bin` 文件缺失** (2026-04-21): `dump_update`（增量模式）只处理 `last_end_date` 之后的新日期，不会为新列创建 `.bin` 文件。修复：当 `broadcast_changed=True` 时强制使用 `dump_all`（全量模式），确保新列的 `.bin` 文件覆盖完整日期范围。
-4. **Feature name `Column_5`** (2026-04-21): `model_metrics_service.py` 的 `_map_feature_names()` 中 `ohlcv_fields` 列表缺少 `vwap`，与模型训练时使用的 6 个 OHLCV 特征不一致。已修复。
-
-**文件**：
-
-- 新增: `backend/app/services/data_collectors/broadcast_field_collector.py`
-- 修改: `pipeline/service.py` (调用 `inject_broadcast_fields()` 在 Collect 和 Normalize 之间; broadcast 时强制 `dump_all`)
-- 修改: `factor_storage.py` (broadcast field 被识别为 raw field)
-- 修改: `dashboard.py` (field_names 仅包含 `.bin` 实际存在的 broadcast fields)
-- 修改: `model_metrics_service.py` (修复 `Column_5` → `vwap` 映射)
+4. **Feature name `Column_5`** (2026-04-21): `model_metrics_service.py` 的 `_map_feature_names()` 中 `ohlcv_fields` 列表缺少 `vwap`，已修复。
 
 ### 数据对齐策略
 

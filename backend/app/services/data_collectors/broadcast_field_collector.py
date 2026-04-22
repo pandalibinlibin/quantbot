@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 # Used by factor_storage.py to distinguish raw fields from computed factors.
 BROADCAST_FIELD_NAMES: set = {
     "shibor_1y",
+    "afre_monthly_flow",
 }
 
 
@@ -67,6 +68,41 @@ def detect_frequency(df: pd.DataFrame, date_col: str = "date") -> str:
         return "quarterly"
 
 
+def extend_start_for_resample(start_date: str, freq: str) -> str:
+    """
+    Extend the download start date by one period so that forward-fill has
+    an anchor point *before* the first trading day in the CSV.
+
+    Without this, the trading days before the first data publication date
+    (e.g. month-end) would be NaN because there is no prior value to ffill.
+
+    Parameters
+    ----------
+    start_date : str
+        Original start date in 'YYYY-MM-DD' format (from CSV date range)
+    freq : str
+        Expected data frequency: 'daily', 'monthly', or 'quarterly'
+
+    Returns
+    -------
+    str
+        Extended start date in 'YYYY-MM-DD' format.
+        - daily: unchanged (no extension needed)
+        - monthly: 1 month earlier
+        - quarterly: 3 months earlier
+    """
+    if freq == "daily":
+        return start_date
+    ts = pd.Timestamp(start_date)
+    if freq == "monthly":
+        extended = ts - pd.DateOffset(months=1)
+    elif freq == "quarterly":
+        extended = ts - pd.DateOffset(months=3)
+    else:
+        extended = ts - pd.DateOffset(months=1)
+    return extended.strftime("%Y-%m-%d")
+
+
 def resample_to_daily(
     series: pd.Series,
     trading_calendar: Optional[List[pd.Timestamp]] = None,
@@ -104,6 +140,18 @@ def resample_to_daily(
     return daily_series
 
 
+def _ts_code_to_csv_stem(ts_code: str) -> str:
+    """
+    Convert Tushare ts_code to Qlib-style CSV filename stem.
+
+    Tushare format: '600519.SH' -> Qlib format: 'SH600519'
+    """
+    if "." in ts_code:
+        code, exchange = ts_code.split(".", 1)
+        return f"{exchange}{code}"
+    return ts_code
+
+
 def broadcast_field(
     raw_df: pd.DataFrame,
     date_col: str,
@@ -113,11 +161,18 @@ def broadcast_field(
     trading_calendar: Optional[List[pd.Timestamp]] = None,
 ) -> int:
     """
-    Core broadcast function: auto-detect -> resample -> inject into instrument CSVs.
+    Core function: auto-detect frequency & scope, resample, inject into CSVs.
+
+    Handles all 4 combinations of {daily, non-daily} x {global, per-instrument}:
+    - daily + global:       inject same series into all CSVs
+    - non-daily + global:   resample to daily (ffill), then inject into all CSVs
+    - daily + per-inst:     match ts_code to CSV, inject each instrument's series
+    - non-daily + per-inst: per-instrument resample + match + inject
 
     Auto-detection rules:
     - Frequency: median date gap > 7 days -> not daily -> resample with ffill
-    - Scope: no 'ts_code' column -> global -> broadcast to all instruments
+    - Scope: no 'ts_code' column -> global (broadcast to all instruments)
+             has 'ts_code' column -> per-instrument (match to corresponding CSV)
 
     After injection, the field appears as a regular column in each instrument CSV
     and flows through the existing normalize -> dump_bin pipeline unchanged.
@@ -155,64 +210,108 @@ def broadcast_field(
         )
         return 0
 
-    # Step 1: Extract value series with date index
-    df = raw_df[[date_col, value_col]].copy()
-    df[date_col] = pd.to_datetime(df[date_col])
-    df = df.dropna(subset=[value_col])
-    df = df.set_index(date_col).sort_index()
-    df = df[~df.index.duplicated(keep="last")]
-    series = df[value_col].astype(np.float64)
-
-    logger.info(
-        f"broadcast_field '{field_name}': {len(series)} raw records, "
-        f"range {series.index.min().date()} to {series.index.max().date()}"
-    )
-
-    # Step 2: Auto-detect frequency
-    freq = detect_frequency(raw_df, date_col)
-    logger.info(f"broadcast_field '{field_name}': detected frequency = {freq}")
-
-    # Step 3: Resample to daily if needed
-    if freq != "daily":
-        series = resample_to_daily(series, trading_calendar)
-        logger.info(
-            f"broadcast_field '{field_name}': resampled to {len(series)} daily records"
-        )
-
-    # Step 4: Auto-detect scope
+    # Step 1: Auto-detect scope and frequency
     is_global = "ts_code" not in raw_df.columns
+    freq = detect_frequency(raw_df, date_col)
     logger.info(
         f"broadcast_field '{field_name}': "
-        f"scope = {'global (broadcast to all)' if is_global else 'per-instrument'}"
+        f"scope = {'global' if is_global else 'per-instrument'}, "
+        f"frequency = {freq}"
     )
 
-    # Step 5: Inject into instrument CSVs
     csv_files = list(csv_dir.glob("*.csv"))
     if not csv_files:
         logger.warning(f"broadcast_field: no CSV files found in {csv_dir}")
         return 0
 
     updated_count = 0
-    for csv_file in csv_files:
-        try:
-            inst_df = pd.read_csv(csv_file, index_col=0, parse_dates=True)
-            if inst_df.empty:
-                continue
 
-            if not isinstance(inst_df.index, pd.DatetimeIndex):
-                inst_df.index = pd.to_datetime(inst_df.index)
+    if is_global:
+        # ---- Global scope: build ONE series, inject into ALL CSVs ----
+        # Step 2g: Extract global value series
+        df = raw_df[[date_col, value_col]].copy()
+        df[date_col] = pd.to_datetime(df[date_col])
+        df = df.dropna(subset=[value_col])
+        df = df.set_index(date_col).sort_index()
+        df = df[~df.index.duplicated(keep="last")]
+        series = df[value_col].astype(np.float64)
 
-            # Align broadcast data to instrument dates via reindex + ffill
-            aligned = series.reindex(inst_df.index, method="ffill")
-            inst_df[field_name] = aligned
+        logger.info(
+            f"broadcast_field '{field_name}': {len(series)} raw records, "
+            f"range {series.index.min().date()} to {series.index.max().date()}"
+        )
 
-            inst_df.to_csv(csv_file, index=True)
-            updated_count += 1
-
-        except Exception as e:
-            logger.warning(
-                f"broadcast_field: failed to inject into {csv_file.name}: {e}"
+        # Step 3g: Resample to daily if needed
+        if freq != "daily":
+            series = resample_to_daily(series, trading_calendar)
+            logger.info(
+                f"broadcast_field '{field_name}': resampled to {len(series)} daily records"
             )
+
+        # Step 4g: Inject into all CSVs
+        for csv_file in csv_files:
+            try:
+                inst_df = pd.read_csv(csv_file, index_col=0, parse_dates=True)
+                if inst_df.empty:
+                    continue
+
+                if not isinstance(inst_df.index, pd.DatetimeIndex):
+                    inst_df.index = pd.to_datetime(inst_df.index)
+
+                # Align broadcast data to instrument dates via reindex + ffill
+                aligned = series.reindex(inst_df.index, method="ffill")
+                inst_df[field_name] = aligned
+
+                inst_df.to_csv(csv_file, index=True)
+                updated_count += 1
+
+            except Exception as e:
+                logger.warning(
+                    f"broadcast_field: failed to inject into {csv_file.name}: {e}"
+                )
+    else:
+        # ---- Per-instrument scope: group by ts_code, each gets its own series ----
+        # Step 2p: Build a lookup from Qlib-style stem (e.g. "SH600519") to CSV path
+        csv_lookup = {f.stem: f for f in csv_files}
+
+        for ts_code, group_df in raw_df.groupby("ts_code"):
+            try:
+                qlib_stem = _ts_code_to_csv_stem(ts_code)
+                csv_file = csv_lookup.get(qlib_stem)
+                if csv_file is None:
+                    logger.debug(
+                        f"broadcast_field: no CSV for {ts_code} ({qlib_stem}), skipping"
+                    )
+                    continue
+
+                # Step 3p: Build per-instrument series
+                gdf = group_df[[date_col, value_col]].copy()
+                gdf[date_col] = pd.to_datetime(gdf[date_col])
+                gdf = gdf.dropna(subset=[value_col])
+                gdf = gdf.set_index(date_col).sort_index()
+                gdf = gdf[~gdf.index.duplicated(keep="last")]
+                inst_series = gdf[value_col].astype(np.float64)
+
+                # Resample to daily if needed (per-instrument)
+                if freq != "daily":
+                    inst_series = resample_to_daily(inst_series, trading_calendar)
+
+                # Step 4p: Read matching CSV -> inject -> save
+                inst_df = pd.read_csv(csv_file, index_col=0, parse_dates=True)
+                if inst_df.empty:
+                    continue
+
+                if not isinstance(inst_df.index, pd.DatetimeIndex):
+                    inst_df.index = pd.to_datetime(inst_df.index)
+
+                aligned = inst_series.reindex(inst_df.index, method="ffill")
+                inst_df[field_name] = aligned
+
+                inst_df.to_csv(csv_file, index=True)
+                updated_count += 1
+
+            except Exception as e:
+                logger.warning(f"broadcast_field: failed to inject {ts_code}: {e}")
 
     logger.info(
         f"broadcast_field '{field_name}': "
@@ -302,10 +401,21 @@ def inject_broadcast_fields(csv_dir: Path, start_date: str, end_date: str) -> bo
     # broadcast fields cover the same period as OHLCV data
     full_start, full_end = _get_csv_date_range(csv_dir, start_date, end_date)
 
+    # Extend start by 3 months so that non-daily (monthly/quarterly) fields
+    # have a prior data point for ffill before the first trading day.
+    # Daily fields are unaffected (just download a bit more data, negligible).
+    extended_start = extend_start_for_resample(full_start, "quarterly")
+
     changed = False
 
     count = _download_and_broadcast_shibor_1y(
-        csv_dir, full_start, full_end, trading_calendar
+        csv_dir, extended_start, full_end, trading_calendar
+    )
+    if count and count > 0:
+        changed = True
+
+    count = _download_and_broadcast_sf_month(
+        csv_dir, extended_start, full_end, trading_calendar
     )
     if count and count > 0:
         changed = True
@@ -339,6 +449,76 @@ def _get_csv_date_range(csv_dir: Path, fallback_start: str, fallback_end: str) -
         logger.warning(f"Failed to read CSV date range: {e}")
 
     return fallback_start, fallback_end
+
+
+def _download_and_broadcast_sf_month(
+    csv_dir: Path,
+    start_date: str,
+    end_date: str,
+    trading_calendar: Optional[List[pd.Timestamp]],
+) -> int:
+    """
+    Download monthly social financing data (AFRE) from Tushare and broadcast.
+
+    API: pro.sf_month()
+    Source column: 'inc_month' (aggregate financing to the real economy,
+                   monthly increment in 100M CNY)
+    Target field: 'afre_monthly_flow'
+    Frequency: monthly -> resample to daily via ffill
+    Scope: global (no ts_code -> broadcast to all instruments)
+
+    Returns
+    -------
+    int
+        Number of instrument CSVs updated, 0 on failure
+    """
+    try:
+        import tushare as ts
+        from app.core.config import settings
+
+        token = settings.TUSHARE_TOKEN
+        if not token:
+            logger.warning("TUSHARE_TOKEN not configured, skipping afre_monthly_flow")
+            return 0
+
+        ts.set_token(token)
+        pro = ts.pro_api()
+
+        # Convert YYYY-MM-DD to YYYYMM for sf_month API
+        # Note: start_date is already extended by inject_broadcast_fields()
+        ts_start = start_date.replace("-", "")[:6]
+        ts_end = end_date.replace("-", "")[:6]
+
+        logger.info(f"Downloading sf_month (AFRE): {ts_start} to {ts_end}")
+        df = pro.sf_month(start_m=ts_start, end_m=ts_end)
+
+        if df is None or df.empty:
+            logger.warning("sf_month API returned no data")
+            return 0
+
+        logger.info(f"sf_month (AFRE): received {len(df)} rows")
+
+        # sf_month returns 'month' col in YYYYMM format, convert to datetime
+        # Use last day of month as the reference date for each data point
+        df["month"] = pd.to_datetime(df["month"], format="%Y%m") + pd.offsets.MonthEnd(
+            0
+        )
+
+        count = broadcast_field(
+            raw_df=df,
+            date_col="month",
+            value_col="inc_month",
+            field_name="afre_monthly_flow",
+            csv_dir=csv_dir,
+            trading_calendar=trading_calendar,
+        )
+
+        logger.info(f"sf_month (AFRE) broadcast complete: {count} instruments updated")
+        return count
+
+    except Exception as e:
+        logger.error(f"Failed to download/broadcast afre_monthly_flow: {e}")
+        return 0
 
 
 def _download_and_broadcast_shibor_1y(
