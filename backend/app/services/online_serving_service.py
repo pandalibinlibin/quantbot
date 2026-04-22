@@ -1207,80 +1207,153 @@ class OnlineServingService:
         """
         Calculate confidence and score_spread from a signal dictionary.
 
+        Confidence measures how well the model differentiates top vs bottom ETFs.
+        Uses std-normalized spread: confidence = clip(spread / (k * std), 0, 1)
+        where k=4, so confidence=1.0 only when spread covers 4+ standard deviations.
+
         Returns:
             (confidence, score_spread) tuple
         """
         import numpy as np
 
-        if len(signal_dict) >= topk * 2:
-            all_scores = sorted(signal_dict.values(), reverse=True)
+        # Filter out NaN scores
+        clean_scores = {
+            k: v
+            for k, v in signal_dict.items()
+            if not (isinstance(v, float) and np.isnan(v))
+        }
+
+        if len(clean_scores) >= topk * 2:
+            all_scores = sorted(clean_scores.values(), reverse=True)
             top_avg = float(np.mean(all_scores[:topk]))
             bottom_avg = float(np.mean(all_scores[-topk:]))
             score_spread = top_avg - bottom_avg
-            confidence = float(np.clip(score_spread / 2.0, 0, 1))
+
+            # Normalize by score std for adaptive scaling
+            score_std = float(np.std(list(clean_scores.values())))
+            if score_std > 0:
+                # How many stdevs the spread covers; k=4 means 4-sigma = full confidence
+                confidence = float(np.clip(score_spread / (4.0 * score_std), 0, 1))
+            else:
+                confidence = 0.5  # All scores identical = no differentiation
         else:
             score_spread = 0.0
             confidence = 0.0
         return confidence, score_spread
 
-    def _generate_confidence_history_from_signals(
-        self, signals: pd.DataFrame, topk: int
-    ) -> None:
+    def _generate_confidence_history_from_signals(self, signals, topk: int) -> None:
         """
         Generate confidence_history.json from backtest signals.
 
-        Iterates through each date in the signals DataFrame,
-        calculates confidence for that date, and saves the full history.
-        This rebuilds the history from scratch (backtest source).
+        Uses a two-pass approach for backtest data:
+        1. First pass: calculate raw confidence for each date
+        2. Second pass: convert to percentile rank for meaningful distribution
+
+        This ensures confidence values have a full [0,1] range instead of
+        clustering at 1.0 due to fixed normalization.
         """
+        import numpy as np
+
         try:
             etf_service = get_etf_enhanced_indexing_service()
 
-            # Get all unique dates from signals
+            self.logger.info(
+                f"Generating confidence history: signals type={type(signals).__name__}, "
+                f"index type={type(signals.index).__name__}"
+            )
+
             if not isinstance(signals.index, pd.MultiIndex):
                 self.logger.warning("Signals not MultiIndex, cannot generate history")
                 return
 
             dates = signals.index.get_level_values(0).unique().sort_values()
-            history = []
+            self.logger.info(f"Processing {len(dates)} unique dates for confidence")
+
+            # --- Pass 1: Calculate raw confidence per date ---
+            raw_entries = []  # list of (date_str, raw_confidence, score_spread)
+            skipped = 0
+            errors = 0
 
             for date in dates:
                 try:
                     date_signals = signals.loc[date]
                     signal_dict = etf_service._extract_signals(date_signals)
                     if not signal_dict:
+                        skipped += 1
                         continue
-                    confidence, _ = self._calculate_confidence_from_signals(
+                    raw_conf, score_spread = self._calculate_confidence_from_signals(
                         signal_dict, topk
                     )
                     date_str = str(date.date()) if hasattr(date, "date") else str(date)
-                    history.append(
-                        {
-                            "date": date_str,
-                            "confidence": round(confidence, 4),
-                            "source": "backtest",
-                        }
-                    )
-                except Exception:
+                    raw_entries.append((date_str, raw_conf, score_spread))
+                except Exception as e:
+                    errors += 1
+                    if errors <= 3:
+                        self.logger.warning(f"Confidence calc failed for {date}: {e}")
                     continue
 
-            if history:
-                # Merge with existing live entries (keep live, replace backtest)
-                existing = self._load_confidence_history()
-                live_entries = [h for h in existing if h.get("source") == "live"]
-                live_dates = {h["date"] for h in live_entries}
-                # Add backtest entries only for dates without live data
-                merged = [h for h in history if h["date"] not in live_dates]
-                merged.extend(live_entries)
-                merged.sort(key=lambda x: x["date"])
-                self._save_confidence_history(merged)
+            self.logger.info(
+                f"Pass 1 done: {len(raw_entries)} entries, {skipped} skipped, {errors} errors"
+            )
+
+            if not raw_entries:
+                self.logger.warning("No confidence entries generated!")
+                return
+
+            # --- Pass 2: Percentile rank normalization ---
+            raw_values = np.array([c for _, c, _ in raw_entries])
+            valid_mask = ~np.isnan(raw_values)
+            valid_values = raw_values[valid_mask]
+
+            if len(valid_values) > 1:
                 self.logger.info(
-                    f"Generated confidence history: {len(history)} backtest entries, "
-                    f"{len(live_entries)} live entries preserved"
+                    f"Raw confidence stats: min={np.min(valid_values):.4f}, "
+                    f"max={np.max(valid_values):.4f}, mean={np.mean(valid_values):.4f}, "
+                    f"std={np.std(valid_values):.4f}"
                 )
+
+            history = []
+            for date_str, raw_conf, score_spread in raw_entries:
+                if np.isnan(raw_conf) or len(valid_values) < 2:
+                    pct_conf = 0.0
+                else:
+                    # Percentile rank: fraction of values <= this value
+                    pct_conf = float(
+                        np.sum(valid_values <= raw_conf) / len(valid_values)
+                    )
+                history.append(
+                    {
+                        "date": date_str,
+                        "confidence": round(pct_conf, 4),
+                        "raw_confidence": round(
+                            float(raw_conf) if not np.isnan(raw_conf) else 0, 4
+                        ),
+                        "score_spread": round(float(score_spread), 6),
+                        "source": "backtest",
+                    }
+                )
+
+            # Merge with existing live entries (keep live, replace backtest)
+            existing = self._load_confidence_history()
+            live_entries = [h for h in existing if h.get("source") == "live"]
+            live_dates = {h["date"] for h in live_entries}
+            merged = [h for h in history if h["date"] not in live_dates]
+            merged.extend(live_entries)
+            merged.sort(key=lambda x: x["date"])
+            self._save_confidence_history(merged)
+
+            final_confs = [h["confidence"] for h in history]
+            self.logger.info(
+                f"Saved confidence history: {len(merged)} total "
+                f"({len(history)} backtest, {len(live_entries)} live). "
+                f"Percentile range: [{min(final_confs):.3f}, {max(final_confs):.3f}]"
+            )
 
         except Exception as e:
             self.logger.error(f"Failed to generate confidence history: {e}")
+            import traceback
+
+            self.logger.error(traceback.format_exc())
 
     def _calculate_topk_portfolio(
         self, signals: pd.DataFrame, cur_time: Optional[str] = None
@@ -3351,8 +3424,7 @@ class OnlineServingService:
             from app.config.qlib import qlib_config
 
             # Get TopK Dropout strategy configuration
-            system_config = qlib_config.system_config
-            topk_config = system_config.get("topk_dropout_strategy", {})
+            topk_config = qlib_config._config.get("topk_dropout_strategy", {})
 
             topk = topk_config.get("topk", 10)
             n_drop = topk_config.get("n_drop", 10)
@@ -3362,9 +3434,34 @@ class OnlineServingService:
             if account is None:
                 account = backtest_config.get("account", 1000000)
 
-            # Set default benchmark for CN market
+            # Set benchmark from config or auto-detect from index_config.yaml
             if benchmark is None:
-                benchmark = "000300.SH"  # Default benchmark index
+                benchmark_setting = backtest_config.get("benchmark", "auto")
+                if benchmark_setting == "auto":
+                    try:
+                        import yaml
+                        from pathlib import Path
+
+                        config_path = (
+                            Path(__file__).parent.parent
+                            / "config"
+                            / "index_config.yaml"
+                        )
+                        with open(config_path, "r", encoding="utf-8") as f:
+                            index_cfg = yaml.safe_load(f)
+                        active_index = index_cfg.get("active_index", "etf_universe")
+                        active_cfg = index_cfg.get("indexes", {}).get(active_index, {})
+                        benchmark = active_cfg.get("etf_code", "SH510300")
+                        self.logger.info(
+                            f"Auto-detected benchmark from index_config: {benchmark}"
+                        )
+                    except Exception as e:
+                        self.logger.warning(
+                            f"Failed to auto-detect benchmark, using SH510300: {e}"
+                        )
+                        benchmark = "SH510300"
+                else:
+                    benchmark = benchmark_setting
 
             self.logger.info(
                 f"TopK Dropout Strategy config: topk={topk}, n_drop={n_drop}, account={account}"
@@ -3374,9 +3471,15 @@ class OnlineServingService:
             strategy = TopkDropoutStrategy(topk=topk, n_drop=n_drop, signal=signals)
 
             # Get date range from signals
-            signal_dates = signals.index.get_level_values(0).unique()
-            start_time = str(signal_dates.min().date())
-            end_time = str(signal_dates.max().date())
+            signal_dates = signals.index.get_level_values(0).unique().sort_values()
+            start_time = str(signal_dates[0].date())
+            # Use second-to-last date to avoid Qlib calendar boundary IndexError
+            # (Qlib needs calendar[index+1] which doesn't exist on the last date)
+            end_time = (
+                str(signal_dates[-2].date())
+                if len(signal_dates) > 1
+                else str(signal_dates[-1].date())
+            )
 
             self.logger.info(f"Backtest period: {start_time} to {end_time}")
 
@@ -3390,17 +3493,16 @@ class OnlineServingService:
                 exchange_kwargs={
                     "limit_threshold": 0.095,
                     "deal_price": "close",
-                    "open_cost": 0.0003,
-                    "close_cost": 0.0013,
-                    "min_cost": 5,
+                    "open_cost": 0.0001,
+                    "close_cost": 0.0001,
+                    "min_cost": 0,
                 },
             )
 
-            # Extract results from Qlib backtest
-            positions = backtest_result.get("positions", pd.DataFrame())
-            report_df = backtest_result.get("report_normal", pd.DataFrame())
+            # backtest_daily returns (report_normal, positions_normal) tuple
+            report_df, positions = backtest_result
 
-            if report_df.empty:
+            if report_df is None or report_df.empty:
                 return {"status": "error", "error": "Backtest returned empty results"}
 
             # Calculate metrics using Qlib's risk analysis
@@ -3417,11 +3519,87 @@ class OnlineServingService:
             sharpe_ratio = _safe_float(analysis_df.loc["information_ratio", "risk"])
             volatility = _safe_float(analysis_df.loc["std", "risk"])
 
-            # Calculate additional metrics
+            # Calculate cumulative return from daily returns
             total_return = _safe_float(
-                (report_df["cum_return"].iloc[-1] if len(report_df) > 0 else 0)
+                ((1 + returns).cumprod().iloc[-1] - 1) if len(returns) > 0 else 0
             )
             trading_days = len(report_df)
+
+            # Calculate cost from report_df
+            total_cost_pct = _safe_float(
+                report_df["cost"].sum() if "cost" in report_df.columns else 0
+            )
+            total_cost_money = _safe_float(total_cost_pct * account)
+            # Qlib's report_df["return"] is already net of costs,
+            # so total_return IS the net return. Do NOT subtract cost again.
+            net_return = total_return
+
+            # Calculate net CAGR
+            if trading_days > 0:
+                years = trading_days / 252.0
+                net_cagr = _safe_float((1 + net_return) ** (1 / years) - 1)
+            else:
+                net_cagr = 0.0
+
+            # Calmar ratio = annualized_return / |max_drawdown|
+            calmar_ratio = _safe_float(
+                annual_return / abs(max_drawdown) if max_drawdown != 0 else 0
+            )
+
+            # Win rate = days with positive return / total days
+            win_rate = _safe_float(
+                (returns > 0).sum() / len(returns) if len(returns) > 0 else 0
+            )
+
+            # Profit/Loss ratio = avg(positive returns) / |avg(negative returns)|
+            pos_returns = returns[returns > 0]
+            neg_returns = returns[returns < 0]
+            profit_loss_ratio = _safe_float(
+                pos_returns.mean() / abs(neg_returns.mean())
+                if len(neg_returns) > 0 and neg_returns.mean() != 0
+                else 0
+            )
+
+            # Cost ratio = total cost / initial account
+            cost_ratio = _safe_float(total_cost_pct)
+
+            # Cost to profit ratio = total cost / total profit
+            total_profit_money = total_return * account
+            cost_to_profit = _safe_float(
+                total_cost_money / total_profit_money if total_profit_money > 0 else 0
+            )
+
+            # Average daily turnover rate from report_df
+            # (each row is daily turnover as fraction of portfolio, e.g. 1.76 = 176%)
+            turnover_rate = _safe_float(
+                report_df["turnover"].mean() if "turnover" in report_df.columns else 0
+            )
+
+            # Alpha and Beta (CAPM-based)
+            # Beta = Cov(Rp, Rm) / Var(Rm)
+            # Alpha = (Rp - Rf) - Beta * (Rm - Rf), annualized
+            import numpy as np
+
+            alpha = 0.0
+            beta = 0.0
+            if "bench" in report_df.columns and len(returns) > 1:
+                bench_returns = report_df["bench"].dropna()
+                if len(bench_returns) == len(returns):
+                    rf_daily = 0.02 / 252  # ~2% annual risk-free rate
+                    excess_p = returns.values - rf_daily
+                    excess_m = bench_returns.values - rf_daily
+                    var_m = np.var(excess_m, ddof=1)
+                    if var_m > 0:
+                        beta = _safe_float(np.cov(excess_p, excess_m)[0][1] / var_m)
+                    # Annualized alpha
+                    alpha = _safe_float(
+                        (
+                            returns.mean()
+                            - rf_daily
+                            - beta * (bench_returns.mean() - rf_daily)
+                        )
+                        * 252
+                    )
 
             # Generate confidence history from backtest signals
             self._generate_confidence_history_from_signals(signals, topk)
@@ -3435,13 +3613,12 @@ class OnlineServingService:
                 "data_end_time": end_time,
                 "freq": "day",
                 "trading_days": trading_days,
-                "rebalance_days": trading_days
-                // topk_config.get("rebalance_period_days", 5),
-                "rebalance_period": topk_config.get("rebalance_period_days", 5),
+                "rebalance_days": trading_days,
+                "rebalance_period": 1,
                 "signal_count": len(signals),
                 "total_return": total_return,
-                "total_cost": 0.0,
-                "net_return": total_return,
+                "total_cost": total_cost_money,
+                "net_return": net_return,
                 "final_account": account * (1 + total_return),
                 "benchmark": benchmark,
                 "strategy": "topk_dropout_intelligent",
@@ -3451,10 +3628,29 @@ class OnlineServingService:
                     "sharpe_ratio": sharpe_ratio,
                     "volatility": volatility,
                     "cagr": annual_return,
-                    "net_cagr": annual_return,
+                    "net_cagr": net_cagr,
+                    "calmar_ratio": calmar_ratio,
+                    "win_rate": win_rate,
+                    "profit_loss_ratio": profit_loss_ratio,
+                    "cost_ratio": cost_ratio,
+                    "cost_to_profit_ratio": cost_to_profit,
+                    "turnover_rate": turnover_rate,
+                    "alpha": alpha,
+                    "beta": beta,
                 },
                 "charts": self._generate_topk_backtest_charts(report_df),
             }
+
+            # Ensure max_drawdown is consistent between risk_metrics and charts
+            chart_dd = api_result.get("charts", {}).get("max_drawdown_info", {})
+            if chart_dd and chart_dd.get("max_drawdown") is not None:
+                api_result["risk_metrics"]["max_drawdown"] = chart_dd["max_drawdown"]
+                # Recalculate calmar ratio with consistent max_drawdown
+                consistent_dd = abs(chart_dd["max_drawdown"])
+                if consistent_dd > 0:
+                    api_result["risk_metrics"]["calmar_ratio"] = _safe_float(
+                        annual_return / consistent_dd
+                    )
 
             return api_result
 
@@ -3473,30 +3669,152 @@ class OnlineServingService:
             if report_df.empty:
                 return {}
 
-            # Cumulative returns chart
+            import numpy as np
+
+            charts: Dict[str, Any] = {}
+
+            # 1. Cumulative returns chart
             cumulative_returns = []
+            strategy_cum = 1.0
+            bench_cum = 1.0
             for date, row in report_df.iterrows():
+                strategy_cum *= 1 + float(row.get("return", 0))
+                bench_cum *= 1 + float(row.get("bench", 0))
                 cumulative_returns.append(
                     {
                         "date": (
                             str(date.date()) if hasattr(date, "date") else str(date)
                         ),
-                        "strategy": float(row.get("cum_return", 0)),
-                        "benchmark": (
-                            float(row.get("bench_cum_return", 0))
-                            if "bench_cum_return" in row
-                            else 0
-                        ),
+                        "strategy": round(strategy_cum - 1, 6),
+                        "benchmark": round(bench_cum - 1, 6),
                     }
                 )
+            charts["cumulative_returns"] = cumulative_returns
 
-            return {
-                "cumulative_returns": cumulative_returns,
-                "portfolio_values": [],
-                "max_drawdown_info": None,
-                "yearly_returns": [],
-                "monthly_returns": [],
-            }
+            # 2. Daily returns distribution
+            if "return" in report_df.columns:
+                returns = report_df["return"].dropna()
+                hist, bin_edges = np.histogram(returns, bins=30)
+                distribution_data = []
+                for i in range(len(hist)):
+                    distribution_data.append(
+                        {
+                            "bin_start": float(bin_edges[i]),
+                            "bin_end": float(bin_edges[i + 1]),
+                            "bin_center": float((bin_edges[i] + bin_edges[i + 1]) / 2),
+                            "count": int(hist[i]),
+                        }
+                    )
+                charts["return_distribution"] = distribution_data
+
+            # 3. Max drawdown analysis
+            if "return" in report_df.columns:
+                cumulative = (1 + report_df["return"]).cumprod() - 1
+                running_max = (1 + report_df["return"]).cumprod().cummax()
+                drawdown = (
+                    (1 + report_df["return"]).cumprod() - running_max
+                ) / running_max
+
+                max_dd_idx = drawdown.idxmin()
+                max_dd_value = float(drawdown.min())
+
+                dd_before_max = drawdown.loc[:max_dd_idx]
+                peak_candidates = dd_before_max[dd_before_max == 0]
+                if len(peak_candidates) > 0:
+                    peak_date = peak_candidates.index[-1]
+                else:
+                    peak_date = drawdown.index[0]
+
+                peak_value = (
+                    float(cumulative.loc[peak_date])
+                    if peak_date in cumulative.index
+                    else 0
+                )
+                trough_value = float(cumulative.loc[max_dd_idx])
+
+                after_trough = cumulative.loc[max_dd_idx:]
+                recovery_candidates = after_trough[after_trough >= peak_value]
+                recovery_date = (
+                    str(recovery_candidates.index[0])[:10]
+                    if len(recovery_candidates) > 0
+                    else None
+                )
+
+                drawdown_days = (
+                    (max_dd_idx - peak_date).days
+                    if hasattr(max_dd_idx - peak_date, "days")
+                    else 0
+                )
+
+                charts["max_drawdown_info"] = {
+                    "max_drawdown": max_dd_value,
+                    "max_drawdown_date": str(max_dd_idx)[:10],
+                    "peak_date": str(peak_date)[:10],
+                    "peak_value": peak_value,
+                    "trough_value": trough_value,
+                    "recovery_date": recovery_date,
+                    "drawdown_days": drawdown_days,
+                }
+
+            # 4. Daily returns time series
+            if "return" in report_df.columns:
+                daily_returns = []
+                for date, value in report_df["return"].items():
+                    daily_returns.append(
+                        {
+                            "date": str(date)[:10],
+                            "return": float(value),
+                        }
+                    )
+                charts["daily_returns"] = daily_returns
+
+            # 5. Yearly returns
+            if "return" in report_df.columns and "bench" in report_df.columns:
+                yearly_returns = []
+                report_copy = report_df.copy()
+                report_copy["year"] = report_copy.index.map(
+                    lambda x: x.year if hasattr(x, "year") else int(str(x)[:4])
+                )
+                for year, group in report_copy.groupby("year"):
+                    strategy_ret = float((1 + group["return"]).cumprod().iloc[-1] - 1)
+                    benchmark_ret = float((1 + group["bench"]).cumprod().iloc[-1] - 1)
+                    yearly_returns.append(
+                        {
+                            "period": str(year),
+                            "strategy_return": strategy_ret,
+                            "benchmark_return": benchmark_ret,
+                            "excess_return": strategy_ret - benchmark_ret,
+                            "trading_days": len(group),
+                        }
+                    )
+                charts["yearly_returns"] = yearly_returns
+
+            # 6. Monthly returns
+            if "return" in report_df.columns and "bench" in report_df.columns:
+                monthly_returns = []
+                report_copy = report_df.copy()
+                report_copy["month"] = report_copy.index.map(
+                    lambda x: (
+                        f"{x.year}-{x.month:02d}" if hasattr(x, "year") else str(x)[:7]
+                    )
+                )
+                for month, group in report_copy.groupby("month"):
+                    strategy_ret = float((1 + group["return"]).cumprod().iloc[-1] - 1)
+                    benchmark_ret = float((1 + group["bench"]).cumprod().iloc[-1] - 1)
+                    monthly_returns.append(
+                        {
+                            "period": str(month),
+                            "strategy_return": strategy_ret,
+                            "benchmark_return": benchmark_ret,
+                            "excess_return": strategy_ret - benchmark_ret,
+                        }
+                    )
+                charts["monthly_returns"] = monthly_returns
+
+            charts["portfolio_values"] = []
+
+            self.logger.info(f"Generated TopK chart datasets: {list(charts.keys())}")
+            return charts
 
         except Exception as e:
             self.logger.error(f"Failed to generate TopK charts: {e}")

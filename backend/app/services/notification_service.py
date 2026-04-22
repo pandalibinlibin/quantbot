@@ -1639,43 +1639,67 @@ class NotificationService:
                     x2 = index_to_x(trough_idx)
                     drawdown_region = f'<rect x="{x1:.1f}" y="{padding_top}" width="{x2 - x1:.1f}" height="{chart_height}" fill="#fee2e2" opacity="0.5"/>'
 
-        svg = f"""
-        <svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">
-            <!-- Background -->
-            <rect width="{width}" height="{height}" fill="white" rx="8"/>
-            
-            <!-- Grid lines -->
-            <line x1="{padding_left}" y1="{padding_top}" x2="{padding_left}" y2="{padding_top + chart_height}" stroke="#e2e8f0" stroke-width="1"/>
-            <line x1="{padding_left}" y1="{padding_top + chart_height}" x2="{width - padding_right}" y2="{padding_top + chart_height}" stroke="#e2e8f0" stroke-width="1"/>
-            
-            <!-- Zero line -->
-            {zero_line}
-            
-            <!-- Drawdown region -->
-            {drawdown_region}
-            
-            <!-- Strategy area fill -->
-            <path d="{strategy_area}" fill="#dcfce7" opacity="0.5"/>
-            
-            <!-- Benchmark line -->
-            {f'<path d="{benchmark_path}" fill="none" stroke="#3b82f6" stroke-width="2"/>' if benchmark_path else ''}
-            
-            <!-- Strategy line -->
-            <path d="{strategy_path}" fill="none" stroke="#16a34a" stroke-width="2"/>
-            
-            <!-- Y-axis labels -->
-            {"".join(y_labels)}
-            
-            <!-- X-axis labels -->
-            {"".join(x_labels)}
-            
-            <!-- Legend -->
-            <rect x="{width - 150}" y="10" width="12" height="12" fill="#16a34a"/>
-            <text x="{width - 133}" y="20" font-size="11" fill="#334155">Strategy</text>
-            {f'<rect x="{width - 150}" y="28" width="12" height="12" fill="#3b82f6"/><text x="{width - 133}" y="38" font-size="11" fill="#334155">Benchmark</text>' if benchmark_path else ''}
-        </svg>
-        """
-        return svg
+        # Build SVG with viewBox for responsive scaling on mobile
+        # Use viewBox so the SVG scales to container width
+        svg_parts = [
+            f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" '
+            f'style="width:100%;max-width:{width}px;height:auto;">',
+            f'<rect width="{width}" height="{height}" fill="white" rx="8"/>',
+            # Grid
+            f'<line x1="{padding_left}" y1="{padding_top}" x2="{padding_left}" y2="{padding_top + chart_height}" stroke="#e2e8f0" stroke-width="1"/>',
+            f'<line x1="{padding_left}" y1="{padding_top + chart_height}" x2="{width - padding_right}" y2="{padding_top + chart_height}" stroke="#e2e8f0" stroke-width="1"/>',
+        ]
+
+        if zero_line:
+            svg_parts.append(zero_line)
+        if drawdown_region:
+            svg_parts.append(drawdown_region)
+
+        # Area fill + lines
+        svg_parts.append(f'<path d="{strategy_area}" fill="#dcfce7" opacity="0.5"/>')
+        if benchmark_path:
+            svg_parts.append(
+                f'<path d="{benchmark_path}" fill="none" stroke="#3b82f6" stroke-width="2"/>'
+            )
+        svg_parts.append(
+            f'<path d="{strategy_path}" fill="none" stroke="#16a34a" stroke-width="2"/>'
+        )
+
+        # Labels
+        svg_parts.extend(y_labels)
+        svg_parts.extend(x_labels)
+
+        # Legend
+        svg_parts.append(
+            f'<rect x="{width - 150}" y="10" width="12" height="12" fill="#16a34a"/>'
+        )
+        svg_parts.append(
+            f'<text x="{width - 133}" y="20" font-size="11" fill="#334155">Strategy</text>'
+        )
+        if benchmark_path:
+            svg_parts.append(
+                f'<rect x="{width - 150}" y="28" width="12" height="12" fill="#3b82f6"/>'
+            )
+            svg_parts.append(
+                f'<text x="{width - 133}" y="38" font-size="11" fill="#334155">Benchmark</text>'
+            )
+
+        svg_parts.append("</svg>")
+        svg = "\n".join(svg_parts)
+
+        # Also provide an <img> fallback for email clients that don't render inline SVG
+        # Encode SVG as base64 data URI inside an <img> tag
+        import base64
+
+        svg_b64 = base64.b64encode(svg.encode("utf-8")).decode("ascii")
+        img_tag = (
+            f'<img src="data:image/svg+xml;base64,{svg_b64}" '
+            f'alt="Cumulative Returns Chart" '
+            f'style="width:100%;max-width:{width}px;height:auto;display:block;" />'
+        )
+
+        # Return both: inline SVG (for clients that support it) + img fallback
+        return f'<div style="width:100%;overflow:hidden;">{img_tag}</div>'
 
     def _generate_drawdown_analysis_html(
         self, max_drawdown_info: Dict, max_drawdown: float
@@ -1693,36 +1717,48 @@ class NotificationService:
         max_dd_pct = f"{max_drawdown * 100:.2f}%" if max_drawdown else "N/A"
 
         return f"""
-        <div class="section">
-            <div class="section-title">
-                📉 Drawdown Analysis
-            </div>
-            <p style="color: #64748b; font-size: 14px; margin-bottom: 16px;">
-                Maximum drawdown: <strong style="color: #dc2626;">{max_dd_pct}</strong>
-            </p>
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
-                <div style="background-color: #fef2f2; border-radius: 8px; padding: 12px;">
-                    <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Peak Date</div>
-                    <div style="font-size: 14px; font-weight: 600; color: #1e293b;">{peak_date}</div>
-                </div>
-                <div style="background-color: #fef2f2; border-radius: 8px; padding: 12px;">
-                    <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Trough Date</div>
-                    <div style="font-size: 14px; font-weight: 600; color: #1e293b;">{trough_date}</div>
-                </div>
-                <div style="background-color: #fef2f2; border-radius: 8px; padding: 12px;">
-                    <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Drawdown Days</div>
-                    <div style="font-size: 14px; font-weight: 600; color: #1e293b;">{drawdown_days} days</div>
-                </div>
-                <div style="background-color: #fef2f2; border-radius: 8px; padding: 12px;">
-                    <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Recovery Date</div>
-                    <div style="font-size: 14px; font-weight: 600; color: #1e293b;">{recovery_date if recovery_date else "Not recovered"}</div>
-                </div>
-            </div>
-        </div>
+        <div style="font-size:15px;font-weight:600;color:#334155;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #e2e8f0;">📉 Drawdown Analysis</div>
+        <p style="color:#64748b;font-size:13px;margin:0 0 12px 0;">
+            Maximum drawdown: <strong style="color:#dc2626;">{max_dd_pct}</strong>
+        </p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+            <tr>
+                <td style="padding:4px;width:50%;">
+                    <div style="background-color:#fef2f2;border-radius:8px;padding:10px;">
+                        <div style="font-size:11px;color:#64748b;margin-bottom:2px;">Peak Date</div>
+                        <div style="font-size:13px;font-weight:600;color:#1e293b;">{peak_date}</div>
+                    </div>
+                </td>
+                <td style="padding:4px;width:50%;">
+                    <div style="background-color:#fef2f2;border-radius:8px;padding:10px;">
+                        <div style="font-size:11px;color:#64748b;margin-bottom:2px;">Trough Date</div>
+                        <div style="font-size:13px;font-weight:600;color:#1e293b;">{trough_date}</div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding:4px;width:50%;">
+                    <div style="background-color:#fef2f2;border-radius:8px;padding:10px;">
+                        <div style="font-size:11px;color:#64748b;margin-bottom:2px;">Drawdown Days</div>
+                        <div style="font-size:13px;font-weight:600;color:#1e293b;">{drawdown_days} days</div>
+                    </div>
+                </td>
+                <td style="padding:4px;width:50%;">
+                    <div style="background-color:#fef2f2;border-radius:8px;padding:10px;">
+                        <div style="font-size:11px;color:#64748b;margin-bottom:2px;">Recovery Date</div>
+                        <div style="font-size:13px;font-weight:600;color:#1e293b;">{recovery_date if recovery_date else "Not recovered"}</div>
+                    </div>
+                </td>
+            </tr>
+        </table>
         """
 
     def _build_backtest_report_html(self, backtest_result: Dict[str, Any]) -> str:
-        """Build HTML email body for backtest report matching frontend design."""
+        """Build HTML email body for backtest report.
+
+        Uses table-based layout for maximum email client compatibility
+        (especially mobile clients like WeChat, iOS Mail, etc.).
+        """
         # Extract data from backtest result
         start_time = backtest_result.get("start_time", "N/A")
         end_time = backtest_result.get("end_time", "N/A")
@@ -1730,21 +1766,23 @@ class NotificationService:
         data_end_time = backtest_result.get("data_end_time", end_time)
         trading_days = backtest_result.get("trading_days", 0)
         total_return = backtest_result.get("total_return", 0)
-        net_return = backtest_result.get("net_return", 0)
-        total_cost = backtest_result.get("total_cost", 0)
         final_account = backtest_result.get("final_account", 0)
         strategy = backtest_result.get("strategy", "ETF Enhanced Indexing")
-        benchmark = backtest_result.get("benchmark", "SH000300")
+        benchmark = backtest_result.get("benchmark", "SH510300")
 
         # Risk metrics
         risk_metrics = backtest_result.get("risk_metrics", {})
         annualized_return = risk_metrics.get("annualized_return", 0)
+        net_cagr = risk_metrics.get("net_cagr", 0)
         max_drawdown = risk_metrics.get("max_drawdown", 0)
         sharpe_ratio = risk_metrics.get("sharpe_ratio", 0)
         volatility = risk_metrics.get("volatility", 0)
         calmar_ratio = risk_metrics.get("calmar_ratio", 0)
         win_rate = risk_metrics.get("win_rate", 0)
         profit_loss_ratio = risk_metrics.get("profit_loss_ratio", 0)
+        turnover_rate = risk_metrics.get("turnover_rate", 0)
+        alpha = risk_metrics.get("alpha", 0)
+        beta = risk_metrics.get("beta", 0)
 
         # Charts data
         charts = backtest_result.get("charts", {})
@@ -1752,26 +1790,24 @@ class NotificationService:
         max_drawdown_info = charts.get("max_drawdown_info", {})
 
         # Format helpers
-        def format_percent(value):
+        def fmt_pct(value):
             if value is None:
                 return "N/A"
             return f"{value * 100:+.2f}%" if value >= 0 else f"{value * 100:.2f}%"
 
-        def format_currency(value):
+        def fmt_cny(value):
             if value is None:
                 return "N/A"
-            return f"¥{value:,.2f}"
+            return f"¥{value:,.0f}"
 
-        def format_ratio(value):
+        def fmt_ratio(value):
             if value is None:
                 return "N/A"
             return f"{value:.2f}"
 
         # Color helpers
-        return_color = (
-            "#16a34a" if total_return >= 0 else "#dc2626"
-        )  # green-600 / red-600
-        net_return_color = "#16a34a" if net_return >= 0 else "#dc2626"
+        return_color = "#16a34a" if total_return >= 0 else "#dc2626"
+        cagr_color = "#16a34a" if net_cagr >= 0 else "#dc2626"
         annual_return_color = "#16a34a" if annualized_return >= 0 else "#dc2626"
         sharpe_color = (
             "#16a34a"
@@ -1784,274 +1820,142 @@ class NotificationService:
             cumulative_returns, max_drawdown_info
         )
 
-        # Generate drawdown analysis HTML
+        # Generate drawdown analysis HTML (table-based)
         drawdown_html = self._generate_drawdown_analysis_html(
             max_drawdown_info, max_drawdown
         )
+
+        # Helper to build a metric cell for 2-column table
+        def metric_cell(label, value, color="#1e293b"):
+            return f"""
+            <td style="padding:8px;width:50%;">
+                <div style="background-color:#f8fafc;border-radius:8px;padding:12px;">
+                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">{label}</div>
+                    <div style="font-size:18px;font-weight:700;color:{color};">{value}</div>
+                </div>
+            </td>"""
 
         return f"""
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset="UTF-8">
-            <style>
-                body {{
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-                    margin: 0;
-                    padding: 20px;
-                    background-color: #f8fafc;
-                    color: #1e293b;
-                }}
-                .container {{
-                    max-width: 800px;
-                    margin: 0 auto;
-                    background-color: #ffffff;
-                    border-radius: 12px;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                    overflow: hidden;
-                }}
-                .header {{
-                    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-                    color: white;
-                    padding: 24px;
-                }}
-                .header h1 {{
-                    margin: 0 0 8px 0;
-                    font-size: 24px;
-                    font-weight: 600;
-                }}
-                .header p {{
-                    margin: 0;
-                    opacity: 0.9;
-                    font-size: 14px;
-                }}
-                .content {{
-                    padding: 24px;
-                }}
-                .section {{
-                    margin-bottom: 24px;
-                }}
-                .section-title {{
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    font-size: 16px;
-                    font-weight: 600;
-                    color: #334155;
-                    margin-bottom: 16px;
-                    padding-bottom: 8px;
-                    border-bottom: 2px solid #e2e8f0;
-                }}
-                .metrics-grid {{
-                    display: grid;
-                    grid-template-columns: repeat(3, 1fr);
-                    gap: 16px;
-                }}
-                .metric-card {{
-                    background-color: #f8fafc;
-                    border-radius: 8px;
-                    padding: 16px;
-                }}
-                .metric-card.highlight {{
-                    background-color: #eff6ff;
-                    grid-column: span 3;
-                }}
-                .metric-card.wide {{
-                    grid-column: span 2;
-                }}
-                .metric-label {{
-                    font-size: 12px;
-                    color: #64748b;
-                    margin-bottom: 4px;
-                    display: flex;
-                    align-items: center;
-                    gap: 4px;
-                }}
-                .metric-value {{
-                    font-size: 24px;
-                    font-weight: 700;
-                }}
-                .metric-value.small {{
-                    font-size: 18px;
-                }}
-                .positive {{ color: #16a34a; }}
-                .negative {{ color: #dc2626; }}
-                .warning {{ color: #ea580c; }}
-                .neutral {{ color: #64748b; }}
-                .info-row {{
-                    display: flex;
-                    justify-content: space-between;
-                    padding: 8px 0;
-                    border-bottom: 1px solid #f1f5f9;
-                }}
-                .info-row:last-child {{
-                    border-bottom: none;
-                }}
-                .info-label {{
-                    color: #64748b;
-                    font-size: 14px;
-                }}
-                .info-value {{
-                    font-weight: 500;
-                    font-size: 14px;
-                }}
-                .footer {{
-                    background-color: #f8fafc;
-                    padding: 16px 24px;
-                    text-align: center;
-                    font-size: 12px;
-                    color: #94a3b8;
-                    border-top: 1px solid #e2e8f0;
-                }}
-                .badge {{
-                    display: inline-block;
-                    padding: 4px 12px;
-                    border-radius: 9999px;
-                    font-size: 12px;
-                    font-weight: 500;
-                }}
-                .badge-success {{
-                    background-color: #dcfce7;
-                    color: #16a34a;
-                }}
-                .badge-info {{
-                    background-color: #dbeafe;
-                    color: #2563eb;
-                }}
-            </style>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>📊 Backtest Report</h1>
-                    <p>Strategy performance evaluation from {start_time} to {end_time}</p>
-                </div>
-                
-                <div class="content">
-                    <!-- Strategy Configuration -->
-                    <div class="section">
-                        <div class="section-title">
-                            ⚙️ Strategy Configuration
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Strategy</span>
-                            <span class="info-value">{strategy}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Benchmark</span>
-                            <span class="info-value">{benchmark}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Data Time Range</span>
-                            <span class="info-value">{data_start_time} ~ {data_end_time}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Backtest Period</span>
-                            <span class="info-value">{start_time} ~ {end_time}</span>
-                        </div>
-                    </div>
+        <body style="margin:0;padding:12px;background-color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#1e293b;">
+            <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;border-radius:12px;overflow:hidden;">
+                <!-- Header -->
+                <tr>
+                    <td style="background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);color:white;padding:20px;">
+                        <div style="font-size:20px;font-weight:600;margin-bottom:4px;">📊 Backtest Report</div>
+                        <div style="font-size:13px;opacity:0.9;">{start_time} ~ {end_time}</div>
+                    </td>
+                </tr>
+
+                <tr><td style="padding:16px;">
+                    <!-- Strategy Config -->
+                    <div style="font-size:15px;font-weight:600;color:#334155;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #e2e8f0;">⚙️ Configuration</div>
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+                        <tr>
+                            <td style="padding:4px 0;color:#64748b;font-size:13px;">Strategy</td>
+                            <td style="padding:4px 0;font-size:13px;font-weight:500;text-align:right;">{strategy}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:4px 0;color:#64748b;font-size:13px;">Benchmark</td>
+                            <td style="padding:4px 0;font-size:13px;font-weight:500;text-align:right;">{benchmark}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding:4px 0;color:#64748b;font-size:13px;">Period</td>
+                            <td style="padding:4px 0;font-size:13px;font-weight:500;text-align:right;">{data_start_time} ~ {data_end_time}</td>
+                        </tr>
+                    </table>
 
                     <!-- Backtest Results -->
-                    <div class="section">
-                        <div class="section-title">
-                            📈 Backtest Results
-                        </div>
-                        <div class="metrics-grid">
-                            <div class="metric-card">
-                                <div class="metric-label">📅 Trading Days</div>
-                                <div class="metric-value">{trading_days}</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-label">📊 Total Return</div>
-                                <div class="metric-value" style="color: {return_color};">{format_percent(total_return)}</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-label">📈 Net Return</div>
-                                <div class="metric-value" style="color: {net_return_color};">{format_percent(net_return)}</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-label">💰 Total Cost</div>
-                                <div class="metric-value small" style="color: #ea580c;">{format_currency(total_cost)}</div>
-                            </div>
-                            <div class="metric-card wide">
-                                <div class="metric-label">💵 Final Account Value</div>
-                                <div class="metric-value">{format_currency(final_account)}</div>
-                            </div>
-                        </div>
-                    </div>
+                    <div style="font-size:15px;font-weight:600;color:#334155;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #e2e8f0;">📈 Backtest Results</div>
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+                        <tr>
+                            {metric_cell("📅 Trading Days", str(trading_days))}
+                            {metric_cell("� Net Return", fmt_pct(total_return), return_color)}
+                        </tr>
+                        <tr>
+                            {metric_cell("� CAGR (Net)", fmt_pct(net_cagr), cagr_color)}
+                            {metric_cell("💰 Initial Capital", fmt_cny(1000000))}
+                        </tr>
+                        <tr>
+                            <td colspan="2" style="padding:8px;">
+                                <div style="background-color:#f8fafc;border-radius:8px;padding:12px;">
+                                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">💵 Final Account Value</div>
+                                    <div style="font-size:22px;font-weight:700;color:#1e293b;">{fmt_cny(final_account)}</div>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
 
                     <!-- Risk Metrics -->
-                    <div class="section">
-                        <div class="section-title">
-                            ⚡ Risk Metrics
-                        </div>
-                        <div class="metrics-grid">
-                            <div class="metric-card">
-                                <div class="metric-label">📈 Annualized Return</div>
-                                <div class="metric-value small" style="color: {annual_return_color};">{format_percent(annualized_return)}</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-label">📉 Max Drawdown</div>
-                                <div class="metric-value small negative">{format_percent(max_drawdown)}</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-label">🎯 Sharpe Ratio</div>
-                                <div class="metric-value small" style="color: {sharpe_color};">{format_ratio(sharpe_ratio)}</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-label">📊 Volatility</div>
-                                <div class="metric-value small neutral">{format_percent(volatility)}</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-label">⚖️ Calmar Ratio</div>
-                                <div class="metric-value small">{format_ratio(calmar_ratio)}</div>
-                            </div>
-                            <div class="metric-card">
-                                <div class="metric-label">🏆 Win Rate</div>
-                                <div class="metric-value small">{format_percent(win_rate)}</div>
-                            </div>
-                        </div>
-                    </div>
+                    <div style="font-size:15px;font-weight:600;color:#334155;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #e2e8f0;">⚡ Risk Metrics</div>
+                    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+                        <tr>
+                            {metric_cell("📈 Annualized Return", fmt_pct(annualized_return), annual_return_color)}
+                            {metric_cell("📉 Max Drawdown", fmt_pct(max_drawdown), "#dc2626")}
+                        </tr>
+                        <tr>
+                            {metric_cell("🎯 Sharpe Ratio", fmt_ratio(sharpe_ratio), sharpe_color)}
+                            {metric_cell("📊 Volatility", fmt_pct(volatility), "#64748b")}
+                        </tr>
+                        <tr>
+                            {metric_cell("⚖️ Calmar Ratio", fmt_ratio(calmar_ratio))}
+                            {metric_cell("🏆 Win Rate", fmt_pct(win_rate))}
+                        </tr>
+                        <tr>
+                            {metric_cell("📊 P/L Ratio", fmt_ratio(profit_loss_ratio))}
+                            {metric_cell("� Alpha", f"{alpha:.3f}", "#16a34a" if alpha >= 0 else "#dc2626")}
+                        </tr>
+                        <tr>
+                            {metric_cell("📉 Beta", f"{beta:.3f}")}
+                            <td style="padding:8px;width:50%;"></td>
+                        </tr>
+                    </table>
 
                     <!-- Cumulative Returns Chart -->
-                    <div class="section">
-                        <div class="section-title">
-                            📈 Cumulative Returns & Max Drawdown
-                        </div>
-                        <div style="background-color: #f8fafc; border-radius: 8px; padding: 16px;">
-                            {chart_svg}
-                        </div>
+                    <div style="font-size:15px;font-weight:600;color:#334155;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #e2e8f0;">📈 Cumulative Returns</div>
+                    <div style="background-color:#f8fafc;border-radius:8px;padding:12px;margin-bottom:20px;overflow-x:auto;">
+                        {chart_svg}
                     </div>
 
                     <!-- Drawdown Analysis -->
                     {drawdown_html}
 
                     <!-- Metric Explanations -->
-                    <div class="section" style="background-color: #f8fafc; padding: 16px; border-radius: 8px; margin-top: 16px;">
-                        <div style="font-size: 12px; color: #64748b; line-height: 1.6;">
-                            <strong>📖 Metric Explanations:</strong><br>
-                            • <strong>Annualized Return</strong>: Yearly equivalent return rate<br>
-                            • <strong>Max Drawdown</strong>: Largest peak-to-trough decline (lower is better)<br>
-                            • <strong>Sharpe Ratio</strong>: Risk-adjusted return (>1 good, >2 excellent)<br>
-                            • <strong>Calmar Ratio</strong>: Annualized return / Max drawdown<br>
-                            • <strong>Win Rate</strong>: Percentage of profitable trading days
-                        </div>
+                    <div style="background-color:#f8fafc;padding:12px;border-radius:8px;margin-top:12px;font-size:11px;color:#64748b;line-height:1.6;">
+                        <strong>📖 Metric Explanations:</strong><br>
+                        • <strong>Net Return</strong>: Cumulative return after trading costs<br>
+                        • <strong>CAGR</strong>: Compound annual growth rate<br>
+                        • <strong>Max Drawdown</strong>: Largest peak-to-trough decline<br>
+                        • <strong>Sharpe Ratio</strong>: Risk-adjusted return (&gt;1 good, &gt;2 excellent)<br>
+                        • <strong>Win Rate</strong>: Percentage of profitable trading days
                     </div>
-                </div>
+                </td></tr>
 
-                <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px; margin: 0 24px 16px 24px;">
-                    <p style="margin: 0; font-size: 12px; color: #92400e;">
-                        <strong>⚠️ 免责声明 / Disclaimer</strong><br>
-                        本邮件内容仅供学习交流和技术研究使用，不构成任何投资建议。投资有风险，入市需谨慎。请根据自身情况独立判断，本系统及开发者不对任何投资决策承担责任。<br>
-                        <em>This email is for educational and research purposes only and does not constitute investment advice.</em>
-                    </p>
-                </div>
+                <!-- Disclaimer -->
+                <tr>
+                    <td style="padding:0 16px 12px 16px;">
+                        <div style="background-color:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:10px;">
+                            <p style="margin:0;font-size:11px;color:#92400e;">
+                                <strong>⚠️ 免责声明</strong><br>
+                                本邮件仅供学习交流和技术研究使用，不构成任何投资建议。投资有风险，入市需谨慎。<br>
+                                <em>For educational and research purposes only. Not investment advice.</em>
+                            </p>
+                        </div>
+                    </td>
+                </tr>
 
-                <div class="footer">
-                    This is an automated email from QuantBot Backtest System.<br>
-                    Generated at {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-                </div>
-            </div>
+                <!-- Footer -->
+                <tr>
+                    <td style="background-color:#f8fafc;padding:12px;text-align:center;font-size:11px;color:#94a3b8;border-top:1px solid #e2e8f0;">
+                        QuantBot Backtest System · {datetime.now().strftime("%Y-%m-%d %H:%M")}
+                    </td>
+                </tr>
+            </table>
         </body>
         </html>
         """

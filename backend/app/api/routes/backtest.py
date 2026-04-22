@@ -86,6 +86,9 @@ class RiskMetrics(BaseModel):
     cost_ratio: Optional[float] = None  # Total Cost / Initial Capital
     cost_to_profit_ratio: Optional[float] = None  # Total Cost / Gross Profit
     turnover_rate: Optional[float] = None  # Portfolio turnover times
+    # CAPM metrics
+    alpha: Optional[float] = None  # Jensen's Alpha (annualized)
+    beta: Optional[float] = None  # Market sensitivity
 
 
 class BacktestRunResponse(BaseModel):

@@ -1,7 +1,7 @@
 # QuantBot 技术规格文档
 
-**版本**: 4.5 (Broadcast Field Bug Fixes & Feature Name Mapping)  
-**最后更新**: 2026-04-21
+**版本**: 4.6 (Alpha/Beta Metrics, Confidence Normalization & Backtest Fixes)  
+**最后更新**: 2026-04-22
 
 ---
 
@@ -529,6 +529,27 @@ BROADCAST_FIELD_NAMES: set = {
    - **Responsive email**: Mobile-friendly via `@media` queries. Overview cards stack vertically on small screens, table cells shrink padding. All text in Chinese.
    - **Design rationale**: Traders' actual holdings differ from system's assumed portfolio, so we provide _what to hold_ and _weight ratios_ rather than specific share counts. Confidence percentile replaces raw score_spread for actionable trader guidance.
 8. **Dashboard button order** (2026-04-22): Reordered from "Update Data → Update Portfolio → Run Backtest" to "Update Data → Run Backtest → Update Portfolio" to match the standard data flow. Backtest generates confidence history baseline that Update Portfolio depends on.
+9. **Daily rebalancing cleanup** (2026-04-22): Removed unused `rebalance_period_days` from `topk_dropout_strategy` config. Qlib's `TopkDropoutStrategy` + `backtest_daily()` inherently rebalances every trading day — the strategy's `generate_trade_decision()` is called each day by the executor. The `n_drop` parameter controls actual turnover (n_drop=topk means full flexibility to replace all positions, but stable signals = low actual turnover). Dashboard rebalance info now shows "Daily" when TopK is active. Model page's Long-Short metrics are **not** a real backtest — they are a pure mathematical model evaluation metric (long top 20%, short bottom 20%, no fees/limits).
+10. **Alpha & Beta (CAPM) metrics** (2026-04-22):
+    - Added Jensen's Alpha and Beta to backtest risk metrics using CAPM model. Alpha = annualized excess return beyond market-expected return. Beta = strategy sensitivity to market movements. Risk-free rate assumed 2% (Chinese 10-year gov bond).
+    - Backend: `online_serving_service.py` calculates `alpha` and `beta` from daily returns vs benchmark. Added to `risk_metrics` dict.
+    - API model: `RiskMetrics` in `backtest.py` gains `alpha` and `beta` optional float fields.
+    - Frontend: Two new metric cards in Risk Metrics section of `backtest.tsx`. Alpha colored green/red based on sign; Beta shown neutral.
+    - Email: Alpha and Beta replace Turnover in the risk metrics table.
+    - TypeScript: `types.gen.ts` updated with `alpha` and `beta` fields.
+11. **Confidence normalization fix** (2026-04-22):
+    - **Problem**: Raw confidence was `clip(score_spread / 2.0, 0, 1)` — hardcoded divisor too small, resulting in 100% of values being 1.0 (useless). First date produced NaN due to NaN scores.
+    - **Fix 1**: `_calculate_confidence_from_signals()` now filters NaN scores and uses std-based normalization: `clip(spread / (4 * std), 0, 1)`. Adapts to actual score distribution.
+    - **Fix 2**: `_generate_confidence_history_from_signals()` uses two-pass approach for backtest: Pass 1 calculates raw confidence per date, Pass 2 converts to percentile rank. This guarantees a meaningful [0,1] distribution.
+    - Each entry now stores `raw_confidence` and `score_spread` for diagnostics alongside the percentile-based `confidence`.
+    - Result: 412 unique confidence values (was 1), mean=0.59, stdev=0.38.
+12. **Max drawdown consistency** (2026-04-22):
+    - **Problem**: Three places showed max drawdown with two different values — Risk Metrics card (-15.03% from Qlib's `risk_analysis`), Drawdown Analysis box (-14.51% from custom cumulative returns calc), Dashboard card (-15.03%).
+    - **Fix**: After chart generation, `charts.max_drawdown_info.max_drawdown` overrides `risk_metrics.max_drawdown`. Calmar ratio is recalculated with the consistent value. Single source of truth.
+13. **Email cumulative returns chart fix** (2026-04-22):
+    - **Problem**: SVG chart showed only Y-axis labels but no lines on mobile (WeChat). Fixed-width SVG (700px) was clipped.
+    - **Fix**: SVG uses `viewBox` for responsive scaling + base64-encoded `<img>` tag fallback. Most email clients (including WeChat) render base64 data-URI images. Container uses `width:100%;overflow:hidden`.
+14. **Removed Avg Turnover** (2026-04-22): Removed the Avg Daily Turnover metric card from the frontend backtest Risk Metrics section. Turnover rate is not actionable for end users.
 
 ### 数据对齐策略
 

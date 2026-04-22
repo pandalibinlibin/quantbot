@@ -4,144 +4,144 @@
  * Request model for adding a recipient.
  */
 export type AddRecipientRequest = {
-    email: string;
+  email: string;
 };
 
 /**
  * Single alert item.
  */
 export type AlertItem = {
-    level: string;
-    message: string;
-    action?: (string | null);
+  level: string;
+  message: string;
+  action?: string | null;
 };
 
 /**
  * Response model for reset endpoint.
  */
 export type app__api__routes__online__ResetResponse = {
-    success: boolean;
-    message: string;
+  success: boolean;
+  message: string;
 };
 
 /**
  * Response model for reset endpoint.
  */
 export type app__api__routes__paper_trading__ResetResponse = {
-    success: boolean;
-    message?: string;
-    error?: (string | null);
+  success: boolean;
+  message?: string;
+  error?: string | null;
 };
 
 /**
  * Response model for backtest config endpoint.
  */
 export type BacktestConfigResponse = {
-    status: string;
-    config?: ({
+  status: string;
+  config?: {
     [key: string]: unknown;
-} | null);
-    error?: (string | null);
+  } | null;
+  error?: string | null;
 };
 
 /**
  * Request model for backtest run endpoint.
  */
 export type BacktestRunRequest = {
-    /**
-     * Benchmark symbol for comparison (default: 000300.SH)
-     */
-    benchmark?: (string | null);
-    /**
-     * Initial account value (default: 100000000)
-     */
-    account?: (number | null);
+  /**
+   * Benchmark symbol for comparison (default: 000300.SH)
+   */
+  benchmark?: string | null;
+  /**
+   * Initial account value (default: 100000000)
+   */
+  account?: number | null;
 };
 
 /**
  * Response model for backtest run endpoint.
  */
 export type BacktestRunResponse = {
-    status: string;
-    start_time?: (string | null);
-    end_time?: (string | null);
-    data_start_time?: (string | null);
-    data_end_time?: (string | null);
-    freq?: (string | null);
-    trading_days?: (number | null);
-    rebalance_days?: (number | null);
-    rebalance_period?: (number | null);
-    signal_count?: (number | null);
-    total_return?: (number | null);
-    total_cost?: (number | null);
-    net_return?: (number | null);
-    final_account?: (number | null);
-    strategy?: (string | null);
-    max_deviation?: (number | null);
-    benchmark?: (string | null);
-    message?: (string | null);
-    error?: (string | null);
-    risk_metrics?: (RiskMetrics | null);
-    charts?: ({
+  status: string;
+  start_time?: string | null;
+  end_time?: string | null;
+  data_start_time?: string | null;
+  data_end_time?: string | null;
+  freq?: string | null;
+  trading_days?: number | null;
+  rebalance_days?: number | null;
+  rebalance_period?: number | null;
+  signal_count?: number | null;
+  total_return?: number | null;
+  total_cost?: number | null;
+  net_return?: number | null;
+  final_account?: number | null;
+  strategy?: string | null;
+  max_deviation?: number | null;
+  benchmark?: string | null;
+  message?: string | null;
+  error?: string | null;
+  risk_metrics?: RiskMetrics | null;
+  charts?: {
     [key: string]: unknown;
-} | null);
+  } | null;
 };
 
 /**
  * Response model for backtest status endpoint.
  */
 export type BacktestStatusResponse = {
-    ready: boolean;
-    message?: (string | null);
-    latest_model?: (string | null);
-    signal_count?: (number | null);
-    data_start?: (string | null);
-    data_end?: (string | null);
+  ready: boolean;
+  message?: string | null;
+  latest_model?: string | null;
+  signal_count?: number | null;
+  data_start?: string | null;
+  data_end?: string | null;
 };
 
 /**
  * Backtest results summary for dashboard.
  */
 export type BacktestSummary = {
-    has_results?: boolean;
-    total_return?: number;
-    total_return_pct?: string;
-    net_return?: number;
-    net_return_pct?: string;
-    annualized_return?: number;
-    annualized_return_pct?: string;
-    cagr?: number;
-    cagr_pct?: string;
-    net_cagr?: number;
-    net_cagr_pct?: string;
-    max_drawdown?: number;
-    max_drawdown_pct?: string;
-    sharpe_ratio?: number;
-    trading_days?: number;
-    backtest_date?: (string | null);
+  has_results?: boolean;
+  total_return?: number;
+  total_return_pct?: string;
+  net_return?: number;
+  net_return_pct?: string;
+  annualized_return?: number;
+  annualized_return_pct?: string;
+  cagr?: number;
+  cagr_pct?: string;
+  net_cagr?: number;
+  net_cagr_pct?: string;
+  max_drawdown?: number;
+  max_drawdown_pct?: string;
+  sharpe_ratio?: number;
+  trading_days?: number;
+  backtest_date?: string | null;
 };
 
 export type Body_login_login_access_token = {
-    grant_type?: (string | null);
-    username: string;
-    password: string;
-    scope?: string;
-    client_id?: (string | null);
-    client_secret?: (string | null);
+  grant_type?: string | null;
+  username: string;
+  password: string;
+  scope?: string;
+  client_id?: string | null;
+  client_secret?: string | null;
 };
 
 /**
  * Buy order in trading plan.
  */
 export type BuyOrder = {
-    instrument: string;
-    direction?: string;
-    target_weight: number;
-    reference_price: number;
-    limit_price: number;
-    score: number;
-    instruction: string;
-    score_rank: number;
+  instrument: string;
+  direction?: string;
+  target_weight: number;
+  reference_price: number;
+  limit_price: number;
+  score: number;
+  instruction: string;
+  score_rank: number;
 };
 
 /**
@@ -152,18 +152,20 @@ export type BuyOrder = {
  * - All time series data uses string dates for JSON compatibility
  */
 export type ChartDataResponse = {
-    /**
-     * Type of chart data
-     */
-    chart_type: string;
-    /**
-     * Chart data - can be dict or list of dicts
-     */
-    data: ({
-    [key: string]: unknown;
-} | Array<{
-    [key: string]: unknown;
-}>);
+  /**
+   * Type of chart data
+   */
+  chart_type: string;
+  /**
+   * Chart data - can be dict or list of dicts
+   */
+  data:
+    | {
+        [key: string]: unknown;
+      }
+    | Array<{
+        [key: string]: unknown;
+      }>;
 };
 
 /**
@@ -173,73 +175,77 @@ export type ChartDataResponse = {
  * - Simple response to confirm operation
  */
 export type ClearDataResponse = {
-    /**
-     * Whether operation succeeded
-     */
-    success: boolean;
-    /**
-     * Result message
-     */
-    message: string;
-    /**
-     * Size of cleared data in MB
-     */
-    cleared_size_mb?: (number | null);
+  /**
+   * Whether operation succeeded
+   */
+  success: boolean;
+  /**
+   * Result message
+   */
+  message: string;
+  /**
+   * Size of cleared data in MB
+   */
+  cleared_size_mb?: number | null;
 };
 
 /**
  * Enumeration of factor computation status
  */
-export type ComputationStatus = 'pending' | 'computing' | 'completed' | 'failed';
+export type ComputationStatus =
+  | "pending"
+  | "computing"
+  | "completed"
+  | "failed";
 
 /**
  * Single point for cumulative returns chart.
  */
 export type CumulativeReturnPoint = {
-    /**
-     * Date
-     */
-    datetime: string;
-    /**
-     * Cumulative return value
-     */
-    cumulative_return: number;
+  /**
+   * Date
+   */
+  datetime: string;
+  /**
+   * Cumulative return value
+   */
+  cumulative_return: number;
 };
 
 /**
  * Complete dashboard summary response.
  */
 export type DashboardResponse = {
-    success: boolean;
-    data_info: DataInfoSummary;
-    backtest: BacktestSummary;
-    model: ModelSummary;
-    system: SystemSummary;
-    target_positions?: Array<TargetPositionItem>;
-    alerts?: Array<AlertItem>;
-    error?: (string | null);
+  success: boolean;
+  data_info: DataInfoSummary;
+  backtest: BacktestSummary;
+  model: ModelSummary;
+  system: SystemSummary;
+  target_positions?: Array<TargetPositionItem>;
+  alerts?: Array<AlertItem>;
+  error?: string | null;
 };
 
 /**
  * Details of a detected data anomaly (large step change).
  */
 export type DataAnomaly = {
-    /**
-     * Instrument code
-     */
-    instrument: string;
-    /**
-     * Column with anomaly (e.g., 'close', 'volume')
-     */
-    column: string;
-    /**
-     * Date of anomaly occurrence
-     */
-    date: string;
-    /**
-     * Percentage change detected
-     */
-    pct_change: number;
+  /**
+   * Instrument code
+   */
+  instrument: string;
+  /**
+   * Column with anomaly (e.g., 'close', 'volume')
+   */
+  column: string;
+  /**
+   * Date of anomaly occurrence
+   */
+  date: string;
+  /**
+   * Percentage change detected
+   */
+  pct_change: number;
 };
 
 /**
@@ -251,63 +257,63 @@ export type DataAnomaly = {
  * - Used for monitoring and alerting
  */
 export type DataHealthMetrics = {
-    /**
-     * Whether data exists in qlib_data directory
-     */
-    data_exists: boolean;
-    /**
-     * Percentage of complete data (0-100)
-     */
-    completeness_percentage: number;
-    /**
-     * Number of instruments with missing data
-     */
-    missing_data_count: number;
-    /**
-     * Detailed list of missing data by instrument
-     */
-    missing_data_details: Array<MissingDataDetail>;
-    /**
-     * Number of detected anomalies
-     */
-    anomaly_count: number;
-    /**
-     * Detailed list of anomalies detected
-     */
-    anomalies: Array<DataAnomaly>;
-    /**
-     * Results of integrity checks
-     */
-    integrity_checks: IntegrityChecks;
-    /**
-     * Timestamp when check was performed
-     */
-    checked_at: string;
+  /**
+   * Whether data exists in qlib_data directory
+   */
+  data_exists: boolean;
+  /**
+   * Percentage of complete data (0-100)
+   */
+  completeness_percentage: number;
+  /**
+   * Number of instruments with missing data
+   */
+  missing_data_count: number;
+  /**
+   * Detailed list of missing data by instrument
+   */
+  missing_data_details: Array<MissingDataDetail>;
+  /**
+   * Number of detected anomalies
+   */
+  anomaly_count: number;
+  /**
+   * Detailed list of anomalies detected
+   */
+  anomalies: Array<DataAnomaly>;
+  /**
+   * Results of integrity checks
+   */
+  integrity_checks: IntegrityChecks;
+  /**
+   * Timestamp when check was performed
+   */
+  checked_at: string;
 };
 
 /**
  * Data and factor information summary for dashboard.
  */
 export type DataInfoSummary = {
-    data_range_start?: (string | null);
-    data_range_end?: (string | null);
-    trading_days?: number;
-    instruments_count?: number;
-    fields_count?: number;
-    field_names?: Array<(string)>;
-    features_count?: number;
-    feature_names?: Array<(string)>;
-    label_expression?: string;
-    label_description?: string;
-    last_update_time?: (string | null);
+  data_range_start?: string | null;
+  data_range_end?: string | null;
+  trading_days?: number;
+  instruments_count?: number;
+  fields_count?: number;
+  field_names?: Array<string>;
+  features_count?: number;
+  feature_names?: Array<string>;
+  label_expression?: string;
+  label_description?: string;
+  last_update_time?: string | null;
 };
 
 /**
  * Data range information.
  */
 export type DataRange = {
-    start_date: string;
-    end_date: string;
+  start_date: string;
+  end_date: string;
 };
 
 /**
@@ -319,65 +325,65 @@ export type DataRange = {
  * - Not stored in database, just for API response
  */
 export type DataSourceStatus = {
-    /**
-     * Current data source name
-     */
-    source_name: string;
-    /**
-     * Whether data exists in qlib_data directory
-     */
-    data_exists: boolean;
-    /**
-     * Start date of available data
-     */
-    data_range_start?: (string | null);
-    /**
-     * End date of available data
-     */
-    data_range_end?: (string | null);
-    /**
-     * List of stock codes (first 10 if more than 10)
-     */
-    instruments?: (Array<(string)> | null);
-    /**
-     * Number of stocks
-     */
-    instruments_count?: (number | null);
-    /**
-     * Stock pool name (e.g., 'etf_universe')
-     */
-    stock_pool?: (string | null);
-    /**
-     * List of available features (e.g., ['open', 'close', 'high', 'low', 'volume'])
-     */
-    features?: (Array<(string)> | null);
-    /**
-     * Raw data field names (OHLCV + broadcast fields like shibor_1y)
-     */
-    field_names?: (Array<(string)> | null);
-    /**
-     * Active label name for prediction target (e.g., 'return_1d')
-     */
-    label?: (string | null);
-    /**
-     * Total data size in MB
-     */
-    data_size_mb?: (number | null);
-    /**
-     * Last update timestamp
-     */
-    last_updated?: (string | null);
+  /**
+   * Current data source name
+   */
+  source_name: string;
+  /**
+   * Whether data exists in qlib_data directory
+   */
+  data_exists: boolean;
+  /**
+   * Start date of available data
+   */
+  data_range_start?: string | null;
+  /**
+   * End date of available data
+   */
+  data_range_end?: string | null;
+  /**
+   * List of stock codes (first 10 if more than 10)
+   */
+  instruments?: Array<string> | null;
+  /**
+   * Number of stocks
+   */
+  instruments_count?: number | null;
+  /**
+   * Stock pool name (e.g., 'etf_universe')
+   */
+  stock_pool?: string | null;
+  /**
+   * List of available features (e.g., ['open', 'close', 'high', 'low', 'volume'])
+   */
+  features?: Array<string> | null;
+  /**
+   * Raw data field names (OHLCV + broadcast fields like shibor_1y)
+   */
+  field_names?: Array<string> | null;
+  /**
+   * Active label name for prediction target (e.g., 'return_1d')
+   */
+  label?: string | null;
+  /**
+   * Total data size in MB
+   */
+  data_size_mb?: number | null;
+  /**
+   * Last update timestamp
+   */
+  last_updated?: string | null;
 };
 
 /**
  * Response model for data status check.
  */
 export type DataStatusResponse = {
-    exists: boolean;
-    message: string;
-    details: {
-        [key: string]: unknown;
-    };
+  exists: boolean;
+  message: string;
+  details: {
+    [key: string]: unknown;
+  };
 };
 
 /**
@@ -389,26 +395,26 @@ export type DataStatusResponse = {
  * - Data source is now controlled by configuration, not user input
  */
 export type DownloadDataRequest = {
-    /**
-     * Stock pool to download (e.g., 'etf_universe')
-     */
-    stock_pool?: string;
-    /**
-     * Start date in YYYY-MM-DD format
-     */
-    start_date: string;
-    /**
-     * End date in YYYY-MM-DD format
-     */
-    end_date: string;
-    /**
-     * Whether to perform incremental update (append new data only)
-     */
-    incremental?: boolean;
-    /**
-     * Data interval: '1d' for daily data
-     */
-    interval?: (string | null);
+  /**
+   * Stock pool to download (e.g., 'etf_universe')
+   */
+  stock_pool?: string;
+  /**
+   * Start date in YYYY-MM-DD format
+   */
+  start_date: string;
+  /**
+   * End date in YYYY-MM-DD format
+   */
+  end_date: string;
+  /**
+   * Whether to perform incremental update (append new data only)
+   */
+  incremental?: boolean;
+  /**
+   * Data interval: '1d' for daily data
+   */
+  interval?: string | null;
 };
 
 /**
@@ -419,295 +425,295 @@ export type DownloadDataRequest = {
  * - Contains task_id for tracking progress
  */
 export type DownloadTaskResponse = {
-    /**
-     * Unique task identifier
-     */
-    task_id: string;
-    /**
-     * Initial status: 'started'
-     */
-    status: string;
-    /**
-     * Human-readable message
-     */
-    message: string;
+  /**
+   * Unique task identifier
+   */
+  task_id: string;
+  /**
+   * Initial status: 'started'
+   */
+  status: string;
+  /**
+   * Human-readable message
+   */
+  message: string;
 };
 
 /**
  * Executed trade item.
  */
 export type ExecutedTrade = {
-    instrument: string;
-    direction: string;
-    shares?: (number | null);
-    price?: (number | null);
-    value?: (number | null);
-    sell_pct?: (number | null);
-    target_weight?: (number | null);
-    executed_at?: (string | null);
+  instrument: string;
+  direction: string;
+  shares?: number | null;
+  price?: number | null;
+  value?: number | null;
+  sell_pct?: number | null;
+  target_weight?: number | null;
+  executed_at?: string | null;
 };
 
 /**
  * Request model for execute endpoint.
  */
 export type ExecuteRequest = {
-    /**
-     * Date in YYYY-MM-DD format (None for latest)
-     */
-    date?: (string | null);
-    /**
-     * Number of stocks to hold
-     */
-    topk?: number;
-    /**
-     * Number of stocks to drop each day
-     */
-    n_drop?: number;
-    /**
-     * Slippage for price simulation (default 0.1%)
-     */
-    slippage?: number;
-    /**
-     * If True, simulate without saving
-     */
-    dry_run?: boolean;
+  /**
+   * Date in YYYY-MM-DD format (None for latest)
+   */
+  date?: string | null;
+  /**
+   * Number of stocks to hold
+   */
+  topk?: number;
+  /**
+   * Number of stocks to drop each day
+   */
+  n_drop?: number;
+  /**
+   * Slippage for price simulation (default 0.1%)
+   */
+  slippage?: number;
+  /**
+   * If True, simulate without saving
+   */
+  dry_run?: boolean;
 };
 
 /**
  * Response model for execute endpoint.
  */
 export type ExecuteResponse = {
-    success: boolean;
-    date?: (string | null);
-    dry_run?: boolean;
-    slippage?: number;
-    sells_executed?: number;
-    buys_executed?: number;
-    executed_sells?: Array<TradeItem>;
-    executed_buys?: Array<TradeItem>;
-    final_cash?: number;
-    final_position_count?: number;
-    trading_plan?: (TradingPlanSummary | null);
-    error?: (string | null);
+  success: boolean;
+  date?: string | null;
+  dry_run?: boolean;
+  slippage?: number;
+  sells_executed?: number;
+  buys_executed?: number;
+  executed_sells?: Array<TradeItem>;
+  executed_buys?: Array<TradeItem>;
+  final_cash?: number;
+  final_position_count?: number;
+  trading_plan?: TradingPlanSummary | null;
+  error?: string | null;
 };
 
 export type Factor = {
-    /**
-     * Factor name
-     */
-    name: string;
-    /**
-     * Factor expression in Qlib format
-     */
-    expression: string;
-    /**
-     * Factor description
-     */
-    description?: (string | null);
-    /**
-     * Factor type: feature (X) or label (Y)
-     */
-    factor_type?: FactorType;
-    /**
-     * Factor status
-     */
-    status?: FactorStatus;
-    /**
-     * Latest IC value
-     */
-    last_ic_value?: (number | null);
-    /**
-     * Latest IC calculation date
-     */
-    last_ic_date?: (string | null);
-    /**
-     * Average IC value
-     */
-    avg_ic_value?: (number | null);
-    /**
-     * IC Information Ratio
-     */
-    ic_ir_ratio?: (number | null);
-    /**
-     * Last computation time
-     */
-    last_computed_at?: (string | null);
-    /**
-     * Factor computation status
-     */
-    computation_status?: (ComputationStatus | null);
-    /**
-     * Number of data points computed
-     */
-    data_points_count?: (number | null);
-    id?: string;
-    created_at?: string;
-    updated_at?: string;
-    created_by: string;
+  /**
+   * Factor name
+   */
+  name: string;
+  /**
+   * Factor expression in Qlib format
+   */
+  expression: string;
+  /**
+   * Factor description
+   */
+  description?: string | null;
+  /**
+   * Factor type: feature (X) or label (Y)
+   */
+  factor_type?: FactorType;
+  /**
+   * Factor status
+   */
+  status?: FactorStatus;
+  /**
+   * Latest IC value
+   */
+  last_ic_value?: number | null;
+  /**
+   * Latest IC calculation date
+   */
+  last_ic_date?: string | null;
+  /**
+   * Average IC value
+   */
+  avg_ic_value?: number | null;
+  /**
+   * IC Information Ratio
+   */
+  ic_ir_ratio?: number | null;
+  /**
+   * Last computation time
+   */
+  last_computed_at?: string | null;
+  /**
+   * Factor computation status
+   */
+  computation_status?: ComputationStatus | null;
+  /**
+   * Number of data points computed
+   */
+  data_points_count?: number | null;
+  id?: string;
+  created_at?: string;
+  updated_at?: string;
+  created_by: string;
 };
 
 export type FactorCreate = {
-    /**
-     * Factor name
-     */
-    name: string;
-    /**
-     * Factor expression in Qlib format
-     */
-    expression: string;
-    /**
-     * Factor description
-     */
-    description?: (string | null);
-    /**
-     * Factor type: feature (X) or label (Y)
-     */
-    factor_type?: FactorType;
-    /**
-     * Factor status
-     */
-    status?: FactorStatus;
-    /**
-     * Latest IC value
-     */
-    last_ic_value?: (number | null);
-    /**
-     * Latest IC calculation date
-     */
-    last_ic_date?: (string | null);
-    /**
-     * Average IC value
-     */
-    avg_ic_value?: (number | null);
-    /**
-     * IC Information Ratio
-     */
-    ic_ir_ratio?: (number | null);
-    /**
-     * Last computation time
-     */
-    last_computed_at?: (string | null);
-    /**
-     * Factor computation status
-     */
-    computation_status?: (ComputationStatus | null);
-    /**
-     * Number of data points computed
-     */
-    data_points_count?: (number | null);
+  /**
+   * Factor name
+   */
+  name: string;
+  /**
+   * Factor expression in Qlib format
+   */
+  expression: string;
+  /**
+   * Factor description
+   */
+  description?: string | null;
+  /**
+   * Factor type: feature (X) or label (Y)
+   */
+  factor_type?: FactorType;
+  /**
+   * Factor status
+   */
+  status?: FactorStatus;
+  /**
+   * Latest IC value
+   */
+  last_ic_value?: number | null;
+  /**
+   * Latest IC calculation date
+   */
+  last_ic_date?: string | null;
+  /**
+   * Average IC value
+   */
+  avg_ic_value?: number | null;
+  /**
+   * IC Information Ratio
+   */
+  ic_ir_ratio?: number | null;
+  /**
+   * Last computation time
+   */
+  last_computed_at?: string | null;
+  /**
+   * Factor computation status
+   */
+  computation_status?: ComputationStatus | null;
+  /**
+   * Number of data points computed
+   */
+  data_points_count?: number | null;
 };
 
 /**
  * Enumeration of factor status
  */
-export type FactorStatus = 'active' | 'inactive';
+export type FactorStatus = "active" | "inactive";
 
 /**
  * Enumeration of factor types - distinguishes features from labels
  */
-export type FactorType = 'feature' | 'label';
+export type FactorType = "feature" | "label";
 
 export type FactorUpdate = {
-    name?: (string | null);
-    expression?: (string | null);
-    description?: (string | null);
-    factor_type?: (FactorType | null);
-    status?: (FactorStatus | null);
+  name?: string | null;
+  expression?: string | null;
+  description?: string | null;
+  factor_type?: FactorType | null;
+  status?: FactorStatus | null;
 };
 
 /**
  * Single feature importance item.
  */
 export type FeatureImportanceItem = {
-    /**
-     * Feature name
-     */
-    feature: string;
-    /**
-     * Importance value
-     */
-    importance: number;
+  /**
+   * Feature name
+   */
+  feature: string;
+  /**
+   * Importance value
+   */
+  importance: number;
 };
 
 /**
  * Response model for holdings endpoints.
  */
 export type HoldingsResponse = {
-    success: boolean;
-    holdings?: {
-        [key: string]: (number);
-    };
-    position_count?: number;
-    updated_at?: (string | null);
-    message?: string;
+  success: boolean;
+  holdings?: {
+    [key: string]: number;
+  };
+  position_count?: number;
+  updated_at?: string | null;
+  message?: string;
 };
 
 /**
  * Hold order in trading plan.
  */
 export type HoldOrder = {
-    instrument: string;
-    direction?: string;
-    current_weight: number;
-    target_weight: number;
-    score: number;
-    score_rank: number;
+  instrument: string;
+  direction?: string;
+  current_weight: number;
+  target_weight: number;
+  score: number;
+  score_rank: number;
 };
 
 export type HTTPValidationError = {
-    detail?: Array<ValidationError>;
+  detail?: Array<ValidationError>;
 };
 
 /**
  * IC distribution data for histogram and Q-Q plot.
  */
 export type ICDistribution = {
-    /**
-     * Histogram bins
-     */
-    histogram: Array<ICDistributionBin>;
-    /**
-     * Q-Q plot data
-     */
-    qq_plot: Array<QQPlotPoint>;
-    /**
-     * Mean of IC values
-     */
-    mean: number;
-    /**
-     * Standard deviation of IC values
-     */
-    std: number;
-    /**
-     * Skewness of IC distribution
-     */
-    skewness: number;
-    /**
-     * Kurtosis of IC distribution
-     */
-    kurtosis: number;
+  /**
+   * Histogram bins
+   */
+  histogram: Array<ICDistributionBin>;
+  /**
+   * Q-Q plot data
+   */
+  qq_plot: Array<QQPlotPoint>;
+  /**
+   * Mean of IC values
+   */
+  mean: number;
+  /**
+   * Standard deviation of IC values
+   */
+  std: number;
+  /**
+   * Skewness of IC distribution
+   */
+  skewness: number;
+  /**
+   * Kurtosis of IC distribution
+   */
+  kurtosis: number;
 };
 
 /**
  * Single bin for IC distribution histogram.
  */
 export type ICDistributionBin = {
-    /**
-     * Bin start value
-     */
-    bin_start: number;
-    /**
-     * Bin end value
-     */
-    bin_end: number;
-    /**
-     * Count in this bin
-     */
-    count: number;
-    /**
-     * Bin center value
-     */
-    bin_center: number;
+  /**
+   * Bin start value
+   */
+  bin_start: number;
+  /**
+   * Bin end value
+   */
+  bin_end: number;
+  /**
+   * Count in this bin
+   */
+  count: number;
+  /**
+   * Bin center value
+   */
+  bin_center: number;
 };
 
 /**
@@ -719,129 +725,129 @@ export type ICDistributionBin = {
  * - ICIR measures stability of IC (IC Mean / IC Std)
  */
 export type ICMetrics = {
-    /**
-     * Mean IC (Pearson correlation)
-     */
-    ic_mean: number;
-    /**
-     * Standard deviation of IC
-     */
-    ic_std: number;
-    /**
-     * IC Information Ratio (IC Mean / IC Std)
-     */
-    icir: number;
-    /**
-     * Mean Rank IC (Spearman correlation)
-     */
-    rank_ic_mean: number;
-    /**
-     * Standard deviation of Rank IC
-     */
-    rank_ic_std: number;
-    /**
-     * Rank IC Information Ratio
-     */
-    rank_icir: number;
-    /**
-     * Monthly IC data for heatmap
-     */
-    monthly_ic?: (Array<{
+  /**
+   * Mean IC (Pearson correlation)
+   */
+  ic_mean: number;
+  /**
+   * Standard deviation of IC
+   */
+  ic_std: number;
+  /**
+   * IC Information Ratio (IC Mean / IC Std)
+   */
+  icir: number;
+  /**
+   * Mean Rank IC (Spearman correlation)
+   */
+  rank_ic_mean: number;
+  /**
+   * Standard deviation of Rank IC
+   */
+  rank_ic_std: number;
+  /**
+   * Rank IC Information Ratio
+   */
+  rank_icir: number;
+  /**
+   * Monthly IC data for heatmap
+   */
+  monthly_ic?: Array<{
     [key: string]: unknown;
-}> | null);
-    /**
-     * IC distribution for histogram and Q-Q plot
-     */
-    ic_distribution?: (ICDistribution | null);
+  }> | null;
+  /**
+   * IC distribution for histogram and Q-Q plot
+   */
+  ic_distribution?: ICDistribution | null;
 };
 
 /**
  * Results of data integrity checks.
  */
 export type IntegrityChecks = {
-    /**
-     * Whether all required OHLCV columns exist
-     */
-    required_columns: boolean;
-    /**
-     * Whether factor column exists and has data
-     */
-    factor_column: boolean;
-    /**
-     * Whether all feature directories are lowercase
-     */
-    directory_case: boolean;
+  /**
+   * Whether all required OHLCV columns exist
+   */
+  required_columns: boolean;
+  /**
+   * Whether factor column exists and has data
+   */
+  factor_column: boolean;
+  /**
+   * Whether all feature directories are lowercase
+   */
+  directory_case: boolean;
 };
 
 export type ItemCreate = {
-    title: string;
-    description?: (string | null);
+  title: string;
+  description?: string | null;
 };
 
 export type ItemPublic = {
-    title: string;
-    description?: (string | null);
-    id: string;
-    owner_id: string;
+  title: string;
+  description?: string | null;
+  id: string;
+  owner_id: string;
 };
 
 export type ItemsPublic = {
-    data: Array<ItemPublic>;
-    count: number;
+  data: Array<ItemPublic>;
+  count: number;
 };
 
 export type ItemUpdate = {
-    title?: (string | null);
-    description?: (string | null);
+  title?: string | null;
+  description?: string | null;
 };
 
 /**
  * Job information.
  */
 export type JobInfo = {
-    id: string;
-    name: string;
-    next_run_time?: (string | null);
+  id: string;
+  name: string;
+  next_run_time?: string | null;
 };
 
 /**
  * Last executed trades summary.
  */
 export type LastExecutedTrades = {
-    sells?: Array<ExecutedTrade>;
-    buys?: Array<ExecutedTrade>;
-    sell_count?: number;
-    buy_count?: number;
+  sells?: Array<ExecutedTrade>;
+  buys?: Array<ExecutedTrade>;
+  sell_count?: number;
+  buy_count?: number;
 };
 
 /**
  * Response for latest portfolio endpoint.
  */
 export type LatestPortfolioResponse = {
-    success: boolean;
-    trade_date?: (string | null);
-    signal_for_date?: (string | null);
-    generated_at?: (string | null);
-    total_value?: number;
-    positions?: Array<{
-        [key: string]: unknown;
-    }>;
-    weights?: {
-        [key: string]: unknown;
-    };
-    summary?: {
-        [key: string]: unknown;
-    };
-    error?: (string | null);
+  success: boolean;
+  trade_date?: string | null;
+  signal_for_date?: string | null;
+  generated_at?: string | null;
+  total_value?: number;
+  positions?: Array<{
+    [key: string]: unknown;
+  }>;
+  weights?: {
+    [key: string]: unknown;
+  };
+  summary?: {
+    [key: string]: unknown;
+  };
+  error?: string | null;
 };
 
 /**
  * Response model for latest result endpoint.
  */
 export type LatestResultResponse = {
-    status: string;
-    result?: (BacktestRunResponse | null);
-    error?: (string | null);
+  status: string;
+  result?: BacktestRunResponse | null;
+  error?: string | null;
 };
 
 /**
@@ -853,64 +859,64 @@ export type LatestResultResponse = {
  * - Annualized metrics scaled to yearly performance
  */
 export type LongShortMetrics = {
-    /**
-     * Annualized long-short return
-     */
-    long_short_ann_return: number;
-    /**
-     * Annualized long-short Sharpe ratio
-     */
-    long_short_ann_sharpe: number;
-    /**
-     * Annualized long-average return
-     */
-    long_avg_ann_return: number;
-    /**
-     * Annualized long-average Sharpe ratio
-     */
-    long_avg_ann_sharpe: number;
-    /**
-     * Cumulative returns time series
-     */
-    cumulative_returns?: (Array<CumulativeReturnPoint> | null);
-    /**
-     * Return distribution histogram
-     */
-    return_distribution?: (Array<ReturnDistributionBin> | null);
+  /**
+   * Annualized long-short return
+   */
+  long_short_ann_return: number;
+  /**
+   * Annualized long-short Sharpe ratio
+   */
+  long_short_ann_sharpe: number;
+  /**
+   * Annualized long-average return
+   */
+  long_avg_ann_return: number;
+  /**
+   * Annualized long-average Sharpe ratio
+   */
+  long_avg_ann_sharpe: number;
+  /**
+   * Cumulative returns time series
+   */
+  cumulative_returns?: Array<CumulativeReturnPoint> | null;
+  /**
+   * Return distribution histogram
+   */
+  return_distribution?: Array<ReturnDistributionBin> | null;
 };
 
 export type Message = {
-    message: string;
+  message: string;
 };
 
 /**
  * Details of missing data for a specific instrument.
  */
 export type MissingDataDetail = {
-    /**
-     * Instrument code
-     */
-    instrument: string;
-    /**
-     * Number of missing values in open column
-     */
-    open: number;
-    /**
-     * Number of missing values in high column
-     */
-    high: number;
-    /**
-     * Number of missing values in low column
-     */
-    low: number;
-    /**
-     * Number of missing values in close column
-     */
-    close: number;
-    /**
-     * Number of missing values in volume column
-     */
-    volume: number;
+  /**
+   * Instrument code
+   */
+  instrument: string;
+  /**
+   * Number of missing values in open column
+   */
+  open: number;
+  /**
+   * Number of missing values in high column
+   */
+  high: number;
+  /**
+   * Number of missing values in low column
+   */
+  low: number;
+  /**
+   * Number of missing values in close column
+   */
+  close: number;
+  /**
+   * Number of missing values in volume column
+   */
+  volume: number;
 };
 
 /**
@@ -922,162 +928,162 @@ export type MissingDataDetail = {
  * - Used for comprehensive model performance analysis
  */
 export type ModelMetricsResponse = {
-    /**
-     * Model type (e.g., 'Rolling Ensemble')
-     */
-    model_type: string;
-    /**
-     * When metrics were calculated
-     */
-    calculated_at: string;
-    /**
-     * Data frequency ('day')
-     */
-    frequency: string;
-    /**
-     * IC analysis metrics
-     */
-    ic_metrics: ICMetrics;
-    /**
-     * Long-short strategy metrics
-     */
-    long_short_metrics: LongShortMetrics;
-    /**
-     * Prediction quality metrics
-     */
-    quality_metrics: QualityMetrics;
-    /**
-     * Feature importance from latest model
-     */
-    feature_importance?: (Array<FeatureImportanceItem> | null);
+  /**
+   * Model type (e.g., 'Rolling Ensemble')
+   */
+  model_type: string;
+  /**
+   * When metrics were calculated
+   */
+  calculated_at: string;
+  /**
+   * Data frequency ('day')
+   */
+  frequency: string;
+  /**
+   * IC analysis metrics
+   */
+  ic_metrics: ICMetrics;
+  /**
+   * Long-short strategy metrics
+   */
+  long_short_metrics: LongShortMetrics;
+  /**
+   * Prediction quality metrics
+   */
+  quality_metrics: QualityMetrics;
+  /**
+   * Feature importance from latest model
+   */
+  feature_importance?: Array<FeatureImportanceItem> | null;
 };
 
 /**
  * Model metrics summary for dashboard.
  */
 export type ModelSummary = {
-    ic?: (number | null);
-    icir?: (number | null);
-    evaluation?: string;
-    has_metrics?: boolean;
+  ic?: number | null;
+  icir?: number | null;
+  evaluation?: string;
+  has_metrics?: boolean;
 };
 
 export type NewPassword = {
-    token: string;
-    new_password: string;
+  token: string;
+  new_password: string;
 };
 
 /**
  * Notification configuration model.
  */
 export type NotificationConfig = {
-    enabled?: boolean;
-    recipients?: Array<(string)>;
-    smtp_host?: (string | null);
-    smtp_port?: (number | null);
-    smtp_user?: (string | null);
-    smtp_tls?: (boolean | null);
-    from_email?: (string | null);
-    from_name?: (string | null);
-    updated_at?: (string | null);
+  enabled?: boolean;
+  recipients?: Array<string>;
+  smtp_host?: string | null;
+  smtp_port?: number | null;
+  smtp_user?: string | null;
+  smtp_tls?: boolean | null;
+  from_email?: string | null;
+  from_name?: string | null;
+  updated_at?: string | null;
 };
 
 /**
  * Response model for notification config.
  */
 export type NotificationConfigResponse = {
-    success: boolean;
-    config?: (NotificationConfig | null);
-    error?: (string | null);
+  success: boolean;
+  config?: NotificationConfig | null;
+  error?: string | null;
 };
 
 /**
  * Response model for performance endpoint.
  */
 export type PerformanceResponse = {
-    success: boolean;
-    initial_cash?: number;
-    current_value?: number;
-    total_return?: number;
-    total_return_pct?: string;
-    total_trades?: number;
-    buy_trades?: number;
-    sell_trades?: number;
-    trading_days?: number;
-    position_count?: number;
-    annualized_return?: (number | null);
-    annualized_return_pct?: (string | null);
-    max_drawdown?: (number | null);
-    max_drawdown_pct?: (string | null);
-    sharpe_ratio?: (number | null);
-    win_rate?: (number | null);
-    win_rate_pct?: (string | null);
-    error?: (string | null);
+  success: boolean;
+  initial_cash?: number;
+  current_value?: number;
+  total_return?: number;
+  total_return_pct?: string;
+  total_trades?: number;
+  buy_trades?: number;
+  sell_trades?: number;
+  trading_days?: number;
+  position_count?: number;
+  annualized_return?: number | null;
+  annualized_return_pct?: string | null;
+  max_drawdown?: number | null;
+  max_drawdown_pct?: string | null;
+  sharpe_ratio?: number | null;
+  win_rate?: number | null;
+  win_rate_pct?: string | null;
+  error?: string | null;
 };
 
 /**
  * Summary of trading plan.
  */
 export type PlanSummary = {
-    sell_count: number;
-    buy_count: number;
-    hold_count: number;
+  sell_count: number;
+  buy_count: number;
+  hold_count: number;
 };
 
 /**
  * Response model for portfolio endpoint.
  */
 export type PortfolioResponse = {
-    success: boolean;
-    cash?: number;
-    positions?: Array<PositionItem>;
-    position_count?: number;
-    total_position_value?: number;
-    total_value?: number;
-    created_at?: (string | null);
-    updated_at?: (string | null);
-    error?: (string | null);
+  success: boolean;
+  cash?: number;
+  positions?: Array<PositionItem>;
+  position_count?: number;
+  total_position_value?: number;
+  total_value?: number;
+  created_at?: string | null;
+  updated_at?: string | null;
+  error?: string | null;
 };
 
 /**
  * Portfolio summary in trading plan.
  */
 export type PortfolioSummary = {
-    total_value: number;
-    cash: number;
-    position_value: number;
-    position_count: number;
+  total_value: number;
+  cash: number;
+  position_value: number;
+  position_count: number;
 };
 
 /**
  * Single position item.
  */
 export type PositionItem = {
-    instrument: string;
-    shares: number;
-    avg_cost: number;
-    current_value: number;
+  instrument: string;
+  shares: number;
+  avg_cost: number;
+  current_value: number;
 };
 
 export type PrivateUserCreate = {
-    email: string;
-    password: string;
-    full_name: string;
-    is_verified?: boolean;
+  email: string;
+  password: string;
+  full_name: string;
+  is_verified?: boolean;
 };
 
 /**
  * Single point for Q-Q plot.
  */
 export type QQPlotPoint = {
-    /**
-     * Theoretical quantile
-     */
-    theoretical: number;
-    /**
-     * Sample quantile
-     */
-    sample: number;
+  /**
+   * Theoretical quantile
+   */
+  theoretical: number;
+  /**
+   * Sample quantile
+   */
+  sample: number;
 };
 
 /**
@@ -1088,781 +1094,787 @@ export type QQPlotPoint = {
  * - Auto Correlation: Prediction stability over time (0.1-0.3 is normal)
  */
 export type QualityMetrics = {
-    /**
-     * Long prediction precision
-     */
-    long_precision: number;
-    /**
-     * Short prediction precision
-     */
-    short_precision: number;
-    /**
-     * Auto correlation (lag=1)
-     */
-    auto_correlation: number;
-    /**
-     * Turnover analysis data
-     */
-    turnover?: (TurnoverData | null);
+  /**
+   * Long prediction precision
+   */
+  long_precision: number;
+  /**
+   * Short prediction precision
+   */
+  short_precision: number;
+  /**
+   * Auto correlation (lag=1)
+   */
+  auto_correlation: number;
+  /**
+   * Turnover analysis data
+   */
+  turnover?: TurnoverData | null;
 };
 
 /**
  * Rebalancing schedule information.
  */
 export type RebalanceInfo = {
-    rebalance_period_days?: number;
-    is_rebalance_day?: boolean;
-    next_rebalance_date?: (string | null);
-    days_until_rebalance?: number;
+  rebalance_period_days?: number;
+  is_rebalance_day?: boolean;
+  next_rebalance_date?: string | null;
+  days_until_rebalance?: number;
 };
 
 /**
  * Response model for recipient operations.
  */
 export type RecipientResponse = {
-    success: boolean;
-    message?: (string | null);
-    recipients?: (Array<(string)> | null);
-    error?: (string | null);
+  success: boolean;
+  message?: string | null;
+  recipients?: Array<string> | null;
+  error?: string | null;
 };
 
 /**
  * Single bin for return distribution histogram.
  */
 export type ReturnDistributionBin = {
-    /**
-     * Bin start value
-     */
-    bin_start: number;
-    /**
-     * Bin end value
-     */
-    bin_end: number;
-    /**
-     * Count in this bin
-     */
-    count: number;
-    /**
-     * Bin center value
-     */
-    bin_center: number;
+  /**
+   * Bin start value
+   */
+  bin_start: number;
+  /**
+   * Bin end value
+   */
+  bin_end: number;
+  /**
+   * Count in this bin
+   */
+  count: number;
+  /**
+   * Bin center value
+   */
+  bin_center: number;
 };
 
 /**
  * Risk metrics for backtest results.
  */
 export type RiskMetrics = {
-    annualized_return?: (number | null);
-    cagr?: (number | null);
-    net_cagr?: (number | null);
-    max_drawdown?: (number | null);
-    sharpe_ratio?: (number | null);
-    volatility?: (number | null);
-    calmar_ratio?: (number | null);
-    win_rate?: (number | null);
-    profit_loss_ratio?: (number | null);
-    cost_ratio?: (number | null);
-    cost_to_profit_ratio?: (number | null);
-    turnover_rate?: (number | null);
+  annualized_return?: number | null;
+  cagr?: number | null;
+  net_cagr?: number | null;
+  max_drawdown?: number | null;
+  sharpe_ratio?: number | null;
+  volatility?: number | null;
+  calmar_ratio?: number | null;
+  win_rate?: number | null;
+  profit_loss_ratio?: number | null;
+  cost_ratio?: number | null;
+  cost_to_profit_ratio?: number | null;
+  turnover_rate?: number | null;
+  alpha?: number | null;
+  beta?: number | null;
 };
 
 /**
  * Request model for routine endpoint.
  */
 export type RoutineRequest = {
-    /**
-     * Current time in YYYY-MM-DD format. None for latest.
-     */
-    cur_time?: (string | null);
+  /**
+   * Current time in YYYY-MM-DD format. None for latest.
+   */
+  cur_time?: string | null;
 };
 
 /**
  * Response model for routine endpoint.
  */
 export type RoutineResponse = {
-    success: boolean;
-    message?: (string | null);
-    cur_time?: (string | null);
-    executed_at: string;
-    steps?: Array<StepResult>;
-    total_duration_seconds?: (number | null);
-    error?: (string | null);
-    target_portfolio?: (Array<unknown> | null);
-    portfolio_summary?: ({
+  success: boolean;
+  message?: string | null;
+  cur_time?: string | null;
+  executed_at: string;
+  steps?: Array<StepResult>;
+  total_duration_seconds?: number | null;
+  error?: string | null;
+  target_portfolio?: Array<unknown> | null;
+  portfolio_summary?: {
     [key: string]: unknown;
-} | null);
-    generated_at?: (string | null);
-    trade_date?: (string | null);
-    signal_for_date?: (string | null);
-    total_value?: (number | null);
-    region?: (string | null);
-    lot_size?: (number | null);
-    weights?: ({
+  } | null;
+  generated_at?: string | null;
+  trade_date?: string | null;
+  signal_for_date?: string | null;
+  total_value?: number | null;
+  region?: string | null;
+  lot_size?: number | null;
+  weights?: {
     [key: string]: unknown;
-} | null);
-    strategy?: (string | null);
+  } | null;
+  strategy?: string | null;
 };
 
 /**
  * Scheduler status response.
  */
 export type SchedulerStatusResponse = {
-    is_running: boolean;
-    config: {
-        [key: string]: unknown;
-    };
-    jobs: Array<JobInfo>;
+  is_running: boolean;
+  config: {
+    [key: string]: unknown;
+  };
+  jobs: Array<JobInfo>;
 };
 
 /**
  * Sell order in trading plan.
  */
 export type SellOrder = {
-    instrument: string;
-    direction?: string;
-    sell_pct: number;
-    current_weight: number;
-    reference_price: number;
-    limit_price: number;
-    score: number;
-    reason: string;
-    instruction: string;
+  instrument: string;
+  direction?: string;
+  sell_pct: number;
+  current_weight: number;
+  reference_price: number;
+  limit_price: number;
+  score: number;
+  reason: string;
+  instruction: string;
 };
 
 /**
  * Single signal item.
  */
 export type SignalItem = {
-    datetime?: (string | null);
-    instrument?: (string | null);
-    key?: (string | null);
-    score: number;
+  datetime?: string | null;
+  instrument?: string | null;
+  key?: string | null;
+  score: number;
 };
 
 /**
  * Response model for signals endpoint.
  */
 export type SignalsResponse = {
-    success: boolean;
-    signal_count?: number;
-    signals?: Array<SignalItem>;
-    error?: (string | null);
+  success: boolean;
+  signal_count?: number;
+  signals?: Array<SignalItem>;
+  error?: string | null;
 };
 
 /**
  * Response model for status endpoint.
  */
 export type StatusResponse = {
-    is_initialized: boolean;
-    freq: string;
-    last_routine_time?: (string | null);
-    initialization_error?: (string | null);
-    config?: {
-        [key: string]: unknown;
-    };
-    data_range?: (DataRange | null);
-    signal_count?: (number | null);
+  is_initialized: boolean;
+  freq: string;
+  last_routine_time?: string | null;
+  initialization_error?: string | null;
+  config?: {
+    [key: string]: unknown;
+  };
+  data_range?: DataRange | null;
+  signal_count?: number | null;
 };
 
 /**
  * Result of a single step in the routine.
  */
 export type StepResult = {
-    step: string;
-    success: boolean;
-    duration_seconds?: (number | null);
-    details?: {
-        [key: string]: unknown;
-    };
+  step: string;
+  success: boolean;
+  duration_seconds?: number | null;
+  details?: {
+    [key: string]: unknown;
+  };
 };
 
 /**
  * System status summary for dashboard.
  */
 export type SystemSummary = {
-    is_initialized?: boolean;
-    signal_count?: number;
-    last_routine_time?: (string | null);
-    data_range_start?: (string | null);
-    data_range_end?: (string | null);
-    rebalance?: (RebalanceInfo | null);
+  is_initialized?: boolean;
+  signal_count?: number;
+  last_routine_time?: string | null;
+  data_range_start?: string | null;
+  data_range_end?: string | null;
+  rebalance?: RebalanceInfo | null;
 };
 
 /**
  * Single position item from target portfolio.
  */
 export type TargetPositionItem = {
-    rank: number;
-    instrument: string;
-    name?: string;
-    type?: string;
-    weight?: number;
-    target_value?: number;
-    target_shares?: number;
-    action?: string;
+  rank: number;
+  instrument: string;
+  name?: string;
+  type?: string;
+  weight?: number;
+  target_value?: number;
+  target_shares?: number;
+  action?: string;
 };
 
 /**
  * Request model for sending test email.
  */
 export type TestEmailRequest = {
-    recipient?: (string | null);
+  recipient?: string | null;
 };
 
 /**
  * Response model for test email.
  */
 export type TestEmailResponse = {
-    success: boolean;
-    message?: (string | null);
-    error?: (string | null);
+  success: boolean;
+  message?: string | null;
+  error?: string | null;
 };
 
 export type Token = {
-    access_token: string;
-    token_type?: string;
+  access_token: string;
+  token_type?: string;
 };
 
 /**
  * Single trade item.
  */
 export type TradeItem = {
-    date: string;
-    instrument: string;
-    action: string;
-    shares: number;
-    price: number;
-    value: number;
-    sell_pct?: (number | null);
-    target_weight?: (number | null);
-    executed_at: string;
+  date: string;
+  instrument: string;
+  action: string;
+  shares: number;
+  price: number;
+  value: number;
+  sell_pct?: number | null;
+  target_weight?: number | null;
+  executed_at: string;
 };
 
 /**
  * Response model for trades endpoint.
  */
 export type TradesResponse = {
-    success: boolean;
-    total_trades?: number;
-    trades?: Array<TradeItem>;
-    error?: (string | null);
+  success: boolean;
+  total_trades?: number;
+  trades?: Array<TradeItem>;
+  error?: string | null;
 };
 
 /**
  * Request model for trading plan endpoint.
  */
 export type TradingPlanRequest = {
-    /**
-     * Date in YYYY-MM-DD format (None for latest)
-     */
-    date?: (string | null);
-    /**
-     * Number of stocks to hold
-     */
-    topk?: number;
-    /**
-     * Number of stocks to drop each day
-     */
-    n_drop?: number;
-    /**
-     * Expected slippage for price estimation (default 0.1%)
-     */
-    slippage?: number;
+  /**
+   * Date in YYYY-MM-DD format (None for latest)
+   */
+  date?: string | null;
+  /**
+   * Number of stocks to hold
+   */
+  topk?: number;
+  /**
+   * Number of stocks to drop each day
+   */
+  n_drop?: number;
+  /**
+   * Expected slippage for price estimation (default 0.1%)
+   */
+  slippage?: number;
 };
 
 /**
  * Response model for trading plan endpoint.
  */
 export type TradingPlanResponse = {
-    success: boolean;
-    date?: (string | null);
-    generated_at?: (string | null);
-    strategy?: string;
-    topk?: number;
-    n_drop?: number;
-    target_weight_per_stock?: number;
-    slippage?: number;
-    portfolio_summary?: (PortfolioSummary | null);
-    sell_orders?: Array<SellOrder>;
-    buy_orders?: Array<BuyOrder>;
-    hold_orders?: Array<HoldOrder>;
-    summary?: (PlanSummary | null);
-    last_executed_trades?: (LastExecutedTrades | null);
-    error?: (string | null);
+  success: boolean;
+  date?: string | null;
+  generated_at?: string | null;
+  strategy?: string;
+  topk?: number;
+  n_drop?: number;
+  target_weight_per_stock?: number;
+  slippage?: number;
+  portfolio_summary?: PortfolioSummary | null;
+  sell_orders?: Array<SellOrder>;
+  buy_orders?: Array<BuyOrder>;
+  hold_orders?: Array<HoldOrder>;
+  summary?: PlanSummary | null;
+  last_executed_trades?: LastExecutedTrades | null;
+  error?: string | null;
 };
 
 /**
  * Trading plan summary included in execute response.
  */
 export type TradingPlanSummary = {
-    sell_orders?: Array<{
-        [key: string]: unknown;
-    }>;
-    buy_orders?: Array<{
-        [key: string]: unknown;
-    }>;
-    hold_orders?: Array<{
-        [key: string]: unknown;
-    }>;
-    summary?: {
-        [key: string]: unknown;
-    };
+  sell_orders?: Array<{
+    [key: string]: unknown;
+  }>;
+  buy_orders?: Array<{
+    [key: string]: unknown;
+  }>;
+  hold_orders?: Array<{
+    [key: string]: unknown;
+  }>;
+  summary?: {
+    [key: string]: unknown;
+  };
 };
 
 /**
  * Response model for training start endpoint.
  */
 export type TrainingStartResponse = {
-    status: string;
-    message: string;
-    model_path?: (string | null);
-    test_predictions_count?: number;
-    experiment_name?: (string | null);
-    timings?: ({
+  status: string;
+  message: string;
+  model_path?: string | null;
+  test_predictions_count?: number;
+  experiment_name?: string | null;
+  timings?: {
     [key: string]: unknown;
-} | null);
-    error?: (string | null);
+  } | null;
+  error?: string | null;
 };
 
 /**
  * Turnover analysis data.
  */
 export type TurnoverData = {
-    /**
-     * Top stocks turnover time series
-     */
-    top_turnover_series: Array<TurnoverPoint>;
-    /**
-     * Bottom stocks turnover time series
-     */
-    bottom_turnover_series: Array<TurnoverPoint>;
-    /**
-     * Average top turnover
-     */
-    avg_top_turnover: number;
-    /**
-     * Average bottom turnover
-     */
-    avg_bottom_turnover: number;
+  /**
+   * Top stocks turnover time series
+   */
+  top_turnover_series: Array<TurnoverPoint>;
+  /**
+   * Bottom stocks turnover time series
+   */
+  bottom_turnover_series: Array<TurnoverPoint>;
+  /**
+   * Average top turnover
+   */
+  avg_top_turnover: number;
+  /**
+   * Average bottom turnover
+   */
+  avg_bottom_turnover: number;
 };
 
 /**
  * Single point for turnover time series.
  */
 export type TurnoverPoint = {
-    /**
-     * Date
-     */
-    datetime: string;
-    /**
-     * Turnover value
-     */
-    turnover: number;
+  /**
+   * Date
+   */
+  datetime: string;
+  /**
+   * Turnover value
+   */
+  turnover: number;
 };
 
 /**
  * Request model for updating holdings.
  */
 export type UpdateHoldingsRequest = {
-    /**
-     * Holdings dict: symbol -> shares
-     */
-    holdings: {
-        [key: string]: (number);
-    };
+  /**
+   * Holdings dict: symbol -> shares
+   */
+  holdings: {
+    [key: string]: number;
+  };
 };
 
 /**
  * Request model for updating notification config.
  */
 export type UpdateNotificationConfigRequest = {
-    enabled?: (boolean | null);
-    recipients?: (Array<(string)> | null);
-    smtp_host?: (string | null);
-    smtp_port?: (number | null);
-    smtp_user?: (string | null);
-    smtp_password?: (string | null);
-    smtp_tls?: (boolean | null);
-    from_email?: (string | null);
-    from_name?: (string | null);
+  enabled?: boolean | null;
+  recipients?: Array<string> | null;
+  smtp_host?: string | null;
+  smtp_port?: number | null;
+  smtp_user?: string | null;
+  smtp_password?: string | null;
+  smtp_tls?: boolean | null;
+  from_email?: string | null;
+  from_name?: string | null;
 };
 
 export type UpdatePassword = {
-    current_password: string;
-    new_password: string;
+  current_password: string;
+  new_password: string;
 };
 
 export type UserCreate = {
-    email: string;
-    is_active?: boolean;
-    is_superuser?: boolean;
-    full_name?: (string | null);
-    password: string;
+  email: string;
+  is_active?: boolean;
+  is_superuser?: boolean;
+  full_name?: string | null;
+  password: string;
 };
 
 export type UserPublic = {
-    email: string;
-    is_active?: boolean;
-    is_superuser?: boolean;
-    full_name?: (string | null);
-    id: string;
+  email: string;
+  is_active?: boolean;
+  is_superuser?: boolean;
+  full_name?: string | null;
+  id: string;
 };
 
 export type UserRegister = {
-    email: string;
-    password: string;
-    full_name?: (string | null);
+  email: string;
+  password: string;
+  full_name?: string | null;
 };
 
 export type UsersPublic = {
-    data: Array<UserPublic>;
-    count: number;
+  data: Array<UserPublic>;
+  count: number;
 };
 
 export type UserUpdate = {
-    email?: (string | null);
-    is_active?: boolean;
-    is_superuser?: boolean;
-    full_name?: (string | null);
-    password?: (string | null);
+  email?: string | null;
+  is_active?: boolean;
+  is_superuser?: boolean;
+  full_name?: string | null;
+  password?: string | null;
 };
 
 export type UserUpdateMe = {
-    full_name?: (string | null);
-    email?: (string | null);
+  full_name?: string | null;
+  email?: string | null;
 };
 
 export type ValidationError = {
-    loc: Array<(string | number)>;
-    msg: string;
-    type: string;
+  loc: Array<string | number>;
+  msg: string;
+  type: string;
 };
 
-export type BacktestGetBacktestConfigurationResponse = (BacktestConfigResponse);
+export type BacktestGetBacktestConfigurationResponse = BacktestConfigResponse;
 
-export type BacktestGetBacktestStatusResponse = (BacktestStatusResponse);
+export type BacktestGetBacktestStatusResponse = BacktestStatusResponse;
 
-export type BacktestGetLatestBacktestResultResponse = (LatestResultResponse);
+export type BacktestGetLatestBacktestResultResponse = LatestResultResponse;
 
 export type BacktestRunBacktestData = {
-    requestBody?: (BacktestRunRequest | null);
+  requestBody?: BacktestRunRequest | null;
 };
 
-export type BacktestRunBacktestResponse = (BacktestRunResponse);
+export type BacktestRunBacktestResponse = BacktestRunResponse;
 
-export type DashboardGetLatestPortfolioResponse = (LatestPortfolioResponse);
+export type DashboardGetLatestPortfolioResponse = LatestPortfolioResponse;
 
-export type DashboardGetLatestPortfolio1Response = (LatestPortfolioResponse);
+export type DashboardGetLatestPortfolio1Response = LatestPortfolioResponse;
 
-export type DashboardGetDashboardSummaryResponse = (DashboardResponse);
+export type DashboardGetDashboardSummaryResponse = DashboardResponse;
 
-export type DashboardGetDashboardSummary1Response = (DashboardResponse);
+export type DashboardGetDashboardSummary1Response = DashboardResponse;
 
-export type DataSourceGetDataSourceStatusEndpointResponse = (DataSourceStatus);
+export type DataSourceGetDataSourceStatusEndpointResponse = DataSourceStatus;
 
-export type DataSourceClearDataSourceEndpointResponse = (ClearDataResponse);
+export type DataSourceClearDataSourceEndpointResponse = ClearDataResponse;
 
 export type DataSourceDownloadDataSourceEndpointData = {
-    requestBody: DownloadDataRequest;
+  requestBody: DownloadDataRequest;
 };
 
-export type DataSourceDownloadDataSourceEndpointResponse = (DownloadTaskResponse);
+export type DataSourceDownloadDataSourceEndpointResponse = DownloadTaskResponse;
 
-export type DataSourceExportDataEndpointResponse = (unknown);
+export type DataSourceExportDataEndpointResponse = unknown;
 
-export type DataSourceGetDataHealthEndpointResponse = (DataHealthMetrics);
+export type DataSourceGetDataHealthEndpointResponse = DataHealthMetrics;
 
 export type FactorsCreateFactorData = {
-    requestBody: FactorCreate;
+  requestBody: FactorCreate;
 };
 
-export type FactorsCreateFactorResponse = (Factor);
+export type FactorsCreateFactorResponse = Factor;
 
 export type FactorsGetFactorsData = {
-    /**
-     * Filter by factor type (feature or label)
-     */
-    factorType?: (FactorType | null);
-    /**
-     * Maximum number of factors to return
-     */
-    limit?: number;
-    /**
-     * Number of factors to skip
-     */
-    offset?: number;
-    /**
-     * Filter by factor status
-     */
-    statusFilter?: (FactorStatus | null);
+  /**
+   * Filter by factor type (feature or label)
+   */
+  factorType?: FactorType | null;
+  /**
+   * Maximum number of factors to return
+   */
+  limit?: number;
+  /**
+   * Number of factors to skip
+   */
+  offset?: number;
+  /**
+   * Filter by factor status
+   */
+  statusFilter?: FactorStatus | null;
 };
 
-export type FactorsGetFactorsResponse = (Array<Factor>);
+export type FactorsGetFactorsResponse = Array<Factor>;
 
-export type FactorsGetAlpha158InfoResponse = (unknown);
+export type FactorsGetAlpha158InfoResponse = unknown;
 
-export type FactorsGetLabelConfigResponse = (unknown);
+export type FactorsGetLabelConfigResponse = unknown;
 
 export type FactorsGetFactorData = {
-    factorId: string;
+  factorId: string;
 };
 
-export type FactorsGetFactorResponse = (Factor);
+export type FactorsGetFactorResponse = Factor;
 
 export type FactorsUpdateFactorData = {
-    factorId: string;
-    requestBody: FactorUpdate;
+  factorId: string;
+  requestBody: FactorUpdate;
 };
 
-export type FactorsUpdateFactorResponse = (Factor);
+export type FactorsUpdateFactorResponse = Factor;
 
 export type FactorsDeleteFactorData = {
-    factorId: string;
+  factorId: string;
 };
 
-export type FactorsDeleteFactorResponse = (void);
+export type FactorsDeleteFactorResponse = void;
 
 export type FactorsValidateFactorExpressionData = {
-    expression: string;
+  expression: string;
 };
 
-export type FactorsValidateFactorExpressionResponse = (unknown);
+export type FactorsValidateFactorExpressionResponse = unknown;
 
 export type ItemsReadItemsData = {
-    limit?: number;
-    skip?: number;
+  limit?: number;
+  skip?: number;
 };
 
-export type ItemsReadItemsResponse = (ItemsPublic);
+export type ItemsReadItemsResponse = ItemsPublic;
 
 export type ItemsCreateItemData = {
-    requestBody: ItemCreate;
+  requestBody: ItemCreate;
 };
 
-export type ItemsCreateItemResponse = (ItemPublic);
+export type ItemsCreateItemResponse = ItemPublic;
 
 export type ItemsReadItemData = {
-    id: string;
+  id: string;
 };
 
-export type ItemsReadItemResponse = (ItemPublic);
+export type ItemsReadItemResponse = ItemPublic;
 
 export type ItemsUpdateItemData = {
-    id: string;
-    requestBody: ItemUpdate;
+  id: string;
+  requestBody: ItemUpdate;
 };
 
-export type ItemsUpdateItemResponse = (ItemPublic);
+export type ItemsUpdateItemResponse = ItemPublic;
 
 export type ItemsDeleteItemData = {
-    id: string;
+  id: string;
 };
 
-export type ItemsDeleteItemResponse = (Message);
+export type ItemsDeleteItemResponse = Message;
 
 export type LoginLoginAccessTokenData = {
-    formData: Body_login_login_access_token;
+  formData: Body_login_login_access_token;
 };
 
-export type LoginLoginAccessTokenResponse = (Token);
+export type LoginLoginAccessTokenResponse = Token;
 
-export type LoginTestTokenResponse = (UserPublic);
+export type LoginTestTokenResponse = UserPublic;
 
 export type LoginRecoverPasswordData = {
-    email: string;
+  email: string;
 };
 
-export type LoginRecoverPasswordResponse = (Message);
+export type LoginRecoverPasswordResponse = Message;
 
 export type LoginResetPasswordData = {
-    requestBody: NewPassword;
+  requestBody: NewPassword;
 };
 
-export type LoginResetPasswordResponse = (Message);
+export type LoginResetPasswordResponse = Message;
 
 export type LoginRecoverPasswordHtmlContentData = {
-    email: string;
+  email: string;
 };
 
-export type LoginRecoverPasswordHtmlContentResponse = (string);
+export type LoginRecoverPasswordHtmlContentResponse = string;
 
-export type ModelsGetActiveModelMetricsResponse = (ModelMetricsResponse);
+export type ModelsGetActiveModelMetricsResponse = ModelMetricsResponse;
 
-export type ModelsGetIcSeriesChartResponse = (ChartDataResponse);
+export type ModelsGetIcSeriesChartResponse = ChartDataResponse;
 
-export type ModelsGetMonthlyIcChartResponse = (ChartDataResponse);
+export type ModelsGetMonthlyIcChartResponse = ChartDataResponse;
 
-export type ModelsGetGroupReturnsChartResponse = (ChartDataResponse);
+export type ModelsGetGroupReturnsChartResponse = ChartDataResponse;
 
-export type ModelsGetLongShortSeriesChartResponse = (ChartDataResponse);
+export type ModelsGetLongShortSeriesChartResponse = ChartDataResponse;
 
-export type ModelsGetAutoCorrelationChartResponse = (ChartDataResponse);
+export type ModelsGetAutoCorrelationChartResponse = ChartDataResponse;
 
 export type ModelsGetFeatureImportanceData = {
-    limit?: (number | null);
+  limit?: number | null;
 };
 
-export type ModelsGetFeatureImportanceResponse = (Array<FeatureImportanceItem>);
+export type ModelsGetFeatureImportanceResponse = Array<FeatureImportanceItem>;
 
 export type OnlineServingExecuteRoutineData = {
-    requestBody?: RoutineRequest;
+  requestBody?: RoutineRequest;
 };
 
-export type OnlineServingExecuteRoutineResponse = (RoutineResponse);
+export type OnlineServingExecuteRoutineResponse = RoutineResponse;
 
-export type OnlineServingGetStatusResponse = (StatusResponse);
+export type OnlineServingGetStatusResponse = StatusResponse;
 
-export type OnlineServingGetSignalsResponse = (SignalsResponse);
+export type OnlineServingGetSignalsResponse = SignalsResponse;
 
-export type OnlineServingResetStateResponse = (app__api__routes__online__ResetResponse);
+export type OnlineServingResetStateResponse =
+  app__api__routes__online__ResetResponse;
 
-export type OnlineServingGetHoldingsResponse = (HoldingsResponse);
+export type OnlineServingGetHoldingsResponse = HoldingsResponse;
 
 export type OnlineServingUpdateHoldingsData = {
-    requestBody: UpdateHoldingsRequest;
+  requestBody: UpdateHoldingsRequest;
 };
 
-export type OnlineServingUpdateHoldingsResponse = (HoldingsResponse);
+export type OnlineServingUpdateHoldingsResponse = HoldingsResponse;
 
-export type OnlineServingClearHoldingsResponse = (HoldingsResponse);
+export type OnlineServingClearHoldingsResponse = HoldingsResponse;
 
-export type PaperTradingGetPortfolioResponse = (PortfolioResponse);
+export type PaperTradingGetPortfolioResponse = PortfolioResponse;
 
 export type PaperTradingGetTradingPlanData = {
-    requestBody?: TradingPlanRequest;
+  requestBody?: TradingPlanRequest;
 };
 
-export type PaperTradingGetTradingPlanResponse = (TradingPlanResponse);
+export type PaperTradingGetTradingPlanResponse = TradingPlanResponse;
 
 export type PaperTradingExecuteTradesData = {
-    requestBody?: ExecuteRequest;
+  requestBody?: ExecuteRequest;
 };
 
-export type PaperTradingExecuteTradesResponse = (ExecuteResponse);
+export type PaperTradingExecuteTradesResponse = ExecuteResponse;
 
 export type PaperTradingGetTradeHistoryData = {
-    instrument?: (string | null);
-    limit?: number;
+  instrument?: string | null;
+  limit?: number;
 };
 
-export type PaperTradingGetTradeHistoryResponse = (TradesResponse);
+export type PaperTradingGetTradeHistoryResponse = TradesResponse;
 
-export type PaperTradingGetPerformanceResponse = (PerformanceResponse);
+export type PaperTradingGetPerformanceResponse = PerformanceResponse;
 
-export type PaperTradingResetPaperTradingResponse = (app__api__routes__paper_trading__ResetResponse);
+export type PaperTradingResetPaperTradingResponse =
+  app__api__routes__paper_trading__ResetResponse;
 
-export type PaperTradingGetNotificationConfigResponse = (NotificationConfigResponse);
+export type PaperTradingGetNotificationConfigResponse =
+  NotificationConfigResponse;
 
 export type PaperTradingUpdateNotificationConfigData = {
-    requestBody: UpdateNotificationConfigRequest;
+  requestBody: UpdateNotificationConfigRequest;
 };
 
-export type PaperTradingUpdateNotificationConfigResponse = (NotificationConfigResponse);
+export type PaperTradingUpdateNotificationConfigResponse =
+  NotificationConfigResponse;
 
 export type PaperTradingAddRecipientData = {
-    requestBody: AddRecipientRequest;
+  requestBody: AddRecipientRequest;
 };
 
-export type PaperTradingAddRecipientResponse = (RecipientResponse);
+export type PaperTradingAddRecipientResponse = RecipientResponse;
 
 export type PaperTradingRemoveRecipientData = {
-    email: string;
+  email: string;
 };
 
-export type PaperTradingRemoveRecipientResponse = (RecipientResponse);
+export type PaperTradingRemoveRecipientResponse = RecipientResponse;
 
 export type PaperTradingSendTestEmailData = {
-    requestBody?: TestEmailRequest;
+  requestBody?: TestEmailRequest;
 };
 
-export type PaperTradingSendTestEmailResponse = (TestEmailResponse);
+export type PaperTradingSendTestEmailResponse = TestEmailResponse;
 
 export type PrivateCreateUserData = {
-    requestBody: PrivateUserCreate;
+  requestBody: PrivateUserCreate;
 };
 
-export type PrivateCreateUserResponse = (UserPublic);
+export type PrivateCreateUserResponse = UserPublic;
 
-export type RunTaskRunTaskResponse = (unknown);
+export type RunTaskRunTaskResponse = unknown;
 
-export type SchedulerGetSchedulerStatusResponse = (SchedulerStatusResponse);
+export type SchedulerGetSchedulerStatusResponse = SchedulerStatusResponse;
 
-export type SchedulerGetSchedulerStatus1Response = (SchedulerStatusResponse);
+export type SchedulerGetSchedulerStatus1Response = SchedulerStatusResponse;
 
 export type TrainingCheckDataStatusData = {
-    freq: string;
+  freq: string;
 };
 
-export type TrainingCheckDataStatusResponse = (DataStatusResponse);
+export type TrainingCheckDataStatusResponse = DataStatusResponse;
 
-export type TrainingStartTrainingResponse = (TrainingStartResponse);
+export type TrainingStartTrainingResponse = TrainingStartResponse;
 
-export type TrainingGetTrainingConfigResponse = (unknown);
+export type TrainingGetTrainingConfigResponse = unknown;
 
-export type TrainingListModelsResponse = (unknown);
+export type TrainingListModelsResponse = unknown;
 
-export type UpdateDataUpdateDataResponse = (unknown);
+export type UpdateDataUpdateDataResponse = unknown;
 
-export type UpdateDataGetDataStatusResponse = (unknown);
+export type UpdateDataGetDataStatusResponse = unknown;
 
 export type UsersReadUsersData = {
-    limit?: number;
-    skip?: number;
+  limit?: number;
+  skip?: number;
 };
 
-export type UsersReadUsersResponse = (UsersPublic);
+export type UsersReadUsersResponse = UsersPublic;
 
 export type UsersCreateUserData = {
-    requestBody: UserCreate;
+  requestBody: UserCreate;
 };
 
-export type UsersCreateUserResponse = (UserPublic);
+export type UsersCreateUserResponse = UserPublic;
 
-export type UsersReadUserMeResponse = (UserPublic);
+export type UsersReadUserMeResponse = UserPublic;
 
-export type UsersDeleteUserMeResponse = (Message);
+export type UsersDeleteUserMeResponse = Message;
 
 export type UsersUpdateUserMeData = {
-    requestBody: UserUpdateMe;
+  requestBody: UserUpdateMe;
 };
 
-export type UsersUpdateUserMeResponse = (UserPublic);
+export type UsersUpdateUserMeResponse = UserPublic;
 
 export type UsersUpdatePasswordMeData = {
-    requestBody: UpdatePassword;
+  requestBody: UpdatePassword;
 };
 
-export type UsersUpdatePasswordMeResponse = (Message);
+export type UsersUpdatePasswordMeResponse = Message;
 
 export type UsersRegisterUserData = {
-    requestBody: UserRegister;
+  requestBody: UserRegister;
 };
 
-export type UsersRegisterUserResponse = (UserPublic);
+export type UsersRegisterUserResponse = UserPublic;
 
 export type UsersReadUserByIdData = {
-    userId: string;
+  userId: string;
 };
 
-export type UsersReadUserByIdResponse = (UserPublic);
+export type UsersReadUserByIdResponse = UserPublic;
 
 export type UsersUpdateUserData = {
-    requestBody: UserUpdate;
-    userId: string;
+  requestBody: UserUpdate;
+  userId: string;
 };
 
-export type UsersUpdateUserResponse = (UserPublic);
+export type UsersUpdateUserResponse = UserPublic;
 
 export type UsersDeleteUserData = {
-    userId: string;
+  userId: string;
 };
 
-export type UsersDeleteUserResponse = (Message);
+export type UsersDeleteUserResponse = Message;
 
 export type UtilsTestEmailData = {
-    emailTo: string;
+  emailTo: string;
 };
 
-export type UtilsTestEmailResponse = (Message);
+export type UtilsTestEmailResponse = Message;
 
-export type UtilsHealthCheckResponse = (boolean);
+export type UtilsHealthCheckResponse = boolean;

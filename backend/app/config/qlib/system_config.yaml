@@ -155,12 +155,10 @@ topk_dropout_strategy:
   # Whether to enable TopK Amount strategy
   enabled: true
 
-  # Strategy parameters - ETF optimized with intelligent rebalancing
+  # Strategy parameters - ETF optimized
+  # Rebalancing: daily (driven by Qlib TopkDropoutStrategy + backtest_daily)
   topk: 10 # Hold top 10 ETFs (configurable, default for ETF portfolio)
   n_drop: 10 # Maximum stocks to replace per rebalance (=topk for full flexibility)
-
-  # Rebalancing period in trading days (1 = daily, 5 = weekly)
-  rebalance_period_days: 5
 
   # Weight allocation method for ETF
   # "equal": Equal weight (1/topk each)

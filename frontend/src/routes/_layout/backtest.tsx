@@ -216,24 +216,6 @@ function BacktestPage() {
                 Evaluate strategy performance using historical data
               </p>
             </div>
-            <Button
-              size="lg"
-              onClick={() => runBacktestMutation.mutate()}
-              disabled={runBacktestMutation.isPending || !status?.ready}
-              className="px-8"
-            >
-              {runBacktestMutation.isPending ? (
-                <>
-                  <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
-                  Running...
-                </>
-              ) : (
-                <>
-                  <RefreshCw className="mr-2 h-5 w-5" />
-                  Run Backtest
-                </>
-              )}
-            </Button>
           </div>
 
           {/* Strategy Configuration Card */}
@@ -506,11 +488,11 @@ function BacktestPage() {
                     )}
                   </div>
 
-                  {/* Total Return */}
+                  {/* Net Return (Qlib returns are already net of costs) */}
                   <div className="bg-muted/50 rounded-lg p-4">
                     <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                      <Percent className="h-4 w-4" />
-                      <span className="text-sm">Total Return</span>
+                      <TrendingUp className="h-4 w-4" />
+                      <span className="text-sm">Net Return</span>
                     </div>
                     <div
                       className={`text-2xl font-bold ${
@@ -523,36 +505,39 @@ function BacktestPage() {
                     </div>
                   </div>
 
-                  {/* Net Return */}
+                  {/* CAGR (Net) */}
                   <div className="bg-muted/50 rounded-lg p-4">
-                    <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <div className="flex items-center text-muted-foreground mb-1">
                       <TrendingUp className="h-4 w-4" />
-                      <span className="text-sm">Net Return</span>
+                      <span className="text-sm ml-2">CAGR (Net)</span>
+                      <MetricTooltip content="净复合年化增长率 = (1+净收益)^(1/年数)-1。这是复利计算，不是简单除法。例如3年168%总收益对应CAGR≈41%，因为1.41^3≈2.68。" />
                     </div>
                     <div
                       className={`text-2xl font-bold ${
-                        (backtestResult.net_return || 0) >= 0
+                        (backtestResult.risk_metrics?.net_cagr || 0) >= 0
                           ? "text-green-600"
                           : "text-red-600"
                       }`}
                     >
-                      {formatPercent(backtestResult.net_return || 0)}
+                      {formatPercent(
+                        backtestResult.risk_metrics?.net_cagr || 0,
+                      )}
                     </div>
                   </div>
 
-                  {/* Total Cost */}
+                  {/* Initial Capital */}
                   <div className="bg-muted/50 rounded-lg p-4">
                     <div className="flex items-center gap-2 text-muted-foreground mb-1">
                       <DollarSign className="h-4 w-4" />
-                      <span className="text-sm">Total Cost</span>
+                      <span className="text-sm">Initial Capital</span>
                     </div>
-                    <div className="text-2xl font-bold text-orange-600">
-                      {formatCurrency(backtestResult.total_cost || 0)}
+                    <div className="text-2xl font-bold">
+                      {formatCurrency(1000000)}
                     </div>
                   </div>
 
                   {/* Final Account */}
-                  <div className="bg-muted/50 rounded-lg p-4 md:col-span-2">
+                  <div className="bg-muted/50 rounded-lg p-4">
                     <div className="flex items-center gap-2 text-muted-foreground mb-1">
                       <DollarSign className="h-4 w-4" />
                       <span className="text-sm">Final Account Value</span>
@@ -581,26 +566,6 @@ function BacktestPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {/* Net CAGR (Compound Annual Growth Rate after costs) */}
-                    <div className="bg-muted/50 rounded-lg p-4">
-                      <div className="flex items-center text-muted-foreground mb-1">
-                        <TrendingUp className="h-4 w-4" />
-                        <span className="text-sm ml-2">CAGR (Net)</span>
-                        <MetricTooltip content="净复合年化增长率 = (1+净收益)^(252/交易天数)-1。基于扣除成本后的实际收益，反映投资者真实回报。" />
-                      </div>
-                      <div
-                        className={`text-xl font-bold ${
-                          (backtestResult.risk_metrics.net_cagr || 0) >= 0
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {formatPercent(
-                          backtestResult.risk_metrics.net_cagr || 0,
-                        )}
-                      </div>
-                    </div>
-
                     {/* Max Drawdown */}
                     <div className="bg-muted/50 rounded-lg p-4">
                       <div className="flex items-center text-muted-foreground mb-1">
@@ -707,65 +672,33 @@ function BacktestPage() {
                       </div>
                     </div>
 
-                    {/* Cost to Profit Ratio */}
+                    {/* Alpha (Jensen's Alpha) */}
                     <div className="bg-muted/50 rounded-lg p-4">
                       <div className="flex items-center text-muted-foreground mb-1">
-                        <DollarSign className="h-4 w-4" />
-                        <span className="text-sm ml-2">Cost/Profit</span>
-                        <MetricTooltip content="交易成本÷总利润。<0.1表示成本控制优秀，0.1-0.3正常，>0.5表示成本过高侵蚀利润。" />
+                        <TrendingUp className="h-4 w-4" />
+                        <span className="text-sm ml-2">Alpha</span>
+                        <MetricTooltip content="CAPM模型的超额收益（年化）。>0表示策略有选股能力，能跑赢市场预期收益。" />
                       </div>
                       <div
                         className={`text-xl font-bold ${
-                          (backtestResult.risk_metrics.cost_to_profit_ratio ||
-                            0) <= 0.1
+                          (backtestResult.risk_metrics.alpha || 0) >= 0
                             ? "text-green-600"
-                            : (backtestResult.risk_metrics
-                                  .cost_to_profit_ratio || 0) <= 0.3
-                              ? "text-yellow-600"
-                              : "text-red-600"
+                            : "text-red-600"
                         }`}
                       >
-                        {(
-                          backtestResult.risk_metrics.cost_to_profit_ratio || 0
-                        ).toFixed(2)}
+                        {(backtestResult.risk_metrics.alpha || 0).toFixed(3)}
                       </div>
                     </div>
 
-                    {/* Turnover Rate */}
+                    {/* Beta */}
                     <div className="bg-muted/50 rounded-lg p-4">
                       <div className="flex items-center text-muted-foreground mb-1">
-                        <BarChart3 className="h-4 w-4" />
-                        <span className="text-sm ml-2">Turnover</span>
-                        <MetricTooltip content="组合换手次数。表示整个回测期间资金周转了多少次。换手越高，交易成本越高。" />
+                        <Activity className="h-4 w-4" />
+                        <span className="text-sm ml-2">Beta</span>
+                        <MetricTooltip content="策略对市场波动的敏感度。=1同步市场，<1波动更小，>1波动更大。Beta接近0说明策略与市场相关性低。" />
                       </div>
                       <div className="text-xl font-bold">
-                        {(
-                          backtestResult.risk_metrics.turnover_rate || 0
-                        ).toFixed(1)}
-                        x
-                      </div>
-                    </div>
-
-                    {/* Cost Ratio */}
-                    <div className="bg-muted/50 rounded-lg p-4">
-                      <div className="flex items-center text-muted-foreground mb-1">
-                        <DollarSign className="h-4 w-4" />
-                        <span className="text-sm ml-2">Cost Ratio</span>
-                        <MetricTooltip content="总交易成本÷初始资金。表示成本占本金的比例。<1%优秀，1-3%正常，>5%偏高。" />
-                      </div>
-                      <div
-                        className={`text-xl font-bold ${
-                          (backtestResult.risk_metrics.cost_ratio || 0) <= 0.01
-                            ? "text-green-600"
-                            : (backtestResult.risk_metrics.cost_ratio || 0) <=
-                                0.03
-                              ? "text-yellow-600"
-                              : "text-red-600"
-                        }`}
-                      >
-                        {formatPercent(
-                          backtestResult.risk_metrics.cost_ratio || 0,
-                        )}
+                        {(backtestResult.risk_metrics.beta || 0).toFixed(3)}
                       </div>
                     </div>
                   </div>
@@ -908,21 +841,8 @@ function BacktestPage() {
                               stroke="#22c55e"
                               strokeWidth={2}
                               fill="url(#strategyGradient)"
-                              name="Gross Return"
+                              name="Strategy (Net)"
                             />
-                            {/* Net Return line (after costs) */}
-                            {backtestResult.charts.cumulative_returns[0]
-                              ?.net_return !== undefined && (
-                              <Area
-                                type="monotone"
-                                dataKey="net_return"
-                                stroke="#15803d"
-                                strokeWidth={2}
-                                strokeDasharray="5 5"
-                                fill="none"
-                                name="Net Return"
-                              />
-                            )}
                             {backtestResult.charts.cumulative_returns[0]
                               ?.benchmark !== undefined && (
                               <Area

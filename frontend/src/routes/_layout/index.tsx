@@ -308,7 +308,7 @@ function Dashboard() {
             </span>
           )}
           <Button
-            variant="secondary"
+            variant="outline"
             size="sm"
             onClick={handleUpdateData}
             disabled={isUpdatingData}
@@ -321,7 +321,7 @@ function Dashboard() {
             Update Data
           </Button>
           <Button
-            variant="outline"
+            variant="secondary"
             size="sm"
             onClick={handleRunBacktest}
             disabled={isBacktestRunning}
@@ -609,7 +609,9 @@ function Dashboard() {
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {system?.rebalance
-                    ? `Rebalance: every ${system.rebalance.rebalance_period_days} days`
+                    ? system.rebalance.rebalance_period_days <= 1
+                      ? "Rebalance: Daily"
+                      : `Rebalance: every ${system.rebalance.rebalance_period_days} days`
                     : ""}
                   {system?.rebalance?.next_rebalance_date
                     ? ` | Next: ${system.rebalance.next_rebalance_date}`

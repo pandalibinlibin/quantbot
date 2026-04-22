@@ -394,29 +394,41 @@ def get_dashboard_summary():
             online_service = get_online_serving_service()
             status = online_service.get_status()
 
-            # Get rebalance info from ETF service (only if enabled)
+            # Get rebalance info based on active strategy
             rebalance_info = None
             try:
-                from app.services.etf_enhanced_indexing_service import (
-                    get_etf_enhanced_indexing_service,
-                )
+                from app.config.qlib import qlib_config
 
-                etf_service = get_etf_enhanced_indexing_service()
-                if etf_service.enabled:
-                    rebalance_period = etf_service.rebalance_period_days
+                topk_config = qlib_config._config.get("topk_dropout_strategy", {})
 
-                    # Get today's date for rebalance check
-                    today = datetime.now().strftime("%Y-%m-%d")
-                    is_rebalance = etf_service.is_rebalance_day(today)
-                    next_rebalance = etf_service.get_next_rebalance_day(today)
-                    days_until = etf_service.get_days_until_rebalance(today)
-
+                if topk_config.get("enabled", False):
+                    # TopK strategy: daily rebalancing (Qlib TopkDropoutStrategy)
                     rebalance_info = RebalanceInfo(
-                        rebalance_period_days=rebalance_period,
-                        is_rebalance_day=is_rebalance,
-                        next_rebalance_date=next_rebalance,
-                        days_until_rebalance=days_until,
+                        rebalance_period_days=1,
+                        is_rebalance_day=True,
+                        next_rebalance_date=None,
+                        days_until_rebalance=0,
                     )
+                else:
+                    # Legacy ETF Enhanced Indexing strategy
+                    from app.services.etf_enhanced_indexing_service import (
+                        get_etf_enhanced_indexing_service,
+                    )
+
+                    etf_service = get_etf_enhanced_indexing_service()
+                    if etf_service.enabled:
+                        rebalance_period = etf_service.rebalance_period_days
+                        today = datetime.now().strftime("%Y-%m-%d")
+                        is_rebalance = etf_service.is_rebalance_day(today)
+                        next_rebalance = etf_service.get_next_rebalance_day(today)
+                        days_until = etf_service.get_days_until_rebalance(today)
+
+                        rebalance_info = RebalanceInfo(
+                            rebalance_period_days=rebalance_period,
+                            is_rebalance_day=is_rebalance,
+                            next_rebalance_date=next_rebalance,
+                            days_until_rebalance=days_until,
+                        )
             except Exception as e:
                 logger.warning(f"Failed to get rebalance info: {e}")
 
