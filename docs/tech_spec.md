@@ -1,7 +1,7 @@
 # QuantBot 技术规格文档
 
-**版本**: 4.6 (Alpha/Beta Metrics, Confidence Normalization & Backtest Fixes)  
-**最后更新**: 2026-04-22
+**版本**: 4.7 (Target Portfolio UI/UX Refinements & ETF Info)  
+**最后更新**: 2026-04-23
 
 ---
 
@@ -551,6 +551,14 @@ BROADCAST_FIELD_NAMES: set = {
     - **Fix**: SVG uses `viewBox` for responsive scaling + base64-encoded `<img>` tag fallback. Most email clients (including WeChat) render base64 data-URI images. Container uses `width:100%;overflow:hidden`.
 14. **Removed Avg Turnover** (2026-04-22): Removed the Avg Daily Turnover metric card from the frontend backtest Risk Metrics section. Turnover rate is not actionable for end users.
 15. **Email report cleanup** (2026-04-22): Removed Annualized Return from the backtest email Risk Metrics table — redundant with CAGR (Net) already shown in Backtest Results section. Final email Risk Metrics layout: Max Drawdown | Sharpe Ratio, Volatility | Calmar Ratio, Win Rate | P/L Ratio, Alpha | Beta (4 rows × 2 columns).
+16. **Target Portfolio UI/UX refinements** (2026-04-23):
+    - **Dashboard fix**: Dashboard summary now reads both `topk_portfolio_*.json` and `etf_enhanced_*.json` (picks newest by mtime), fixing blank Target Portfolio card when using TopK strategy.
+    - **Signal Overview cleanup**: Removed Trade Date and Weight Mode cards from Target Portfolio page. Grid reduced to 3 columns: Signal Date, Positions, Confidence.
+    - **Confidence interpretation enhanced**: Backend `_calculate_confidence_percentile()` now prepends "当前预测准确度在历史上处于前XX%。" to every interpretation text. Traders immediately understand the historical rank.
+    - **ETF Chinese names & Index column**: New `get_etf_info()` / `_batch_fetch_etf_info()` methods in `etf_enhanced_indexing_service.py` call tushare `etf_basic` API to fetch `extname` (Chinese display name) and `index_name` (tracked index). TopK portfolio positions now include `name` (extname) and `index_name` fields. Frontend table gains "Index" column (6 columns: #, Symbol, Name, Index, Score, Weight).
+    - **Portfolio email redesign**: Removed Trade Date and Weight Mode from email. Overview section uses table-based equal-height 2-cell layout (持仓数量 + 置信度). Holdings table merges code/name into one column, adds 跟踪指数 column, uses alternating row backgrounds. Responsive `@media` queries for mobile.
+    - **Notification config moved to Admin**: Admin page now has Tabs (Users | Notifications). Notifications tab includes enable/disable toggle, recipient management, test email, and SMTP info display. Standalone `/notifications` route preserved for backward compatibility.
+17. **Update Portfolio persistence fix** (2026-04-23): `generate_portfolio()` now loads signals from persisted `_latest_signals.pkl` when `OnlineManager` is not initialized (e.g., after container restart). Also ensures Qlib core is initialized via `_ensure_qlib_initialized()` and falls back to extracting date from signals index if calendar is unavailable.
 
 ### 数据对齐策略
 

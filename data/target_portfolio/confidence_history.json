@@ -9,5061 +9,5066 @@
     },
     {
       "date": "2023-04-25",
-      "confidence": 0.261,
-      "raw_confidence": 0.9546,
-      "score_spread": 3.80297,
+      "confidence": 0.4083,
+      "raw_confidence": 0.9692,
+      "score_spread": 3.860839,
       "source": "backtest"
     },
     {
       "date": "2023-04-26",
-      "confidence": 0.3191,
-      "raw_confidence": 0.9624,
-      "score_spread": 3.833864,
+      "confidence": 0.3007,
+      "raw_confidence": 0.9561,
+      "score_spread": 3.808843,
       "source": "backtest"
     },
     {
       "date": "2023-04-27",
-      "confidence": 0.2956,
-      "raw_confidence": 0.9595,
-      "score_spread": 3.822539,
+      "confidence": 0.3614,
+      "raw_confidence": 0.9639,
+      "score_spread": 3.839838,
       "source": "backtest"
     },
     {
       "date": "2023-04-28",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.074334,
+      "score_spread": 4.017616,
       "source": "backtest"
     },
     {
       "date": "2023-05-04",
-      "confidence": 0.3439,
-      "raw_confidence": 0.9667,
-      "score_spread": 3.851286,
+      "confidence": 0.3269,
+      "raw_confidence": 0.9592,
+      "score_spread": 3.821297,
       "source": "backtest"
     },
     {
       "date": "2023-05-05",
-      "confidence": 0.529,
-      "raw_confidence": 0.9922,
-      "score_spread": 3.952737,
+      "confidence": 0.4124,
+      "raw_confidence": 0.9702,
+      "score_spread": 3.86526,
       "source": "backtest"
     },
     {
       "date": "2023-05-08",
-      "confidence": 0.1989,
-      "raw_confidence": 0.9436,
-      "score_spread": 3.759225,
+      "confidence": 0.1959,
+      "raw_confidence": 0.9411,
+      "score_spread": 3.74916,
       "source": "backtest"
     },
     {
       "date": "2023-05-09",
-      "confidence": 0.2044,
-      "raw_confidence": 0.9444,
-      "score_spread": 3.762198,
+      "confidence": 0.2234,
+      "raw_confidence": 0.9467,
+      "score_spread": 3.771514,
       "source": "backtest"
     },
     {
       "date": "2023-05-10",
-      "confidence": 0.2265,
-      "raw_confidence": 0.9492,
-      "score_spread": 3.781489,
+      "confidence": 0.4,
+      "raw_confidence": 0.9684,
+      "score_spread": 3.857896,
       "source": "backtest"
     },
     {
       "date": "2023-05-11",
-      "confidence": 0.0718,
-      "raw_confidence": 0.9047,
-      "score_spread": 3.604261,
+      "confidence": 0.0497,
+      "raw_confidence": 0.8974,
+      "score_spread": 3.575216,
       "source": "backtest"
     },
     {
       "date": "2023-05-12",
-      "confidence": 0.3135,
-      "raw_confidence": 0.9621,
-      "score_spread": 3.832939,
+      "confidence": 0.229,
+      "raw_confidence": 0.948,
+      "score_spread": 3.776872,
       "source": "backtest"
     },
     {
       "date": "2023-05-15",
-      "confidence": 0.0304,
-      "raw_confidence": 0.8843,
-      "score_spread": 3.522979,
+      "confidence": 0.0662,
+      "raw_confidence": 0.9066,
+      "score_spread": 3.611612,
       "source": "backtest"
     },
     {
       "date": "2023-05-16",
-      "confidence": 0.1837,
-      "raw_confidence": 0.9406,
-      "score_spread": 3.747196,
+      "confidence": 0.2317,
+      "raw_confidence": 0.9483,
+      "score_spread": 3.777702,
       "source": "backtest"
     },
     {
       "date": "2023-05-17",
-      "confidence": 0.1229,
-      "raw_confidence": 0.9237,
-      "score_spread": 3.680065,
+      "confidence": 0.1076,
+      "raw_confidence": 0.922,
+      "score_spread": 3.673205,
       "source": "backtest"
     },
     {
       "date": "2023-05-18",
-      "confidence": 0.3329,
-      "raw_confidence": 0.9651,
-      "score_spread": 3.84497,
+      "confidence": 0.3048,
+      "raw_confidence": 0.9562,
+      "score_spread": 3.809444,
       "source": "backtest"
     },
     {
       "date": "2023-05-19",
-      "confidence": 0.0635,
-      "raw_confidence": 0.901,
-      "score_spread": 3.589584,
+      "confidence": 0.0924,
+      "raw_confidence": 0.9164,
+      "score_spread": 3.650854,
       "source": "backtest"
     },
     {
       "date": "2023-05-22",
-      "confidence": 0.1948,
-      "raw_confidence": 0.9433,
-      "score_spread": 3.757986,
+      "confidence": 0.1172,
+      "raw_confidence": 0.9237,
+      "score_spread": 3.680044,
       "source": "backtest"
     },
     {
       "date": "2023-05-23",
-      "confidence": 0.0939,
-      "raw_confidence": 0.9143,
-      "score_spread": 3.642612,
+      "confidence": 0.0869,
+      "raw_confidence": 0.914,
+      "score_spread": 3.641211,
       "source": "backtest"
     },
     {
       "date": "2023-05-24",
-      "confidence": 0.3467,
-      "raw_confidence": 0.9669,
-      "score_spread": 3.852151,
+      "confidence": 0.4028,
+      "raw_confidence": 0.969,
+      "score_spread": 3.860233,
       "source": "backtest"
     },
     {
       "date": "2023-05-25",
-      "confidence": 0.3094,
-      "raw_confidence": 0.9617,
-      "score_spread": 3.831262,
+      "confidence": 0.3641,
+      "raw_confidence": 0.9644,
+      "score_spread": 3.842169,
       "source": "backtest"
     },
     {
       "date": "2023-05-26",
-      "confidence": 0.145,
-      "raw_confidence": 0.9317,
-      "score_spread": 3.711568,
+      "confidence": 0.1614,
+      "raw_confidence": 0.932,
+      "score_spread": 3.713122,
       "source": "backtest"
     },
     {
       "date": "2023-05-29",
-      "confidence": 0.2942,
-      "raw_confidence": 0.9595,
-      "score_spread": 3.82259,
+      "confidence": 0.2745,
+      "raw_confidence": 0.9531,
+      "score_spread": 3.796877,
       "source": "backtest"
     },
     {
       "date": "2023-05-30",
-      "confidence": 0.3315,
-      "raw_confidence": 0.964,
-      "score_spread": 3.840366,
+      "confidence": 0.3131,
+      "raw_confidence": 0.9574,
+      "score_spread": 3.814223,
       "source": "backtest"
     },
     {
       "date": "2023-05-31",
-      "confidence": 0.3771,
-      "raw_confidence": 0.9721,
-      "score_spread": 3.872589,
+      "confidence": 0.4759,
+      "raw_confidence": 0.9808,
+      "score_spread": 3.907269,
       "source": "backtest"
     },
     {
       "date": "2023-06-01",
-      "confidence": 0.3522,
-      "raw_confidence": 0.9685,
-      "score_spread": 3.85818,
+      "confidence": 0.2662,
+      "raw_confidence": 0.9519,
+      "score_spread": 3.79232,
       "source": "backtest"
     },
     {
       "date": "2023-06-02",
-      "confidence": 0.3674,
-      "raw_confidence": 0.9702,
-      "score_spread": 3.864943,
+      "confidence": 0.4262,
+      "raw_confidence": 0.9724,
+      "score_spread": 3.873816,
       "source": "backtest"
     },
     {
       "date": "2023-06-05",
-      "confidence": 0.4503,
-      "raw_confidence": 0.979,
-      "score_spread": 3.900247,
+      "confidence": 0.4414,
+      "raw_confidence": 0.9753,
+      "score_spread": 3.885302,
       "source": "backtest"
     },
     {
       "date": "2023-06-06",
-      "confidence": 0.0456,
-      "raw_confidence": 0.8909,
-      "score_spread": 3.549238,
+      "confidence": 0.0152,
+      "raw_confidence": 0.862,
+      "score_spread": 3.434152,
       "source": "backtest"
     },
     {
       "date": "2023-06-07",
-      "confidence": 0.0083,
-      "raw_confidence": 0.8303,
-      "score_spread": 3.307805,
+      "confidence": 0.0097,
+      "raw_confidence": 0.8443,
+      "score_spread": 3.363476,
       "source": "backtest"
     },
     {
       "date": "2023-06-08",
-      "confidence": 0.1326,
-      "raw_confidence": 0.9285,
-      "score_spread": 3.699142,
+      "confidence": 0.1379,
+      "raw_confidence": 0.928,
+      "score_spread": 3.697119,
       "source": "backtest"
     },
     {
       "date": "2023-06-09",
-      "confidence": 0.2431,
-      "raw_confidence": 0.9522,
-      "score_spread": 3.793594,
+      "confidence": 0.3297,
+      "raw_confidence": 0.9597,
+      "score_spread": 3.823374,
       "source": "backtest"
     },
     {
       "date": "2023-06-12",
-      "confidence": 0.0981,
-      "raw_confidence": 0.9148,
-      "score_spread": 3.644411,
+      "confidence": 0.0828,
+      "raw_confidence": 0.912,
+      "score_spread": 3.633288,
       "source": "backtest"
     },
     {
       "date": "2023-06-13",
-      "confidence": 0.279,
-      "raw_confidence": 0.9571,
-      "score_spread": 3.813145,
+      "confidence": 0.2855,
+      "raw_confidence": 0.9544,
+      "score_spread": 3.802513,
       "source": "backtest"
     },
     {
       "date": "2023-06-14",
-      "confidence": 0.4848,
-      "raw_confidence": 0.9854,
-      "score_spread": 3.926028,
+      "confidence": 0.3972,
+      "raw_confidence": 0.9679,
+      "score_spread": 3.856203,
       "source": "backtest"
     },
     {
       "date": "2023-06-15",
-      "confidence": 0.1133,
-      "raw_confidence": 0.9197,
-      "score_spread": 3.664187,
+      "confidence": 0.0648,
+      "raw_confidence": 0.9063,
+      "score_spread": 3.610601,
       "source": "backtest"
     },
     {
       "date": "2023-06-16",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.092577,
+      "confidence": 0.5959,
+      "raw_confidence": 0.9988,
+      "score_spread": 3.979366,
       "source": "backtest"
     },
     {
       "date": "2023-06-19",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 3.986275,
+      "confidence": 0.5807,
+      "raw_confidence": 0.9967,
+      "score_spread": 3.970779,
       "source": "backtest"
     },
     {
       "date": "2023-06-20",
-      "confidence": 0.0262,
-      "raw_confidence": 0.8814,
-      "score_spread": 3.511683,
+      "confidence": 0.0221,
+      "raw_confidence": 0.8734,
+      "score_spread": 3.479714,
       "source": "backtest"
     },
     {
       "date": "2023-06-21",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.010768,
+      "score_spread": 4.029041,
       "source": "backtest"
     },
     {
       "date": "2023-06-26",
-      "confidence": 0.1699,
-      "raw_confidence": 0.9374,
-      "score_spread": 3.734617,
+      "confidence": 0.1559,
+      "raw_confidence": 0.9309,
+      "score_spread": 3.708739,
       "source": "backtest"
     },
     {
       "date": "2023-06-27",
-      "confidence": 0.1312,
-      "raw_confidence": 0.9279,
-      "score_spread": 3.69689,
+      "confidence": 0.1821,
+      "raw_confidence": 0.9354,
+      "score_spread": 3.726769,
       "source": "backtest"
     },
     {
       "date": "2023-06-28",
-      "confidence": 0.384,
-      "raw_confidence": 0.9725,
-      "score_spread": 3.874674,
+      "confidence": 0.3697,
+      "raw_confidence": 0.9649,
+      "score_spread": 3.844365,
       "source": "backtest"
     },
     {
       "date": "2023-06-29",
-      "confidence": 0.0414,
-      "raw_confidence": 0.8904,
-      "score_spread": 3.547444,
+      "confidence": 0.0593,
+      "raw_confidence": 0.904,
+      "score_spread": 3.601525,
       "source": "backtest"
     },
     {
       "date": "2023-06-30",
-      "confidence": 0.0373,
-      "raw_confidence": 0.8867,
-      "score_spread": 3.532852,
+      "confidence": 0.08,
+      "raw_confidence": 0.9116,
+      "score_spread": 3.631945,
       "source": "backtest"
     },
     {
       "date": "2023-07-03",
-      "confidence": 0.0539,
-      "raw_confidence": 0.8937,
-      "score_spread": 3.560804,
+      "confidence": 0.0855,
+      "raw_confidence": 0.9138,
+      "score_spread": 3.640601,
       "source": "backtest"
     },
     {
       "date": "2023-07-04",
-      "confidence": 0.2583,
-      "raw_confidence": 0.9541,
-      "score_spread": 3.801311,
+      "confidence": 0.1793,
+      "raw_confidence": 0.9349,
+      "score_spread": 3.724818,
       "source": "backtest"
     },
     {
       "date": "2023-07-05",
-      "confidence": 0.3425,
-      "raw_confidence": 0.9665,
-      "score_spread": 3.85087,
+      "confidence": 0.4869,
+      "raw_confidence": 0.9827,
+      "score_spread": 3.915287,
       "source": "backtest"
     },
     {
       "date": "2023-07-06",
-      "confidence": 0.3384,
-      "raw_confidence": 0.9659,
-      "score_spread": 3.84818,
+      "confidence": 0.3241,
+      "raw_confidence": 0.9591,
+      "score_spread": 3.821187,
       "source": "backtest"
     },
     {
       "date": "2023-07-07",
-      "confidence": 0.2307,
-      "raw_confidence": 0.951,
-      "score_spread": 3.78885,
+      "confidence": 0.5131,
+      "raw_confidence": 0.9861,
+      "score_spread": 3.928719,
       "source": "backtest"
     },
     {
       "date": "2023-07-10",
-      "confidence": 0.3287,
-      "raw_confidence": 0.9637,
-      "score_spread": 3.839434,
+      "confidence": 0.3462,
+      "raw_confidence": 0.9627,
+      "score_spread": 3.835612,
       "source": "backtest"
     },
     {
       "date": "2023-07-11",
-      "confidence": 0.1119,
-      "raw_confidence": 0.9187,
-      "score_spread": 3.6604,
+      "confidence": 0.091,
+      "raw_confidence": 0.9156,
+      "score_spread": 3.648045,
       "source": "backtest"
     },
     {
       "date": "2023-07-12",
-      "confidence": 0.4807,
-      "raw_confidence": 0.985,
-      "score_spread": 3.924271,
+      "confidence": 0.5283,
+      "raw_confidence": 0.9893,
+      "score_spread": 3.941732,
       "source": "backtest"
     },
     {
       "date": "2023-07-13",
-      "confidence": 0.0773,
-      "raw_confidence": 0.9076,
-      "score_spread": 3.616243,
+      "confidence": 0.0772,
+      "raw_confidence": 0.9104,
+      "score_spread": 3.627425,
       "source": "backtest"
     },
     {
       "date": "2023-07-14",
-      "confidence": 0.1036,
-      "raw_confidence": 0.9163,
-      "score_spread": 3.650696,
+      "confidence": 0.0524,
+      "raw_confidence": 0.8978,
+      "score_spread": 3.577079,
       "source": "backtest"
     },
     {
       "date": "2023-07-17",
-      "confidence": 0.2376,
-      "raw_confidence": 0.9515,
-      "score_spread": 3.791105,
+      "confidence": 0.189,
+      "raw_confidence": 0.9382,
+      "score_spread": 3.738147,
       "source": "backtest"
     },
     {
       "date": "2023-07-18",
-      "confidence": 0.0704,
-      "raw_confidence": 0.9044,
-      "score_spread": 3.603237,
+      "confidence": 0.069,
+      "raw_confidence": 0.9083,
+      "score_spread": 3.618789,
       "source": "backtest"
     },
     {
       "date": "2023-07-19",
-      "confidence": 0.355,
-      "raw_confidence": 0.9687,
-      "score_spread": 3.859466,
+      "confidence": 0.4372,
+      "raw_confidence": 0.9742,
+      "score_spread": 3.881463,
       "source": "backtest"
     },
     {
       "date": "2023-07-20",
-      "confidence": 0.0746,
-      "raw_confidence": 0.9071,
-      "score_spread": 3.613973,
+      "confidence": 0.0552,
+      "raw_confidence": 0.8989,
+      "score_spread": 3.581502,
       "source": "backtest"
     },
     {
       "date": "2023-07-21",
-      "confidence": 0.4544,
-      "raw_confidence": 0.9795,
-      "score_spread": 3.90272,
+      "confidence": 0.411,
+      "raw_confidence": 0.9698,
+      "score_spread": 3.863753,
       "source": "backtest"
     },
     {
       "date": "2023-07-24",
-      "confidence": 0.0207,
-      "raw_confidence": 0.8702,
-      "score_spread": 3.467153,
+      "confidence": 0.0262,
+      "raw_confidence": 0.8793,
+      "score_spread": 3.503489,
       "source": "backtest"
     },
     {
       "date": "2023-07-25",
-      "confidence": 0.0994,
-      "raw_confidence": 0.915,
-      "score_spread": 3.645753,
+      "confidence": 0.1807,
+      "raw_confidence": 0.935,
+      "score_spread": 3.725443,
       "source": "backtest"
     },
     {
       "date": "2023-07-26",
-      "confidence": 0.4655,
-      "raw_confidence": 0.9816,
-      "score_spread": 3.910983,
+      "confidence": 0.4979,
+      "raw_confidence": 0.9839,
+      "score_spread": 3.919882,
       "source": "backtest"
     },
     {
       "date": "2023-07-27",
-      "confidence": 0.3964,
-      "raw_confidence": 0.9747,
-      "score_spread": 3.883527,
+      "confidence": 0.3986,
+      "raw_confidence": 0.9681,
+      "score_spread": 3.857207,
       "source": "backtest"
     },
     {
       "date": "2023-07-28",
-      "confidence": 0.4033,
-      "raw_confidence": 0.9755,
-      "score_spread": 3.886595,
+      "confidence": 0.2221,
+      "raw_confidence": 0.9467,
+      "score_spread": 3.771782,
       "source": "backtest"
     },
     {
       "date": "2023-07-31",
-      "confidence": 0.0856,
-      "raw_confidence": 0.9111,
-      "score_spread": 3.630263,
+      "confidence": 0.04,
+      "raw_confidence": 0.8906,
+      "score_spread": 3.548417,
       "source": "backtest"
     },
     {
       "date": "2023-08-01",
-      "confidence": 0.0497,
-      "raw_confidence": 0.8926,
-      "score_spread": 3.556327,
+      "confidence": 0.0441,
+      "raw_confidence": 0.8922,
+      "score_spread": 3.554646,
       "source": "backtest"
     },
     {
       "date": "2023-08-02",
-      "confidence": 0.1851,
-      "raw_confidence": 0.9406,
-      "score_spread": 3.747817,
+      "confidence": 0.16,
+      "raw_confidence": 0.9318,
+      "score_spread": 3.712755,
       "source": "backtest"
     },
     {
       "date": "2023-08-03",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.12657,
+      "score_spread": 4.076861,
       "source": "backtest"
     },
     {
       "date": "2023-08-04",
-      "confidence": 0.0276,
-      "raw_confidence": 0.8824,
-      "score_spread": 3.515602,
+      "confidence": 0.051,
+      "raw_confidence": 0.8977,
+      "score_spread": 3.576662,
       "source": "backtest"
     },
     {
       "date": "2023-08-07",
-      "confidence": 0.2804,
-      "raw_confidence": 0.9571,
-      "score_spread": 3.81353,
+      "confidence": 0.2897,
+      "raw_confidence": 0.9548,
+      "score_spread": 3.804197,
       "source": "backtest"
     },
     {
       "date": "2023-08-08",
-      "confidence": 0.2541,
-      "raw_confidence": 0.9532,
-      "score_spread": 3.797866,
+      "confidence": 0.309,
+      "raw_confidence": 0.9567,
+      "score_spread": 3.811633,
       "source": "backtest"
     },
     {
       "date": "2023-08-09",
-      "confidence": 0.105,
-      "raw_confidence": 0.9171,
-      "score_spread": 3.654239,
+      "confidence": 0.1034,
+      "raw_confidence": 0.9211,
+      "score_spread": 3.670081,
       "source": "backtest"
     },
     {
       "date": "2023-08-10",
-      "confidence": 0.2818,
-      "raw_confidence": 0.9574,
-      "score_spread": 3.814654,
+      "confidence": 0.4566,
+      "raw_confidence": 0.978,
+      "score_spread": 3.896605,
       "source": "backtest"
     },
     {
       "date": "2023-08-11",
-      "confidence": 0.0138,
-      "raw_confidence": 0.8643,
-      "score_spread": 3.443504,
+      "confidence": 0.0303,
+      "raw_confidence": 0.8819,
+      "score_spread": 3.513671,
       "source": "backtest"
     },
     {
       "date": "2023-08-14",
-      "confidence": 0.029,
-      "raw_confidence": 0.8827,
-      "score_spread": 3.517153,
+      "confidence": 0.0234,
+      "raw_confidence": 0.8781,
+      "score_spread": 3.49849,
       "source": "backtest"
     },
     {
       "date": "2023-08-15",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.059825,
+      "score_spread": 4.066899,
       "source": "backtest"
     },
     {
       "date": "2023-08-16",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.063194,
+      "score_spread": 3.987622,
       "source": "backtest"
     },
     {
       "date": "2023-08-17",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.007448,
+      "score_spread": 4.010403,
       "source": "backtest"
     },
     {
       "date": "2023-08-18",
-      "confidence": 0.2141,
-      "raw_confidence": 0.9455,
-      "score_spread": 3.767138,
+      "confidence": 0.1779,
+      "raw_confidence": 0.9346,
+      "score_spread": 3.723943,
       "source": "backtest"
     },
     {
       "date": "2023-08-21",
-      "confidence": 0.3163,
-      "raw_confidence": 0.9624,
-      "score_spread": 3.834386,
+      "confidence": 0.269,
+      "raw_confidence": 0.9523,
+      "score_spread": 3.794228,
       "source": "backtest"
     },
     {
       "date": "2023-08-22",
-      "confidence": 0.5456,
-      "raw_confidence": 0.9948,
-      "score_spread": 3.963462,
+      "confidence": 0.2152,
+      "raw_confidence": 0.9453,
+      "score_spread": 3.766235,
       "source": "backtest"
     },
     {
       "date": "2023-08-23",
-      "confidence": 0.1657,
-      "raw_confidence": 0.9364,
-      "score_spread": 3.730896,
+      "confidence": 0.131,
+      "raw_confidence": 0.9258,
+      "score_spread": 3.68883,
       "source": "backtest"
     },
     {
       "date": "2023-08-24",
-      "confidence": 0.1768,
-      "raw_confidence": 0.9389,
-      "score_spread": 3.740717,
+      "confidence": 0.1007,
+      "raw_confidence": 0.9203,
+      "score_spread": 3.666789,
       "source": "backtest"
     },
     {
       "date": "2023-08-25",
-      "confidence": 0.5069,
-      "raw_confidence": 0.9889,
-      "score_spread": 3.940278,
+      "confidence": 0.4138,
+      "raw_confidence": 0.9703,
+      "score_spread": 3.866038,
       "source": "backtest"
     },
     {
       "date": "2023-08-28",
-      "confidence": 0.0815,
-      "raw_confidence": 0.9098,
-      "score_spread": 3.624827,
+      "confidence": 0.0372,
+      "raw_confidence": 0.8902,
+      "score_spread": 3.546859,
       "source": "backtest"
     },
     {
       "date": "2023-08-29",
-      "confidence": 0.0829,
-      "raw_confidence": 0.9105,
-      "score_spread": 3.627743,
+      "confidence": 0.1421,
+      "raw_confidence": 0.9285,
+      "score_spread": 3.69949,
       "source": "backtest"
     },
     {
       "date": "2023-08-30",
-      "confidence": 0.1519,
-      "raw_confidence": 0.9326,
-      "score_spread": 3.715952,
+      "confidence": 0.149,
+      "raw_confidence": 0.9299,
+      "score_spread": 3.705124,
       "source": "backtest"
     },
     {
       "date": "2023-08-31",
-      "confidence": 0.2514,
-      "raw_confidence": 0.9529,
-      "score_spread": 3.796794,
+      "confidence": 0.2869,
+      "raw_confidence": 0.9545,
+      "score_spread": 3.803445,
       "source": "backtest"
     },
     {
       "date": "2023-09-01",
-      "confidence": 0.25,
-      "raw_confidence": 0.9528,
-      "score_spread": 3.796644,
+      "confidence": 0.1945,
+      "raw_confidence": 0.9409,
+      "score_spread": 3.749131,
       "source": "backtest"
     },
     {
       "date": "2023-09-04",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.096265,
+      "score_spread": 4.087567,
       "source": "backtest"
     },
     {
       "date": "2023-09-05",
-      "confidence": 0.4434,
-      "raw_confidence": 0.9785,
-      "score_spread": 3.898835,
+      "confidence": 0.5241,
+      "raw_confidence": 0.9874,
+      "score_spread": 3.934206,
       "source": "backtest"
     },
     {
       "date": "2023-09-06",
-      "confidence": 0.5055,
-      "raw_confidence": 0.9887,
-      "score_spread": 3.939445,
+      "confidence": 0.5407,
+      "raw_confidence": 0.9905,
+      "score_spread": 3.946572,
       "source": "backtest"
     },
     {
       "date": "2023-09-07",
-      "confidence": 0.482,
-      "raw_confidence": 0.9851,
-      "score_spread": 3.92539,
+      "confidence": 0.48,
+      "raw_confidence": 0.9817,
+      "score_spread": 3.911747,
       "source": "backtest"
     },
     {
       "date": "2023-09-08",
-      "confidence": 0.5497,
-      "raw_confidence": 0.9954,
-      "score_spread": 3.966441,
+      "confidence": 0.5628,
+      "raw_confidence": 0.9931,
+      "score_spread": 3.957207,
       "source": "backtest"
     },
     {
       "date": "2023-09-11",
-      "confidence": 0.308,
-      "raw_confidence": 0.9617,
-      "score_spread": 3.831835,
+      "confidence": 0.3338,
+      "raw_confidence": 0.9609,
+      "score_spread": 3.828639,
       "source": "backtest"
     },
     {
       "date": "2023-09-12",
-      "confidence": 0.2182,
-      "raw_confidence": 0.9464,
-      "score_spread": 3.770864,
+      "confidence": 0.3103,
+      "raw_confidence": 0.9567,
+      "score_spread": 3.81207,
       "source": "backtest"
     },
     {
       "date": "2023-09-13",
-      "confidence": 0.1547,
-      "raw_confidence": 0.9333,
-      "score_spread": 3.7188,
+      "confidence": 0.1517,
+      "raw_confidence": 0.9306,
+      "score_spread": 3.708117,
       "source": "backtest"
     },
     {
       "date": "2023-09-14",
-      "confidence": 0.5221,
-      "raw_confidence": 0.9914,
-      "score_spread": 3.950484,
+      "confidence": 0.5434,
+      "raw_confidence": 0.9908,
+      "score_spread": 3.948009,
       "source": "backtest"
     },
     {
       "date": "2023-09-15",
-      "confidence": 0.4047,
-      "raw_confidence": 0.9755,
-      "score_spread": 3.88696,
+      "confidence": 0.4179,
+      "raw_confidence": 0.9707,
+      "score_spread": 3.868026,
       "source": "backtest"
     },
     {
       "date": "2023-09-18",
-      "confidence": 0.1823,
-      "raw_confidence": 0.9399,
-      "score_spread": 3.745334,
+      "confidence": 0.2414,
+      "raw_confidence": 0.9493,
+      "score_spread": 3.782762,
       "source": "backtest"
     },
     {
       "date": "2023-09-19",
-      "confidence": 0.0608,
-      "raw_confidence": 0.8989,
-      "score_spread": 3.581766,
+      "confidence": 0.0703,
+      "raw_confidence": 0.9087,
+      "score_spread": 3.620706,
       "source": "backtest"
     },
     {
       "date": "2023-09-20",
-      "confidence": 0.1644,
-      "raw_confidence": 0.9362,
-      "score_spread": 3.730673,
+      "confidence": 0.2938,
+      "raw_confidence": 0.9553,
+      "score_spread": 3.806589,
       "source": "backtest"
     },
     {
       "date": "2023-09-21",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.097512,
+      "score_spread": 4.006405,
       "source": "backtest"
     },
     {
       "date": "2023-09-22",
-      "confidence": 0.0566,
-      "raw_confidence": 0.896,
-      "score_spread": 3.570098,
+      "confidence": 0.171,
+      "raw_confidence": 0.9335,
+      "score_spread": 3.719835,
       "source": "backtest"
     },
     {
       "date": "2023-09-25",
-      "confidence": 0.1865,
-      "raw_confidence": 0.9415,
-      "score_spread": 3.75162,
+      "confidence": 0.1448,
+      "raw_confidence": 0.9289,
+      "score_spread": 3.701551,
       "source": "backtest"
     },
     {
       "date": "2023-09-26",
-      "confidence": 0.2762,
-      "raw_confidence": 0.9564,
-      "score_spread": 3.810784,
+      "confidence": 0.1834,
+      "raw_confidence": 0.9357,
+      "score_spread": 3.728321,
       "source": "backtest"
     },
     {
       "date": "2023-09-27",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.064255,
+      "score_spread": 4.030563,
       "source": "backtest"
     },
     {
       "date": "2023-09-28",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.106102,
+      "score_spread": 4.11704,
       "source": "backtest"
     },
     {
       "date": "2023-10-09",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.076318,
+      "score_spread": 4.054822,
       "source": "backtest"
     },
     {
       "date": "2023-10-10",
-      "confidence": 0.1105,
-      "raw_confidence": 0.9184,
-      "score_spread": 3.659666,
+      "confidence": 0.1103,
+      "raw_confidence": 0.9232,
+      "score_spread": 3.678573,
       "source": "backtest"
     },
     {
       "date": "2023-10-11",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.007178,
+      "confidence": 0.6,
+      "raw_confidence": 0.9991,
+      "score_spread": 3.981314,
       "source": "backtest"
     },
     {
       "date": "2023-10-12",
-      "confidence": 0.1436,
-      "raw_confidence": 0.9308,
-      "score_spread": 3.709136,
+      "confidence": 0.1738,
+      "raw_confidence": 0.9338,
+      "score_spread": 3.721072,
       "source": "backtest"
     },
     {
       "date": "2023-10-13",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.019862,
+      "confidence": 0.5903,
+      "raw_confidence": 0.9978,
+      "score_spread": 3.975871,
       "source": "backtest"
     },
     {
       "date": "2023-10-16",
-      "confidence": 0.2693,
-      "raw_confidence": 0.9555,
-      "score_spread": 3.807319,
+      "confidence": 0.2428,
+      "raw_confidence": 0.9495,
+      "score_spread": 3.783293,
       "source": "backtest"
     },
     {
       "date": "2023-10-17",
-      "confidence": 0.4489,
-      "raw_confidence": 0.9786,
-      "score_spread": 3.89929,
+      "confidence": 0.4662,
+      "raw_confidence": 0.9794,
+      "score_spread": 3.902794,
       "source": "backtest"
     },
     {
       "date": "2023-10-18",
-      "confidence": 0.2099,
-      "raw_confidence": 0.9449,
-      "score_spread": 3.765044,
+      "confidence": 0.1848,
+      "raw_confidence": 0.9367,
+      "score_spread": 3.732653,
       "source": "backtest"
     },
     {
       "date": "2023-10-19",
-      "confidence": 0.0677,
-      "raw_confidence": 0.9035,
-      "score_spread": 3.600048,
+      "confidence": 0.0414,
+      "raw_confidence": 0.8911,
+      "score_spread": 3.550665,
       "source": "backtest"
     },
     {
       "date": "2023-10-20",
-      "confidence": 0.1409,
-      "raw_confidence": 0.9297,
-      "score_spread": 3.704529,
+      "confidence": 0.1283,
+      "raw_confidence": 0.9258,
+      "score_spread": 3.688905,
       "source": "backtest"
     },
     {
       "date": "2023-10-23",
-      "confidence": 0.2362,
-      "raw_confidence": 0.9514,
-      "score_spread": 3.791201,
+      "confidence": 0.1752,
+      "raw_confidence": 0.9342,
+      "score_spread": 3.722684,
       "source": "backtest"
     },
     {
       "date": "2023-10-24",
-      "confidence": 0.5207,
-      "raw_confidence": 0.9911,
-      "score_spread": 3.949132,
+      "confidence": 0.5421,
+      "raw_confidence": 0.9905,
+      "score_spread": 3.947046,
       "source": "backtest"
     },
     {
       "date": "2023-10-25",
-      "confidence": 0.4392,
-      "raw_confidence": 0.9777,
-      "score_spread": 3.895928,
+      "confidence": 0.4317,
+      "raw_confidence": 0.9739,
+      "score_spread": 3.880596,
       "source": "backtest"
     },
     {
       "date": "2023-10-26",
-      "confidence": 0.2348,
-      "raw_confidence": 0.9514,
-      "score_spread": 3.791096,
+      "confidence": 0.3559,
+      "raw_confidence": 0.9635,
+      "score_spread": 3.839244,
       "source": "backtest"
     },
     {
       "date": "2023-10-27",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.078898,
+      "score_spread": 3.997041,
       "source": "backtest"
     },
     {
       "date": "2023-10-30",
-      "confidence": 0.3591,
-      "raw_confidence": 0.9691,
-      "score_spread": 3.861821,
+      "confidence": 0.3117,
+      "raw_confidence": 0.9569,
+      "score_spread": 3.813135,
       "source": "backtest"
     },
     {
       "date": "2023-10-31",
-      "confidence": 0.3273,
-      "raw_confidence": 0.9636,
-      "score_spread": 3.839819,
+      "confidence": 0.2469,
+      "raw_confidence": 0.9497,
+      "score_spread": 3.784561,
       "source": "backtest"
     },
     {
       "date": "2023-11-01",
-      "confidence": 0.4365,
-      "raw_confidence": 0.9776,
-      "score_spread": 3.895611,
+      "confidence": 0.3476,
+      "raw_confidence": 0.9628,
+      "score_spread": 3.836665,
       "source": "backtest"
     },
     {
       "date": "2023-11-02",
-      "confidence": 0.1091,
-      "raw_confidence": 0.9183,
-      "score_spread": 3.659515,
+      "confidence": 0.0993,
+      "raw_confidence": 0.9199,
+      "score_spread": 3.665754,
       "source": "backtest"
     },
     {
       "date": "2023-11-03",
-      "confidence": 0.3854,
-      "raw_confidence": 0.9725,
-      "score_spread": 3.875631,
+      "confidence": 0.3545,
+      "raw_confidence": 0.9634,
+      "score_spread": 3.839371,
       "source": "backtest"
     },
     {
       "date": "2023-11-06",
-      "confidence": 0.3633,
-      "raw_confidence": 0.9696,
-      "score_spread": 3.863781,
+      "confidence": 0.3669,
+      "raw_confidence": 0.9646,
+      "score_spread": 3.843868,
       "source": "backtest"
     },
     {
       "date": "2023-11-07",
-      "confidence": 0.2528,
-      "raw_confidence": 0.953,
-      "score_spread": 3.797773,
+      "confidence": 0.1393,
+      "raw_confidence": 0.9283,
+      "score_spread": 3.699487,
       "source": "backtest"
     },
     {
       "date": "2023-11-08",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.00629,
+      "score_spread": 3.997282,
       "source": "backtest"
     },
     {
       "date": "2023-11-09",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.074701,
+      "score_spread": 4.00143,
       "source": "backtest"
     },
     {
       "date": "2023-11-10",
-      "confidence": 0.3702,
-      "raw_confidence": 0.9707,
-      "score_spread": 3.868136,
+      "confidence": 0.5352,
+      "raw_confidence": 0.9899,
+      "score_spread": 3.944727,
       "source": "backtest"
     },
     {
       "date": "2023-11-13",
-      "confidence": 0.5663,
-      "raw_confidence": 0.9997,
-      "score_spread": 3.983698,
+      "confidence": 0.3876,
+      "raw_confidence": 0.9664,
+      "score_spread": 3.851033,
       "source": "backtest"
     },
     {
       "date": "2023-11-14",
-      "confidence": 0.5041,
-      "raw_confidence": 0.9884,
-      "score_spread": 3.93876,
+      "confidence": 0.3779,
+      "raw_confidence": 0.9655,
+      "score_spread": 3.847392,
       "source": "backtest"
     },
     {
       "date": "2023-11-15",
-      "confidence": 0.1671,
-      "raw_confidence": 0.9369,
-      "score_spread": 3.733579,
+      "confidence": 0.2138,
+      "raw_confidence": 0.9448,
+      "score_spread": 3.765116,
       "source": "backtest"
     },
     {
       "date": "2023-11-16",
-      "confidence": 0.4019,
-      "raw_confidence": 0.9751,
-      "score_spread": 3.88585,
+      "confidence": 0.3352,
+      "raw_confidence": 0.961,
+      "score_spread": 3.829435,
       "source": "backtest"
     },
     {
       "date": "2023-11-17",
-      "confidence": 0.0649,
-      "raw_confidence": 0.9024,
-      "score_spread": 3.596068,
+      "confidence": 0.0979,
+      "raw_confidence": 0.917,
+      "score_spread": 3.654358,
       "source": "backtest"
     },
     {
       "date": "2023-11-20",
-      "confidence": 0.2127,
-      "raw_confidence": 0.9455,
-      "score_spread": 3.767699,
+      "confidence": 0.3448,
+      "raw_confidence": 0.9624,
+      "score_spread": 3.83516,
       "source": "backtest"
     },
     {
       "date": "2023-11-21",
-      "confidence": 0.0193,
-      "raw_confidence": 0.87,
-      "score_spread": 3.466914,
+      "confidence": 0.0386,
+      "raw_confidence": 0.8904,
+      "score_spread": 3.548437,
       "source": "backtest"
     },
     {
       "date": "2023-11-22",
-      "confidence": 0.4641,
-      "raw_confidence": 0.9816,
-      "score_spread": 3.911753,
+      "confidence": 0.4483,
+      "raw_confidence": 0.9762,
+      "score_spread": 3.890367,
       "source": "backtest"
     },
     {
       "date": "2023-11-23",
-      "confidence": 0.2597,
-      "raw_confidence": 0.9545,
-      "score_spread": 3.803736,
+      "confidence": 0.2552,
+      "raw_confidence": 0.9504,
+      "score_spread": 3.787473,
       "source": "backtest"
     },
     {
       "date": "2023-11-24",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.052037,
+      "score_spread": 4.10135,
       "source": "backtest"
     },
     {
       "date": "2023-11-27",
-      "confidence": 0.3743,
-      "raw_confidence": 0.9712,
-      "score_spread": 3.870255,
+      "confidence": 0.469,
+      "raw_confidence": 0.9798,
+      "score_spread": 3.904503,
       "source": "backtest"
     },
     {
       "date": "2023-11-28",
-      "confidence": 0.0442,
-      "raw_confidence": 0.8905,
-      "score_spread": 3.548842,
+      "confidence": 0.029,
+      "raw_confidence": 0.881,
+      "score_spread": 3.51101,
       "source": "backtest"
     },
     {
       "date": "2023-11-29",
-      "confidence": 0.1602,
-      "raw_confidence": 0.9355,
-      "score_spread": 3.728165,
+      "confidence": 0.1586,
+      "raw_confidence": 0.9315,
+      "score_spread": 3.712182,
       "source": "backtest"
     },
     {
       "date": "2023-11-30",
-      "confidence": 0.2914,
-      "raw_confidence": 0.9592,
-      "score_spread": 3.822618,
+      "confidence": 0.2441,
+      "raw_confidence": 0.9495,
+      "score_spread": 3.78392,
       "source": "backtest"
     },
     {
       "date": "2023-12-01",
-      "confidence": 0.4724,
-      "raw_confidence": 0.9828,
-      "score_spread": 3.916415,
+      "confidence": 0.36,
+      "raw_confidence": 0.9637,
+      "score_spread": 3.840375,
       "source": "backtest"
     },
     {
       "date": "2023-12-04",
-      "confidence": 0.0166,
-      "raw_confidence": 0.8659,
-      "score_spread": 3.450681,
+      "confidence": 0.0193,
+      "raw_confidence": 0.8685,
+      "score_spread": 3.461078,
       "source": "backtest"
     },
     {
       "date": "2023-12-05",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 3.999717,
+      "score_spread": 4.0124,
       "source": "backtest"
     },
     {
       "date": "2023-12-06",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.000238,
+      "score_spread": 3.996766,
       "source": "backtest"
     },
     {
       "date": "2023-12-07",
-      "confidence": 0.5249,
-      "raw_confidence": 0.9916,
-      "score_spread": 3.951499,
+      "confidence": 0.5793,
+      "raw_confidence": 0.9965,
+      "score_spread": 3.971101,
       "source": "backtest"
     },
     {
       "date": "2023-12-08",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 3.991252,
+      "score_spread": 4.017768,
       "source": "backtest"
     },
     {
       "date": "2023-12-11",
-      "confidence": 0.0483,
-      "raw_confidence": 0.8922,
-      "score_spread": 3.555745,
+      "confidence": 0.0359,
+      "raw_confidence": 0.89,
+      "score_spread": 3.546827,
       "source": "backtest"
     },
     {
       "date": "2023-12-12",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.161986,
+      "score_spread": 4.169883,
       "source": "backtest"
     },
     {
       "date": "2023-12-13",
-      "confidence": 0.5401,
-      "raw_confidence": 0.9942,
-      "score_spread": 3.962098,
+      "confidence": 0.4166,
+      "raw_confidence": 0.9706,
+      "score_spread": 3.86818,
       "source": "backtest"
     },
     {
       "date": "2023-12-14",
-      "confidence": 0.4227,
-      "raw_confidence": 0.9771,
-      "score_spread": 3.894274,
+      "confidence": 0.3393,
+      "raw_confidence": 0.9614,
+      "score_spread": 3.831724,
       "source": "backtest"
     },
     {
       "date": "2023-12-15",
-      "confidence": 0.337,
-      "raw_confidence": 0.9655,
-      "score_spread": 3.847966,
+      "confidence": 0.2207,
+      "raw_confidence": 0.9463,
+      "score_spread": 3.771519,
       "source": "backtest"
     },
     {
       "date": "2023-12-18",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.018999,
+      "confidence": 0.4966,
+      "raw_confidence": 0.9837,
+      "score_spread": 3.92034,
       "source": "backtest"
     },
     {
       "date": "2023-12-19",
-      "confidence": 0.2928,
-      "raw_confidence": 0.9593,
-      "score_spread": 3.823337,
+      "confidence": 0.2772,
+      "raw_confidence": 0.9533,
+      "score_spread": 3.799107,
       "source": "backtest"
     },
     {
       "date": "2023-12-20",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.053119,
+      "score_spread": 4.010959,
       "source": "backtest"
     },
     {
       "date": "2023-12-21",
-      "confidence": 0.5552,
-      "raw_confidence": 0.9972,
-      "score_spread": 3.974211,
+      "confidence": 0.5255,
+      "raw_confidence": 0.9883,
+      "score_spread": 3.938829,
       "source": "backtest"
     },
     {
       "date": "2023-12-22",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.027557,
+      "confidence": 0.5324,
+      "raw_confidence": 0.9898,
+      "score_spread": 3.944566,
       "source": "backtest"
     },
     {
       "date": "2023-12-25",
-      "confidence": 0.413,
-      "raw_confidence": 0.9765,
-      "score_spread": 3.891886,
+      "confidence": 0.28,
+      "raw_confidence": 0.9535,
+      "score_spread": 3.800253,
       "source": "backtest"
     },
     {
       "date": "2023-12-26",
-      "confidence": 0.5373,
-      "raw_confidence": 0.994,
-      "score_spread": 3.961479,
+      "confidence": 1.0,
+      "raw_confidence": 1.0,
+      "score_spread": 4.031684,
       "source": "backtest"
     },
     {
       "date": "2023-12-27",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 3.999399,
+      "score_spread": 4.000966,
       "source": "backtest"
     },
     {
       "date": "2023-12-28",
-      "confidence": 0.4088,
-      "raw_confidence": 0.9763,
-      "score_spread": 3.89084,
+      "confidence": 0.3959,
+      "raw_confidence": 0.9678,
+      "score_spread": 3.857237,
       "source": "backtest"
     },
     {
       "date": "2023-12-29",
-      "confidence": 0.4461,
-      "raw_confidence": 0.9785,
-      "score_spread": 3.899766,
+      "confidence": 0.5297,
+      "raw_confidence": 0.9893,
+      "score_spread": 3.943023,
       "source": "backtest"
     },
     {
       "date": "2024-01-02",
-      "confidence": 0.2072,
-      "raw_confidence": 0.9446,
-      "score_spread": 3.764684,
+      "confidence": 0.3848,
+      "raw_confidence": 0.9663,
+      "score_spread": 3.851366,
       "source": "backtest"
     },
     {
       "date": "2024-01-03",
-      "confidence": 0.1022,
-      "raw_confidence": 0.9156,
-      "score_spread": 3.649217,
+      "confidence": 0.0814,
+      "raw_confidence": 0.9119,
+      "score_spread": 3.634346,
       "source": "backtest"
     },
     {
       "date": "2024-01-04",
-      "confidence": 0.2459,
-      "raw_confidence": 0.9524,
-      "score_spread": 3.795835,
+      "confidence": 0.3628,
+      "raw_confidence": 0.9642,
+      "score_spread": 3.842817,
       "source": "backtest"
     },
     {
       "date": "2024-01-05",
-      "confidence": 0.4296,
-      "raw_confidence": 0.9773,
-      "score_spread": 3.89511,
+      "confidence": 0.4731,
+      "raw_confidence": 0.9806,
+      "score_spread": 3.908184,
       "source": "backtest"
     },
     {
       "date": "2024-01-08",
-      "confidence": 0.5428,
-      "raw_confidence": 0.9946,
-      "score_spread": 3.963828,
+      "confidence": 1.0,
+      "raw_confidence": 1.0,
+      "score_spread": 3.99511,
       "source": "backtest"
     },
     {
       "date": "2024-01-09",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.123417,
+      "score_spread": 4.069558,
       "source": "backtest"
     },
     {
       "date": "2024-01-10",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.040402,
+      "score_spread": 4.039134,
       "source": "backtest"
     },
     {
       "date": "2024-01-11",
-      "confidence": 0.174,
-      "raw_confidence": 0.9385,
-      "score_spread": 3.740384,
+      "confidence": 0.2703,
+      "raw_confidence": 0.9523,
+      "score_spread": 3.795579,
       "source": "backtest"
     },
     {
       "date": "2024-01-12",
-      "confidence": 0.2873,
-      "raw_confidence": 0.9584,
-      "score_spread": 3.819658,
+      "confidence": 0.2455,
+      "raw_confidence": 0.9496,
+      "score_spread": 3.784773,
       "source": "backtest"
     },
     {
       "date": "2024-01-15",
-      "confidence": 0.5014,
-      "raw_confidence": 0.9881,
-      "score_spread": 3.938139,
+      "confidence": 0.5586,
+      "raw_confidence": 0.9927,
+      "score_spread": 3.956507,
       "source": "backtest"
     },
     {
       "date": "2024-01-16",
-      "confidence": 0.203,
-      "raw_confidence": 0.9443,
-      "score_spread": 3.763566,
+      "confidence": 0.1931,
+      "raw_confidence": 0.9407,
+      "score_spread": 3.749131,
       "source": "backtest"
     },
     {
       "date": "2024-01-17",
-      "confidence": 0.4793,
-      "raw_confidence": 0.9846,
-      "score_spread": 3.924091,
+      "confidence": 0.3821,
+      "raw_confidence": 0.9655,
+      "score_spread": 3.848226,
       "source": "backtest"
     },
     {
       "date": "2024-01-18",
-      "confidence": 0.1354,
-      "raw_confidence": 0.9287,
-      "score_spread": 3.701243,
+      "confidence": 0.0841,
+      "raw_confidence": 0.913,
+      "score_spread": 3.638975,
       "source": "backtest"
     },
     {
       "date": "2024-01-19",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.069036,
+      "score_spread": 4.121969,
       "source": "backtest"
     },
     {
       "date": "2024-01-22",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.036406,
+      "confidence": 0.6028,
+      "raw_confidence": 0.9996,
+      "score_spread": 3.983914,
       "source": "backtest"
     },
     {
       "date": "2024-01-23",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.088077,
+      "score_spread": 4.089471,
       "source": "backtest"
     },
     {
       "date": "2024-01-24",
-      "confidence": 0.2749,
-      "raw_confidence": 0.9562,
-      "score_spread": 3.811046,
+      "confidence": 0.2372,
+      "raw_confidence": 0.9487,
+      "score_spread": 3.7811,
       "source": "backtest"
     },
     {
       "date": "2024-01-25",
-      "confidence": 0.3356,
-      "raw_confidence": 0.9653,
-      "score_spread": 3.847505,
+      "confidence": 0.3421,
+      "raw_confidence": 0.9622,
+      "score_spread": 3.835088,
       "source": "backtest"
     },
     {
       "date": "2024-01-26",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.003993,
+      "score_spread": 3.998286,
       "source": "backtest"
     },
     {
       "date": "2024-01-29",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.14027,
+      "score_spread": 4.068339,
       "source": "backtest"
     },
     {
       "date": "2024-01-30",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 3.98751,
+      "score_spread": 4.023398,
       "source": "backtest"
     },
     {
       "date": "2024-01-31",
-      "confidence": 0.3729,
-      "raw_confidence": 0.9709,
-      "score_spread": 3.869671,
+      "confidence": 0.5076,
+      "raw_confidence": 0.9851,
+      "score_spread": 3.92634,
       "source": "backtest"
     },
     {
       "date": "2024-02-01",
-      "confidence": 0.4309,
-      "raw_confidence": 0.9774,
-      "score_spread": 3.895797,
+      "confidence": 0.4538,
+      "raw_confidence": 0.9773,
+      "score_spread": 3.895386,
       "source": "backtest"
     },
     {
       "date": "2024-02-02",
-      "confidence": 0.3646,
-      "raw_confidence": 0.9699,
-      "score_spread": 3.865583,
+      "confidence": 0.4055,
+      "raw_confidence": 0.969,
+      "score_spread": 3.862222,
       "source": "backtest"
     },
     {
       "date": "2024-02-05",
-      "confidence": 0.5345,
-      "raw_confidence": 0.9939,
-      "score_spread": 3.961315,
+      "confidence": 0.3903,
+      "raw_confidence": 0.9666,
+      "score_spread": 3.852582,
       "source": "backtest"
     },
     {
       "date": "2024-02-06",
-      "confidence": 0.1713,
-      "raw_confidence": 0.9377,
-      "score_spread": 3.737301,
+      "confidence": 0.1697,
+      "raw_confidence": 0.9334,
+      "score_spread": 3.720398,
       "source": "backtest"
     },
     {
       "date": "2024-02-07",
-      "confidence": 0.4627,
-      "raw_confidence": 0.9813,
-      "score_spread": 3.911223,
+      "confidence": 0.509,
+      "raw_confidence": 0.9853,
+      "score_spread": 3.927048,
       "source": "backtest"
     },
     {
       "date": "2024-02-08",
-      "confidence": 0.2238,
-      "raw_confidence": 0.9478,
-      "score_spread": 3.777546,
+      "confidence": 0.1986,
+      "raw_confidence": 0.9415,
+      "score_spread": 3.752797,
       "source": "backtest"
     },
     {
       "date": "2024-02-19",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.118837,
+      "score_spread": 4.074106,
       "source": "backtest"
     },
     {
       "date": "2024-02-20",
-      "confidence": 0.1878,
-      "raw_confidence": 0.9421,
-      "score_spread": 3.754985,
+      "confidence": 0.2952,
+      "raw_confidence": 0.9553,
+      "score_spread": 3.80764,
       "source": "backtest"
     },
     {
       "date": "2024-02-21",
-      "confidence": 0.0732,
-      "raw_confidence": 0.9055,
-      "score_spread": 3.609293,
+      "confidence": 0.0634,
+      "raw_confidence": 0.9062,
+      "score_spread": 3.61192,
       "source": "backtest"
     },
     {
       "date": "2024-02-22",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.019124,
+      "score_spread": 4.013788,
       "source": "backtest"
     },
     {
       "date": "2024-02-23",
-      "confidence": 0.558,
-      "raw_confidence": 0.9975,
-      "score_spread": 3.975696,
+      "confidence": 0.4648,
+      "raw_confidence": 0.9794,
+      "score_spread": 3.903725,
       "source": "backtest"
     },
     {
       "date": "2024-02-26",
-      "confidence": 0.1077,
-      "raw_confidence": 0.9181,
-      "score_spread": 3.659313,
+      "confidence": 0.1255,
+      "raw_confidence": 0.9252,
+      "score_spread": 3.687806,
       "source": "backtest"
     },
     {
       "date": "2024-02-27",
-      "confidence": 0.2334,
-      "raw_confidence": 0.9513,
-      "score_spread": 3.791661,
+      "confidence": 0.2248,
+      "raw_confidence": 0.947,
+      "score_spread": 3.774459,
       "source": "backtest"
     },
     {
       "date": "2024-02-28",
       "confidence": 0.0028,
-      "raw_confidence": 0.7975,
-      "score_spread": 3.178771,
+      "raw_confidence": 0.8022,
+      "score_spread": 3.197316,
       "source": "backtest"
     },
     {
       "date": "2024-02-29",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.096762,
+      "score_spread": 4.119806,
       "source": "backtest"
     },
     {
       "date": "2024-03-01",
-      "confidence": 0.2113,
-      "raw_confidence": 0.9449,
-      "score_spread": 3.766239,
+      "confidence": 0.2828,
+      "raw_confidence": 0.9542,
+      "score_spread": 3.803265,
       "source": "backtest"
     },
     {
       "date": "2024-03-04",
-      "confidence": 0.3398,
-      "raw_confidence": 0.9661,
-      "score_spread": 3.850668,
+      "confidence": 0.451,
+      "raw_confidence": 0.9766,
+      "score_spread": 3.89271,
       "source": "backtest"
     },
     {
       "date": "2024-03-05",
-      "confidence": 0.3011,
-      "raw_confidence": 0.9606,
-      "score_spread": 3.82886,
+      "confidence": 0.3228,
+      "raw_confidence": 0.959,
+      "score_spread": 3.822546,
       "source": "backtest"
     },
     {
       "date": "2024-03-06",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.146299,
+      "score_spread": 4.143523,
       "source": "backtest"
     },
     {
       "date": "2024-03-07",
-      "confidence": 0.2901,
-      "raw_confidence": 0.9589,
-      "score_spread": 3.821928,
+      "confidence": 0.3793,
+      "raw_confidence": 0.9655,
+      "score_spread": 3.848202,
       "source": "backtest"
     },
     {
       "date": "2024-03-08",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 3.993178,
+      "confidence": 0.4634,
+      "raw_confidence": 0.9792,
+      "score_spread": 3.902746,
       "source": "backtest"
     },
     {
       "date": "2024-03-11",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.04264,
+      "score_spread": 4.069544,
       "source": "backtest"
     },
     {
       "date": "2024-03-12",
-      "confidence": 0.471,
-      "raw_confidence": 0.9825,
-      "score_spread": 3.915865,
+      "confidence": 0.4621,
+      "raw_confidence": 0.9789,
+      "score_spread": 3.901625,
       "source": "backtest"
     },
     {
       "date": "2024-03-13",
-      "confidence": 0.4972,
-      "raw_confidence": 0.9874,
-      "score_spread": 3.935736,
+      "confidence": 0.4041,
+      "raw_confidence": 0.969,
+      "score_spread": 3.862246,
       "source": "backtest"
     },
     {
       "date": "2024-03-14",
-      "confidence": 0.5635,
-      "raw_confidence": 0.9987,
-      "score_spread": 3.980694,
+      "confidence": 1.0,
+      "raw_confidence": 1.0,
+      "score_spread": 3.991041,
       "source": "backtest"
     },
     {
       "date": "2024-03-15",
-      "confidence": 0.058,
-      "raw_confidence": 0.896,
-      "score_spread": 3.571277,
+      "confidence": 0.0248,
+      "raw_confidence": 0.8792,
+      "score_spread": 3.504126,
       "source": "backtest"
     },
     {
       "date": "2024-03-18",
-      "confidence": 0.3536,
-      "raw_confidence": 0.9686,
-      "score_spread": 3.860774,
+      "confidence": 0.331,
+      "raw_confidence": 0.9601,
+      "score_spread": 3.826931,
       "source": "backtest"
     },
     {
       "date": "2024-03-19",
-      "confidence": 0.3605,
-      "raw_confidence": 0.9692,
-      "score_spread": 3.863075,
+      "confidence": 0.2179,
+      "raw_confidence": 0.9459,
+      "score_spread": 3.770184,
       "source": "backtest"
     },
     {
       "date": "2024-03-20",
-      "confidence": 0.5511,
-      "raw_confidence": 0.9963,
-      "score_spread": 3.97087,
+      "confidence": 0.5931,
+      "raw_confidence": 0.998,
+      "score_spread": 3.977984,
       "source": "backtest"
     },
     {
       "date": "2024-03-21",
-      "confidence": 0.3343,
-      "raw_confidence": 0.9653,
-      "score_spread": 3.847581,
+      "confidence": 0.2979,
+      "raw_confidence": 0.9556,
+      "score_spread": 3.808992,
       "source": "backtest"
     },
     {
       "date": "2024-03-22",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.111422,
+      "score_spread": 4.163497,
       "source": "backtest"
     },
     {
       "date": "2024-03-25",
-      "confidence": 0.3508,
-      "raw_confidence": 0.9684,
-      "score_spread": 3.859771,
+      "confidence": 0.3172,
+      "raw_confidence": 0.9585,
+      "score_spread": 3.820392,
       "source": "backtest"
     },
     {
       "date": "2024-03-26",
-      "confidence": 0.3412,
-      "raw_confidence": 0.9665,
-      "score_spread": 3.852293,
+      "confidence": 0.3738,
+      "raw_confidence": 0.9652,
+      "score_spread": 3.847202,
       "source": "backtest"
     },
     {
       "date": "2024-03-27",
-      "confidence": 0.5193,
-      "raw_confidence": 0.991,
-      "score_spread": 3.949949,
+      "confidence": 1.0,
+      "raw_confidence": 1.0,
+      "score_spread": 3.998224,
       "source": "backtest"
     },
     {
       "date": "2024-03-28",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.1433,
+      "score_spread": 4.113992,
       "source": "backtest"
     },
     {
       "date": "2024-03-29",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.048755,
+      "score_spread": 4.057895,
       "source": "backtest"
     },
     {
       "date": "2024-04-01",
-      "confidence": 0.221,
-      "raw_confidence": 0.947,
-      "score_spread": 3.774772,
+      "confidence": 0.2083,
+      "raw_confidence": 0.9433,
+      "score_spread": 3.759877,
       "source": "backtest"
     },
     {
       "date": "2024-04-02",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.15855,
+      "score_spread": 4.077579,
       "source": "backtest"
     },
     {
       "date": "2024-04-03",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.15653,
+      "score_spread": 4.08757,
       "source": "backtest"
     },
     {
       "date": "2024-04-08",
-      "confidence": 0.4751,
-      "raw_confidence": 0.984,
-      "score_spread": 3.921927,
+      "confidence": 0.5517,
+      "raw_confidence": 0.9919,
+      "score_spread": 3.953658,
       "source": "backtest"
     },
     {
       "date": "2024-04-09",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.143886,
+      "score_spread": 4.077919,
       "source": "backtest"
     },
     {
       "date": "2024-04-10",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.136168,
+      "score_spread": 4.134719,
       "source": "backtest"
     },
     {
       "date": "2024-04-11",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.019399,
+      "score_spread": 4.035825,
       "source": "backtest"
     },
     {
       "date": "2024-04-12",
-      "confidence": 0.2196,
-      "raw_confidence": 0.9465,
-      "score_spread": 3.772723,
+      "confidence": 0.1903,
+      "raw_confidence": 0.9398,
+      "score_spread": 3.746038,
       "source": "backtest"
     },
     {
       "date": "2024-04-15",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.094336,
+      "score_spread": 4.114862,
       "source": "backtest"
     },
     {
       "date": "2024-04-16",
-      "confidence": 0.0594,
-      "raw_confidence": 0.8968,
-      "score_spread": 3.574829,
+      "confidence": 0.0538,
+      "raw_confidence": 0.8979,
+      "score_spread": 3.57891,
       "source": "backtest"
     },
     {
       "date": "2024-04-17",
-      "confidence": 0.0801,
-      "raw_confidence": 0.9085,
-      "score_spread": 3.621139,
+      "confidence": 0.0952,
+      "raw_confidence": 0.9167,
+      "score_spread": 3.653953,
       "source": "backtest"
     },
     {
       "date": "2024-04-18",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.027453,
+      "score_spread": 4.086331,
       "source": "backtest"
     },
     {
       "date": "2024-04-19",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.005325,
+      "score_spread": 4.017343,
       "source": "backtest"
     },
     {
       "date": "2024-04-22",
-      "confidence": 0.1961,
-      "raw_confidence": 0.9435,
-      "score_spread": 3.760666,
+      "confidence": 0.2,
+      "raw_confidence": 0.9419,
+      "score_spread": 3.754217,
       "source": "backtest"
     },
     {
       "date": "2024-04-23",
-      "confidence": 0.4779,
-      "raw_confidence": 0.9841,
-      "score_spread": 3.922765,
+      "confidence": 0.429,
+      "raw_confidence": 0.9738,
+      "score_spread": 3.881405,
       "source": "backtest"
     },
     {
       "date": "2024-04-24",
-      "confidence": 0.4738,
-      "raw_confidence": 0.9837,
-      "score_spread": 3.92088,
+      "confidence": 0.5503,
+      "raw_confidence": 0.9918,
+      "score_spread": 3.953464,
       "source": "backtest"
     },
     {
       "date": "2024-04-25",
-      "confidence": 0.1809,
-      "raw_confidence": 0.9395,
-      "score_spread": 3.744679,
+      "confidence": 0.2621,
+      "raw_confidence": 0.951,
+      "score_spread": 3.790795,
       "source": "backtest"
     },
     {
       "date": "2024-04-26",
-      "confidence": 0.239,
-      "raw_confidence": 0.9516,
-      "score_spread": 3.792969,
+      "confidence": 0.3655,
+      "raw_confidence": 0.9646,
+      "score_spread": 3.844755,
       "source": "backtest"
     },
     {
       "date": "2024-04-29",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.130496,
+      "score_spread": 4.117177,
       "source": "backtest"
     },
     {
       "date": "2024-04-30",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.06531,
+      "score_spread": 4.081637,
       "source": "backtest"
     },
     {
       "date": "2024-05-06",
-      "confidence": 0.1478,
-      "raw_confidence": 0.9318,
-      "score_spread": 3.714257,
+      "confidence": 0.2386,
+      "raw_confidence": 0.949,
+      "score_spread": 3.782637,
       "source": "backtest"
     },
     {
       "date": "2024-05-07",
-      "confidence": 0.4599,
-      "raw_confidence": 0.9805,
-      "score_spread": 3.908509,
+      "confidence": 0.2166,
+      "raw_confidence": 0.9453,
+      "score_spread": 3.768123,
       "source": "backtest"
     },
     {
       "date": "2024-05-08",
-      "confidence": 0.3052,
-      "raw_confidence": 0.9609,
-      "score_spread": 3.830314,
+      "confidence": 0.2331,
+      "raw_confidence": 0.9483,
+      "score_spread": 3.78017,
       "source": "backtest"
     },
     {
       "date": "2024-05-09",
-      "confidence": 0.0525,
-      "raw_confidence": 0.8937,
-      "score_spread": 3.562336,
+      "confidence": 0.0579,
+      "raw_confidence": 0.9015,
+      "score_spread": 3.593442,
       "source": "backtest"
     },
     {
       "date": "2024-05-10",
-      "confidence": 0.4075,
-      "raw_confidence": 0.9759,
-      "score_spread": 3.889937,
+      "confidence": 0.3862,
+      "raw_confidence": 0.9664,
+      "score_spread": 3.852022,
       "source": "backtest"
     },
     {
       "date": "2024-05-13",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.344966,
+      "score_spread": 4.252576,
       "source": "backtest"
     },
     {
       "date": "2024-05-14",
-      "confidence": 0.116,
-      "raw_confidence": 0.9214,
-      "score_spread": 3.672652,
+      "confidence": 0.1338,
+      "raw_confidence": 0.9264,
+      "score_spread": 3.692671,
       "source": "backtest"
     },
     {
       "date": "2024-05-15",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.077624,
+      "score_spread": 4.146904,
       "source": "backtest"
     },
     {
       "date": "2024-05-16",
-      "confidence": 0.2652,
-      "raw_confidence": 0.9548,
-      "score_spread": 3.805733,
+      "confidence": 0.0938,
+      "raw_confidence": 0.9166,
+      "score_spread": 3.653516,
       "source": "backtest"
     },
     {
       "date": "2024-05-17",
-      "confidence": 0.2638,
-      "raw_confidence": 0.9547,
-      "score_spread": 3.805457,
+      "confidence": 0.3034,
+      "raw_confidence": 0.9562,
+      "score_spread": 3.81158,
       "source": "backtest"
     },
     {
       "date": "2024-05-20",
-      "confidence": 0.3923,
-      "raw_confidence": 0.9737,
-      "score_spread": 3.881416,
+      "confidence": 0.4234,
+      "raw_confidence": 0.9715,
+      "score_spread": 3.872658,
       "source": "backtest"
     },
     {
       "date": "2024-05-21",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.158904,
+      "score_spread": 4.140289,
       "source": "backtest"
     },
     {
       "date": "2024-05-22",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.018175,
+      "score_spread": 4.00676,
       "source": "backtest"
     },
     {
       "date": "2024-05-23",
-      "confidence": 0.5442,
-      "raw_confidence": 0.9947,
-      "score_spread": 3.964782,
+      "confidence": 1.0,
+      "raw_confidence": 1.0,
+      "score_spread": 3.989467,
       "source": "backtest"
     },
     {
       "date": "2024-05-24",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.063433,
+      "confidence": 0.5366,
+      "raw_confidence": 0.99,
+      "score_spread": 3.946039,
       "source": "backtest"
     },
     {
       "date": "2024-05-27",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.242967,
+      "score_spread": 4.211911,
       "source": "backtest"
     },
     {
       "date": "2024-05-28",
-      "confidence": 0.1064,
-      "raw_confidence": 0.9178,
-      "score_spread": 3.658318,
+      "confidence": 0.1352,
+      "raw_confidence": 0.9272,
+      "score_spread": 3.695933,
       "source": "backtest"
     },
     {
       "date": "2024-05-29",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.108927,
+      "score_spread": 4.066312,
       "source": "backtest"
     },
     {
       "date": "2024-05-30",
-      "confidence": 0.4351,
-      "raw_confidence": 0.9776,
-      "score_spread": 3.896611,
+      "confidence": 0.5862,
+      "raw_confidence": 0.9975,
+      "score_spread": 3.976007,
       "source": "backtest"
     },
     {
       "date": "2024-05-31",
-      "confidence": 0.3246,
-      "raw_confidence": 0.9631,
-      "score_spread": 3.839141,
+      "confidence": 0.3931,
+      "raw_confidence": 0.9673,
+      "score_spread": 3.855666,
       "source": "backtest"
     },
     {
       "date": "2024-06-03",
-      "confidence": 0.3301,
-      "raw_confidence": 0.9639,
-      "score_spread": 3.842257,
+      "confidence": 0.2593,
+      "raw_confidence": 0.9507,
+      "score_spread": 3.789833,
       "source": "backtest"
     },
     {
       "date": "2024-06-04",
-      "confidence": 0.3039,
-      "raw_confidence": 0.9609,
-      "score_spread": 3.830217,
+      "confidence": 0.3366,
+      "raw_confidence": 0.9612,
+      "score_spread": 3.831714,
       "source": "backtest"
     },
     {
       "date": "2024-06-05",
-      "confidence": 0.3218,
-      "raw_confidence": 0.9626,
-      "score_spread": 3.837093,
+      "confidence": 0.3407,
+      "raw_confidence": 0.9617,
+      "score_spread": 3.833428,
       "source": "backtest"
     },
     {
       "date": "2024-06-06",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.043108,
+      "confidence": 0.56,
+      "raw_confidence": 0.993,
+      "score_spread": 3.958132,
       "source": "backtest"
     },
     {
       "date": "2024-06-07",
-      "confidence": 0.4986,
-      "raw_confidence": 0.9875,
-      "score_spread": 3.936444,
+      "confidence": 1.0,
+      "raw_confidence": 1.0,
+      "score_spread": 3.998476,
       "source": "backtest"
     },
     {
       "date": "2024-06-11",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.137603,
+      "score_spread": 4.1183,
       "source": "backtest"
     },
     {
       "date": "2024-06-12",
-      "confidence": 0.3895,
-      "raw_confidence": 0.9733,
-      "score_spread": 3.879623,
+      "confidence": 0.371,
+      "raw_confidence": 0.9649,
+      "score_spread": 3.846398,
       "source": "backtest"
     },
     {
       "date": "2024-06-13",
-      "confidence": 0.2845,
-      "raw_confidence": 0.9578,
-      "score_spread": 3.817861,
+      "confidence": 0.2607,
+      "raw_confidence": 0.951,
+      "score_spread": 3.790899,
       "source": "backtest"
     },
     {
       "date": "2024-06-14",
-      "confidence": 0.2003,
-      "raw_confidence": 0.9437,
-      "score_spread": 3.761867,
+      "confidence": 0.3283,
+      "raw_confidence": 0.9594,
+      "score_spread": 3.824326,
       "source": "backtest"
     },
     {
       "date": "2024-06-17",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.008012,
+      "score_spread": 4.022889,
       "source": "backtest"
     },
     {
       "date": "2024-06-18",
-      "confidence": 0.366,
-      "raw_confidence": 0.97,
-      "score_spread": 3.866659,
+      "confidence": 0.3683,
+      "raw_confidence": 0.9646,
+      "score_spread": 3.845003,
       "source": "backtest"
     },
     {
       "date": "2024-06-19",
-      "confidence": 0.5414,
-      "raw_confidence": 0.9944,
-      "score_spread": 3.963996,
+      "confidence": 1.0,
+      "raw_confidence": 1.0,
+      "score_spread": 4.030104,
       "source": "backtest"
     },
     {
       "date": "2024-06-20",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.148224,
+      "score_spread": 4.155159,
       "source": "backtest"
     },
     {
       "date": "2024-06-21",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.128589,
+      "score_spread": 4.134983,
       "source": "backtest"
     },
     {
       "date": "2024-06-24",
-      "confidence": 0.4696,
-      "raw_confidence": 0.9822,
-      "score_spread": 3.915207,
+      "confidence": 0.4772,
+      "raw_confidence": 0.9813,
+      "score_spread": 3.911701,
       "source": "backtest"
     },
     {
       "date": "2024-06-25",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.259482,
+      "score_spread": 4.237325,
       "source": "backtest"
     },
     {
       "date": "2024-06-26",
-      "confidence": 0.2293,
-      "raw_confidence": 0.9507,
-      "score_spread": 3.789834,
+      "confidence": 0.2055,
+      "raw_confidence": 0.9431,
+      "score_spread": 3.759508,
       "source": "backtest"
     },
     {
       "date": "2024-06-27",
-      "confidence": 0.4102,
-      "raw_confidence": 0.9763,
-      "score_spread": 3.891561,
+      "confidence": 0.2634,
+      "raw_confidence": 0.9511,
+      "score_spread": 3.791428,
       "source": "backtest"
     },
     {
       "date": "2024-06-28",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.042054,
+      "score_spread": 4.022352,
       "source": "backtest"
     },
     {
       "date": "2024-07-01",
-      "confidence": 0.1906,
-      "raw_confidence": 0.9428,
-      "score_spread": 3.758104,
+      "confidence": 0.1434,
+      "raw_confidence": 0.9289,
+      "score_spread": 3.702738,
       "source": "backtest"
     },
     {
       "date": "2024-07-02",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.011566,
+      "confidence": 0.5848,
+      "raw_confidence": 0.9968,
+      "score_spread": 3.973337,
       "source": "backtest"
     },
     {
       "date": "2024-07-03",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.050949,
+      "score_spread": 4.062373,
       "source": "backtest"
     },
     {
       "date": "2024-07-04",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.013657,
+      "confidence": 0.5669,
+      "raw_confidence": 0.9945,
+      "score_spread": 3.96438,
       "source": "backtest"
     },
     {
       "date": "2024-07-05",
-      "confidence": 0.2417,
-      "raw_confidence": 0.9522,
-      "score_spread": 3.795706,
+      "confidence": 0.1669,
+      "raw_confidence": 0.9333,
+      "score_spread": 3.720275,
       "source": "backtest"
     },
     {
       "date": "2024-07-08",
-      "confidence": 0.4006,
-      "raw_confidence": 0.9748,
-      "score_spread": 3.885911,
+      "confidence": 0.3324,
+      "raw_confidence": 0.9604,
+      "score_spread": 3.828347,
       "source": "backtest"
     },
     {
       "date": "2024-07-09",
-      "confidence": 0.0552,
-      "raw_confidence": 0.8953,
-      "score_spread": 3.568923,
+      "confidence": 0.0276,
+      "raw_confidence": 0.8809,
+      "score_spread": 3.511491,
       "source": "backtest"
     },
     {
       "date": "2024-07-10",
-      "confidence": 0.5331,
-      "raw_confidence": 0.993,
-      "score_spread": 3.958447,
+      "confidence": 0.5145,
+      "raw_confidence": 0.9863,
+      "score_spread": 3.93139,
       "source": "backtest"
     },
     {
       "date": "2024-07-11",
-      "confidence": 0.5539,
-      "raw_confidence": 0.9971,
-      "score_spread": 3.974779,
+      "confidence": 0.4841,
+      "raw_confidence": 0.9822,
+      "score_spread": 3.915414,
       "source": "backtest"
     },
     {
       "date": "2024-07-12",
-      "confidence": 0.326,
-      "raw_confidence": 0.9636,
-      "score_spread": 3.840927,
+      "confidence": 0.4552,
+      "raw_confidence": 0.9779,
+      "score_spread": 3.897921,
       "source": "backtest"
     },
     {
       "date": "2024-07-15",
-      "confidence": 0.2859,
-      "raw_confidence": 0.9581,
-      "score_spread": 3.819042,
+      "confidence": 0.3517,
+      "raw_confidence": 0.9633,
+      "score_spread": 3.83977,
       "source": "backtest"
     },
     {
       "date": "2024-07-16",
-      "confidence": 0.5276,
-      "raw_confidence": 0.9921,
-      "score_spread": 3.954585,
+      "confidence": 0.4703,
+      "raw_confidence": 0.9798,
+      "score_spread": 3.905609,
       "source": "backtest"
     },
     {
       "date": "2024-07-17",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.320811,
+      "score_spread": 4.326648,
       "source": "backtest"
     },
     {
       "date": "2024-07-18",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.188431,
+      "score_spread": 4.104637,
       "source": "backtest"
     },
     {
       "date": "2024-07-19",
-      "confidence": 0.0055,
-      "raw_confidence": 0.8227,
-      "score_spread": 3.279414,
+      "confidence": 0.0083,
+      "raw_confidence": 0.8336,
+      "score_spread": 3.322878,
       "source": "backtest"
     },
     {
       "date": "2024-07-22",
-      "confidence": 0.0428,
-      "raw_confidence": 0.8905,
-      "score_spread": 3.549685,
+      "confidence": 0.0469,
+      "raw_confidence": 0.8963,
+      "score_spread": 3.572635,
       "source": "backtest"
     },
     {
       "date": "2024-07-23",
-      "confidence": 0.4378,
-      "raw_confidence": 0.9777,
-      "score_spread": 3.897302,
+      "confidence": 0.4786,
+      "raw_confidence": 0.9813,
+      "score_spread": 3.911742,
       "source": "backtest"
     },
     {
       "date": "2024-07-24",
-      "confidence": 0.5318,
-      "raw_confidence": 0.9927,
-      "score_spread": 3.956912,
+      "confidence": 0.2483,
+      "raw_confidence": 0.9498,
+      "score_spread": 3.786091,
       "source": "backtest"
     },
     {
       "date": "2024-07-25",
-      "confidence": 0.0401,
-      "raw_confidence": 0.8896,
-      "score_spread": 3.546078,
+      "confidence": 0.0483,
+      "raw_confidence": 0.8973,
+      "score_spread": 3.576956,
       "source": "backtest"
     },
     {
       "date": "2024-07-26",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.094275,
+      "score_spread": 4.139681,
       "source": "backtest"
     },
     {
       "date": "2024-07-29",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.146935,
+      "score_spread": 4.079113,
       "source": "backtest"
     },
     {
       "date": "2024-07-30",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.119294,
+      "score_spread": 4.084778,
       "source": "backtest"
     },
     {
       "date": "2024-07-31",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.166747,
+      "score_spread": 4.183847,
       "source": "backtest"
     },
     {
       "date": "2024-08-01",
-      "confidence": 0.1533,
-      "raw_confidence": 0.9329,
-      "score_spread": 3.718604,
+      "confidence": 0.1503,
+      "raw_confidence": 0.93,
+      "score_spread": 3.707138,
       "source": "backtest"
     },
     {
       "date": "2024-08-02",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.308283,
+      "score_spread": 4.208936,
       "source": "backtest"
     },
     {
       "date": "2024-08-05",
-      "confidence": 0.3066,
-      "raw_confidence": 0.9611,
-      "score_spread": 3.831294,
+      "confidence": 0.3752,
+      "raw_confidence": 0.9653,
+      "score_spread": 3.847872,
       "source": "backtest"
     },
     {
       "date": "2024-08-06",
-      "confidence": 0.3936,
-      "raw_confidence": 0.9738,
-      "score_spread": 3.881593,
+      "confidence": 0.4221,
+      "raw_confidence": 0.9715,
+      "score_spread": 3.872577,
       "source": "backtest"
     },
     {
       "date": "2024-08-07",
-      "confidence": 0.3025,
-      "raw_confidence": 0.9607,
-      "score_spread": 3.829361,
+      "confidence": 0.2014,
+      "raw_confidence": 0.9421,
+      "score_spread": 3.755504,
       "source": "backtest"
     },
     {
       "date": "2024-08-08",
-      "confidence": 0.5235,
-      "raw_confidence": 0.9915,
-      "score_spread": 3.952251,
+      "confidence": 0.6014,
+      "raw_confidence": 0.9992,
+      "score_spread": 3.982831,
       "source": "backtest"
     },
     {
       "date": "2024-08-09",
-      "confidence": 0.232,
-      "raw_confidence": 0.9512,
-      "score_spread": 3.791652,
+      "confidence": 0.2717,
+      "raw_confidence": 0.9526,
+      "score_spread": 3.797214,
       "source": "backtest"
     },
     {
       "date": "2024-08-12",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.102354,
+      "score_spread": 4.0937,
       "source": "backtest"
     },
     {
       "date": "2024-08-13",
-      "confidence": 0.1892,
-      "raw_confidence": 0.9427,
-      "score_spread": 3.757779,
+      "confidence": 0.2124,
+      "raw_confidence": 0.9447,
+      "score_spread": 3.765929,
       "source": "backtest"
     },
     {
       "date": "2024-08-14",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.012512,
+      "score_spread": 3.988149,
       "source": "backtest"
     },
     {
       "date": "2024-08-15",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.005043,
+      "score_spread": 4.059639,
       "source": "backtest"
     },
     {
       "date": "2024-08-16",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 3.994206,
+      "score_spread": 3.986742,
       "source": "backtest"
     },
     {
       "date": "2024-08-19",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.050038,
+      "score_spread": 4.026036,
       "source": "backtest"
     },
     {
       "date": "2024-08-20",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.025724,
+      "score_spread": 4.078034,
       "source": "backtest"
     },
     {
       "date": "2024-08-21",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.063897,
+      "score_spread": 4.158967,
       "source": "backtest"
     },
     {
       "date": "2024-08-22",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.025476,
+      "score_spread": 4.047024,
       "source": "backtest"
     },
     {
       "date": "2024-08-23",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.247729,
+      "score_spread": 4.326541,
       "source": "backtest"
     },
     {
       "date": "2024-08-26",
-      "confidence": 0.4406,
-      "raw_confidence": 0.9782,
-      "score_spread": 3.899244,
+      "confidence": 0.3807,
+      "raw_confidence": 0.9655,
+      "score_spread": 3.848634,
       "source": "backtest"
     },
     {
       "date": "2024-08-27",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.13233,
+      "score_spread": 4.127125,
       "source": "backtest"
     },
     {
       "date": "2024-08-28",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.03096,
+      "score_spread": 4.110907,
       "source": "backtest"
     },
     {
       "date": "2024-08-29",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.067738,
+      "score_spread": 4.074318,
       "source": "backtest"
     },
     {
       "date": "2024-08-30",
-      "confidence": 0.5028,
-      "raw_confidence": 0.9883,
-      "score_spread": 3.939726,
+      "confidence": 0.4276,
+      "raw_confidence": 0.9731,
+      "score_spread": 3.878972,
       "source": "backtest"
     },
     {
       "date": "2024-09-02",
-      "confidence": 0.4144,
-      "raw_confidence": 0.9765,
-      "score_spread": 3.892698,
+      "confidence": 0.4069,
+      "raw_confidence": 0.9691,
+      "score_spread": 3.863135,
       "source": "backtest"
     },
     {
       "date": "2024-09-03",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.062305,
+      "score_spread": 3.989179,
       "source": "backtest"
     },
     {
       "date": "2024-09-04",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.220002,
+      "score_spread": 4.290211,
       "source": "backtest"
     },
     {
       "date": "2024-09-05",
-      "confidence": 0.192,
-      "raw_confidence": 0.9428,
-      "score_spread": 3.758206,
+      "confidence": 0.1862,
+      "raw_confidence": 0.937,
+      "score_spread": 3.734869,
       "source": "backtest"
     },
     {
       "date": "2024-09-06",
-      "confidence": 0.3826,
-      "raw_confidence": 0.9725,
-      "score_spread": 3.876427,
+      "confidence": 0.3724,
+      "raw_confidence": 0.965,
+      "score_spread": 3.846623,
       "source": "backtest"
     },
     {
       "date": "2024-09-09",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.004305,
+      "confidence": 0.5614,
+      "raw_confidence": 0.993,
+      "score_spread": 3.958333,
       "source": "backtest"
     },
     {
       "date": "2024-09-10",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.052116,
+      "score_spread": 4.172277,
       "source": "backtest"
     },
     {
       "date": "2024-09-11",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.162122,
+      "score_spread": 4.26459,
       "source": "backtest"
     },
     {
       "date": "2024-09-12",
-      "confidence": 0.1506,
-      "raw_confidence": 0.932,
-      "score_spread": 3.715105,
+      "confidence": 0.1641,
+      "raw_confidence": 0.9326,
+      "score_spread": 3.71769,
       "source": "backtest"
     },
     {
       "date": "2024-09-13",
-      "confidence": 0.2776,
-      "raw_confidence": 0.9566,
-      "score_spread": 3.813049,
+      "confidence": 0.2814,
+      "raw_confidence": 0.9537,
+      "score_spread": 3.801633,
       "source": "backtest"
     },
     {
       "date": "2024-09-18",
-      "confidence": 0.0511,
-      "raw_confidence": 0.8936,
-      "score_spread": 3.561924,
+      "confidence": 0.0566,
+      "raw_confidence": 0.9008,
+      "score_spread": 3.590779,
       "source": "backtest"
     },
     {
       "date": "2024-09-19",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.137866,
+      "score_spread": 4.08176,
       "source": "backtest"
     },
     {
       "date": "2024-09-20",
-      "confidence": 0.3481,
-      "raw_confidence": 0.9682,
-      "score_spread": 3.859306,
+      "confidence": 0.4593,
+      "raw_confidence": 0.9783,
+      "score_spread": 3.899538,
       "source": "backtest"
     },
     {
       "date": "2024-09-23",
-      "confidence": 0.0124,
-      "raw_confidence": 0.8603,
-      "score_spread": 3.429301,
+      "confidence": 0.0317,
+      "raw_confidence": 0.8839,
+      "score_spread": 3.523296,
       "source": "backtest"
     },
     {
       "date": "2024-09-24",
-      "confidence": 0.2983,
-      "raw_confidence": 0.9604,
-      "score_spread": 3.828469,
+      "confidence": 0.3766,
+      "raw_confidence": 0.9654,
+      "score_spread": 3.848082,
       "source": "backtest"
     },
     {
       "date": "2024-09-25",
-      "confidence": 0.297,
-      "raw_confidence": 0.9598,
-      "score_spread": 3.825983,
+      "confidence": 0.3159,
+      "raw_confidence": 0.9584,
+      "score_spread": 3.820417,
       "source": "backtest"
     },
     {
       "date": "2024-09-26",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.007998,
+      "confidence": 0.4717,
+      "raw_confidence": 0.9798,
+      "score_spread": 3.90579,
       "source": "backtest"
     },
     {
       "date": "2024-09-27",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.3,
+      "score_spread": 4.306646,
       "source": "backtest"
     },
     {
       "date": "2024-09-30",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.11569,
+      "score_spread": 4.144065,
       "source": "backtest"
     },
     {
       "date": "2024-10-08",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.308408,
+      "score_spread": 4.271835,
       "source": "backtest"
     },
     {
       "date": "2024-10-09",
       "confidence": 0.0041,
-      "raw_confidence": 0.8014,
-      "score_spread": 3.194455,
+      "raw_confidence": 0.8185,
+      "score_spread": 3.262764,
       "source": "backtest"
     },
     {
       "date": "2024-10-10",
-      "confidence": 0.2472,
-      "raw_confidence": 0.9525,
-      "score_spread": 3.79665,
+      "confidence": 0.4097,
+      "raw_confidence": 0.9694,
+      "score_spread": 3.864042,
       "source": "backtest"
     },
     {
       "date": "2024-10-11",
-      "confidence": 0.2569,
-      "raw_confidence": 0.9541,
-      "score_spread": 3.803154,
+      "confidence": 0.2966,
+      "raw_confidence": 0.9553,
+      "score_spread": 3.808075,
       "source": "backtest"
     },
     {
       "date": "2024-10-14",
-      "confidence": 0.1464,
-      "raw_confidence": 0.9317,
-      "score_spread": 3.71387,
+      "confidence": 0.2566,
+      "raw_confidence": 0.9506,
+      "score_spread": 3.789382,
       "source": "backtest"
     },
     {
       "date": "2024-10-15",
-      "confidence": 0.2169,
-      "raw_confidence": 0.9464,
-      "score_spread": 3.77255,
+      "confidence": 0.2524,
+      "raw_confidence": 0.9503,
+      "score_spread": 3.788259,
       "source": "backtest"
     },
     {
       "date": "2024-10-16",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.098971,
+      "score_spread": 4.09042,
       "source": "backtest"
     },
     {
       "date": "2024-10-17",
-      "confidence": 0.1616,
-      "raw_confidence": 0.9357,
-      "score_spread": 3.729893,
+      "confidence": 0.1462,
+      "raw_confidence": 0.929,
+      "score_spread": 3.703274,
       "source": "backtest"
     },
     {
       "date": "2024-10-18",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.083924,
+      "score_spread": 4.126733,
       "source": "backtest"
     },
     {
       "date": "2024-10-21",
-      "confidence": 0.4572,
-      "raw_confidence": 0.9798,
-      "score_spread": 3.905809,
+      "confidence": 0.4193,
+      "raw_confidence": 0.9709,
+      "score_spread": 3.870329,
       "source": "backtest"
     },
     {
       "date": "2024-10-22",
-      "confidence": 0.1975,
-      "raw_confidence": 0.9436,
-      "score_spread": 3.761425,
+      "confidence": 0.2069,
+      "raw_confidence": 0.9433,
+      "score_spread": 3.760226,
       "source": "backtest"
     },
     {
       "date": "2024-10-23",
-      "confidence": 0.1492,
-      "raw_confidence": 0.9319,
-      "score_spread": 3.714985,
+      "confidence": 0.2028,
+      "raw_confidence": 0.9422,
+      "score_spread": 3.755834,
       "source": "backtest"
     },
     {
       "date": "2024-10-24",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.051239,
+      "score_spread": 4.127277,
       "source": "backtest"
     },
     {
       "date": "2024-10-25",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.279247,
+      "score_spread": 4.230922,
       "source": "backtest"
     },
     {
       "date": "2024-10-28",
-      "confidence": 0.2831,
-      "raw_confidence": 0.9577,
-      "score_spread": 3.81794,
+      "confidence": 0.3076,
+      "raw_confidence": 0.9566,
+      "score_spread": 3.813467,
       "source": "backtest"
     },
     {
       "date": "2024-10-29",
-      "confidence": 0.1271,
-      "raw_confidence": 0.9255,
-      "score_spread": 3.689472,
+      "confidence": 0.2359,
+      "raw_confidence": 0.9487,
+      "score_spread": 3.781708,
       "source": "backtest"
     },
     {
       "date": "2024-10-30",
-      "confidence": 0.2086,
-      "raw_confidence": 0.9446,
-      "score_spread": 3.765722,
+      "confidence": 0.2648,
+      "raw_confidence": 0.9514,
+      "score_spread": 3.792467,
       "source": "backtest"
     },
     {
       "date": "2024-10-31",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.112701,
+      "confidence": 0.4455,
+      "raw_confidence": 0.9759,
+      "score_spread": 3.890242,
       "source": "backtest"
     },
     {
       "date": "2024-11-01",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.007477,
+      "confidence": 0.5972,
+      "raw_confidence": 0.9988,
+      "score_spread": 3.981731,
       "source": "backtest"
     },
     {
       "date": "2024-11-04",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.062424,
+      "score_spread": 4.104238,
       "source": "backtest"
     },
     {
       "date": "2024-11-05",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.446828,
+      "score_spread": 4.348513,
       "source": "backtest"
     },
     {
       "date": "2024-11-06",
-      "confidence": 0.2624,
-      "raw_confidence": 0.9546,
-      "score_spread": 3.805536,
+      "confidence": 0.2041,
+      "raw_confidence": 0.9426,
+      "score_spread": 3.757452,
       "source": "backtest"
     },
     {
       "date": "2024-11-07",
-      "confidence": 0.1395,
-      "raw_confidence": 0.9296,
-      "score_spread": 3.70589,
+      "confidence": 0.1724,
+      "raw_confidence": 0.9338,
+      "score_spread": 3.722392,
       "source": "backtest"
     },
     {
       "date": "2024-11-08",
-      "confidence": 0.3688,
-      "raw_confidence": 0.9706,
-      "score_spread": 3.869088,
+      "confidence": 0.3531,
+      "raw_confidence": 0.9634,
+      "score_spread": 3.840361,
       "source": "backtest"
     },
     {
       "date": "2024-11-11",
-      "confidence": 0.5124,
-      "raw_confidence": 0.9904,
-      "score_spread": 3.948034,
+      "confidence": 0.6069,
+      "raw_confidence": 0.9999,
+      "score_spread": 3.985829,
       "source": "backtest"
     },
     {
       "date": "2024-11-12",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.126097,
+      "score_spread": 4.117217,
       "source": "backtest"
     },
     {
       "date": "2024-11-13",
-      "confidence": 0.3453,
-      "raw_confidence": 0.9669,
-      "score_spread": 3.854265,
+      "confidence": 0.251,
+      "raw_confidence": 0.9502,
+      "score_spread": 3.787725,
       "source": "backtest"
     },
     {
       "date": "2024-11-14",
-      "confidence": 0.5166,
-      "raw_confidence": 0.9908,
-      "score_spread": 3.949625,
+      "confidence": 0.5876,
+      "raw_confidence": 0.9975,
+      "score_spread": 3.976484,
       "source": "backtest"
     },
     {
       "date": "2024-11-15",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.071522,
+      "confidence": 0.4883,
+      "raw_confidence": 0.9827,
+      "score_spread": 3.917412,
       "source": "backtest"
     },
     {
       "date": "2024-11-18",
-      "confidence": 0.4213,
-      "raw_confidence": 0.977,
-      "score_spread": 3.894772,
+      "confidence": 0.4497,
+      "raw_confidence": 0.9765,
+      "score_spread": 3.89265,
       "source": "backtest"
     },
     {
       "date": "2024-11-19",
-      "confidence": 0.2666,
-      "raw_confidence": 0.9552,
-      "score_spread": 3.807921,
+      "confidence": 0.2841,
+      "raw_confidence": 0.9543,
+      "score_spread": 3.8041,
       "source": "backtest"
     },
     {
       "date": "2024-11-20",
-      "confidence": 0.1298,
-      "raw_confidence": 0.9277,
-      "score_spread": 3.698021,
+      "confidence": 0.1269,
+      "raw_confidence": 0.9257,
+      "score_spread": 3.690298,
       "source": "backtest"
     },
     {
       "date": "2024-11-21",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.047257,
+      "score_spread": 4.091343,
       "source": "backtest"
     },
     {
       "date": "2024-11-22",
-      "confidence": 0.1257,
-      "raw_confidence": 0.925,
-      "score_spread": 3.687277,
+      "confidence": 0.1972,
+      "raw_confidence": 0.9415,
+      "score_spread": 3.753339,
       "source": "backtest"
     },
     {
       "date": "2024-11-25",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.006447,
+      "confidence": 0.5117,
+      "raw_confidence": 0.9854,
+      "score_spread": 3.928108,
       "source": "backtest"
     },
     {
       "date": "2024-11-26",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.039843,
+      "score_spread": 4.042904,
       "source": "backtest"
     },
     {
       "date": "2024-11-27",
-      "confidence": 0.1381,
-      "raw_confidence": 0.9294,
-      "score_spread": 3.704887,
+      "confidence": 0.1228,
+      "raw_confidence": 0.9251,
+      "score_spread": 3.687822,
       "source": "backtest"
     },
     {
       "date": "2024-11-28",
-      "confidence": 0.2707,
-      "raw_confidence": 0.9556,
-      "score_spread": 3.809208,
+      "confidence": 0.3503,
+      "raw_confidence": 0.9632,
+      "score_spread": 3.839612,
       "source": "backtest"
     },
     {
       "date": "2024-11-29",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.009834,
+      "score_spread": 4.078042,
       "source": "backtest"
     },
     {
       "date": "2024-12-02",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.04945,
+      "score_spread": 4.049793,
       "source": "backtest"
     },
     {
       "date": "2024-12-03",
-      "confidence": 0.4682,
-      "raw_confidence": 0.982,
-      "score_spread": 3.914583,
+      "confidence": 0.4952,
+      "raw_confidence": 0.9831,
+      "score_spread": 3.918875,
       "source": "backtest"
     },
     {
       "date": "2024-12-04",
-      "confidence": 0.3232,
-      "raw_confidence": 0.9629,
-      "score_spread": 3.83836,
+      "confidence": 0.4345,
+      "raw_confidence": 0.974,
+      "score_spread": 3.882696,
       "source": "backtest"
     },
     {
       "date": "2024-12-05",
-      "confidence": 0.3785,
-      "raw_confidence": 0.9721,
-      "score_spread": 3.875098,
+      "confidence": 0.32,
+      "raw_confidence": 0.959,
+      "score_spread": 3.822749,
       "source": "backtest"
     },
     {
       "date": "2024-12-06",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.331345,
+      "score_spread": 4.215485,
       "source": "backtest"
     },
     {
       "date": "2024-12-09",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 3.993319,
+      "confidence": 0.5214,
+      "raw_confidence": 0.9866,
+      "score_spread": 3.932839,
       "source": "backtest"
     },
     {
       "date": "2024-12-10",
-      "confidence": 0.1588,
-      "raw_confidence": 0.9347,
-      "score_spread": 3.726053,
+      "confidence": 0.2097,
+      "raw_confidence": 0.9439,
+      "score_spread": 3.762891,
       "source": "backtest"
     },
     {
       "date": "2024-12-11",
-      "confidence": 0.2735,
-      "raw_confidence": 0.9558,
-      "score_spread": 3.810287,
+      "confidence": 0.2883,
+      "raw_confidence": 0.9547,
+      "score_spread": 3.805774,
       "source": "backtest"
     },
     {
       "date": "2024-12-12",
-      "confidence": 0.2279,
-      "raw_confidence": 0.9493,
-      "score_spread": 3.784091,
+      "confidence": 0.2345,
+      "raw_confidence": 0.9484,
+      "score_spread": 3.780643,
       "source": "backtest"
     },
     {
       "date": "2024-12-13",
-      "confidence": 0.4669,
-      "raw_confidence": 0.9818,
-      "score_spread": 3.91369,
+      "confidence": 0.4386,
+      "raw_confidence": 0.975,
+      "score_spread": 3.886744,
       "source": "backtest"
     },
     {
       "date": "2024-12-16",
-      "confidence": 0.3564,
-      "raw_confidence": 0.9687,
-      "score_spread": 3.8616,
+      "confidence": 0.291,
+      "raw_confidence": 0.9548,
+      "score_spread": 3.806361,
       "source": "backtest"
     },
     {
       "date": "2024-12-17",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.16442,
+      "score_spread": 4.154534,
       "source": "backtest"
     },
     {
       "date": "2024-12-18",
-      "confidence": 0.518,
-      "raw_confidence": 0.9909,
-      "score_spread": 3.950129,
+      "confidence": 0.5228,
+      "raw_confidence": 0.9871,
+      "score_spread": 3.934999,
       "source": "backtest"
     },
     {
       "date": "2024-12-19",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.022318,
+      "score_spread": 4.094951,
       "source": "backtest"
     },
     {
       "date": "2024-12-20",
-      "confidence": 0.1685,
-      "raw_confidence": 0.9369,
-      "score_spread": 3.734891,
+      "confidence": 0.1048,
+      "raw_confidence": 0.9213,
+      "score_spread": 3.672666,
       "source": "backtest"
     },
     {
       "date": "2024-12-23",
-      "confidence": 0.4613,
-      "raw_confidence": 0.9809,
-      "score_spread": 3.910132,
+      "confidence": 0.4428,
+      "raw_confidence": 0.9753,
+      "score_spread": 3.887822,
       "source": "backtest"
     },
     {
       "date": "2024-12-24",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.057753,
+      "score_spread": 3.994684,
       "source": "backtest"
     },
     {
       "date": "2024-12-25",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.071225,
+      "confidence": 0.5945,
+      "raw_confidence": 0.9983,
+      "score_spread": 3.979752,
       "source": "backtest"
     },
     {
       "date": "2024-12-26",
-      "confidence": 0.4171,
-      "raw_confidence": 0.9766,
-      "score_spread": 3.893179,
+      "confidence": 0.3434,
+      "raw_confidence": 0.9623,
+      "score_spread": 3.836151,
       "source": "backtest"
     },
     {
       "date": "2024-12-27",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.245186,
+      "score_spread": 4.227592,
       "source": "backtest"
     },
     {
       "date": "2024-12-30",
-      "confidence": 0.3909,
-      "raw_confidence": 0.9737,
-      "score_spread": 3.881412,
+      "confidence": 0.3021,
+      "raw_confidence": 0.9562,
+      "score_spread": 3.81183,
       "source": "backtest"
     },
     {
       "date": "2024-12-31",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.220188,
+      "score_spread": 4.175399,
       "source": "backtest"
     },
     {
       "date": "2025-01-02",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.096985,
+      "score_spread": 4.069003,
       "source": "backtest"
     },
     {
       "date": "2025-01-03",
-      "confidence": 0.5138,
-      "raw_confidence": 0.9905,
-      "score_spread": 3.948549,
+      "confidence": 0.5034,
+      "raw_confidence": 0.9843,
+      "score_spread": 3.923776,
       "source": "backtest"
     },
     {
       "date": "2025-01-06",
-      "confidence": 0.5649,
-      "raw_confidence": 0.9988,
-      "score_spread": 3.981511,
+      "confidence": 0.5697,
+      "raw_confidence": 0.9959,
+      "score_spread": 3.970096,
       "source": "backtest"
     },
     {
       "date": "2025-01-07",
-      "confidence": 0.5483,
-      "raw_confidence": 0.9954,
-      "score_spread": 3.967857,
+      "confidence": 0.4303,
+      "raw_confidence": 0.9738,
+      "score_spread": 3.881933,
       "source": "backtest"
     },
     {
       "date": "2025-01-08",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.121733,
+      "score_spread": 4.045645,
       "source": "backtest"
     },
     {
       "date": "2025-01-09",
-      "confidence": 0.3881,
-      "raw_confidence": 0.9729,
-      "score_spread": 3.878472,
+      "confidence": 0.2993,
+      "raw_confidence": 0.9559,
+      "score_spread": 3.810401,
       "source": "backtest"
     },
     {
       "date": "2025-01-10",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.182241,
+      "score_spread": 4.096272,
       "source": "backtest"
     },
     {
       "date": "2025-01-13",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.253564,
+      "score_spread": 4.272449,
       "source": "backtest"
     },
     {
       "date": "2025-01-14",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.077761,
+      "score_spread": 4.052989,
       "source": "backtest"
     },
     {
       "date": "2025-01-15",
-      "confidence": 0.1202,
-      "raw_confidence": 0.9231,
-      "score_spread": 3.680001,
+      "confidence": 0.1476,
+      "raw_confidence": 0.9291,
+      "score_spread": 3.70371,
       "source": "backtest"
     },
     {
       "date": "2025-01-16",
-      "confidence": 0.0345,
-      "raw_confidence": 0.8858,
-      "score_spread": 3.531148,
+      "confidence": 0.0607,
+      "raw_confidence": 0.9045,
+      "score_spread": 3.605702,
       "source": "backtest"
     },
     {
       "date": "2025-01-17",
-      "confidence": 0.0912,
-      "raw_confidence": 0.9141,
-      "score_spread": 3.643833,
+      "confidence": 0.1366,
+      "raw_confidence": 0.9277,
+      "score_spread": 3.698297,
       "source": "backtest"
     },
     {
       "date": "2025-01-20",
-      "confidence": 0.0387,
-      "raw_confidence": 0.8886,
-      "score_spread": 3.542449,
+      "confidence": 0.0621,
+      "raw_confidence": 0.9049,
+      "score_spread": 3.60717,
       "source": "backtest"
     },
     {
       "date": "2025-01-21",
-      "confidence": 0.2721,
-      "raw_confidence": 0.9558,
-      "score_spread": 3.810176,
+      "confidence": 0.2276,
+      "raw_confidence": 0.948,
+      "score_spread": 3.779103,
       "source": "backtest"
     },
     {
       "date": "2025-01-22",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.168263,
+      "score_spread": 4.143858,
       "source": "backtest"
     },
     {
       "date": "2025-01-23",
-      "confidence": 0.0069,
-      "raw_confidence": 0.8263,
-      "score_spread": 3.294057,
+      "confidence": 0.0055,
+      "raw_confidence": 0.8273,
+      "score_spread": 3.297887,
       "source": "backtest"
     },
     {
       "date": "2025-01-24",
-      "confidence": 0.1423,
-      "raw_confidence": 0.9304,
-      "score_spread": 3.709282,
+      "confidence": 0.3255,
+      "raw_confidence": 0.9592,
+      "score_spread": 3.823769,
       "source": "backtest"
     },
     {
       "date": "2025-01-27",
-      "confidence": 0.134,
-      "raw_confidence": 0.9286,
-      "score_spread": 3.702008,
+      "confidence": 0.2676,
+      "raw_confidence": 0.9522,
+      "score_spread": 3.796191,
       "source": "backtest"
     },
     {
       "date": "2025-02-05",
-      "confidence": 0.0318,
-      "raw_confidence": 0.8848,
-      "score_spread": 3.527296,
+      "confidence": 0.0897,
+      "raw_confidence": 0.9151,
+      "score_spread": 3.648205,
       "source": "backtest"
     },
     {
       "date": "2025-02-06",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 3.988073,
+      "score_spread": 4.062827,
       "source": "backtest"
     },
     {
       "date": "2025-02-07",
-      "confidence": 0.4199,
-      "raw_confidence": 0.977,
-      "score_spread": 3.89509,
+      "confidence": 0.389,
+      "raw_confidence": 0.9666,
+      "score_spread": 3.853562,
       "source": "backtest"
     },
     {
       "date": "2025-02-10",
-      "confidence": 0.0691,
-      "raw_confidence": 0.9041,
-      "score_spread": 3.604625,
+      "confidence": 0.0786,
+      "raw_confidence": 0.9114,
+      "score_spread": 3.633485,
       "source": "backtest"
     },
     {
       "date": "2025-02-11",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.006831,
+      "confidence": 0.5834,
+      "raw_confidence": 0.9967,
+      "score_spread": 3.973761,
       "source": "backtest"
     },
     {
       "date": "2025-02-12",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.204628,
+      "score_spread": 4.174663,
       "source": "backtest"
     },
     {
       "date": "2025-02-13",
-      "confidence": 0.0249,
-      "raw_confidence": 0.8813,
-      "score_spread": 3.513617,
+      "confidence": 0.0179,
+      "raw_confidence": 0.8682,
+      "score_spread": 3.4612,
       "source": "backtest"
     },
     {
       "date": "2025-02-14",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.202346,
+      "score_spread": 4.09297,
       "source": "backtest"
     },
     {
       "date": "2025-02-17",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.050398,
+      "score_spread": 4.105215,
       "source": "backtest"
     },
     {
       "date": "2025-02-18",
-      "confidence": 0.4903,
-      "raw_confidence": 0.9862,
-      "score_spread": 3.931853,
+      "confidence": 0.4579,
+      "raw_confidence": 0.9782,
+      "score_spread": 3.899735,
       "source": "backtest"
     },
     {
       "date": "2025-02-19",
-      "confidence": 0.2997,
-      "raw_confidence": 0.9606,
-      "score_spread": 3.829655,
+      "confidence": 0.3062,
+      "raw_confidence": 0.9564,
+      "score_spread": 3.813046,
       "source": "backtest"
     },
     {
       "date": "2025-02-20",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.144686,
+      "score_spread": 4.156642,
       "source": "backtest"
     },
     {
       "date": "2025-02-21",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.012937,
+      "confidence": 0.5269,
+      "raw_confidence": 0.9886,
+      "score_spread": 3.941276,
       "source": "backtest"
     },
     {
       "date": "2025-02-24",
-      "confidence": 0.1188,
-      "raw_confidence": 0.9225,
-      "score_spread": 3.677758,
+      "confidence": 0.1241,
+      "raw_confidence": 0.9251,
+      "score_spread": 3.688268,
       "source": "backtest"
     },
     {
       "date": "2025-02-25",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.051793,
+      "confidence": 0.5338,
+      "raw_confidence": 0.9898,
+      "score_spread": 3.946269,
       "source": "backtest"
     },
     {
       "date": "2025-02-26",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.061707,
+      "confidence": 0.5917,
+      "raw_confidence": 0.9979,
+      "score_spread": 3.978601,
       "source": "backtest"
     },
     {
       "date": "2025-02-27",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.197159,
+      "score_spread": 4.170686,
       "source": "backtest"
     },
     {
       "date": "2025-02-28",
-      "confidence": 0.5608,
-      "raw_confidence": 0.9979,
-      "score_spread": 3.97849,
+      "confidence": 0.5655,
+      "raw_confidence": 0.9941,
+      "score_spread": 3.963345,
       "source": "backtest"
     },
     {
       "date": "2025-03-03",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.123082,
+      "score_spread": 4.183116,
       "source": "backtest"
     },
     {
       "date": "2025-03-04",
-      "confidence": 0.511,
-      "raw_confidence": 0.9901,
-      "score_spread": 3.947446,
+      "confidence": 1.0,
+      "raw_confidence": 1.0,
+      "score_spread": 4.013772,
       "source": "backtest"
     },
     {
       "date": "2025-03-05",
-      "confidence": 0.3577,
-      "raw_confidence": 0.9691,
-      "score_spread": 3.863731,
+      "confidence": 1.0,
+      "raw_confidence": 1.0,
+      "score_spread": 3.996918,
       "source": "backtest"
     },
     {
       "date": "2025-03-06",
-      "confidence": 0.5677,
-      "raw_confidence": 0.9999,
-      "score_spread": 3.986684,
+      "confidence": 0.4814,
+      "raw_confidence": 0.9819,
+      "score_spread": 3.914967,
       "source": "backtest"
     },
     {
       "date": "2025-03-07",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.385442,
+      "score_spread": 4.259013,
       "source": "backtest"
     },
     {
       "date": "2025-03-10",
-      "confidence": 0.5083,
-      "raw_confidence": 0.9892,
-      "score_spread": 3.944091,
+      "confidence": 0.4828,
+      "raw_confidence": 0.982,
+      "score_spread": 3.915028,
       "source": "backtest"
     },
     {
       "date": "2025-03-11",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.288076,
+      "score_spread": 4.296287,
       "source": "backtest"
     },
     {
       "date": "2025-03-12",
-      "confidence": 0.3108,
-      "raw_confidence": 0.9619,
-      "score_spread": 3.835255,
+      "confidence": 0.2786,
+      "raw_confidence": 0.9533,
+      "score_spread": 3.800653,
       "source": "backtest"
     },
     {
       "date": "2025-03-13",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.18614,
+      "score_spread": 4.126456,
       "source": "backtest"
     },
     {
       "date": "2025-03-14",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.19684,
+      "score_spread": 4.207642,
       "source": "backtest"
     },
     {
       "date": "2025-03-17",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.061719,
+      "score_spread": 4.029688,
       "source": "backtest"
     },
     {
       "date": "2025-03-18",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.200147,
+      "score_spread": 4.24515,
       "source": "backtest"
     },
     {
       "date": "2025-03-19",
-      "confidence": 0.2555,
-      "raw_confidence": 0.954,
-      "score_spread": 3.803511,
+      "confidence": 0.1628,
+      "raw_confidence": 0.9326,
+      "score_spread": 3.718239,
       "source": "backtest"
     },
     {
       "date": "2025-03-20",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.13453,
+      "score_spread": 4.180305,
       "source": "backtest"
     },
     {
       "date": "2025-03-21",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.163118,
+      "score_spread": 4.264341,
       "source": "backtest"
     },
     {
       "date": "2025-03-24",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.156509,
+      "score_spread": 4.128692,
       "source": "backtest"
     },
     {
       "date": "2025-03-25",
-      "confidence": 0.0925,
-      "raw_confidence": 0.9142,
-      "score_spread": 3.645106,
+      "confidence": 0.1324,
+      "raw_confidence": 0.9261,
+      "score_spread": 3.692391,
       "source": "backtest"
     },
     {
       "date": "2025-03-26",
-      "confidence": 0.1174,
-      "raw_confidence": 0.9217,
-      "score_spread": 3.674883,
+      "confidence": 0.1214,
+      "raw_confidence": 0.9243,
+      "score_spread": 3.685116,
       "source": "backtest"
     },
     {
       "date": "2025-03-27",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.04708,
+      "confidence": 0.5752,
+      "raw_confidence": 0.9963,
+      "score_spread": 3.972191,
       "source": "backtest"
     },
     {
       "date": "2025-03-28",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.157267,
+      "score_spread": 4.162398,
       "source": "backtest"
     },
     {
       "date": "2025-03-31",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.106985,
+      "score_spread": 4.148266,
       "source": "backtest"
     },
     {
       "date": "2025-04-01",
-      "confidence": 0.3122,
-      "raw_confidence": 0.962,
-      "score_spread": 3.83547,
+      "confidence": 0.2759,
+      "raw_confidence": 0.9531,
+      "score_spread": 3.80002,
       "source": "backtest"
     },
     {
       "date": "2025-04-02",
-      "confidence": 0.268,
-      "raw_confidence": 0.9553,
-      "score_spread": 3.808685,
+      "confidence": 0.2303,
+      "raw_confidence": 0.9481,
+      "score_spread": 3.78026,
       "source": "backtest"
     },
     {
       "date": "2025-04-03",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.17443,
+      "score_spread": 4.200618,
       "source": "backtest"
     },
     {
       "date": "2025-04-07",
-      "confidence": 0.011,
-      "raw_confidence": 0.86,
-      "score_spread": 3.428777,
+      "confidence": 0.0207,
+      "raw_confidence": 0.8697,
+      "score_spread": 3.467647,
       "source": "backtest"
     },
     {
       "date": "2025-04-08",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.463783,
+      "score_spread": 4.470758,
       "source": "backtest"
     },
     {
       "date": "2025-04-09",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.301558,
+      "score_spread": 4.276119,
       "source": "backtest"
     },
     {
       "date": "2025-04-10",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.207683,
+      "score_spread": 4.182395,
       "source": "backtest"
     },
     {
       "date": "2025-04-11",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 3.990667,
+      "confidence": 0.5641,
+      "raw_confidence": 0.9937,
+      "score_spread": 3.962135,
       "source": "backtest"
     },
     {
       "date": "2025-04-14",
-      "confidence": 0.0787,
-      "raw_confidence": 0.908,
-      "score_spread": 3.620359,
+      "confidence": 0.0455,
+      "raw_confidence": 0.8945,
+      "score_spread": 3.566618,
       "source": "backtest"
     },
     {
       "date": "2025-04-15",
-      "confidence": 0.4959,
-      "raw_confidence": 0.9874,
-      "score_spread": 3.937067,
+      "confidence": 0.5448,
+      "raw_confidence": 0.9908,
+      "score_spread": 3.950634,
       "source": "backtest"
     },
     {
       "date": "2025-04-16",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 3.991523,
+      "confidence": 0.5683,
+      "raw_confidence": 0.9954,
+      "score_spread": 3.968874,
       "source": "backtest"
     },
     {
       "date": "2025-04-17",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.073412,
+      "score_spread": 4.024601,
       "source": "backtest"
     },
     {
       "date": "2025-04-18",
-      "confidence": 0.5566,
-      "raw_confidence": 0.9972,
-      "score_spread": 3.976214,
+      "confidence": 0.5462,
+      "raw_confidence": 0.9912,
+      "score_spread": 3.952279,
       "source": "backtest"
     },
     {
       "date": "2025-04-21",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.236108,
+      "score_spread": 4.150794,
       "source": "backtest"
     },
     {
       "date": "2025-04-22",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.140679,
+      "score_spread": 4.090064,
       "source": "backtest"
     },
     {
       "date": "2025-04-23",
-      "confidence": 0.1215,
-      "raw_confidence": 0.9235,
-      "score_spread": 3.682252,
+      "confidence": 0.1407,
+      "raw_confidence": 0.9285,
+      "score_spread": 3.702005,
       "source": "backtest"
     },
     {
       "date": "2025-04-24",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.251694,
+      "score_spread": 4.250353,
       "source": "backtest"
     },
     {
       "date": "2025-04-25",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.000309,
+      "confidence": 0.5393,
+      "raw_confidence": 0.9903,
+      "score_spread": 3.948742,
       "source": "backtest"
     },
     {
       "date": "2025-04-28",
-      "confidence": 0.1796,
-      "raw_confidence": 0.9391,
-      "score_spread": 3.744257,
+      "confidence": 0.3214,
+      "raw_confidence": 0.959,
+      "score_spread": 3.823667,
       "source": "backtest"
     },
     {
       "date": "2025-04-29",
-      "confidence": 0.047,
-      "raw_confidence": 0.8921,
-      "score_spread": 3.556999,
+      "confidence": 0.0717,
+      "raw_confidence": 0.9096,
+      "score_spread": 3.626796,
       "source": "backtest"
     },
     {
       "date": "2025-04-30",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.093964,
+      "score_spread": 4.037762,
       "source": "backtest"
     },
     {
       "date": "2025-05-06",
-      "confidence": 0.4945,
-      "raw_confidence": 0.9874,
-      "score_spread": 3.937291,
+      "confidence": 0.4938,
+      "raw_confidence": 0.983,
+      "score_spread": 3.919646,
       "source": "backtest"
     },
     {
       "date": "2025-05-07",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.062409,
+      "score_spread": 4.087972,
       "source": "backtest"
     },
     {
       "date": "2025-05-08",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.094045,
+      "score_spread": 4.21502,
       "source": "backtest"
     },
     {
       "date": "2025-05-09",
-      "confidence": 0.442,
-      "raw_confidence": 0.9783,
-      "score_spread": 3.900857,
+      "confidence": 0.3186,
+      "raw_confidence": 0.9589,
+      "score_spread": 3.823727,
       "source": "backtest"
     },
     {
       "date": "2025-05-12",
-      "confidence": 0.4061,
-      "raw_confidence": 0.9756,
-      "score_spread": 3.890215,
+      "confidence": 0.4207,
+      "raw_confidence": 0.971,
+      "score_spread": 3.871924,
       "source": "backtest"
     },
     {
       "date": "2025-05-13",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.059866,
+      "score_spread": 4.070574,
       "source": "backtest"
     },
     {
       "date": "2025-05-14",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.041493,
+      "confidence": 0.5779,
+      "raw_confidence": 0.9964,
+      "score_spread": 3.973391,
       "source": "backtest"
     },
     {
       "date": "2025-05-15",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.11208,
+      "score_spread": 4.064973,
       "source": "backtest"
     },
     {
       "date": "2025-05-16",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.472692,
+      "score_spread": 4.42183,
       "source": "backtest"
     },
     {
       "date": "2025-05-19",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.299808,
+      "score_spread": 4.247546,
       "source": "backtest"
     },
     {
       "date": "2025-05-20",
-      "confidence": 0.5622,
-      "raw_confidence": 0.9984,
-      "score_spread": 3.981062,
+      "confidence": 0.491,
+      "raw_confidence": 0.9829,
+      "score_spread": 3.919406,
       "source": "backtest"
     },
     {
       "date": "2025-05-21",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.055427,
+      "score_spread": 4.004195,
       "source": "backtest"
     },
     {
       "date": "2025-05-22",
-      "confidence": 0.4876,
-      "raw_confidence": 0.986,
-      "score_spread": 3.931612,
+      "confidence": 0.5159,
+      "raw_confidence": 0.9863,
+      "score_spread": 3.932789,
       "source": "backtest"
     },
     {
       "date": "2025-05-23",
-      "confidence": 0.3715,
-      "raw_confidence": 0.9708,
-      "score_spread": 3.870943,
+      "confidence": 0.4469,
+      "raw_confidence": 0.9762,
+      "score_spread": 3.892474,
       "source": "backtest"
     },
     {
       "date": "2025-05-26",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.311399,
+      "score_spread": 4.259128,
       "source": "backtest"
     },
     {
       "date": "2025-05-27",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.056881,
+      "score_spread": 4.011971,
       "source": "backtest"
     },
     {
       "date": "2025-05-28",
-      "confidence": 0.4917,
-      "raw_confidence": 0.9862,
-      "score_spread": 3.932644,
+      "confidence": 0.4152,
+      "raw_confidence": 0.9704,
+      "score_spread": 3.869444,
       "source": "backtest"
     },
     {
       "date": "2025-05-29",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.223944,
+      "score_spread": 4.17119,
       "source": "backtest"
     },
     {
       "date": "2025-05-30",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.126509,
+      "score_spread": 4.141669,
       "source": "backtest"
     },
     {
       "date": "2025-06-03",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.067003,
+      "confidence": 0.5821,
+      "raw_confidence": 0.9967,
+      "score_spread": 3.974442,
       "source": "backtest"
     },
     {
       "date": "2025-06-04",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.111974,
+      "score_spread": 4.159537,
       "source": "backtest"
     },
     {
       "date": "2025-06-05",
-      "confidence": 0.5152,
-      "raw_confidence": 0.9907,
-      "score_spread": 3.950399,
+      "confidence": 0.4607,
+      "raw_confidence": 0.9786,
+      "score_spread": 3.902092,
       "source": "backtest"
     },
     {
       "date": "2025-06-06",
-      "confidence": 0.0953,
-      "raw_confidence": 0.9147,
-      "score_spread": 3.647431,
+      "confidence": 0.0731,
+      "raw_confidence": 0.9097,
+      "score_spread": 3.627355,
       "source": "backtest"
     },
     {
       "date": "2025-06-09",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 3.989909,
+      "confidence": 0.4855,
+      "raw_confidence": 0.9827,
+      "score_spread": 3.918585,
       "source": "backtest"
     },
     {
       "date": "2025-06-10",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.143292,
+      "score_spread": 4.077669,
       "source": "backtest"
     },
     {
       "date": "2025-06-11",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.175637,
+      "score_spread": 4.198658,
       "source": "backtest"
     },
     {
       "date": "2025-06-12",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.01057,
+      "confidence": 0.5048,
+      "raw_confidence": 0.9848,
+      "score_spread": 3.92686,
       "source": "backtest"
     },
     {
       "date": "2025-06-13",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.149389,
+      "score_spread": 4.089212,
       "source": "backtest"
     },
     {
       "date": "2025-06-16",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.07626,
+      "score_spread": 4.091333,
       "source": "backtest"
     },
     {
       "date": "2025-06-17",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.550233,
+      "score_spread": 4.431929,
       "source": "backtest"
     },
     {
       "date": "2025-06-18",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.264533,
+      "score_spread": 4.330389,
       "source": "backtest"
     },
     {
       "date": "2025-06-19",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.151072,
+      "score_spread": 4.098098,
       "source": "backtest"
     },
     {
       "date": "2025-06-20",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.150672,
+      "score_spread": 4.143621,
       "source": "backtest"
     },
     {
       "date": "2025-06-23",
-      "confidence": 0.5387,
-      "raw_confidence": 0.9941,
-      "score_spread": 3.964026,
+      "confidence": 1.0,
+      "raw_confidence": 1.0,
+      "score_spread": 4.049818,
       "source": "backtest"
     },
     {
       "date": "2025-06-24",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.077907,
+      "score_spread": 4.101093,
       "source": "backtest"
     },
     {
       "date": "2025-06-25",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.140727,
+      "score_spread": 4.065301,
       "source": "backtest"
     },
     {
       "date": "2025-06-26",
-      "confidence": 0.0152,
-      "raw_confidence": 0.8646,
-      "score_spread": 3.447854,
+      "confidence": 0.0124,
+      "raw_confidence": 0.8549,
+      "score_spread": 3.40889,
       "source": "backtest"
     },
     {
       "date": "2025-06-27",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.046398,
+      "confidence": 0.589,
+      "raw_confidence": 0.9976,
+      "score_spread": 3.978103,
       "source": "backtest"
     },
     {
       "date": "2025-06-30",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.373308,
+      "score_spread": 4.399807,
       "source": "backtest"
     },
     {
       "date": "2025-07-01",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.083134,
+      "score_spread": 4.078295,
       "source": "backtest"
     },
     {
       "date": "2025-07-02",
-      "confidence": 0.4475,
-      "raw_confidence": 0.9785,
-      "score_spread": 3.902007,
+      "confidence": 0.531,
+      "raw_confidence": 0.9898,
+      "score_spread": 3.946802,
       "source": "backtest"
     },
     {
       "date": "2025-07-03",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.184097,
+      "score_spread": 4.129593,
       "source": "backtest"
     },
     {
       "date": "2025-07-04",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.256618,
+      "score_spread": 4.350499,
       "source": "backtest"
     },
     {
       "date": "2025-07-07",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.115623,
+      "score_spread": 4.210537,
       "source": "backtest"
     },
     {
       "date": "2025-07-08",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.123694,
+      "score_spread": 4.162386,
       "source": "backtest"
     },
     {
       "date": "2025-07-09",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.239479,
+      "score_spread": 4.236464,
       "source": "backtest"
     },
     {
       "date": "2025-07-10",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.3212,
+      "score_spread": 4.311126,
       "source": "backtest"
     },
     {
       "date": "2025-07-11",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.116547,
+      "score_spread": 4.193807,
       "source": "backtest"
     },
     {
       "date": "2025-07-14",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.267906,
+      "score_spread": 4.313967,
       "source": "backtest"
     },
     {
       "date": "2025-07-15",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.218686,
+      "score_spread": 4.2468,
       "source": "backtest"
     },
     {
       "date": "2025-07-16",
-      "confidence": 0.2224,
-      "raw_confidence": 0.9471,
-      "score_spread": 3.77651,
+      "confidence": 0.2262,
+      "raw_confidence": 0.9474,
+      "score_spread": 3.777825,
       "source": "backtest"
     },
     {
       "date": "2025-07-17",
-      "confidence": 0.4185,
-      "raw_confidence": 0.9769,
-      "score_spread": 3.895743,
+      "confidence": 0.3917,
+      "raw_confidence": 0.9672,
+      "score_spread": 3.857063,
       "source": "backtest"
     },
     {
       "date": "2025-07-18",
-      "confidence": 0.2445,
-      "raw_confidence": 0.9523,
-      "score_spread": 3.797671,
+      "confidence": 0.211,
+      "raw_confidence": 0.9442,
+      "score_spread": 3.765302,
       "source": "backtest"
     },
     {
       "date": "2025-07-21",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.341034,
+      "score_spread": 4.185199,
       "source": "backtest"
     },
     {
       "date": "2025-07-22",
-      "confidence": 0.0235,
-      "raw_confidence": 0.8784,
-      "score_spread": 3.502764,
+      "confidence": 0.0745,
+      "raw_confidence": 0.91,
+      "score_spread": 3.628873,
       "source": "backtest"
     },
     {
       "date": "2025-07-23",
-      "confidence": 0.2887,
-      "raw_confidence": 0.9588,
-      "score_spread": 3.823223,
+      "confidence": 0.2538,
+      "raw_confidence": 0.9503,
+      "score_spread": 3.78972,
       "source": "backtest"
     },
     {
       "date": "2025-07-24",
-      "confidence": 0.4323,
-      "raw_confidence": 0.9775,
-      "score_spread": 3.898102,
+      "confidence": 0.2497,
+      "raw_confidence": 0.9502,
+      "score_spread": 3.788939,
       "source": "backtest"
     },
     {
       "date": "2025-07-25",
-      "confidence": 0.163,
-      "raw_confidence": 0.9357,
-      "score_spread": 3.731321,
+      "confidence": 0.109,
+      "raw_confidence": 0.923,
+      "score_spread": 3.680706,
       "source": "backtest"
     },
     {
       "date": "2025-07-28",
-      "confidence": 0.4448,
-      "raw_confidence": 0.9785,
-      "score_spread": 3.901912,
+      "confidence": 0.4524,
+      "raw_confidence": 0.9771,
+      "score_spread": 3.896316,
       "source": "backtest"
     },
     {
       "date": "2025-07-29",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.034057,
+      "score_spread": 4.069091,
       "source": "backtest"
     },
     {
       "date": "2025-07-30",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.052226,
+      "score_spread": 4.019361,
       "source": "backtest"
     },
     {
       "date": "2025-07-31",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.234258,
+      "score_spread": 4.258808,
       "source": "backtest"
     },
     {
       "date": "2025-08-01",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.294582,
+      "score_spread": 4.275624,
       "source": "backtest"
     },
     {
       "date": "2025-08-04",
-      "confidence": 0.0097,
-      "raw_confidence": 0.8523,
-      "score_spread": 3.398738,
+      "confidence": 0.011,
+      "raw_confidence": 0.8519,
+      "score_spread": 3.397191,
       "source": "backtest"
     },
     {
       "date": "2025-08-05",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.19256,
+      "score_spread": 4.160269,
       "source": "backtest"
     },
     {
       "date": "2025-08-06",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.034412,
+      "score_spread": 3.997238,
       "source": "backtest"
     },
     {
       "date": "2025-08-07",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.088607,
+      "score_spread": 4.102169,
       "source": "backtest"
     },
     {
       "date": "2025-08-08",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.389958,
+      "score_spread": 4.434476,
       "source": "backtest"
     },
     {
       "date": "2025-08-11",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.340708,
+      "score_spread": 4.321077,
       "source": "backtest"
     },
     {
       "date": "2025-08-12",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 3.997681,
+      "confidence": 0.6041,
+      "raw_confidence": 0.9998,
+      "score_spread": 3.987025,
       "source": "backtest"
     },
     {
       "date": "2025-08-13",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.083547,
+      "score_spread": 4.046862,
       "source": "backtest"
     },
     {
       "date": "2025-08-14",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.236344,
+      "score_spread": 4.200009,
       "source": "backtest"
     },
     {
       "date": "2025-08-15",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.079114,
+      "confidence": 0.571,
+      "raw_confidence": 0.996,
+      "score_spread": 3.971595,
       "source": "backtest"
     },
     {
       "date": "2025-08-18",
-      "confidence": 0.1727,
-      "raw_confidence": 0.9377,
-      "score_spread": 3.739363,
+      "confidence": 0.1572,
+      "raw_confidence": 0.9311,
+      "score_spread": 3.712995,
       "source": "backtest"
     },
     {
       "date": "2025-08-19",
-      "confidence": 0.0331,
-      "raw_confidence": 0.8849,
-      "score_spread": 3.528719,
+      "confidence": 0.0166,
+      "raw_confidence": 0.8667,
+      "score_spread": 3.456044,
       "source": "backtest"
     },
     {
       "date": "2025-08-20",
-      "confidence": 0.395,
-      "raw_confidence": 0.9744,
-      "score_spread": 3.885474,
+      "confidence": 0.5476,
+      "raw_confidence": 0.9914,
+      "score_spread": 3.953262,
       "source": "backtest"
     },
     {
       "date": "2025-08-21",
-      "confidence": 0.1146,
-      "raw_confidence": 0.9202,
-      "score_spread": 3.669445,
+      "confidence": 0.1145,
+      "raw_confidence": 0.9237,
+      "score_spread": 3.683298,
       "source": "backtest"
     },
     {
       "date": "2025-08-22",
-      "confidence": 0.1782,
-      "raw_confidence": 0.9389,
-      "score_spread": 3.743923,
+      "confidence": 0.1117,
+      "raw_confidence": 0.9233,
+      "score_spread": 3.681687,
       "source": "backtest"
     },
     {
       "date": "2025-08-25",
-      "confidence": 0.3978,
-      "raw_confidence": 0.9747,
-      "score_spread": 3.886984,
+      "confidence": 0.52,
+      "raw_confidence": 0.9865,
+      "score_spread": 3.933754,
       "source": "backtest"
     },
     {
       "date": "2025-08-26",
-      "confidence": 0.5525,
-      "raw_confidence": 0.9969,
-      "score_spread": 3.975451,
+      "confidence": 0.6055,
+      "raw_confidence": 0.9999,
+      "score_spread": 3.987116,
       "source": "backtest"
     },
     {
       "date": "2025-08-27",
-      "confidence": 0.3992,
-      "raw_confidence": 0.9748,
-      "score_spread": 3.887052,
+      "confidence": 0.2924,
+      "raw_confidence": 0.9549,
+      "score_spread": 3.807754,
       "source": "backtest"
     },
     {
       "date": "2025-08-28",
-      "confidence": 0.2058,
-      "raw_confidence": 0.9444,
-      "score_spread": 3.76605,
+      "confidence": 0.1655,
+      "raw_confidence": 0.9331,
+      "score_spread": 3.721061,
       "source": "backtest"
     },
     {
       "date": "2025-08-29",
-      "confidence": 0.4558,
-      "raw_confidence": 0.9796,
-      "score_spread": 3.906613,
+      "confidence": 0.5021,
+      "raw_confidence": 0.9842,
+      "score_spread": 3.924729,
       "source": "backtest"
     },
     {
       "date": "2025-09-01",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.08471,
+      "score_spread": 4.093306,
       "source": "backtest"
     },
     {
       "date": "2025-09-02",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.160426,
+      "score_spread": 4.167659,
       "source": "backtest"
     },
     {
       "date": "2025-09-03",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.082127,
+      "score_spread": 4.021306,
       "source": "backtest"
     },
     {
       "date": "2025-09-04",
-      "confidence": 0.3812,
-      "raw_confidence": 0.9724,
-      "score_spread": 3.877649,
+      "confidence": 0.3145,
+      "raw_confidence": 0.9577,
+      "score_spread": 3.818974,
       "source": "backtest"
     },
     {
       "date": "2025-09-05",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.398264,
+      "score_spread": 4.425159,
       "source": "backtest"
     },
     {
       "date": "2025-09-08",
-      "confidence": 0.3149,
-      "raw_confidence": 0.9623,
-      "score_spread": 3.837376,
+      "confidence": 0.2193,
+      "raw_confidence": 0.9463,
+      "score_spread": 3.773612,
       "source": "backtest"
     },
     {
       "date": "2025-09-09",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.222611,
+      "score_spread": 4.210216,
       "source": "backtest"
     },
     {
       "date": "2025-09-10",
-      "confidence": 0.5262,
-      "raw_confidence": 0.992,
-      "score_spread": 3.955894,
+      "confidence": 1.0,
+      "raw_confidence": 1.0,
+      "score_spread": 4.025469,
       "source": "backtest"
     },
     {
       "date": "2025-09-11",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.537904,
+      "score_spread": 4.515325,
       "source": "backtest"
     },
     {
       "date": "2025-09-12",
-      "confidence": 0.087,
-      "raw_confidence": 0.9115,
-      "score_spread": 3.634753,
+      "confidence": 0.1766,
+      "raw_confidence": 0.9343,
+      "score_spread": 3.725732,
       "source": "backtest"
     },
     {
       "date": "2025-09-15",
-      "confidence": 0.2486,
-      "raw_confidence": 0.9525,
-      "score_spread": 3.798254,
+      "confidence": 0.3945,
+      "raw_confidence": 0.9677,
+      "score_spread": 3.85885,
       "source": "backtest"
     },
     {
       "date": "2025-09-16",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.047955,
+      "score_spread": 4.0293,
       "source": "backtest"
     },
     {
       "date": "2025-09-17",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.096876,
+      "score_spread": 4.035468,
       "source": "backtest"
     },
     {
       "date": "2025-09-18",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.266298,
+      "score_spread": 4.247696,
       "source": "backtest"
     },
     {
       "date": "2025-09-19",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.1605,
+      "score_spread": 4.070809,
       "source": "backtest"
     },
     {
       "date": "2025-09-22",
-      "confidence": 0.0898,
-      "raw_confidence": 0.9129,
-      "score_spread": 3.640507,
+      "confidence": 0.1021,
+      "raw_confidence": 0.9209,
+      "score_spread": 3.672431,
       "source": "backtest"
     },
     {
       "date": "2025-09-23",
-      "confidence": 0.4586,
-      "raw_confidence": 0.9803,
-      "score_spread": 3.909259,
+      "confidence": 0.4441,
+      "raw_confidence": 0.9757,
+      "score_spread": 3.890778,
       "source": "backtest"
     },
     {
       "date": "2025-09-24",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.133317,
+      "score_spread": 4.055453,
       "source": "backtest"
     },
     {
       "date": "2025-09-25",
-      "confidence": 0.4282,
-      "raw_confidence": 0.9772,
-      "score_spread": 3.897099,
+      "confidence": 0.5572,
+      "raw_confidence": 0.9926,
+      "score_spread": 3.958444,
       "source": "backtest"
     },
     {
       "date": "2025-09-26",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.316145,
+      "score_spread": 4.309035,
       "source": "backtest"
     },
     {
       "date": "2025-09-29",
-      "confidence": 0.3798,
-      "raw_confidence": 0.9723,
-      "score_spread": 3.877217,
+      "confidence": 0.5172,
+      "raw_confidence": 0.9863,
+      "score_spread": 3.93342,
       "source": "backtest"
     },
     {
       "date": "2025-09-30",
-      "confidence": 0.1008,
-      "raw_confidence": 0.9156,
-      "score_spread": 3.651387,
+      "confidence": 0.12,
+      "raw_confidence": 0.9239,
+      "score_spread": 3.684537,
       "source": "backtest"
     },
     {
       "date": "2025-10-09",
-      "confidence": 0.0359,
-      "raw_confidence": 0.8866,
-      "score_spread": 3.535717,
+      "confidence": 0.0331,
+      "raw_confidence": 0.8854,
+      "score_spread": 3.530661,
       "source": "backtest"
     },
     {
       "date": "2025-10-10",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.066394,
+      "score_spread": 4.013707,
       "source": "backtest"
     },
     {
       "date": "2025-10-13",
-      "confidence": 0.2251,
-      "raw_confidence": 0.9484,
-      "score_spread": 3.782279,
+      "confidence": 0.2731,
+      "raw_confidence": 0.9526,
+      "score_spread": 3.798993,
       "source": "backtest"
     },
     {
       "date": "2025-10-14",
-      "confidence": 0.5,
-      "raw_confidence": 0.9879,
-      "score_spread": 3.939734,
+      "confidence": 0.5559,
+      "raw_confidence": 0.9923,
+      "score_spread": 3.957034,
       "source": "backtest"
     },
     {
       "date": "2025-10-15",
-      "confidence": 0.0967,
-      "raw_confidence": 0.9147,
-      "score_spread": 3.647756,
+      "confidence": 0.1062,
+      "raw_confidence": 0.9218,
+      "score_spread": 3.676114,
       "source": "backtest"
     },
     {
       "date": "2025-10-16",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.402188,
+      "score_spread": 4.346976,
       "source": "backtest"
     },
     {
       "date": "2025-10-17",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.160662,
+      "score_spread": 4.15667,
       "source": "backtest"
     },
     {
       "date": "2025-10-20",
-      "confidence": 0.3757,
-      "raw_confidence": 0.9712,
-      "score_spread": 3.873067,
+      "confidence": 0.4331,
+      "raw_confidence": 0.9739,
+      "score_spread": 3.88388,
       "source": "backtest"
     },
     {
       "date": "2025-10-21",
-      "confidence": 0.4931,
-      "raw_confidence": 0.9867,
-      "score_spread": 3.934916,
+      "confidence": 0.6083,
+      "raw_confidence": 0.9999,
+      "score_spread": 3.987369,
       "source": "backtest"
     },
     {
       "date": "2025-10-22",
-      "confidence": 0.4834,
-      "raw_confidence": 0.9854,
-      "score_spread": 3.929584,
+      "confidence": 1.0,
+      "raw_confidence": 1.0,
+      "score_spread": 4.001804,
       "source": "backtest"
     },
     {
       "date": "2025-10-23",
-      "confidence": 0.547,
-      "raw_confidence": 0.9948,
-      "score_spread": 3.967194,
+      "confidence": 0.4745,
+      "raw_confidence": 0.9807,
+      "score_spread": 3.910934,
       "source": "backtest"
     },
     {
       "date": "2025-10-24",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.231679,
+      "score_spread": 4.205003,
       "source": "backtest"
     },
     {
       "date": "2025-10-27",
-      "confidence": 0.0622,
-      "raw_confidence": 0.9002,
-      "score_spread": 3.590029,
+      "confidence": 0.1131,
+      "raw_confidence": 0.9236,
+      "score_spread": 3.683172,
       "source": "backtest"
     },
     {
       "date": "2025-10-28",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.201776,
+      "score_spread": 4.24388,
       "source": "backtest"
     },
     {
       "date": "2025-10-29",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.273905,
+      "score_spread": 4.270054,
       "source": "backtest"
     },
     {
       "date": "2025-10-30",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.04337,
+      "score_spread": 4.052899,
       "source": "backtest"
     },
     {
       "date": "2025-10-31",
-      "confidence": 0.3867,
-      "raw_confidence": 0.9728,
-      "score_spread": 3.879316,
+      "confidence": 0.4897,
+      "raw_confidence": 0.9828,
+      "score_spread": 3.919254,
       "source": "backtest"
     },
     {
       "date": "2025-11-03",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.089057,
+      "confidence": 0.5724,
+      "raw_confidence": 0.9962,
+      "score_spread": 3.972538,
       "source": "backtest"
     },
     {
       "date": "2025-11-04",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.075949,
+      "score_spread": 4.103037,
       "source": "backtest"
     },
     {
       "date": "2025-11-05",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.452648,
+      "score_spread": 4.340367,
       "source": "backtest"
     },
     {
       "date": "2025-11-06",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.02821,
+      "score_spread": 4.030252,
       "source": "backtest"
     },
     {
       "date": "2025-11-07",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.011398,
+      "confidence": 0.4993,
+      "raw_confidence": 0.9841,
+      "score_spread": 3.924301,
       "source": "backtest"
     },
     {
       "date": "2025-11-10",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.031145,
+      "confidence": 0.5738,
+      "raw_confidence": 0.9962,
+      "score_spread": 3.972899,
       "source": "backtest"
     },
     {
       "date": "2025-11-11",
-      "confidence": 0.4862,
-      "raw_confidence": 0.9859,
-      "score_spread": 3.931774,
+      "confidence": 0.44,
+      "raw_confidence": 0.9751,
+      "score_spread": 3.888588,
       "source": "backtest"
     },
     {
       "date": "2025-11-12",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.591988,
+      "score_spread": 4.558611,
       "source": "backtest"
     },
     {
       "date": "2025-11-13",
-      "confidence": 0.489,
-      "raw_confidence": 0.9861,
-      "score_spread": 3.93237,
+      "confidence": 1.0,
+      "raw_confidence": 1.0,
+      "score_spread": 4.002228,
       "source": "backtest"
     },
     {
       "date": "2025-11-14",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.09405,
+      "score_spread": 3.988116,
       "source": "backtest"
     },
     {
       "date": "2025-11-17",
-      "confidence": 0.5304,
-      "raw_confidence": 0.9925,
-      "score_spread": 3.957767,
+      "confidence": 1.0,
+      "raw_confidence": 1.0,
+      "score_spread": 3.996769,
       "source": "backtest"
     },
     {
       "date": "2025-11-18",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.171391,
+      "score_spread": 4.098804,
       "source": "backtest"
     },
     {
       "date": "2025-11-19",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.060341,
+      "score_spread": 4.048295,
       "source": "backtest"
     },
     {
       "date": "2025-11-20",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.103224,
+      "score_spread": 4.100884,
       "source": "backtest"
     },
     {
       "date": "2025-11-21",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.010328,
+      "confidence": 0.5545,
+      "raw_confidence": 0.9922,
+      "score_spread": 3.956896,
       "source": "backtest"
     },
     {
       "date": "2025-11-24",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.530363,
+      "score_spread": 4.540633,
       "source": "backtest"
     },
     {
       "date": "2025-11-25",
-      "confidence": 0.4157,
-      "raw_confidence": 0.9766,
-      "score_spread": 3.89452,
+      "confidence": 0.1876,
+      "raw_confidence": 0.9377,
+      "score_spread": 3.73952,
       "source": "backtest"
     },
     {
       "date": "2025-11-26",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.140045,
+      "score_spread": 4.149418,
       "source": "backtest"
     },
     {
       "date": "2025-11-27",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.00564,
+      "score_spread": 4.051658,
       "source": "backtest"
     },
     {
       "date": "2025-11-28",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.023698,
+      "score_spread": 4.08479,
       "source": "backtest"
     },
     {
       "date": "2025-12-01",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.019411,
+      "score_spread": 4.016771,
       "source": "backtest"
     },
     {
       "date": "2025-12-02",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.270984,
+      "score_spread": 4.223327,
       "source": "backtest"
     },
     {
       "date": "2025-12-03",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.126944,
+      "score_spread": 4.22984,
       "source": "backtest"
     },
     {
       "date": "2025-12-04",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 3.992717,
+      "score_spread": 4.02779,
       "source": "backtest"
     },
     {
       "date": "2025-12-05",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.082516,
+      "score_spread": 4.047738,
       "source": "backtest"
     },
     {
       "date": "2025-12-08",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.24775,
+      "score_spread": 4.288275,
       "source": "backtest"
     },
     {
       "date": "2025-12-09",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.221393,
+      "score_spread": 4.15583,
       "source": "backtest"
     },
     {
       "date": "2025-12-10",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.106573,
+      "score_spread": 4.050308,
       "source": "backtest"
     },
     {
       "date": "2025-12-11",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.206493,
+      "score_spread": 4.146277,
       "source": "backtest"
     },
     {
       "date": "2025-12-12",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.371826,
+      "score_spread": 4.461608,
       "source": "backtest"
     },
     {
       "date": "2025-12-15",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.026703,
+      "confidence": 0.5986,
+      "raw_confidence": 0.9991,
+      "score_spread": 3.984224,
       "source": "backtest"
     },
     {
       "date": "2025-12-16",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.123862,
+      "score_spread": 4.120625,
       "source": "backtest"
     },
     {
       "date": "2025-12-17",
-      "confidence": 0.453,
-      "raw_confidence": 0.9793,
-      "score_spread": 3.905174,
+      "confidence": 0.4676,
+      "raw_confidence": 0.9795,
+      "score_spread": 3.905991,
       "source": "backtest"
     },
     {
       "date": "2025-12-18",
-      "confidence": 0.4268,
-      "raw_confidence": 0.9772,
-      "score_spread": 3.896932,
+      "confidence": 0.4359,
+      "raw_confidence": 0.9741,
+      "score_spread": 3.884615,
       "source": "backtest"
     },
     {
       "date": "2025-12-19",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.296645,
+      "score_spread": 4.278629,
       "source": "backtest"
     },
     {
       "date": "2025-12-22",
-      "confidence": 0.3494,
-      "raw_confidence": 0.9683,
-      "score_spread": 3.861429,
+      "confidence": 0.5531,
+      "raw_confidence": 0.992,
+      "score_spread": 3.955921,
       "source": "backtest"
     },
     {
       "date": "2025-12-23",
-      "confidence": 0.0663,
-      "raw_confidence": 0.9026,
-      "score_spread": 3.599615,
+      "confidence": 0.0676,
+      "raw_confidence": 0.9073,
+      "score_spread": 3.618189,
       "source": "backtest"
     },
     {
       "date": "2025-12-24",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 3.990676,
+      "confidence": 0.4924,
+      "raw_confidence": 0.983,
+      "score_spread": 3.919897,
       "source": "backtest"
     },
     {
       "date": "2025-12-25",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.046697,
+      "confidence": 0.5062,
+      "raw_confidence": 0.985,
+      "score_spread": 3.927884,
       "source": "backtest"
     },
     {
       "date": "2025-12-26",
-      "confidence": 0.3619,
-      "raw_confidence": 0.9695,
-      "score_spread": 3.866124,
+      "confidence": 0.3572,
+      "raw_confidence": 0.9636,
+      "score_spread": 3.842527,
       "source": "backtest"
     },
     {
       "date": "2025-12-29",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.173919,
+      "score_spread": 4.143058,
       "source": "backtest"
     },
     {
       "date": "2025-12-30",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.396786,
+      "score_spread": 4.343868,
       "source": "backtest"
     },
     {
       "date": "2025-12-31",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.175658,
+      "score_spread": 4.188282,
       "source": "backtest"
     },
     {
       "date": "2026-01-05",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.140176,
+      "score_spread": 4.124358,
       "source": "backtest"
     },
     {
       "date": "2026-01-06",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.253854,
+      "score_spread": 4.210705,
       "source": "backtest"
     },
     {
       "date": "2026-01-07",
-      "confidence": 0.424,
-      "raw_confidence": 0.9772,
-      "score_spread": 3.896741,
+      "confidence": 0.2579,
+      "raw_confidence": 0.9506,
+      "score_spread": 3.791022,
       "source": "backtest"
     },
     {
       "date": "2026-01-08",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.024913,
+      "confidence": 0.549,
+      "raw_confidence": 0.9918,
+      "score_spread": 3.955154,
       "source": "backtest"
     },
     {
       "date": "2026-01-09",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.218068,
+      "score_spread": 4.208925,
       "source": "backtest"
     },
     {
       "date": "2026-01-12",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.4242,
+      "score_spread": 4.467161,
       "source": "backtest"
     },
     {
       "date": "2026-01-13",
-      "confidence": 0.076,
-      "raw_confidence": 0.9075,
-      "score_spread": 3.619014,
+      "confidence": 0.0345,
+      "raw_confidence": 0.8871,
+      "score_spread": 3.537816,
       "source": "backtest"
     },
     {
       "date": "2026-01-14",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.041438,
+      "score_spread": 4.01958,
       "source": "backtest"
     },
     {
       "date": "2026-01-15",
-      "confidence": 0.3204,
-      "raw_confidence": 0.9626,
-      "score_spread": 3.838544,
+      "confidence": 0.3379,
+      "raw_confidence": 0.9614,
+      "score_spread": 3.833959,
       "source": "backtest"
     },
     {
       "date": "2026-01-16",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.227641,
+      "score_spread": 4.082391,
       "source": "backtest"
     },
     {
       "date": "2026-01-19",
-      "confidence": 0.3177,
-      "raw_confidence": 0.9624,
-      "score_spread": 3.837833,
+      "confidence": 0.4248,
+      "raw_confidence": 0.9719,
+      "score_spread": 3.875603,
       "source": "backtest"
     },
     {
       "date": "2026-01-20",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.177782,
+      "score_spread": 4.028487,
       "source": "backtest"
     },
     {
       "date": "2026-01-21",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.164918,
+      "score_spread": 4.150735,
       "source": "backtest"
     },
     {
       "date": "2026-01-22",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.083311,
+      "score_spread": 4.012803,
       "source": "backtest"
     },
     {
       "date": "2026-01-23",
-      "confidence": 0.4337,
-      "raw_confidence": 0.9775,
-      "score_spread": 3.898321,
+      "confidence": 0.5379,
+      "raw_confidence": 0.99,
+      "score_spread": 3.947795,
       "source": "backtest"
     },
     {
       "date": "2026-01-26",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.232926,
+      "score_spread": 4.281293,
       "source": "backtest"
     },
     {
       "date": "2026-01-27",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.422254,
+      "score_spread": 4.371077,
       "source": "backtest"
     },
     {
       "date": "2026-01-28",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.002275,
+      "confidence": 0.5186,
+      "raw_confidence": 0.9864,
+      "score_spread": 3.93365,
       "source": "backtest"
     },
     {
       "date": "2026-01-29",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.112499,
+      "score_spread": 4.10724,
       "source": "backtest"
     },
     {
       "date": "2026-01-30",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.175586,
+      "score_spread": 4.1998,
       "source": "backtest"
     },
     {
       "date": "2026-02-02",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.136051,
+      "score_spread": 4.092551,
       "source": "backtest"
     },
     {
       "date": "2026-02-03",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.089066,
+      "score_spread": 4.07204,
       "source": "backtest"
     },
     {
       "date": "2026-02-04",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.065423,
+      "score_spread": 4.069699,
       "source": "backtest"
     },
     {
       "date": "2026-02-05",
-      "confidence": 0.018,
-      "raw_confidence": 0.8659,
-      "score_spread": 3.453133,
+      "confidence": 0.0138,
+      "raw_confidence": 0.8588,
+      "score_spread": 3.42475,
       "source": "backtest"
     },
     {
       "date": "2026-02-06",
-      "confidence": 0.0221,
-      "raw_confidence": 0.8758,
-      "score_spread": 3.492652,
+      "confidence": 0.0428,
+      "raw_confidence": 0.8914,
+      "score_spread": 3.554855,
       "source": "backtest"
     },
     {
       "date": "2026-02-09",
-      "confidence": 0.1561,
-      "raw_confidence": 0.9333,
-      "score_spread": 3.722131,
+      "confidence": 0.0883,
+      "raw_confidence": 0.9141,
+      "score_spread": 3.645407,
       "source": "backtest"
     },
     {
       "date": "2026-02-10",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.231742,
+      "score_spread": 4.231358,
       "source": "backtest"
     },
     {
       "date": "2026-02-11",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.418113,
+      "score_spread": 4.377362,
       "source": "backtest"
     },
     {
       "date": "2026-02-12",
-      "confidence": 0.1575,
-      "raw_confidence": 0.9341,
-      "score_spread": 3.725171,
+      "confidence": 0.1531,
+      "raw_confidence": 0.9307,
+      "score_spread": 3.711458,
       "source": "backtest"
     },
     {
       "date": "2026-02-13",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.029395,
+      "score_spread": 4.10531,
       "source": "backtest"
     },
     {
       "date": "2026-02-24",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.428434,
+      "score_spread": 4.273963,
       "source": "backtest"
     },
     {
       "date": "2026-02-25",
-      "confidence": 0.5594,
-      "raw_confidence": 0.9975,
-      "score_spread": 3.978112,
+      "confidence": 1.0,
+      "raw_confidence": 1.0,
+      "score_spread": 4.010136,
       "source": "backtest"
     },
     {
       "date": "2026-02-26",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.52188,
+      "score_spread": 4.356479,
       "source": "backtest"
     },
     {
       "date": "2026-02-27",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.339555,
+      "score_spread": 4.304796,
       "source": "backtest"
     },
     {
       "date": "2026-03-02",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.210882,
+      "score_spread": 4.158116,
       "source": "backtest"
     },
     {
       "date": "2026-03-03",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.230981,
+      "score_spread": 4.232078,
       "source": "backtest"
     },
     {
       "date": "2026-03-04",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.366697,
+      "score_spread": 4.229796,
       "source": "backtest"
     },
     {
       "date": "2026-03-05",
-      "confidence": 0.2017,
-      "raw_confidence": 0.9442,
-      "score_spread": 3.765536,
+      "confidence": 0.3586,
+      "raw_confidence": 0.9636,
+      "score_spread": 3.842885,
       "source": "backtest"
     },
     {
       "date": "2026-03-06",
-      "confidence": 0.1754,
-      "raw_confidence": 0.9387,
-      "score_spread": 3.743335,
+      "confidence": 0.1917,
+      "raw_confidence": 0.9406,
+      "score_spread": 3.750939,
       "source": "backtest"
     },
     {
       "date": "2026-03-09",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.249454,
+      "score_spread": 4.210351,
       "source": "backtest"
     },
     {
       "date": "2026-03-10",
-      "confidence": 0.4517,
-      "raw_confidence": 0.9791,
-      "score_spread": 3.904465,
+      "confidence": 0.24,
+      "raw_confidence": 0.9491,
+      "score_spread": 3.784858,
       "source": "backtest"
     },
     {
       "date": "2026-03-11",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.11775,
+      "score_spread": 4.157055,
       "source": "backtest"
     },
     {
       "date": "2026-03-12",
-      "confidence": 0.4765,
-      "raw_confidence": 0.9841,
-      "score_spread": 3.924562,
+      "confidence": 0.5103,
+      "raw_confidence": 0.9854,
+      "score_spread": 3.929606,
       "source": "backtest"
     },
     {
       "date": "2026-03-13",
-      "confidence": 0.4116,
-      "raw_confidence": 0.9765,
-      "score_spread": 3.894202,
+      "confidence": 0.3834,
+      "raw_confidence": 0.9661,
+      "score_spread": 3.85279,
       "source": "backtest"
     },
     {
       "date": "2026-03-16",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.186503,
+      "score_spread": 4.128056,
       "source": "backtest"
     },
     {
       "date": "2026-03-17",
-      "confidence": 0.1367,
-      "raw_confidence": 0.9291,
-      "score_spread": 3.705033,
+      "confidence": 0.1186,
+      "raw_confidence": 0.9239,
+      "score_spread": 3.68444,
       "source": "backtest"
     },
     {
       "date": "2026-03-18",
-      "confidence": 0.0843,
-      "raw_confidence": 0.9107,
-      "score_spread": 3.631673,
+      "confidence": 0.0759,
+      "raw_confidence": 0.9102,
+      "score_spread": 3.629942,
       "source": "backtest"
     },
     {
       "date": "2026-03-19",
-      "confidence": 0.0884,
-      "raw_confidence": 0.912,
-      "score_spread": 3.637037,
+      "confidence": 0.1159,
+      "raw_confidence": 0.9237,
+      "score_spread": 3.683775,
       "source": "backtest"
     },
     {
       "date": "2026-03-20",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.522994,
+      "score_spread": 4.485307,
       "source": "backtest"
     },
     {
       "date": "2026-03-23",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.214434,
+      "score_spread": 4.169675,
       "source": "backtest"
     },
     {
       "date": "2026-03-24",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.400016,
+      "score_spread": 4.363978,
       "source": "backtest"
     },
     {
       "date": "2026-03-25",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.355948,
+      "score_spread": 4.313013,
       "source": "backtest"
     },
     {
       "date": "2026-03-26",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.204254,
+      "score_spread": 4.194881,
       "source": "backtest"
     },
     {
       "date": "2026-03-27",
-      "confidence": 0.1285,
-      "raw_confidence": 0.9261,
-      "score_spread": 3.693194,
+      "confidence": 0.1297,
+      "raw_confidence": 0.9258,
+      "score_spread": 3.691896,
       "source": "backtest"
     },
     {
       "date": "2026-03-30",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.357135,
+      "score_spread": 4.407095,
       "source": "backtest"
     },
     {
       "date": "2026-03-31",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.159708,
+      "score_spread": 4.143038,
       "source": "backtest"
     },
     {
       "date": "2026-04-01",
-      "confidence": 0.5097,
-      "raw_confidence": 0.9894,
-      "score_spread": 3.945663,
+      "confidence": 0.5766,
+      "raw_confidence": 0.9964,
+      "score_spread": 3.973507,
       "source": "backtest"
     },
     {
       "date": "2026-04-02",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.281185,
+      "score_spread": 4.260474,
       "source": "backtest"
     },
     {
       "date": "2026-04-03",
-      "confidence": 0.2403,
-      "raw_confidence": 0.9516,
-      "score_spread": 3.795006,
+      "confidence": 0.349,
+      "raw_confidence": 0.9631,
+      "score_spread": 3.840699,
       "source": "backtest"
     },
     {
       "date": "2026-04-07",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.141822,
+      "score_spread": 4.110955,
       "source": "backtest"
     },
     {
       "date": "2026-04-08",
-      "confidence": 1.0,
-      "raw_confidence": 1.0,
-      "score_spread": 4.05357,
+      "confidence": 0.5007,
+      "raw_confidence": 0.9841,
+      "score_spread": 3.92452,
       "source": "backtest"
     },
     {
       "date": "2026-04-09",
-      "confidence": 0.4254,
-      "raw_confidence": 0.9772,
-      "score_spread": 3.896963,
+      "confidence": 0.4014,
+      "raw_confidence": 0.9688,
+      "score_spread": 3.863599,
       "source": "backtest"
     },
     {
       "date": "2026-04-10",
-      "confidence": 0.1934,
-      "raw_confidence": 0.943,
-      "score_spread": 3.760624,
+      "confidence": 0.0966,
+      "raw_confidence": 0.9168,
+      "score_spread": 3.656092,
       "source": "backtest"
     },
     {
       "date": "2026-04-13",
-      "confidence": 0.5359,
-      "raw_confidence": 0.9939,
-      "score_spread": 3.963799,
+      "confidence": 1.0,
+      "raw_confidence": 1.0,
+      "score_spread": 3.994957,
       "source": "backtest"
     },
     {
       "date": "2026-04-14",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.00714,
+      "score_spread": 4.011261,
       "source": "backtest"
     },
     {
       "date": "2026-04-15",
-      "confidence": 0.1243,
-      "raw_confidence": 0.924,
-      "score_spread": 3.6849,
+      "confidence": 0.1545,
+      "raw_confidence": 0.9307,
+      "score_spread": 3.711754,
       "source": "backtest"
     },
     {
       "date": "2026-04-16",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.131699,
+      "score_spread": 4.042992,
       "source": "backtest"
     },
     {
       "date": "2026-04-17",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.274386,
+      "score_spread": 4.340926,
       "source": "backtest"
     },
     {
       "date": "2026-04-20",
       "confidence": 1.0,
       "raw_confidence": 1.0,
-      "score_spread": 4.021306,
+      "score_spread": 4.072386,
       "source": "backtest"
     },
     {
       "date": "2026-04-21",
       "confidence": 0.9889,
+      "source": "live"
+    },
+    {
+      "date": "2026-04-22",
+      "confidence": 0.9393,
       "source": "live"
     }
   ]

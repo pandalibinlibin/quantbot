@@ -55,6 +55,20 @@ from app.services.notification_service import get_notification_service
 logger = logging.getLogger(__name__)
 
 
+def _is_index_code(symbol: str) -> bool:
+    """
+    Check if a symbol is a market index (non-tradeable) rather than an ETF/stock.
+
+    Chinese market index codes:
+    - SH000xxx: Shanghai composite indices (e.g., SH000300 = CSI 300)
+    - SZ399xxx: Shenzhen composite indices (e.g., SZ399001 = SZSE Component)
+
+    These indices are used for benchmark comparison but cannot be held in a portfolio.
+    """
+    s = symbol.upper()
+    return s.startswith("SH000") or s.startswith("SZ399")
+
+
 class OnlineServingService:
     """
     Qlib Online Serving Service
@@ -1429,6 +1443,11 @@ class OnlineServingService:
             etf_service = get_etf_enhanced_indexing_service()
             signal_dict = etf_service._extract_signals(signals)
 
+            # Safety: filter out non-tradeable index codes if any leaked into signals
+            filtered = {k: v for k, v in signal_dict.items() if not _is_index_code(k)}
+            if filtered:
+                signal_dict = filtered
+
             if not signal_dict:
                 return {"success": False, "error": "No signals", "positions": []}
 
@@ -2188,7 +2207,7 @@ class OnlineServingService:
         4. Calculates returns and metrics
 
         Args:
-            benchmark: Benchmark symbol (default: SH000300)
+            benchmark: Benchmark symbol (default from config, e.g., SH510300)
             account: Initial account value (default from config)
 
         Returns:
@@ -2276,6 +2295,7 @@ class OnlineServingService:
         account = (
             account if account is not None else backtest_config.get("account", 1000000)
         )
+        benchmark = backtest_config.get("benchmark", "SH510300")
 
         # Get exchange costs
         exchange_kwargs = backtest_config.get(
@@ -2343,9 +2363,9 @@ class OnlineServingService:
             from qlib.data import D
 
             instruments = signals_df["instrument"].unique().tolist()
-            # Add benchmark index for chart comparison
-            if "SH000300" not in instruments:
-                instruments = instruments + ["SH000300"]
+            # Add benchmark ETF for chart comparison (if not already in signals)
+            if benchmark not in instruments:
+                instruments = instruments + [benchmark]
 
             # Get close prices
             price_data = D.features(
@@ -2402,6 +2422,11 @@ class OnlineServingService:
                     ),
                 )
             )
+
+            # Safety: filter out non-tradeable index codes if any leaked into signals
+            signal_dict = {
+                k: v for k, v in signal_dict.items() if not _is_index_code(k)
+            }
 
             # Only recalculate target weights on rebalancing days
             if is_rebalance_day:
@@ -2480,10 +2505,10 @@ class OnlineServingService:
                         self.logger.debug(f"Price lookup failed for {symbol}: {e}")
                         continue
 
-                # Add ETF return (use index sh000300 if available)
+                # Add ETF return (use benchmark ETF if available)
                 try:
-                    if "sh000300" in available_instruments:
-                        index_prices = price_data.xs("sh000300", level=0)
+                    if benchmark in available_instruments:
+                        index_prices = price_data.xs(benchmark, level=0)
                         if (
                             date in index_prices.index
                             and next_date in index_prices.index
@@ -2528,8 +2553,8 @@ class OnlineServingService:
             # Calculate benchmark return for this day
             benchmark_return = 0.0
             try:
-                if "SH000300" in available_instruments:
-                    bench_prices = price_data.xs("SH000300", level=0)
+                if benchmark in available_instruments:
+                    bench_prices = price_data.xs(benchmark, level=0)
                     if date in bench_prices.index and next_date in bench_prices.index:
                         bench_today = bench_prices.loc[date, "close"]
                         bench_next = bench_prices.loc[next_date, "close"]
@@ -3456,7 +3481,7 @@ class OnlineServingService:
 
         Args:
             signals: Prediction signals from Online Serving
-            benchmark: Benchmark symbol (default: 000300.SH)
+            benchmark: Benchmark symbol (default from config, e.g., SH510300)
             account: Initial account value
 
         Returns:

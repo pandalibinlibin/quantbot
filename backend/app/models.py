@@ -584,7 +584,7 @@ class BacktestBase(SQLModel):
     )
     # Backtest configuration
     benchmark: str = Field(
-        max_length=50, description="Benchmark symbol (e.g., 000300.SH)"
+        max_length=50, description="Benchmark symbol (e.g., SH510300)"
     )
     account: float = Field(default=100000000.0, description="Initial account balance")
     exchange_config: str = Field(

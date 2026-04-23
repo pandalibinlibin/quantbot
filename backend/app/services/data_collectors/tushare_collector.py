@@ -202,8 +202,6 @@ class TushareDataCollector(BaseDataCollector):
         Reads the etf_universe entry and converts Qlib-format codes (SH510300)
         to Tushare format (510300.SH) for data collection.
 
-        Also adds the benchmark index (000300.SH) for reference.
-
         Returns
         -------
         List[str]
@@ -228,12 +226,7 @@ class TushareDataCollector(BaseDataCollector):
                 else:
                     logger.warning(f"Unexpected ETF code format: {code}, skipping")
 
-            # Add benchmark index for reference
-            tushare_codes.append("000300.SH")
-
-            logger.info(
-                f"ETF Universe: {len(tushare_codes) - 1} ETFs + 1 benchmark index"
-            )
+            logger.info(f"ETF Universe: {len(tushare_codes)} ETFs")
             logger.info(f"Sample ETFs: {tushare_codes[:5]}")
 
             return tushare_codes
@@ -283,7 +276,7 @@ class TushareDataCollector(BaseDataCollector):
         Parameters
         ----------
         symbol : str
-            Tushare format symbol (e.g., '000001.SZ' for stock, '000300.SH' for index)
+            Tushare format symbol (e.g., '510300.SH' for ETF, '000001.SZ' for stock)
         interval : str
             Data interval (only "1d" supported)
         start_datetime : str
@@ -319,7 +312,7 @@ class TushareDataCollector(BaseDataCollector):
 
             logger.debug(f"Fetching data for {symbol}: {start_date} to {end_date}")
 
-            # Check if this is an index (000xxx.SH pattern, e.g., 000300.SH)
+            # Check if this is an index (000xxx.SH pattern)
             code_part = symbol.split(".")[0] if "." in symbol else ""
             is_index = code_part.startswith("000") and symbol.endswith(".SH")
             # Check if this is an ETF (pattern-based detection)

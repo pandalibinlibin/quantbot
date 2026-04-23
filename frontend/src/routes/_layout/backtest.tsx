@@ -196,6 +196,14 @@ function BacktestPage() {
   const backtestConfig = config?.backtest;
   const exchangeKwargs = backtestConfig?.exchange_kwargs || {};
 
+  // Build benchmark display label from config
+  const benchmarkLabel = backtestConfig?.benchmark_name
+    ? `${backtestConfig.benchmark_name} (${backtestConfig.benchmark})`
+    : backtestConfig?.benchmark || "Benchmark";
+  const benchmarkShort = backtestConfig?.benchmark_name
+    ? backtestConfig.benchmark_name
+    : backtestConfig?.benchmark || "Benchmark";
+
   // Extract status
   const status = statusData;
 
@@ -306,9 +314,7 @@ function BacktestPage() {
                         <span className="text-muted-foreground">
                           benchmark:
                         </span>{" "}
-                        <span className="font-medium">
-                          {backtestConfig?.benchmark || "N/A"}
-                        </span>
+                        <span className="font-medium">{benchmarkLabel}</span>
                       </div>
                     </div>
                   </div>
@@ -851,7 +857,7 @@ function BacktestPage() {
                                 stroke="#3b82f6"
                                 fill="#3b82f6"
                                 fillOpacity={0.1}
-                                name="Benchmark"
+                                name={benchmarkLabel}
                               />
                             )}
                           </AreaChart>
@@ -1089,7 +1095,7 @@ function BacktestPage() {
                         </CardTitle>
                       </div>
                       <CardDescription>
-                        Annual returns comparison: Strategy vs Benchmark
+                        Annual returns comparison: Strategy vs {benchmarkShort}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -1104,7 +1110,7 @@ function BacktestPage() {
                                 Strategy
                               </th>
                               <th className="text-right py-2 px-3 font-medium">
-                                Benchmark
+                                {benchmarkShort}
                               </th>
                               <th className="text-right py-2 px-3 font-medium">
                                 Excess (α)
@@ -1199,7 +1205,7 @@ function BacktestPage() {
                                 name === "strategy_return"
                                   ? "Strategy"
                                   : name === "benchmark_return"
-                                    ? "Benchmark"
+                                    ? benchmarkShort
                                     : "Excess (α)",
                               ]}
                               labelFormatter={(label) => `Month: ${label}`}
@@ -1209,7 +1215,7 @@ function BacktestPage() {
                                 value === "strategy_return"
                                   ? "Strategy"
                                   : value === "benchmark_return"
-                                    ? "Benchmark"
+                                    ? benchmarkShort
                                     : "Excess (α)"
                               }
                             />
@@ -1249,7 +1255,7 @@ function BacktestPage() {
                                 Strategy
                               </th>
                               <th className="text-right py-2 px-2 font-medium">
-                                Benchmark
+                                {benchmarkShort}
                               </th>
                               <th className="text-right py-2 px-2 font-medium">
                                 Excess (α)

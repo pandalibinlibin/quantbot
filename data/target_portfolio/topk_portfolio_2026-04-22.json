@@ -1,0 +1,98 @@
+{
+  "strategy": "topk",
+  "generated_at": "2026-04-23T04:42:28.012981",
+  "trade_date": "2026-04-22",
+  "signal_for_date": "2026-04-23",
+  "topk": 10,
+  "weight_method": "score_weighted",
+  "confidence": 0.9393,
+  "score_spread": 3.6913,
+  "confidence_percentile": 60.7,
+  "confidence_label": "正常",
+  "confidence_interpretation": "当前预测准确度在历史上处于前39%。模型区分度正常，推荐持仓处于常规可信水平。",
+  "positions": [
+    {
+      "rank": 1,
+      "symbol": "SZ159259",
+      "name": "成长ETF易方达",
+      "index_name": "国证成长100指数",
+      "score": 2.362763,
+      "weight": 0.10798
+    },
+    {
+      "rank": 2,
+      "symbol": "SH511380",
+      "name": "可转债ETF博时",
+      "index_name": "中证可转债及可交换债券指数",
+      "score": 2.218778,
+      "weight": 0.101399
+    },
+    {
+      "rank": 3,
+      "symbol": "SZ159857",
+      "name": "光伏ETF天弘",
+      "index_name": "中证光伏产业指数",
+      "score": 2.218778,
+      "weight": 0.101399
+    },
+    {
+      "rank": 4,
+      "symbol": "SH560280",
+      "name": "工程机械ETF广发",
+      "index_name": "中证工程机械主题指数",
+      "score": 2.218778,
+      "weight": 0.101399
+    },
+    {
+      "rank": 5,
+      "symbol": "SZ159937",
+      "name": "黄金ETF博时",
+      "index_name": "黄金9999",
+      "score": 2.184907,
+      "weight": 0.099851
+    },
+    {
+      "rank": 6,
+      "symbol": "SZ159399",
+      "name": "现金流ETF国泰",
+      "index_name": "富时中国A股自由现金流聚焦指数",
+      "score": 2.184907,
+      "weight": 0.099851
+    },
+    {
+      "rank": 7,
+      "symbol": "SH563760",
+      "name": "全指现金流ETF中银",
+      "index_name": "中证全指自由现金流指数",
+      "score": 2.184907,
+      "weight": 0.099851
+    },
+    {
+      "rank": 8,
+      "symbol": "SZ159755",
+      "name": "电池ETF广发",
+      "index_name": "国证新能源车电池指数",
+      "score": 2.153897,
+      "weight": 0.098434
+    },
+    {
+      "rank": 9,
+      "symbol": "SH513120",
+      "name": "港股创新药ETF广发",
+      "index_name": "中证香港创新药指数",
+      "score": 2.076937,
+      "weight": 0.094917
+    },
+    {
+      "rank": 10,
+      "symbol": "SZ159929",
+      "name": "医药ETF",
+      "index_name": "中证医药卫生指数",
+      "score": 2.076937,
+      "weight": 0.094917
+    }
+  ],
+  "summary": {
+    "total_positions": 10
+  }
+}

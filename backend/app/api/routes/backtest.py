@@ -60,8 +60,8 @@ class BacktestRunRequest(BaseModel):
 
     benchmark: Optional[str] = Field(
         None,
-        description="Benchmark symbol for comparison (default: 000300.SH)",
-        example="000300.SH",
+        description="Benchmark symbol for comparison (default: SH510300)",
+        example="SH510300",
     )
     account: Optional[float] = Field(
         None,
@@ -166,9 +166,31 @@ def get_backtest_configuration():
         backtest_config = qlib_config.backtest_config
 
         # Build unified config from actual backtest_config.yaml
+        backtest_section = backtest_config.get("backtest", {})
+
+        # Look up benchmark ETF name
+        benchmark_code = backtest_section.get("benchmark", "")
+        benchmark_name = ""
+        if benchmark_code:
+            try:
+                from app.services.etf_enhanced_indexing_service import (
+                    get_etf_enhanced_indexing_service,
+                )
+
+                etf_service = get_etf_enhanced_indexing_service()
+                info = etf_service.get_etf_info(benchmark_code)
+                benchmark_name = info.get("extname", "")
+            except Exception as e:
+                logger.debug(f"Could not fetch benchmark name: {e}")
+
+        # Inject benchmark_name into backtest section
+        backtest_with_name = {**backtest_section}
+        if benchmark_name:
+            backtest_with_name["benchmark_name"] = benchmark_name
+
         unified_config = {
             "strategy": backtest_config.get("strategy", {}),
-            "backtest": backtest_config.get("backtest", {}),
+            "backtest": backtest_with_name,
         }
 
         return BacktestConfigResponse(
