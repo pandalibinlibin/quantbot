@@ -297,26 +297,31 @@ def get_dashboard_summary():
         except Exception as e:
             logger.warning(f"Failed to get backtest results: {e}")
 
-        # 2. Get Target Portfolio (from latest ETF enhanced portfolio file)
+        # 2. Get Target Portfolio (from latest portfolio file - topk or etf_enhanced)
         portfolio_summary_info = {}
         try:
             if TARGET_PORTFOLIO_DIR.exists():
-                # Find the latest portfolio file
-                portfolio_files = sorted(
-                    TARGET_PORTFOLIO_DIR.glob("etf_enhanced_*.json"), reverse=True
-                )
-                if portfolio_files:
-                    latest_file = portfolio_files[0]
-                    # Extract date from filename (etf_enhanced_YYYY-MM-DD.json)
-                    portfolio_date = latest_file.stem.replace("etf_enhanced_", "")
+                # Find the latest portfolio file from either strategy
+                topk_files = list(TARGET_PORTFOLIO_DIR.glob("topk_portfolio_*.json"))
+                etf_files = list(TARGET_PORTFOLIO_DIR.glob("etf_enhanced_*.json"))
+                all_portfolio_files = topk_files + etf_files
+
+                if all_portfolio_files:
+                    # Sort by modification time (newest first)
+                    all_portfolio_files.sort(
+                        key=lambda f: f.stat().st_mtime, reverse=True
+                    )
+                    latest_file = all_portfolio_files[0]
 
                     with open(latest_file, "r", encoding="utf-8") as f:
                         portfolio_data = json.load(f)
 
-                    # Use portfolio file data directly - it contains the correct
-                    # current_shares and action calculations from generation time
+                    strategy = portfolio_data.get("strategy", "")
                     positions = portfolio_data.get("positions", [])
                     summary = portfolio_data.get("summary", {})
+                    portfolio_date = portfolio_data.get(
+                        "trade_date"
+                    ) or portfolio_data.get("signal_for_date", "")
 
                     # Store summary info for alerts
                     portfolio_summary_info = {
@@ -327,37 +332,48 @@ def get_dashboard_summary():
                         "hold_count": summary.get("hold_count", 0),
                     }
 
-                    # Filter to only include positions with holdings (target_shares > 0)
-                    # then sort by rank and take top 10
-                    holdings_only = [
-                        p for p in positions if p.get("target_shares", 0) > 0
-                    ]
-                    sorted_positions = sorted(
-                        holdings_only, key=lambda x: x.get("rank", 999)
-                    )[:10]
-
-                    for pos in sorted_positions:
-                        # Determine position type
-                        pos_type = pos.get("type", "alpha")
-                        if pos_type == "etf" or pos_type == "stock":
-                            pos_type = "etf" if pos_type == "etf" else "alpha"
-
-                        # ETF service uses "symbol" field, not "instrument"
-                        symbol = pos.get("symbol", "") or pos.get("instrument", "")
-
-                        target_positions.append(
-                            TargetPositionItem(
-                                rank=pos.get("rank", 0),
-                                instrument=symbol,
-                                name=pos.get("name", ""),
-                                type=pos_type,
-                                weight=pos.get("weight", 0)
-                                * 100,  # Convert to percentage
-                                target_value=pos.get("target_value", 0),
-                                target_shares=pos.get("target_shares", 0),
-                                action=pos.get("action", "hold"),
+                    if strategy == "topk":
+                        # TopK positions already sorted by rank
+                        for pos in positions:
+                            symbol = pos.get("symbol", "")
+                            target_positions.append(
+                                TargetPositionItem(
+                                    rank=pos.get("rank", 0),
+                                    instrument=symbol,
+                                    name=pos.get("name", ""),
+                                    type="alpha",
+                                    weight=pos.get("weight", 0) * 100,
+                                    target_value=0,
+                                    target_shares=1,
+                                    action="hold",
+                                )
                             )
-                        )
+                    else:
+                        # ETF Enhanced positions
+                        holdings_only = [
+                            p for p in positions if p.get("target_shares", 0) > 0
+                        ]
+                        sorted_positions = sorted(
+                            holdings_only, key=lambda x: x.get("rank", 999)
+                        )[:10]
+
+                        for pos in sorted_positions:
+                            pos_type = pos.get("type", "alpha")
+                            if pos_type == "stock":
+                                pos_type = "alpha"
+                            symbol = pos.get("symbol", "") or pos.get("instrument", "")
+                            target_positions.append(
+                                TargetPositionItem(
+                                    rank=pos.get("rank", 0),
+                                    instrument=symbol,
+                                    name=pos.get("name", ""),
+                                    type=pos_type,
+                                    weight=pos.get("weight", 0) * 100,
+                                    target_value=pos.get("target_value", 0),
+                                    target_shares=pos.get("target_shares", 0),
+                                    action=pos.get("action", "hold"),
+                                )
+                            )
         except Exception as e:
             logger.warning(f"Failed to get target portfolio: {e}")
 

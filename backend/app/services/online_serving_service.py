@@ -196,6 +196,28 @@ class OnlineServingService:
             self._persisted_factor_fingerprint = ""
             self.logger.error(f"Failed to restore persisted state: {e}")
 
+    def _load_persisted_signals(self) -> Optional[pd.DataFrame]:
+        """
+        Load persisted signals DataFrame from disk.
+
+        Returns:
+            Signals DataFrame if available, None otherwise
+        """
+        import pickle
+
+        try:
+            if self.SIGNALS_PERSIST_FILE.exists():
+                with open(self.SIGNALS_PERSIST_FILE, "rb") as f:
+                    signals = pickle.load(f)
+                if signals is not None and len(signals) > 0:
+                    self.logger.info(
+                        f"Loaded {len(signals)} persisted signals from {self.SIGNALS_PERSIST_FILE}"
+                    )
+                    return signals
+        except Exception as e:
+            self.logger.error(f"Failed to load persisted signals: {e}")
+        return None
+
     def _get_data_frequency(self) -> str:
         """
         Get data frequency for stock selection system.
@@ -926,14 +948,15 @@ class OnlineServingService:
         }
 
         try:
-            # Check that system is initialized and signals exist
-            if not self.is_initialized:
-                result["error"] = (
-                    "System not initialized. Please run Update Data first."
-                )
-                return result
+            # Try to get signals from OnlineManager (in-memory) or persisted file
+            signals = None
+            if self.is_initialized:
+                signals = self._online_manager.get_signals()
 
-            signals = self._online_manager.get_signals()
+            # Fallback: load persisted signals from disk (survives container restart)
+            if signals is None or len(signals) == 0:
+                signals = self._load_persisted_signals()
+
             if signals is None or len(signals) == 0:
                 result["error"] = "No signals available. Please run Update Data first."
                 return result
@@ -943,10 +966,22 @@ class OnlineServingService:
                 f"Starting portfolio generation with {signal_count} signals..."
             )
 
+            # Ensure Qlib is initialized (needed for price lookups, calendar, etc.)
+            self._ensure_qlib_initialized()
+
             # Determine effective cur_time
             effective_cur_time = cur_time
             if effective_cur_time is None:
                 effective_cur_time = self._get_latest_data_date()
+            # Fallback: extract date from signals index
+            if effective_cur_time is None and isinstance(signals.index, pd.MultiIndex):
+                latest_date = signals.index.get_level_values(0).max()
+                effective_cur_time = (
+                    latest_date.strftime("%Y-%m-%d")
+                    if hasattr(latest_date, "strftime")
+                    else str(latest_date)[:10]
+                )
+                self.logger.info(f"Using date from signals index: {effective_cur_time}")
 
             # Step 1: Calculate target portfolio
             # Try TopK strategy first, then fall back to ETF Enhanced Indexing
@@ -1169,29 +1204,34 @@ class OnlineServingService:
         percentile = round(rank / len(historical_values) * 100, 1)
 
         # Map to label and interpretation
+        top_pct = round(100 - percentile, 0)
+        pct_desc = f"当前预测准确度在历史上处于前{top_pct:.0f}%。"
+
         if percentile >= 90:
             label = "极强"
             interpretation = (
-                "模型区分度极高，推荐持仓可信度很强。" "建议严格按照系统推荐持仓执行。"
+                f"{pct_desc}模型区分度极高，推荐持仓可信度很强。"
+                "建议严格按照系统推荐持仓执行。"
             )
         elif percentile >= 75:
             label = "较强"
             interpretation = (
-                "模型区分度良好，推荐持仓可信度较高。" "建议紧密跟随系统推荐。"
+                f"{pct_desc}模型区分度良好，推荐持仓可信度较高。"
+                "建议紧密跟随系统推荐。"
             )
         elif percentile >= 25:
             label = "正常"
-            interpretation = "模型区分度正常，推荐持仓处于常规可信水平。"
+            interpretation = f"{pct_desc}模型区分度正常，推荐持仓处于常规可信水平。"
         elif percentile >= 10:
             label = "较弱"
             interpretation = (
-                "模型区分度较低，推荐持仓可信度下降。"
+                f"{pct_desc}模型区分度较低，推荐持仓可信度下降。"
                 "可适当偏离系统推荐，结合自身判断。"
             )
         else:
             label = "极弱"
             interpretation = (
-                "模型区分度很低，推荐持仓可靠性不足。" "建议以自主判断为主。"
+                f"{pct_desc}模型区分度很低，推荐持仓可靠性不足。" "建议以自主判断为主。"
             )
 
         return {
@@ -1423,9 +1463,10 @@ class OnlineServingService:
                 # Equal weight
                 weights_list = [(symbol, 1.0 / topk) for symbol, _ in top_k]
 
-            # Batch fetch stock names and prices
+            # Batch fetch stock names, ETF info, and prices
             all_symbols = [s for s, _ in top_k]
             etf_service._batch_fetch_stock_names(all_symbols)
+            etf_service._batch_fetch_etf_info(all_symbols)
             prices = etf_service._get_latest_prices(all_symbols)
 
             # Build positions list
@@ -1433,13 +1474,16 @@ class OnlineServingService:
             for rank, (symbol, weight) in enumerate(weights_list, start=1):
                 score = signal_dict.get(symbol, 0.0)
                 price = prices.get(symbol)
-                name = etf_service.get_stock_name(symbol)
+                etf_info = etf_service.get_etf_info(symbol)
+                # Use extname as display name (fallback to stock name)
+                name = etf_info.get("extname") or etf_service.get_stock_name(symbol)
 
                 positions.append(
                     {
                         "rank": rank,
                         "symbol": symbol,
                         "name": name,
+                        "index_name": etf_info.get("index_name", ""),
                         "score": round(score, 6),
                         "weight": round(weight, 6),
                     }

@@ -5063,10 +5063,8 @@
     },
     {
       "date": "2026-04-21",
-      "confidence": 0.2155,
-      "raw_confidence": 0.9458,
-      "score_spread": 3.76845,
-      "source": "backtest"
+      "confidence": 0.9889,
+      "source": "live"
     }
   ]
 }

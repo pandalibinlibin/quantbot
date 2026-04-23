@@ -1,5 +1,5 @@
 """
-Run Signal API Routes - Portfolio optimization and signal export
+Update Portfolio API Routes - Portfolio optimization and signal export
 
 Workflow (requires Update Data to have been run first):
 1. Portfolio Optimization (Enhanced Indexing Strategy)
@@ -29,7 +29,7 @@ async def run_task(
     current_user=Depends(deps.get_current_user),
 ):
     """
-    Execute Run Signal - Portfolio optimization and signal export.
+    Execute Update Portfolio - Portfolio optimization and signal export.
 
     Prerequisite: Update Data must have been run first.
 
@@ -39,7 +39,7 @@ async def run_task(
     3. Send email notification (handled inside portfolio optimization)
     """
     try:
-        logger.info(f"User {current_user.email} triggered Run Signal")
+        logger.info(f"User {current_user.email} triggered Update Portfolio")
 
         online_service = get_online_serving_service()
 
@@ -51,14 +51,16 @@ async def run_task(
             error_msg = result.get("error", "Unknown error")
             raise HTTPException(
                 status_code=500,
-                detail=f"Run Signal failed: {error_msg}",
+                detail=f"Update Portfolio failed: {error_msg}",
             )
 
-        logger.info("Run Signal completed successfully")
+        logger.info("Update Portfolio completed successfully")
         return result
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Run Signal failed: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Run Signal failed: {str(e)}")
+        logger.error(f"Update Portfolio failed: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Update Portfolio failed: {str(e)}"
+        )

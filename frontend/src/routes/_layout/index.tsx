@@ -218,9 +218,9 @@ function Dashboard() {
 
   const handleRunTask = async () => {
     try {
-      setTaskStatus("Running signal generation...");
+      setTaskStatus("Updating portfolio...");
       await taskMutation.mutateAsync();
-      setTaskStatus("Signal generation completed!");
+      setTaskStatus("Portfolio updated!");
       refetch();
       // Clear status after 3 seconds
       setTimeout(() => setTaskStatus(""), 3000);
@@ -702,10 +702,8 @@ function Dashboard() {
               </div>
             ) : targetPositions.length > 0 ? (
               <div className="space-y-2">
-                {/* Show top 6 holdings by weight (filter holdings, sort by weight desc, take 6) */}
                 {targetPositions
-                  .filter((pos) => pos.target_shares > 0)
-                  .sort((a, b) => b.weight - a.weight)
+                  .sort((a, b) => a.rank - b.rank)
                   .slice(0, 6)
                   .map((pos) => (
                     <div
@@ -716,12 +714,6 @@ function Dashboard() {
                         <span className="text-xs text-muted-foreground w-4 flex-shrink-0">
                           {pos.rank}
                         </span>
-                        <Badge
-                          variant={pos.type === "etf" ? "default" : "outline"}
-                          className="text-xs flex-shrink-0"
-                        >
-                          {pos.type === "etf" ? "ETF" : "Alpha"}
-                        </Badge>
                         <div className="min-w-0 flex-1">
                           <span className="font-medium text-sm">
                             {pos.instrument}
@@ -733,21 +725,15 @@ function Dashboard() {
                           )}
                         </div>
                       </div>
-                      <span className="text-sm text-muted-foreground flex-shrink-0">
+                      <span className="text-sm font-medium flex-shrink-0">
                         {pos.weight.toFixed(1)}%
                       </span>
                     </div>
                   ))}
-                {targetPositions.filter((pos) => pos.target_shares > 0).length >
-                  6 && (
+                {targetPositions.length > 6 && (
                   <Link to="/target-portfolio">
                     <Button variant="link" size="sm" className="w-full">
-                      View all{" "}
-                      {
-                        targetPositions.filter((pos) => pos.target_shares > 0)
-                          .length
-                      }{" "}
-                      positions
+                      View all {targetPositions.length} positions
                     </Button>
                   </Link>
                 )}
@@ -757,7 +743,7 @@ function Dashboard() {
                 <div className="text-center">
                   <Activity className="h-12 w-12 mx-auto mb-2 opacity-50" />
                   <p>No target portfolio yet</p>
-                  <p className="text-xs">Run Task to generate</p>
+                  <p className="text-xs">Click Update Portfolio to generate</p>
                 </div>
               </div>
             )}

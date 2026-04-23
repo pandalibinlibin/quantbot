@@ -57,6 +57,9 @@ class ETFEnhancedIndexingService:
         self._index_config = self._load_index_config()
         self._current_holdings: Dict[str, int] = {}  # symbol -> shares
         self._stock_name_cache: Dict[str, str] = {}  # symbol -> name cache
+        self._etf_info_cache: Dict[str, Dict[str, str]] = (
+            {}
+        )  # symbol -> {extname, index_name}
         self._initialized = True
 
         # Load persisted holdings on initialization
@@ -665,6 +668,74 @@ class ETFEnhancedIndexingService:
 
         # Return all names (cached + newly fetched)
         return {s: self._stock_name_cache.get(s, s) for s in symbols}
+
+    def get_etf_info(self, symbol: str) -> Dict[str, str]:
+        """
+        Get ETF extended info (extname, index_name) by symbol.
+
+        Returns:
+            Dict with 'extname' and 'index_name', or empty strings if not found
+        """
+        if symbol in self._etf_info_cache:
+            return self._etf_info_cache[symbol]
+        # Try batch fetch for this single symbol
+        self._batch_fetch_etf_info([symbol])
+        return self._etf_info_cache.get(symbol, {"extname": "", "index_name": ""})
+
+    def _batch_fetch_etf_info(self, symbols: List[str]) -> None:
+        """
+        Batch fetch ETF extended info (extname, index_name) from tushare etf_basic.
+        Results are stored in self._etf_info_cache.
+        """
+        uncached = [s for s in symbols if s not in self._etf_info_cache]
+        if not uncached:
+            return
+
+        try:
+            import tushare as ts
+            from app.core.config import settings
+
+            token = getattr(settings, "TUSHARE_TOKEN", None)
+            if not token:
+                return
+
+            ts.set_token(token)
+            pro = ts.pro_api()
+
+            df = pro.etf_basic(
+                list_status="L",
+                fields="ts_code,name,extname,index_code,index_name",
+            )
+            if df is None or df.empty:
+                return
+
+            # Build lookup: ts_code -> {extname, index_name}
+            etf_map: Dict[str, Dict[str, str]] = {}
+            for _, row in df.iterrows():
+                etf_map[row["ts_code"]] = {
+                    "extname": row.get("extname") or row.get("name") or "",
+                    "index_name": row.get("index_name") or "",
+                }
+
+            for symbol in uncached:
+                if symbol.startswith("SH"):
+                    ts_code = f"{symbol[2:]}.SH"
+                elif symbol.startswith("SZ"):
+                    ts_code = f"{symbol[2:]}.SZ"
+                else:
+                    self._etf_info_cache[symbol] = {"extname": "", "index_name": ""}
+                    continue
+
+                if ts_code in etf_map:
+                    self._etf_info_cache[symbol] = etf_map[ts_code]
+                    # Also update stock name cache with extname
+                    if etf_map[ts_code]["extname"]:
+                        self._stock_name_cache[symbol] = etf_map[ts_code]["extname"]
+                else:
+                    self._etf_info_cache[symbol] = {"extname": "", "index_name": ""}
+
+        except Exception as e:
+            logger.warning(f"Batch ETF info fetch failed: {e}")
 
     # ===== Core Portfolio Calculation =====
 

@@ -124,21 +124,13 @@ function TargetPortfolioPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                 <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3">
                   <div className="text-sm text-muted-foreground">
                     Signal Date
                   </div>
                   <div className="text-lg font-semibold">
                     {latestPortfolio.signal_for_date || "-"}
-                  </div>
-                </div>
-                <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3">
-                  <div className="text-sm text-muted-foreground">
-                    Trade Date
-                  </div>
-                  <div className="text-lg font-semibold">
-                    {latestPortfolio.trade_date || "-"}
                   </div>
                 </div>
                 <div className="bg-purple-50 dark:bg-purple-950/30 rounded-lg p-3">
@@ -160,14 +152,6 @@ function TargetPortfolioPage() {
                     ) : (
                       <span className="text-lg font-semibold">-</span>
                     )}
-                  </div>
-                </div>
-                <div className="bg-gray-50 dark:bg-gray-950/30 rounded-lg p-3">
-                  <div className="text-sm text-muted-foreground">
-                    Weight Mode
-                  </div>
-                  <div className="text-lg font-semibold capitalize">
-                    {latestPortfolio.weight_method?.replace("_", " ") || "-"}
                   </div>
                 </div>
               </div>
@@ -207,25 +191,31 @@ function TargetPortfolioPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-16 text-center">Rank</TableHead>
-                      <TableHead className="w-28">Symbol</TableHead>
+                      <TableHead className="w-12 text-center">#</TableHead>
+                      <TableHead className="w-24">Symbol</TableHead>
                       <TableHead>Name</TableHead>
-                      <TableHead className="w-24 text-right">Score</TableHead>
-                      <TableHead className="w-24 text-right">Weight</TableHead>
+                      <TableHead>Index</TableHead>
+                      <TableHead className="w-20 text-right">Score</TableHead>
+                      <TableHead className="w-20 text-right">Weight</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {latestPortfolio.positions.map(
                       (pos: Record<string, unknown>, idx: number) => (
                         <TableRow key={String(pos.symbol) || idx}>
-                          <TableCell className="text-center font-medium">
+                          <TableCell className="text-center text-muted-foreground">
                             {Number(pos.rank) || idx + 1}
                           </TableCell>
-                          <TableCell className="font-mono font-semibold">
+                          <TableCell className="font-mono text-sm font-medium">
                             {String(pos.symbol)}
                           </TableCell>
-                          <TableCell>{String(pos.name || "-")}</TableCell>
-                          <TableCell className="text-right font-mono">
+                          <TableCell className="font-medium">
+                            {String(pos.name || "-")}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {String(pos.index_name || "-")}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm">
                             {pos.score != null
                               ? Number(pos.score).toFixed(4)
                               : "-"}

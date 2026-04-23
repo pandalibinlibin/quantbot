@@ -1274,11 +1274,8 @@ class NotificationService:
     def _build_topk_portfolio_html(self, portfolio_data: Dict[str, Any]) -> str:
         """Build responsive HTML email for TopK portfolio with confidence percentile."""
         generated_at = portfolio_data.get("generated_at", datetime.now().isoformat())
-        trade_date = portfolio_data.get("trade_date", "")
         signal_for_date = portfolio_data.get("signal_for_date", "")
-        confidence = portfolio_data.get("confidence", 0)
         topk = portfolio_data.get("topk", 10)
-        weight_method = portfolio_data.get("weight_method", "score_weighted")
         positions = portfolio_data.get("positions", [])
         total_positions = len(positions)
         conf_percentile = portfolio_data.get("confidence_percentile")
@@ -1307,19 +1304,24 @@ class NotificationService:
             rank = pos.get("rank", "")
             symbol = pos.get("symbol", "")
             name = pos.get("name", symbol)
+            index_name = pos.get("index_name", "")
             score = pos.get("score", 0)
             weight = pos.get("weight", 0)
+
+            # Alternating row background
+            row_bg = "#f8f9fa" if rank % 2 == 0 else "#ffffff"
             position_rows += f"""
-            <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 10px 6px; text-align: center; font-weight: bold;">{rank}</td>
-                <td style="padding: 10px 6px; font-family: monospace; font-weight: bold;">{symbol}</td>
-                <td style="padding: 10px 6px;">{name}</td>
-                <td style="padding: 10px 6px; text-align: right; font-family: monospace;">{score:.4f}</td>
-                <td style="padding: 10px 6px; text-align: right; font-weight: bold;">{weight:.1%}</td>
+            <tr style="background: {row_bg};">
+                <td style="padding: 10px 8px; text-align: center; color: #666;">{rank}</td>
+                <td style="padding: 10px 8px;">
+                    <div style="font-family: monospace; font-weight: bold; font-size: 13px;">{symbol}</div>
+                    <div style="font-size: 12px; color: #888; margin-top: 2px;">{name}</div>
+                </td>
+                <td style="padding: 10px 8px; font-size: 12px; color: #666;">{index_name or '-'}</td>
+                <td style="padding: 10px 8px; text-align: right; font-family: monospace; font-size: 13px;">{score:.4f}</td>
+                <td style="padding: 10px 8px; text-align: right; font-weight: bold; color: #333;">{weight:.1%}</td>
             </tr>
             """
-
-        weight_mode_display = weight_method.replace("_", " ").title()
 
         return f"""
         <!DOCTYPE html>
@@ -1328,51 +1330,46 @@ class NotificationService:
             <meta charset="UTF-8">
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <style>
-                @media only screen and (max-width: 480px) {{
-                    .email-container {{ padding: 10px !important; }}
+                @media only screen and (max-width: 600px) {{
+                    .email-container {{ padding: 8px !important; }}
                     .email-card {{ border-radius: 8px !important; }}
                     .email-header {{ padding: 18px 16px !important; }}
                     .email-header h1 {{ font-size: 18px !important; }}
-                    .email-section {{ padding: 14px 16px !important; }}
-                    .overview-cell {{ display: block !important; width: 100% !important; margin-bottom: 8px !important; }}
-                    .overview-spacer {{ display: none !important; }}
-                    .holdings-table {{ font-size: 13px !important; }}
+                    .email-section {{ padding: 14px 12px !important; }}
+                    .holdings-table {{ font-size: 12px !important; }}
                     .holdings-table td, .holdings-table th {{ padding: 8px 4px !important; }}
+                    .interp-section {{ padding: 0 12px 12px 12px !important; }}
+                    .table-section {{ padding: 0 12px 16px 12px !important; }}
+                    .notes-section {{ padding: 12px !important; }}
+                    .disclaimer-section {{ padding: 10px 12px !important; }}
+                    .footer-section {{ padding: 10px 12px !important; }}
                 }}
             </style>
         </head>
-        <body style="font-family: 'Microsoft YaHei', 'PingFang SC', Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
-            <div class="email-container" style="max-width: 700px; margin: 0 auto;">
-            <div class="email-card" style="background-color: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
+        <body style="font-family: -apple-system, 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 16px; background-color: #f0f2f5;">
+            <div class="email-container" style="max-width: 640px; margin: 0 auto;">
+            <div class="email-card" style="background-color: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow: hidden;">
 
                 <!-- Header -->
-                <div class="email-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px 30px;">
-                    <h1 style="margin: 0; font-size: 22px;">📊 QuantBot 目标持仓</h1>
+                <div class="email-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 24px 24px;">
+                    <h1 style="margin: 0; font-size: 20px; font-weight: 700;">📊 QuantBot 目标持仓</h1>
                     <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 14px;">
-                        信号日期: <strong>{signal_for_date}</strong> ｜
-                        交易日期: {trade_date}
+                        信号日期: <strong>{signal_for_date}</strong>
                     </p>
                 </div>
 
                 <!-- Signal Overview -->
-                <div class="email-section" style="padding: 20px 30px;">
-                    <table style="width: 100%; border-collapse: collapse;">
+                <div class="email-section" style="padding: 20px 24px;">
+                    <table role="presentation" style="width: 100%; border-collapse: separate; border-spacing: 10px 0;">
                         <tr>
-                            <td class="overview-cell" style="padding: 12px; background: #f8f9fa; border-radius: 8px; text-align: center; width: 30%;">
-                                <div style="font-size: 24px; font-weight: bold; color: #333;">{total_positions}</div>
-                                <div style="font-size: 12px; color: #666; margin-top: 4px;">持仓数量</div>
+                            <td style="width: 50%; padding: 20px 12px; background: #f8f9fa; border-radius: 10px; text-align: center; vertical-align: middle;">
+                                <div style="font-size: 22px; font-weight: 700; color: #333;">{total_positions}</div>
+                                <div style="font-size: 12px; color: #888; margin-top: 4px;">持仓数量</div>
                             </td>
-                            <td class="overview-spacer" style="width: 10px;"></td>
-                            <td class="overview-cell" style="padding: 12px; background: {conf_bg}; border-radius: 8px; text-align: center; width: 40%;">
-                                <div style="font-size: 22px; font-weight: bold; color: {conf_color};">
-                                    {conf_label} {percentile_text}
-                                </div>
-                                <div style="font-size: 12px; color: #666; margin-top: 4px;">置信度</div>
-                            </td>
-                            <td class="overview-spacer" style="width: 10px;"></td>
-                            <td class="overview-cell" style="padding: 12px; background: #f8f9fa; border-radius: 8px; text-align: center; width: 30%;">
-                                <div style="font-size: 16px; font-weight: bold; color: #333;">{weight_mode_display}</div>
-                                <div style="font-size: 12px; color: #666; margin-top: 4px;">权重模式</div>
+                            <td style="width: 50%; padding: 20px 12px; background: {conf_bg}; border-radius: 10px; text-align: center; vertical-align: middle;">
+                                <div style="font-size: 22px; font-weight: 700; color: {conf_color};">{conf_label}</div>
+                                <div style="font-size: 16px; font-weight: 600; color: {conf_color}; margin-top: 2px;">{percentile_text}</div>
+                                <div style="font-size: 12px; color: #888; margin-top: 4px;">置信度</div>
                             </td>
                         </tr>
                     </table>
@@ -1380,27 +1377,27 @@ class NotificationService:
 
                 <!-- Interpretation -->
                 {"" if not conf_interpretation else f'''
-                <div class="email-section" style="padding: 0 30px 16px 30px;">
+                <div class="interp-section" style="padding: 0 24px 16px 24px;">
                     <div style="background: {conf_bg}; border-left: 4px solid {conf_color}; padding: 12px 16px; border-radius: 0 8px 8px 0;">
-                        <div style="font-size: 13px; color: #666; margin-bottom: 4px;">💡 信号解读</div>
-                        <div style="font-size: 15px; color: #333; line-height: 1.5;">{conf_interpretation}</div>
+                        <div style="font-size: 12px; color: #888; margin-bottom: 4px;">💡 信号解读</div>
+                        <div style="font-size: 14px; color: #333; line-height: 1.6;">{conf_interpretation}</div>
                     </div>
                 </div>
                 '''}
 
                 <!-- Target Holdings Table -->
-                <div class="email-section" style="padding: 0 30px 20px 30px;">
-                    <h2 style="font-size: 16px; color: #333; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #667eea;">
+                <div class="table-section" style="padding: 0 24px 20px 24px;">
+                    <h2 style="font-size: 15px; color: #333; margin: 0 0 12px 0; padding-bottom: 8px; border-bottom: 2px solid #667eea;">
                         目标持仓 (Top {topk})
                     </h2>
-                    <table class="holdings-table" style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <table class="holdings-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
                         <thead>
                             <tr style="background: #667eea; color: white;">
-                                <th style="padding: 10px 6px; text-align: center; width: 40px;">排名</th>
-                                <th style="padding: 10px 6px; text-align: left; width: 90px;">代码</th>
-                                <th style="padding: 10px 6px; text-align: left;">名称</th>
-                                <th style="padding: 10px 6px; text-align: right; width: 70px;">分数</th>
-                                <th style="padding: 10px 6px; text-align: right; width: 70px;">权重</th>
+                                <th style="padding: 10px 8px; text-align: center; width: 32px; border-radius: 6px 0 0 0;">#</th>
+                                <th style="padding: 10px 8px; text-align: left;">代码 / 名称</th>
+                                <th style="padding: 10px 8px; text-align: left;">跟踪指数</th>
+                                <th style="padding: 10px 8px; text-align: right; width: 60px;">分数</th>
+                                <th style="padding: 10px 8px; text-align: right; width: 56px; border-radius: 0 6px 0 0;">权重</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -1410,25 +1407,20 @@ class NotificationService:
                 </div>
 
                 <!-- Notes -->
-                <div class="email-section" style="padding: 15px 30px; background: #f8f9fa; font-size: 13px; color: #666; line-height: 1.6;">
-                    <p style="margin: 0 0 6px 0;">
-                        <strong>说明:</strong>
-                        权重为模型推荐的配置比例，请按自身资金规模等比例缩放。
-                    </p>
+                <div class="notes-section" style="padding: 14px 24px; background: #f8f9fa; font-size: 12px; color: #888; line-height: 1.6;">
                     <p style="margin: 0;">
-                        分数越高代表模型预期收益越高。置信度百分位基于历史信号强度分布，反映模型对本次推荐的区分能力。
+                        权重为模型推荐的配置比例，请按自身资金规模等比例缩放。分数越高代表模型预期收益越高。
                     </p>
                 </div>
 
                 <!-- Disclaimer -->
-                <div style="padding: 12px 30px; background: #fef3c7; border-top: 1px solid #f59e0b; font-size: 11px; color: #92400e; line-height: 1.5;">
-                    <strong>免责声明:</strong>
-                    本邮件仅供学习和研究参考，不构成任何投资建议。
+                <div class="disclaimer-section" style="padding: 10px 24px; background: #fef3c7; font-size: 11px; color: #92400e; line-height: 1.5;">
+                    <strong>免责声明:</strong> 本邮件仅供学习和研究参考，不构成任何投资建议。
                 </div>
 
                 <!-- Footer -->
-                <div style="padding: 12px 30px; font-size: 11px; color: #aaa; border-top: 1px solid #eee;">
-                    生成时间: {generated_at[:19]} ｜ 策略: TopK (k={topk}) ｜ QuantBot
+                <div class="footer-section" style="padding: 10px 24px; font-size: 11px; color: #bbb; border-top: 1px solid #eee;">
+                    {generated_at[:19]} ｜ TopK (k={topk}) ｜ QuantBot
                 </div>
             </div>
             </div>
