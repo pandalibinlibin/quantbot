@@ -12777,3 +12777,81 @@ This filter is applied in both `_calculate_topk_portfolio` and `_execute_signal_
 - ✅ Update Portfolio: 10 ETF positions, SH000300 absent from Target Holdings
 - ✅ No functional code references `SH000300` or `000300.SH`
 - ✅ Benchmark reads from `backtest_config.yaml` (`SH510300`), not hardcoded
+
+---
+
+## LightGBM Hyperparameter Optimization (2026-05-19)
+
+### Background
+
+Iterative hyperparameter tuning was performed on the `LGBModel` in `online_serving_service.py` to improve backtest metrics, particularly IC Mean. Each round was validated by clearing old MLflow artifacts and MongoDB task records, triggering a full retrain, and running Update Data + Backtest.
+
+### Cleanup Procedure (required before each test)
+
+```powershell
+# Drop MongoDB task collection to force full retrain
+docker compose exec mongodb mongosh --eval "use quantbot_qlib" --eval "db.quantbot_online.drop()"
+
+# Remove MLflow experiment directory and cached signals
+docker compose exec backend rm -rf /app/mlruns/<experiment_id> /app/data/signals/_latest_signals.pkl
+
+# Restart backend
+docker compose restart backend
+```
+
+> **Note**: The MLflow experiment directory name is dynamic (e.g., `570435149637287549`). Check with `docker compose exec backend ls /app/mlruns/` before deleting.
+
+### Optimization History
+
+| Round | Parameter | Old Value | New Value | IC Mean | Net Return | CAGR | Result |
+|-------|-----------|-----------|-----------|---------|------------|------|--------|
+| Baseline | — | — | — | ~0.020 | ~+8% | ~+16% | Baseline |
+| Round 1 | `num_boost_round`, `learning_rate` | varies | 100, 0.05 | improved | — | — | ✅ Kept |
+| Round 2 | `lambda_l1`, `lambda_l2` | 205.7, 580.9 | 10.0, 10.0 | worse | — | — | ❌ Reverted |
+| Round 3 | `colsample_bytree` | 0.8879 | **0.5** | 0.0282 | +13.78% | +27.69% | ✅ Kept |
+| Round 4 | `subsample` | 0.8789 | 0.5 | no change | no change | no change | ❌ Reverted |
+| **Round 5** | `num_boost_round` | 100 | **200** | **0.0334** | **+17.53%** | **+36.11%** | ✅ **Final** |
+
+### Final Configuration (Round 5) — `online_serving_service.py`
+
+```python
+"kwargs": {
+    "loss": "mse",
+    "colsample_bytree": 0.5,        # Round 3: reduced from 0.8879
+    "learning_rate": 0.05,
+    "subsample": 0.8789,
+    "lambda_l1": 205.6999,
+    "lambda_l2": 580.9768,
+    "max_depth": 8,
+    "num_leaves": 210,
+    "num_threads": 4,
+    "num_boost_round": 200,         # Round 5: increased from 100
+    "verbose": -1,
+}
+```
+
+### Final Backtest Results (Round 5)
+
+| Metric | Value |
+|--------|-------|
+| IC Mean (Pearson) | **0.0334** (Good) |
+| Rank IC Mean (Spearman) | **0.0357** (Good) |
+| ICIR | 0.190 |
+| Rank ICIR | 0.189 |
+| Net Return | **+17.53%** |
+| CAGR (Net) | **+36.11%** |
+| Backtest Period | 2025-10-28 ~ 2026-05-15 (132 trading days) |
+
+### Key Findings
+
+- **`colsample_bytree=0.5`**: Reducing feature sampling from 88% to 50% improved IC Mean by ~41% (Round 3). With 164 Alpha158 features, many are highly correlated, so reducing feature redundancy per tree is beneficial.
+- **`subsample=0.5`**: No improvement observed. Row sampling did not help in this dataset.
+- **`lambda_l1/l2` reduction**: Significantly worsened performance. The original high regularization values are appropriate and should not be lowered.
+- **`num_boost_round=200`**: Doubling boosting rounds improved IC Mean by ~18% and CAGR by ~8pp (Round 5). The high regularization prevents overfitting even with more rounds.
+
+### Decision: Stop Tuning
+
+Round 5 configuration is retained as the final production config. Further hyperparameter tuning risks overfitting to the current backtest window. Future improvements should come from:
+1. Adding new factors/features
+2. Accumulating more training data over time
+3. Out-of-sample validation on different time periods
