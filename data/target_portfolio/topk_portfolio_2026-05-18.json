@@ -1,0 +1,98 @@
+{
+  "strategy": "topk",
+  "generated_at": "2026-05-19T02:58:43.057198",
+  "trade_date": "2026-05-18",
+  "signal_for_date": "2026-05-19",
+  "topk": 10,
+  "weight_method": "score_weighted",
+  "confidence": 0.9603,
+  "score_spread": 3.8294,
+  "confidence_percentile": 80.5,
+  "confidence_label": "较强",
+  "confidence_interpretation": "当前预测准确度在历史上处于前20%。模型区分度良好，推荐持仓可信度较高。建议紧密跟随系统推荐。",
+  "positions": [
+    {
+      "rank": 1,
+      "symbol": "SH588000",
+      "name": "科创50ETF华夏",
+      "index_name": "上证科创板50成份指数",
+      "score": 2.33517,
+      "weight": 0.122409
+    },
+    {
+      "rank": 2,
+      "symbol": "SH588080",
+      "name": "科创50ETF易方达",
+      "index_name": "上证科创板50成份指数",
+      "score": 2.269672,
+      "weight": 0.118975
+    },
+    {
+      "rank": 3,
+      "symbol": "SH588200",
+      "name": "科创芯片ETF嘉实",
+      "index_name": "上证科创板芯片指数",
+      "score": 2.249141,
+      "weight": 0.117899
+    },
+    {
+      "rank": 4,
+      "symbol": "SZ159915",
+      "name": "创业板ETF易方达",
+      "index_name": "创业板指数",
+      "score": 1.833802,
+      "weight": 0.096127
+    },
+    {
+      "rank": 5,
+      "symbol": "SZ159352",
+      "name": "A500ETF南方",
+      "index_name": "中证A500指数",
+      "score": 1.803316,
+      "weight": 0.094529
+    },
+    {
+      "rank": 6,
+      "symbol": "SZ159949",
+      "name": "创业板50ETF华安",
+      "index_name": "创业板50指数",
+      "score": 1.775436,
+      "weight": 0.093068
+    },
+    {
+      "rank": 7,
+      "symbol": "SZ159952",
+      "name": "创业板ETF广发",
+      "index_name": "创业板指数",
+      "score": 1.770227,
+      "weight": 0.092795
+    },
+    {
+      "rank": 8,
+      "symbol": "SH563360",
+      "name": "A500ETF华泰柏瑞",
+      "index_name": "中证A500指数",
+      "score": 1.744956,
+      "weight": 0.09147
+    },
+    {
+      "rank": 9,
+      "symbol": "SH588110",
+      "name": "科创成长ETF广发",
+      "index_name": "上证科创板成长指数",
+      "score": 1.657055,
+      "weight": 0.086862
+    },
+    {
+      "rank": 10,
+      "symbol": "SZ159910",
+      "name": "基本面120ETF嘉实",
+      "index_name": "深证基本面120指数",
+      "score": 1.638054,
+      "weight": 0.085866
+    }
+  ],
+  "summary": {
+    "total_positions": 10
+  }
+}

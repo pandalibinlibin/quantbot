@@ -680,7 +680,11 @@ class ModelMetricsService:
 
     def _map_feature_names(self, importance: pd.Series) -> pd.Series:
         """
-        Map Column_X indices to real feature names from FactorStorage.
+        Map Column_X indices to real feature names from CustomFactorHandler.
+
+        The feature order must match get_feature_config() exactly:
+        1. Alpha158 factors (if enabled): KMID, KLEN, KMID2, KUP, ...
+        2. Pre-computed custom factors: OHLCV + stored factors (excluding duplicates)
 
         Args:
             importance: Series with Column_X as index
@@ -693,23 +697,34 @@ class ModelMetricsService:
             if not any(str(idx).startswith("Column_") for idx in importance.index):
                 return importance  # Already has real names
 
-            # Get feature names directly from FactorStorage (avoid loading full handler)
             from .factor_storage import FactorStorage
             from app.config.qlib import qlib_config
 
-            storage = FactorStorage(freq=qlib_config.freq)
-
-            # Build feature names list in the same order as CustomFactorHandler
             feature_names = []
 
-            # 1. OHLCV fields (always first, must match custom_factor_handler order)
-            ohlcv_fields = ["open", "high", "low", "close", "volume", "vwap"]
-            feature_names.extend(ohlcv_fields)
+            # 1. Alpha158 factors (must come first, matching get_feature_config order)
+            try:
+                from qlib.contrib.data.loader import Alpha158DL
 
-            # 2. Pre-computed factors from storage (excluding label)
+                _alpha158_exprs, alpha158_names = Alpha158DL.get_feature_config()
+                feature_names.extend(alpha158_names)
+                logger.info(f"Alpha158 provides {len(alpha158_names)} feature names")
+            except Exception as e:
+                logger.warning(f"Failed to load Alpha158 names: {e}")
+
+            # 2. Pre-computed custom factors (OHLCV + stored factors, excluding duplicates)
+            storage = FactorStorage(freq=qlib_config.freq)
+            existing_names = set(feature_names)
+
+            # OHLCV fields
+            ohlcv_names = ["OPEN", "HIGH", "LOW", "CLOSE", "VOLUME", "VWAP"]
+            for name in ohlcv_names:
+                if name not in existing_names:
+                    feature_names.append(name)
+                    existing_names.add(name)
+
+            # Stored factors (excluding label)
             stored_factors = storage.list_stored_factors()
-
-            # Get label name to exclude
             label_name = None
             try:
                 from sqlmodel import Session, select
@@ -729,10 +744,16 @@ class ModelMetricsService:
 
             for factor_name in stored_factors:
                 if label_name and factor_name == label_name:
-                    continue  # Skip label
-                feature_names.append(factor_name)
+                    continue
+                upper_name = factor_name.upper()
+                if upper_name not in existing_names:
+                    feature_names.append(upper_name)
+                    existing_names.add(upper_name)
 
-            logger.info(f"Feature names from storage: {feature_names}")
+            logger.info(
+                f"Total mapped feature names: {len(feature_names)} "
+                f"(first 10: {feature_names[:10]})"
+            )
 
             # Create mapping from Column_X to feature name
             new_index = []
@@ -751,7 +772,7 @@ class ModelMetricsService:
                     new_index.append(idx_str)
 
             importance.index = new_index
-            logger.info(f"Mapped feature names: {list(importance.index)}")
+            logger.info(f"Mapped feature names (top 10): {list(importance.index[:10])}")
             return importance
 
         except Exception as e:

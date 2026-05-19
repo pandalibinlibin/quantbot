@@ -1,0 +1,98 @@
+{
+  "strategy": "topk",
+  "generated_at": "2026-05-11T10:32:53.602697",
+  "trade_date": "2026-05-11",
+  "signal_for_date": "2026-05-12",
+  "topk": 10,
+  "weight_method": "score_weighted",
+  "confidence": 1.0,
+  "score_spread": 4.3177,
+  "confidence_percentile": 100.0,
+  "confidence_label": "极强",
+  "confidence_interpretation": "当前预测准确度在历史上处于前0%。模型区分度极高，推荐持仓可信度很强。建议严格按照系统推荐持仓执行。",
+  "positions": [
+    {
+      "rank": 1,
+      "symbol": "SH516650",
+      "name": "有色金属ETF华夏",
+      "index_name": "中证细分有色金属产业主题指数",
+      "score": 2.137641,
+      "weight": 0.130584
+    },
+    {
+      "rank": 2,
+      "symbol": "SZ159652",
+      "name": "有色ETF汇添富",
+      "index_name": "中证细分有色金属产业主题指数",
+      "score": 2.137641,
+      "weight": 0.130584
+    },
+    {
+      "rank": 3,
+      "symbol": "SH588020",
+      "name": "科创成长ETF易方达",
+      "index_name": "上证科创板成长指数",
+      "score": 1.733064,
+      "weight": 0.105869
+    },
+    {
+      "rank": 4,
+      "symbol": "SH588000",
+      "name": "科创50ETF华夏",
+      "index_name": "上证科创板50成份指数",
+      "score": 1.675822,
+      "weight": 0.102373
+    },
+    {
+      "rank": 5,
+      "symbol": "SH588080",
+      "name": "科创50ETF易方达",
+      "index_name": "上证科创板50成份指数",
+      "score": 1.675822,
+      "weight": 0.102373
+    },
+    {
+      "rank": 6,
+      "symbol": "SZ159857",
+      "name": "光伏ETF天弘",
+      "index_name": "中证光伏产业指数",
+      "score": 1.519373,
+      "weight": 0.092816
+    },
+    {
+      "rank": 7,
+      "symbol": "SZ159915",
+      "name": "创业板ETF易方达",
+      "index_name": "创业板指数",
+      "score": 1.44251,
+      "weight": 0.08812
+    },
+    {
+      "rank": 8,
+      "symbol": "SH515050",
+      "name": "通信ETF华夏",
+      "index_name": "中证5G通信主题指数",
+      "score": 1.349315,
+      "weight": 0.082427
+    },
+    {
+      "rank": 9,
+      "symbol": "SH515880",
+      "name": "通信ETF国泰",
+      "index_name": "中证全指通信设备指数",
+      "score": 1.349315,
+      "weight": 0.082427
+    },
+    {
+      "rank": 10,
+      "symbol": "SH588050",
+      "name": "科创50ETF工银",
+      "index_name": "上证科创板50成份指数",
+      "score": 1.349315,
+      "weight": 0.082427
+    }
+  ],
+  "summary": {
+    "total_positions": 10
+  }
+}

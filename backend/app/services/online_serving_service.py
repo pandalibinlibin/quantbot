@@ -288,14 +288,41 @@ class OnlineServingService:
         - Time range (from actual data)
         - Instruments (all available stocks)
 
+        Segments are split into train/valid/test periods:
+        - train: first 80% of data (model fitting)
+        - valid: next 2% of data (early stopping only, kept minimal to minimize
+          the gap between training end and prediction start)
+        - test:  last 18% of data (out-of-sample evaluation)
+        RollingGen shifts these windows forward by rolling_step days each iteration.
+
         Returns:
             Task template dictionary
         """
+        from datetime import datetime as dt, timedelta
+
         # Get frequency (only day-level data supported)
         self._freq = self._get_data_frequency()
 
         # Get actual data time range
         start_time, end_time = self._get_data_time_range()
+
+        # Calculate proper train/valid/test split
+        start_dt = dt.strptime(start_time, "%Y-%m-%d")
+        end_dt = dt.strptime(end_time, "%Y-%m-%d")
+        total_days = (end_dt - start_dt).days
+
+        train_end_dt = start_dt + timedelta(days=int(total_days * 0.80))
+        valid_end_dt = start_dt + timedelta(days=int(total_days * 0.82))
+
+        train_end = train_end_dt.strftime("%Y-%m-%d")
+        valid_end = valid_end_dt.strftime("%Y-%m-%d")
+
+        self.logger.info(
+            f"Task template segments: "
+            f"train=({start_time}, {train_end}), "
+            f"valid=({train_end}, {valid_end}), "
+            f"test=({valid_end}, {end_time})"
+        )
 
         # Build task template based on frequency
         # Use CustomFactorHandler and "all" instruments like training_config.yaml
@@ -305,7 +332,7 @@ class OnlineServingService:
                 "module_path": "qlib.contrib.model.gbdt",
                 "kwargs": {
                     "loss": "mse",
-                    "colsample_bytree": 0.8879,
+                    "colsample_bytree": 0.5,
                     "learning_rate": 0.05,
                     "subsample": 0.8789,
                     "lambda_l1": 205.6999,
@@ -313,7 +340,7 @@ class OnlineServingService:
                     "max_depth": 8,
                     "num_leaves": 210,
                     "num_threads": 4,
-                    "num_boost_round": 100,
+                    "num_boost_round": 200,
                     "verbose": -1,
                 },
             },
@@ -328,16 +355,16 @@ class OnlineServingService:
                             "start_time": start_time,
                             "end_time": end_time,
                             "fit_start_time": start_time,
-                            "fit_end_time": end_time,
+                            "fit_end_time": train_end,
                             "instruments": "all",
                             "freq": self._freq,
-                            "enable_alpha158": False,
+                            "enable_alpha158": True,
                         },
                     },
                     "segments": {
-                        "train": (start_time, end_time),
-                        "valid": (start_time, end_time),
-                        "test": (start_time, end_time),
+                        "train": (start_time, train_end),
+                        "valid": (train_end, valid_end),
+                        "test": (valid_end, end_time),
                     },
                 },
             },
@@ -613,6 +640,38 @@ class OnlineServingService:
             from qlib.workflow.task.gen import RollingGen
             from qlib.model.trainer import TrainerRM
 
+            # Patch RollingGen.gen_following_tasks to handle calendar boundary:
+            # When shifting dates beyond the Qlib calendar, TimeAdjuster.get()
+            # returns None, causing TypeError in 'None > Timestamp' comparison.
+            # This patch adds a None guard to gracefully stop rolling at the boundary.
+            def _patched_gen_following(self_gen, task, test_end):
+                prev_seg = task["dataset"]["kwargs"]["segments"]
+                while True:
+                    segments = {}
+                    try:
+                        for k, seg in prev_seg.items():
+                            if (
+                                k == self_gen.train_key
+                                and self_gen.rtype == self_gen.ROLL_EX
+                            ):
+                                rtype = self_gen.ta.SHIFT_EX
+                            else:
+                                rtype = self_gen.ta.SHIFT_SD
+                            segments[k] = self_gen.ta.shift(
+                                seg, step=self_gen.step, rtype=rtype
+                            )
+                        seg_start = segments[self_gen.test_key][0]
+                        if seg_start is None or seg_start > test_end:
+                            break
+                    except (KeyError, TypeError):
+                        break
+                    prev_seg = segments
+                    t = self_gen.task_copy_func(task)
+                    self_gen._update_task_segs(t, segments)
+                    yield t
+
+            RollingGen.gen_following_tasks = _patched_gen_following
+
             # Configure MongoDB for TaskManager
             import qlib
 
@@ -688,7 +747,12 @@ class OnlineServingService:
 
         except Exception as e:
             self._initialization_error = str(e)
-            self.logger.error(f"Failed to initialize Online Serving: {e}")
+            import traceback
+
+            self.logger.error(
+                f"Failed to initialize Online Serving: {e}\n"
+                f"{traceback.format_exc()}"
+            )
             raise
 
     def update_data(self, cur_time: Optional[str] = None) -> Dict[str, Any]:
@@ -750,7 +814,7 @@ class OnlineServingService:
                 return result
 
             # Short-circuit: if data didn't change AND factors didn't change
-            # AND signals already exist, skip expensive Steps 2-5
+            # AND signals already exist AND are up-to-date, skip expensive Steps 2-5
             data_changed = data_update_result.get("data_changed", True)
             has_signals_in_memory = (
                 self.is_initialized
@@ -765,8 +829,36 @@ class OnlineServingService:
             persisted_factor_fp = getattr(self, "_persisted_factor_fingerprint", "")
             factors_changed = current_factor_fp != persisted_factor_fp
 
+            # Check if signals are stale (routine ran before latest available data)
+            signals_stale = False
+            if self._last_routine_time and not data_changed:
+                try:
+                    cal_file = (
+                        Path(qlib_config.qlib_data_path) / "calendars" / "day.txt"
+                    )
+                    if cal_file.exists():
+                        with open(cal_file, "r") as f:
+                            lines = [l.strip() for l in f if l.strip()]
+                        if lines:
+                            last_cal_date = datetime.strptime(
+                                lines[-1].split()[0], "%Y-%m-%d"
+                            )
+                            last_routine_date = self._last_routine_time.replace(
+                                hour=0, minute=0, second=0, microsecond=0
+                            )
+                            if last_routine_date < last_cal_date:
+                                signals_stale = True
+                                self.logger.info(
+                                    f"Signals are stale: last_routine="
+                                    f"{last_routine_date.date()}, "
+                                    f"last_calendar={last_cal_date.date()}"
+                                )
+                except Exception as e:
+                    self.logger.warning(f"Failed to check signal freshness: {e}")
+
             self.logger.info(
                 f"Short-circuit check: data_changed={data_changed}, "
+                f"signals_stale={signals_stale}, "
                 f"factors_changed={factors_changed} "
                 f"(current={current_factor_fp}, persisted={persisted_factor_fp}), "
                 f"has_signals_in_memory={has_signals_in_memory}, "
@@ -775,6 +867,7 @@ class OnlineServingService:
 
             if (
                 not data_changed
+                and not signals_stale
                 and not factors_changed
                 and (has_signals_in_memory or has_persisted_signals)
             ):

@@ -1,6 +1,6 @@
 # QuantBot 技术规格文档
 
-**版本**: 4.7 (Target Portfolio UI/UX Refinements & ETF Info)  
+**版本**: 4.8 (Remove Index from ETF Pool & Benchmark Cleanup)  
 **最后更新**: 2026-04-23
 
 ---
@@ -12725,3 +12725,55 @@ indexes:
 - **系统稳定性**: 100%测试通过率
 
 ETF数据处理系统已完成设计、实现和验证，为ETF量化交易策略提供了坚实的数据基础。
+
+---
+
+## 🔧 v4.8: Remove Index from ETF Pool & Benchmark Cleanup
+
+### Problem
+
+SH000300 (CSI 300 Index) was incorrectly treated as an ETF and appeared in Target Holdings. Indices are non-tradeable instruments and should never be part of a portfolio.
+
+### Root Cause
+
+1. `tushare_collector.py` explicitly added `000300.SH` to the data collection list alongside real ETFs
+2. Qlib models generated prediction scores for SH000300 since it was in the training data
+3. No filter existed to prevent index codes from entering portfolio selection
+4. Multiple files had hardcoded `SH000300` / `000300.SH` references as the benchmark
+
+### Solution
+
+**Benchmark changed**: `SH000300` (index, non-tradeable) → `SH510300` (CSI 300 ETF, tradeable)
+
+#### Files Modified
+
+| File | Change |
+|---|---|
+| `tushare_collector.py` | Removed explicit `000300.SH` addition to data collection |
+| `online_serving_service.py` | Added `_is_index_code()` safety filter; replaced hardcoded SH000300 with config benchmark |
+| `qlib_workflow_service.py` | Fallback benchmark `000300.SH` → `SH510300` |
+| `backtest.py` (route) | API description/example updated to `SH510300` |
+| `models.py` | Field description updated to `SH510300` |
+| `data_utils.py` | Docstring updated to reflect benchmark ETF filtering |
+
+#### Safety Filter: `_is_index_code()`
+
+```python
+def _is_index_code(symbol: str) -> bool:
+    s = symbol.upper()
+    return s.startswith("SH000") or s.startswith("SZ399")
+```
+
+This filter is applied in both `_calculate_topk_portfolio` and `_execute_signal_based_backtest` to prevent any index codes from entering portfolio holdings, even if they leak into model signals.
+
+#### Index Code Patterns
+
+- **SH000xxx**: Shanghai composite indices (e.g., SH000300 = CSI 300)
+- **SZ399xxx**: Shenzhen composite indices (e.g., SZ399001 = SZSE Component)
+
+### Verification
+
+- ✅ Run Backtest: 724 trading days, return=164.45%, no errors
+- ✅ Update Portfolio: 10 ETF positions, SH000300 absent from Target Holdings
+- ✅ No functional code references `SH000300` or `000300.SH`
+- ✅ Benchmark reads from `backtest_config.yaml` (`SH510300`), not hardcoded
