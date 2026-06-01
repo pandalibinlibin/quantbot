@@ -255,6 +255,108 @@ class OnlineServingService:
             qlib_service.initialize()
         return qlib_service.is_initialized()
 
+    def _apply_trend_filter(
+        self, signals: pd.Series, ma_short: int = 5, ma_long: int = 20
+    ) -> pd.Series:
+        """
+        Apply trend filter to signals, keeping only ETFs in uptrend (MA_short > MA_long).
+
+        Args:
+            signals: Prediction signals with MultiIndex (datetime, instrument)
+            ma_short: Short-term moving average period (default: 5)
+            ma_long: Long-term moving average period (default: 20)
+
+        Returns:
+            Filtered signals containing only uptrend ETFs
+        """
+        try:
+            from qlib.data import D
+
+            # Get unique dates and instruments from signals
+            signal_dates = signals.index.get_level_values("datetime").unique()
+            instruments = signals.index.get_level_values("instrument").unique()
+
+            # Get price data for all dates
+            start_date = signal_dates.min()
+            end_date = signal_dates.max()
+
+            # Load close price data
+            price_data = D.features(
+                instruments=instruments.tolist(),
+                fields=["$close"],
+                start_time=start_date,
+                end_time=end_date,
+                freq="day",
+            )
+
+            # Calculate MA_short and MA_long
+            # Use min_periods=1 to calculate even with limited data, then forward fill
+            price_data["MA5"] = price_data.groupby("instrument")["$close"].transform(
+                lambda x: x.rolling(window=ma_short, min_periods=1).mean()
+            )
+            price_data["MA20"] = price_data.groupby("instrument")["$close"].transform(
+                lambda x: x.rolling(window=ma_long, min_periods=1).mean()
+            )
+
+            # Forward fill any remaining NaN values within each instrument
+            price_data["MA5"] = price_data.groupby("instrument")["MA5"].ffill()
+            price_data["MA20"] = price_data.groupby("instrument")["MA20"].ffill()
+
+            # Identify uptrend (MA5 > MA20), default to False if either is NaN
+            price_data["uptrend"] = (price_data["MA5"] > price_data["MA20"]).fillna(
+                False
+            )
+
+            # Debug: log trend statistics
+            uptrend_count = price_data["uptrend"].sum()
+            total_count = len(price_data)
+            self.logger.info(
+                f"Trend filter debug: {uptrend_count}/{total_count} price records in uptrend "
+                f"({uptrend_count / total_count * 100:.1f}%)"
+            )
+
+            # Create a mapping of (date, instrument) -> uptrend status
+            # price_data index from D.features() is (instrument, datetime)
+            # signals index is (datetime, instrument), so we need to swap levels
+            price_data_indexed = price_data.copy()
+            price_data_indexed.index = price_data_indexed.index.swaplevel(0, 1)
+
+            # Debug: check signal index vs price_data index (after swap)
+            sample_signal_idx = signals.index[0] if len(signals) > 0 else None
+            sample_price_idx_raw = price_data.index[0] if len(price_data) > 0 else None
+            sample_price_idx_fixed = (
+                price_data_indexed.index[0] if len(price_data_indexed) > 0 else None
+            )
+            self.logger.info(
+                f"Trend filter debug: Signal index={sample_signal_idx}, "
+                f"Price raw={sample_price_idx_raw}, Price fixed={sample_price_idx_fixed}"
+            )
+
+            uptrend_map = price_data_indexed["uptrend"].to_dict()
+
+            # Filter signals: keep only those where uptrend is True
+            # Both indices are now (datetime, instrument)
+            def check_uptrend(idx):
+                result = uptrend_map.get(idx, False)
+                return result
+
+            mask = signals.index.map(check_uptrend)
+            filtered_signals = signals[mask]
+
+            original_count = len(signals)
+            filtered_count = len(filtered_signals)
+            self.logger.info(
+                f"Trend filter applied: {filtered_count}/{original_count} signals kept "
+                f"({filtered_count / original_count * 100:.1f}%)"
+            )
+
+            return filtered_signals
+
+        except Exception as e:
+            self.logger.error(f"Failed to apply trend filter: {e}")
+            # Return original signals if filter fails
+            return signals
+
     def _get_data_time_range(self) -> tuple:
         """
         Get data time range from Qlib calendar.
@@ -829,6 +931,34 @@ class OnlineServingService:
             persisted_factor_fp = getattr(self, "_persisted_factor_fingerprint", "")
             factors_changed = current_factor_fp != persisted_factor_fp
 
+            # Check if label configuration changed (e.g., T+2 -> T+5)
+            label_changed = False
+            try:
+                import yaml
+
+                config_path = (
+                    Path(__file__).parent.parent
+                    / "config"
+                    / "qlib"
+                    / "system_config.yaml"
+                )
+                with open(config_path, "r") as f:
+                    system_config = yaml.safe_load(f)
+                label_config = system_config.get("label_config", {})
+                region = system_config.get("data", {}).get("region", "cn")
+                region_label = label_config.get(region, {})
+                current_label_expr = region_label.get("expression", "")
+                persisted_label_expr = getattr(self, "_persisted_label_expression", "")
+                if persisted_label_expr and current_label_expr != persisted_label_expr:
+                    label_changed = True
+                    self.logger.info(
+                        f"Label expression changed: {persisted_label_expr} -> {current_label_expr}"
+                    )
+                # Store current label for next comparison
+                self._persisted_label_expression = current_label_expr
+            except Exception as e:
+                self.logger.warning(f"Failed to check label config changes: {e}")
+
             # Check if signals are stale (routine ran before latest available data)
             signals_stale = False
             if self._last_routine_time and not data_changed:
@@ -859,7 +989,8 @@ class OnlineServingService:
             self.logger.info(
                 f"Short-circuit check: data_changed={data_changed}, "
                 f"signals_stale={signals_stale}, "
-                f"factors_changed={factors_changed} "
+                f"factors_changed={factors_changed}, "
+                f"label_changed={label_changed} "
                 f"(current={current_factor_fp}, persisted={persisted_factor_fp}), "
                 f"has_signals_in_memory={has_signals_in_memory}, "
                 f"has_persisted_signals={has_persisted_signals}"
@@ -869,6 +1000,7 @@ class OnlineServingService:
                 not data_changed
                 and not signals_stale
                 and not factors_changed
+                and not label_changed
                 and (has_signals_in_memory or has_persisted_signals)
             ):
                 signal_count = (
@@ -1090,7 +1222,26 @@ class OnlineServingService:
                 )
                 self.logger.info(f"Using date from signals index: {effective_cur_time}")
 
-            # Step 1: Calculate target portfolio
+            # Step 1: Apply trend filter - only select ETFs in uptrend
+            signals = self._apply_trend_filter(signals)
+            self.logger.info(
+                f"Portfolio generation: {len(signals)} signals after trend filter"
+            )
+
+            # Check if we have any signals left after filtering
+            if len(signals) == 0:
+                self.logger.warning(
+                    "No signals remaining after trend filter. "
+                    "Cannot generate portfolio. All ETFs may be in downtrend."
+                )
+                return {
+                    "success": False,
+                    "error": "No ETFs in uptrend found. Consider holding cash or checking market conditions.",
+                    "target_portfolio": [],
+                    "summary": {},
+                }
+
+            # Step 2: Calculate target portfolio
             # Try TopK strategy first, then fall back to ETF Enhanced Indexing
             step_start = time.time()
             topk_config = qlib_config._config.get("topk_dropout_strategy", {})
@@ -3223,8 +3374,34 @@ class OnlineServingService:
                                 label_expr = handler_kwargs["label"]
 
                 if label_expr is None:
-                    # Default label expression
-                    label_expr = ["Ref($close, -2)/Ref($close, -1) - 1"]
+                    # Load label expression from system_config.yaml
+                    # This ensures consistency with training configuration
+                    try:
+                        import yaml
+
+                        config_path = (
+                            Path(__file__).parent.parent
+                            / "config"
+                            / "qlib"
+                            / "system_config.yaml"
+                        )
+                        with open(config_path, "r") as f:
+                            system_config = yaml.safe_load(f)
+                        label_config = system_config.get("label_config", {})
+                        region = system_config.get("data", {}).get("region", "cn")
+                        region_label = label_config.get(region, {})
+                        label_expr_str = region_label.get(
+                            "expression", "Ref($close, -5) / $close - 1"
+                        )
+                        label_expr = [label_expr_str]
+                        self.logger.info(
+                            f"Loaded label expression from config: {label_expr}"
+                        )
+                    except Exception as e:
+                        self.logger.warning(
+                            f"Failed to load label from config: {e}, using default T+5"
+                        )
+                        label_expr = ["Ref($close, -5) / $close - 1"]
 
                 self.logger.info(f"Loading label data with expression: {label_expr}")
 
@@ -3628,6 +3805,24 @@ class OnlineServingService:
             self.logger.info(
                 f"TopK Dropout Strategy config: topk={topk}, n_drop={n_drop}, account={account}"
             )
+
+            # Apply trend filter: only select ETFs in uptrend (MA5 > MA20)
+            signals = self._apply_trend_filter(signals)
+            self.logger.info(f"Signals after trend filter: {len(signals)} entries")
+
+            # Check if we have any signals left after filtering
+            if len(signals) == 0:
+                self.logger.warning(
+                    "No signals remaining after trend filter. "
+                    "Skipping backtest. Consider checking market conditions or adjusting filter criteria."
+                )
+                return {
+                    "status": "warning",
+                    "message": "No ETFs in uptrend found for the backtest period",
+                    "return": 0.0,
+                    "cagr": 0.0,
+                    "trading_days": 0,
+                }
 
             # Create TopkDropoutStrategy with intelligent rebalancing
             strategy = TopkDropoutStrategy(topk=topk, n_drop=n_drop, signal=signals)

@@ -139,8 +139,8 @@ label_config:
   # Today's signal → Buy tomorrow → Sell day after tomorrow
   # Cross-sectional normalization is applied by learn_processors (CSZScoreNorm)
   cn:
-    expression: "Ref($close, -2) / $close - 1"
-    description: "T+2 return for A-shares (T+1 trading rule)"
+    expression: "(Mean(Ref($close, -2), 5) - Mean(Ref($close, -2), 20)) / Std(Ref($close, -2), 5)"
+    description: "T+2 trend momentum: (Future MA5 - Future MA20) / Future Std5, predicts short-term trend continuation"
 
   # US stocks: T+0 trading rule
   # Today's signal → Buy tomorrow → Can sell tomorrow
