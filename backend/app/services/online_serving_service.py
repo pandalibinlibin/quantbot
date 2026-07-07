@@ -714,6 +714,39 @@ class OnlineServingService:
             # Return original signals on error
             return signals
 
+    def _clear_stuck_mongo_tasks(self) -> int:
+        """
+        Remove orphaned MongoDB tasks left by interrupted training runs.
+
+        Qlib TrainerRM waits forever for any task whose status is not ``done``.
+        If a previous process crashed (or was restarted) mid-train, a task can
+        remain ``running`` with no worker attached, hanging ``first_train()`` /
+        ``routine()`` at e.g. 6/7. Deleting those records lets TrainerRM recreate
+        and re-run them as new tasks.
+        """
+        try:
+            from pymongo import MongoClient
+
+            client = MongoClient(qlib_config.mongodb_uri)
+            try:
+                collection = client[qlib_config.mongodb_database][
+                    qlib_config.experiment_name
+                ]
+                result = collection.delete_many({"status": "running"})
+                deleted = result.deleted_count
+                if deleted:
+                    self.logger.warning(
+                        f"Cleared {deleted} stuck 'running' task(s) from MongoDB "
+                        f"collection '{qlib_config.experiment_name}' "
+                        f"(likely left by an interrupted training run)"
+                    )
+                return deleted
+            finally:
+                client.close()
+        except Exception as e:
+            self.logger.warning(f"Failed to clear stuck MongoDB tasks: {e}")
+            return 0
+
     def _auto_init(self) -> Dict[str, Any]:
         """
         Auto-initialize OnlineManager on first routine call.
@@ -819,6 +852,10 @@ class OnlineServingService:
                 begin_time=start_time,
                 freq=self._freq,
             )
+
+            # Clear orphaned 'running' tasks before training to avoid hangs
+            # like "Waiting for 1 undone tasks" at 6/7 after a crash/restart.
+            self._clear_stuck_mongo_tasks()
 
             # First train - train initial models
             self.logger.info("Executing first_train() to train initial models...")
@@ -1076,6 +1113,8 @@ class OnlineServingService:
             self.logger.info(
                 f"Executing OnlineManager routine with cur_time={effective_cur_time}..."
             )
+            # Guard against orphaned 'running' tasks hanging routine() forever.
+            self._clear_stuck_mongo_tasks()
             self._online_manager.routine(cur_time=effective_cur_time)
             self._prepare_signals_with_online_filter()
 
