@@ -127,7 +127,7 @@ services:
       - default
 
   mongodb:
-    image: mongo:7.0
+    image: mongo:8.2
     restart: "no"
     ports:
       - "27017:27017"
