@@ -329,7 +329,7 @@ class CustomFactorHandler(DataHandlerLP):
 
         Educational Notes:
         - Always uses region-specific label expression from config
-        - A-shares (cn): T+2 return due to T+1 trading rule
+        - A-shares (cn): executable ~5d return (T+1 open → T+6 close) / known return vol
         - US stocks (us): T+1 return due to T+0 trading rule
         - Label is NOT user-customizable, it's determined by market region
 

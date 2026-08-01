@@ -136,11 +136,18 @@ builtin_factor_libraries:
 # Different markets require different label calculations due to trading rules
 label_config:
   # China A-shares: T+1 trading rule
-  # Today's signal → Buy tomorrow → Sell day after tomorrow
+  # Today's signal (T close) → Buy T+1 open → Hold ~5 days → Exit T+6 close
+  # Denominator: known 20d return vol with 0.15% floor (suppresses ultra-low-vol bond ETF inflation)
   # Cross-sectional normalization is applied by learn_processors (CSZScoreNorm)
+  # Note: Qlib Max(x,N) is rolling-max; use Greater(a,b) for element-wise max with a constant
   cn:
-    expression: "(Mean(Ref($close, -2), 5) - Mean(Ref($close, -2), 20)) / Std(Ref($close, -2), 5)"
-    description: "T+2 trend momentum: (Future MA5 - Future MA20) / Future Std5, predicts short-term trend continuation"
+    # Training target (vol-scaled for cross-asset learning)
+    expression: "(Ref($close, -6) / Ref($open, -1) - 1) / Greater(Std($close / Ref($close, 1) - 1, 20), 0.0015)"
+    description: "Executable 5d return from T+1 open to T+6 close, scaled by max(20d return vol, 0.15%)"
+    # Evaluation target for IC / long-short / group returns (UNSCALED tradable PnL)
+    # Must NOT use the training expression — vol-scaling inflates portfolio-style metrics
+    evaluation_return: "Ref($close, -6) / Ref($open, -1) - 1"
+    evaluation_horizon_days: 5
 
   # US stocks: T+0 trading rule
   # Today's signal → Buy tomorrow → Can sell tomorrow
@@ -148,6 +155,19 @@ label_config:
   us:
     expression: "Ref($close, -1) / $close - 1"
     description: "T+1 return for US stocks (T+0 trading rule)"
+    evaluation_return: "Ref($close, -1) / $close - 1"
+    evaluation_horizon_days: 1
+
+# Execution alignment (portfolio generation + online TopK backtest)
+# Defaults favor live realism over legacy "looks good in backtest" settings
+execution:
+  # Qlib exchange deal price: open ≈ T+1 morning entry; close = legacy EOD fill
+  deal_price: open
+  # MA5>MA20 filter silently rewrites model ranking toward already-rising names.
+  # Default off so production portfolio follows model scores; set true to restore legacy filter.
+  trend_filter_enabled: false
+  trend_filter_ma_short: 5
+  trend_filter_ma_long: 20
 
 # TopK Dropout Strategy Configuration (ETF Optimized)
 # Uses TopkDropoutStrategy with n_drop=topk for intelligent complete reselection capability

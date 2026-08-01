@@ -58,20 +58,27 @@ class ModelMetricsService:
         label: pd.Series,
         model: Optional[Any] = None,
         freq: str = "day",
+        return_horizon_days: int = 1,
     ) -> Dict[str, Any]:
         """
         Calculate all model performance metrics.
 
         Args:
             pred: Prediction series (MultiIndex: [instrument, datetime])
-            label: Label series (MultiIndex: [instrument, datetime])
+            label: Evaluation return series (tradable PnL, NOT vol-scaled training label)
             model: Latest trained model for feature importance (optional)
             freq: Data frequency (only "day" is supported)
+            return_horizon_days: Holding horizon of each label observation (e.g. 5 for
+                T+1 open → T+6 close). Used to annualize long-short means/Sharpe
+                as 252/horizon instead of incorrectly assuming daily returns.
 
         Returns:
             Dictionary containing all metrics and chart data
         """
-        logger.info("Calculating comprehensive model metrics...")
+        logger.info(
+            "Calculating comprehensive model metrics "
+            f"(return_horizon_days={return_horizon_days})..."
+        )
 
         try:
             # Prepare pred_label DataFrame
@@ -81,7 +88,9 @@ class ModelMetricsService:
             ic_metrics = self._calculate_ic_metrics(pred_label)
 
             # Calculate Long-Short metrics
-            long_short_metrics = self._calculate_long_short_metrics(pred_label, freq)
+            long_short_metrics = self._calculate_long_short_metrics(
+                pred_label, freq, return_horizon_days=return_horizon_days
+            )
 
             # Calculate prediction quality
             quality_metrics = self._calculate_quality_metrics(pred_label)
@@ -97,6 +106,13 @@ class ModelMetricsService:
                 "model_type": "Rolling Ensemble",
                 "calculated_at": datetime.utcnow().isoformat(),
                 "frequency": freq,
+                "return_horizon_days": return_horizon_days,
+                "evaluation_note": (
+                    "IC/long-short/group metrics use unscaled tradable evaluation "
+                    "returns (not vol-scaled training labels). Group cumulative "
+                    "curves still overlap multi-day horizons; treat ranking "
+                    "separation as qualitative."
+                ),
                 "ic_metrics": ic_metrics,
                 "long_short_metrics": long_short_metrics,
                 "quality_metrics": quality_metrics,
@@ -327,7 +343,10 @@ class ModelMetricsService:
         }
 
     def _calculate_long_short_metrics(
-        self, pred_label: pd.DataFrame, freq: str
+        self,
+        pred_label: pd.DataFrame,
+        freq: str,
+        return_horizon_days: int = 1,
     ) -> Dict[str, Any]:
         """
         Calculate Long-Short strategy performance metrics.
@@ -337,6 +356,7 @@ class ModelMetricsService:
         Args:
             pred_label: DataFrame with 'score' and 'label' columns (MultiIndex: datetime, instrument)
             freq: Data frequency for annualization
+            return_horizon_days: Label holding horizon in trading days
 
         Returns:
             Dictionary with Long-Short metrics and returns data
@@ -344,6 +364,7 @@ class ModelMetricsService:
         # Calculate long-short returns manually since pred_label has MultiIndex
         quantile = 0.2
         datetime_level = pred_label.index.names[0] if pred_label.index.names[0] else 0
+        horizon = max(1, int(return_horizon_days or 1))
 
         def calc_group_return(group):
             n = max(1, int(len(group) * quantile))
@@ -366,8 +387,9 @@ class ModelMetricsService:
         long_short_r = daily_returns["long_short"]
         long_avg_r = daily_returns["long_avg"]
 
-        # Annualization scaler (252 trading days per year)
-        scaler = 252
+        # Annualize by number of non-overlapping horizons per year.
+        # (Overlapping daily samples still inflate Sharpe somewhat; better than *252 on 5d rets.)
+        scaler = 252.0 / horizon
 
         # Calculate annualized metrics
         ls_ann_return = float(long_short_r.mean() * scaler)
@@ -416,6 +438,9 @@ class ModelMetricsService:
             "long_short_ann_sharpe": ls_ann_sharpe,
             "long_avg_ann_return": la_ann_return,
             "long_avg_ann_sharpe": la_ann_sharpe,
+            "mean_period_long_short": float(long_short_r.mean()),
+            "return_horizon_days": horizon,
+            "annualization_scaler": scaler,
             "long_short_series": ls_series_data,
             "cumulative_returns": cum_series_data,
             "return_distribution": return_distribution,

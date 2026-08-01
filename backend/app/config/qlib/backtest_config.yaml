@@ -15,9 +15,10 @@ backtest:
   benchmark: SH510300 # CSI300 ETF as benchmark
 
   # ETF trading costs
+  # deal_price: keep in sync with system_config.yaml execution.deal_price (live ≈ open)
   exchange_kwargs:
     limit_threshold: 0.095 # Price limit threshold (9.5% for A-shares)
-    deal_price: close # Use close price for trading
+    deal_price: open # Align with T+1 morning entry (not EOD close)
     open_cost: 0.0001 # ETF buy commission rate (0.01%)
     close_cost: 0.0001 # ETF sell commission rate (0.01%, no stamp duty)
     min_cost: 0 # No minimum commission for ETF

@@ -184,6 +184,27 @@ class QlibConfig:
         return self.online_serving.get("rolling_type", "expanding")
 
     @property
+    def execution(self) -> Dict[str, Any]:
+        """Get execution alignment config (deal price, trend filter)."""
+        return self._config.get("execution", {})
+
+    @property
+    def deal_price(self) -> str:
+        """Get exchange deal price for portfolio backtests (default: open)."""
+        return self.execution.get("deal_price", "open")
+
+    @property
+    def trend_filter_enabled(self) -> bool:
+        """Whether MA trend filter is applied at portfolio/backtest time."""
+        return bool(self.execution.get("trend_filter_enabled", False))
+
+    def get_label_region_config(self, region: Optional[str] = None) -> Dict[str, Any]:
+        """Get label_config for a market region."""
+        if region is None:
+            region = self._config.get("data", {}).get("region", "cn")
+        return self._config.get("label_config", {}).get(region, {})
+
+    @property
     def paper_trading(self) -> Dict[str, Any]:
         """Get paper trading configuration (from paper_trading_config.yaml)."""
         return self._paper_trading_config

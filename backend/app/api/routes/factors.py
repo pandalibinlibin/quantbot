@@ -275,18 +275,32 @@ async def get_label_config(
         if region_label:
             expression = region_label.get("expression", "")
             description = region_label.get("description", "")
+            evaluation_return = region_label.get("evaluation_return", "")
+            evaluation_horizon_days = region_label.get("evaluation_horizon_days")
         else:
-            # Fallback defaults
+            # Fallback defaults (keep in sync with system_config.yaml label_config)
             if region == "cn":
-                expression = "Ref($close, -2)/Ref($close, -1) - 1"
-                description = "T+2 return for A-shares (T+1 trading rule)"
+                expression = (
+                    "(Ref($close, -6) / Ref($open, -1) - 1) / "
+                    "Greater(Std($close / Ref($close, 1) - 1, 20), 0.0015)"
+                )
+                description = (
+                    "Executable 5d return from T+1 open to T+6 close, "
+                    "scaled by max(20d return vol, 0.15%)"
+                )
+                evaluation_return = "Ref($close, -6) / Ref($open, -1) - 1"
+                evaluation_horizon_days = 5
             else:
                 expression = "Ref($close, -1)/$close - 1"
                 description = "T+1 return for US stocks (T+0 trading rule)"
+                evaluation_return = expression
+                evaluation_horizon_days = 1
 
         return {
             "region": region,
             "expression": expression,
+            "evaluation_return": evaluation_return,
+            "evaluation_horizon_days": evaluation_horizon_days,
             "description": description,
             "name": "LABEL0",
             "editable": False,  # Labels are not user-editable

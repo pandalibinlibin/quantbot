@@ -164,6 +164,7 @@ class OnlineServingService:
                     else None
                 ),
                 "factor_fingerprint": self._get_factor_fingerprint(),
+                "label_expression": getattr(self, "_persisted_label_expression", ""),
                 "persisted_at": datetime.now().isoformat(),
             }
             with open(self.SIGNALS_META_FILE, "w") as f:
@@ -191,6 +192,7 @@ class OnlineServingService:
 
                 self._persisted_signal_count = meta.get("signal_count", 0)
                 self._persisted_factor_fingerprint = meta.get("factor_fingerprint", "")
+                self._persisted_label_expression = meta.get("label_expression", "")
                 last_time = meta.get("last_routine_time")
                 if last_time:
                     self._last_routine_time = datetime.fromisoformat(last_time)
@@ -198,16 +200,19 @@ class OnlineServingService:
                 self.logger.info(
                     f"Restored persisted state: signal_count={self._persisted_signal_count}, "
                     f"last_routine_time={self._last_routine_time}, "
-                    f"factor_fingerprint={self._persisted_factor_fingerprint}"
+                    f"factor_fingerprint={self._persisted_factor_fingerprint}, "
+                    f"label_expression={self._persisted_label_expression[:80] if self._persisted_label_expression else ''}"
                 )
             else:
                 self._persisted_signal_count = 0
                 self._persisted_factor_fingerprint = ""
+                self._persisted_label_expression = ""
                 self.logger.info("No persisted signal state found")
 
         except Exception as e:
             self._persisted_signal_count = 0
             self._persisted_factor_fingerprint = ""
+            self._persisted_label_expression = ""
             self.logger.error(f"Failed to restore persisted state: {e}")
 
     def _load_persisted_signals(self) -> Optional[pd.DataFrame]:
@@ -961,14 +966,21 @@ class OnlineServingService:
                 and self._online_manager.get_signals() is not None
                 and len(self._online_manager.get_signals()) > 0
             )
-            has_persisted_signals = getattr(self, "_persisted_signal_count", 0) > 0
+            # Only treat disk signals as available if the pickle still exists.
+            # Meta alone can survive after pkl deletion and incorrectly skip retrain.
+            has_persisted_signals = (
+                getattr(self, "_persisted_signal_count", 0) > 0
+                and self.SIGNALS_PERSIST_FILE.exists()
+            )
 
             # Check if factor definitions changed since last signal generation
             current_factor_fp = self._get_factor_fingerprint()
             persisted_factor_fp = getattr(self, "_persisted_factor_fingerprint", "")
-            factors_changed = current_factor_fp != persisted_factor_fp
+            factors_changed = bool(persisted_factor_fp) and (
+                current_factor_fp != persisted_factor_fp
+            )
 
-            # Check if label configuration changed (e.g., T+2 -> T+5)
+            # Check if label configuration changed (e.g., trend-momentum -> executable 5d)
             label_changed = False
             try:
                 import yaml
@@ -986,12 +998,25 @@ class OnlineServingService:
                 region_label = label_config.get(region, {})
                 current_label_expr = region_label.get("expression", "")
                 persisted_label_expr = getattr(self, "_persisted_label_expression", "")
-                if persisted_label_expr and current_label_expr != persisted_label_expr:
-                    label_changed = True
+                # Detect change when prior label is known and differs, OR when
+                # signals/meta exist from an older run that never recorded a label
+                # (forces retrain after label redesign + restart).
+                if current_label_expr:
+                    if persisted_label_expr:
+                        label_changed = current_label_expr != persisted_label_expr
+                    elif has_persisted_signals or getattr(
+                        self, "_persisted_signal_count", 0
+                    ) > 0:
+                        label_changed = True
+                        self.logger.info(
+                            "Label expression missing from persisted meta; "
+                            "forcing retrain for current label"
+                        )
+                if label_changed and persisted_label_expr:
                     self.logger.info(
                         f"Label expression changed: {persisted_label_expr} -> {current_label_expr}"
                     )
-                # Store current label for next comparison
+                # Store current label for next comparison / meta persist
                 self._persisted_label_expression = current_label_expr
             except Exception as e:
                 self.logger.warning(f"Failed to check label config changes: {e}")
@@ -1050,9 +1075,36 @@ class OnlineServingService:
                     f"{signal_count} signals already exist. "
                     f"Skipping model training and signal generation."
                 )
+                # Still refresh metrics so evaluation_return / horizon changes apply
+                # without a full retrain.
+                metrics_refresh = {"success": False}
+                try:
+                    if not has_signals_in_memory:
+                        persisted = self._load_persisted_signals()
+                        if persisted is not None and self._online_manager is None:
+                            # Metrics only need the series; init path may be heavy.
+                            # Prefer in-memory OnlineManager signals when available.
+                            pass
+                        signals_for_metrics = persisted
+                    else:
+                        signals_for_metrics = self._online_manager.get_signals()
+
+                    if signals_for_metrics is not None and len(signals_for_metrics) > 0:
+                        if not self._ensure_qlib_initialized():
+                            raise RuntimeError("Qlib not initialized for metrics refresh")
+                        metrics_refresh = self._calculate_model_metrics(
+                            signals_for_metrics
+                        )
+                        self.logger.info(
+                            f"Short-circuit metrics refresh: {metrics_refresh.get('success')}"
+                        )
+                except Exception as e:
+                    self.logger.warning(f"Short-circuit metrics refresh failed: {e}")
+
                 result["success"] = True
                 result["message"] = "No new data - using existing signals"
                 result["skipped_reason"] = "data_unchanged"
+                result["metrics_refreshed"] = bool(metrics_refresh.get("success"))
                 result["total_duration_seconds"] = round(time.time() - start_time, 2)
                 result["steps"].append(
                     {
@@ -1064,6 +1116,9 @@ class OnlineServingService:
                             "signal_count": signal_count,
                             "source": (
                                 "memory" if has_signals_in_memory else "persisted"
+                            ),
+                            "metrics_refreshed": bool(
+                                metrics_refresh.get("success")
                             ),
                         },
                     }
@@ -1261,11 +1316,24 @@ class OnlineServingService:
                 )
                 self.logger.info(f"Using date from signals index: {effective_cur_time}")
 
-            # Step 1: Apply trend filter - only select ETFs in uptrend
-            signals = self._apply_trend_filter(signals)
-            self.logger.info(
-                f"Portfolio generation: {len(signals)} signals after trend filter"
-            )
+            # Step 1: Optional trend filter (off by default — execution.trend_filter_enabled)
+            if qlib_config.trend_filter_enabled:
+                ma_short = int(
+                    qlib_config.execution.get("trend_filter_ma_short", 5)
+                )
+                ma_long = int(qlib_config.execution.get("trend_filter_ma_long", 20))
+                signals = self._apply_trend_filter(
+                    signals, ma_short=ma_short, ma_long=ma_long
+                )
+                self.logger.info(
+                    f"Portfolio generation: {len(signals)} signals after trend filter "
+                    f"(MA{ma_short}>MA{ma_long})"
+                )
+            else:
+                self.logger.info(
+                    f"Portfolio generation: trend filter disabled; "
+                    f"using {len(signals)} model signals as-is"
+                )
 
             # Check if we have any signals left after filtering
             if len(signals) == 0:
@@ -3390,71 +3458,32 @@ class OnlineServingService:
 
             self.logger.info(f"Calculating metrics for {len(signals)} predictions...")
 
-            # Get label data
-            # We need to load the same label data that was used in training
+            # Load UNSCALED tradable evaluation returns for metrics (not training label).
+            # Training uses vol-scaled expression; IC/LS/groups must use real PnL.
+            return_horizon_days = 1
             try:
-                # Get the task template to extract label configuration
-                task_template = self._build_task_template()
-                dataset_config = task_template.get("dataset", {})
+                region_label = qlib_config.get_label_region_config()
+                eval_expr = region_label.get("evaluation_return") or region_label.get(
+                    "expression",
+                    "Ref($close, -6) / Ref($open, -1) - 1",
+                )
+                return_horizon_days = int(
+                    region_label.get("evaluation_horizon_days", 5)
+                )
+                label_expr = [eval_expr]
+                self.logger.info(
+                    f"Loading evaluation returns for metrics: {label_expr} "
+                    f"(horizon={return_horizon_days}d; training label is separate)"
+                )
 
-                # Extract label from dataset config
-                # The label is typically in dataset.kwargs.segments.train
-                label_expr = None
-                if "kwargs" in dataset_config:
-                    kwargs = dataset_config["kwargs"]
-                    if "handler" in kwargs:
-                        handler_config = kwargs["handler"]
-                        if (
-                            isinstance(handler_config, dict)
-                            and "kwargs" in handler_config
-                        ):
-                            handler_kwargs = handler_config["kwargs"]
-                            if "label" in handler_kwargs:
-                                label_expr = handler_kwargs["label"]
-
-                if label_expr is None:
-                    # Load label expression from system_config.yaml
-                    # This ensures consistency with training configuration
-                    try:
-                        import yaml
-
-                        config_path = (
-                            Path(__file__).parent.parent
-                            / "config"
-                            / "qlib"
-                            / "system_config.yaml"
-                        )
-                        with open(config_path, "r") as f:
-                            system_config = yaml.safe_load(f)
-                        label_config = system_config.get("label_config", {})
-                        region = system_config.get("data", {}).get("region", "cn")
-                        region_label = label_config.get(region, {})
-                        label_expr_str = region_label.get(
-                            "expression", "Ref($close, -5) / $close - 1"
-                        )
-                        label_expr = [label_expr_str]
-                        self.logger.info(
-                            f"Loaded label expression from config: {label_expr}"
-                        )
-                    except Exception as e:
-                        self.logger.warning(
-                            f"Failed to load label from config: {e}, using default T+5"
-                        )
-                        label_expr = ["Ref($close, -5) / $close - 1"]
-
-                self.logger.info(f"Loading label data with expression: {label_expr}")
-
-                # Load label data using Qlib
                 from qlib.data import D
 
-                # Get instruments and date range from signals
                 instruments = (
                     signals.index.get_level_values("instrument").unique().tolist()
                 )
                 start_date = signals.index.get_level_values("datetime").min()
                 end_date = signals.index.get_level_values("datetime").max()
 
-                # Load label data
                 label_data = D.features(
                     instruments=instruments,
                     fields=label_expr,
@@ -3464,19 +3493,21 @@ class OnlineServingService:
                 )
 
                 if label_data is None or label_data.empty:
-                    self.logger.warning("Failed to load label data")
-                    return {"success": False, "error": "Failed to load label data"}
+                    self.logger.warning("Failed to load evaluation return data")
+                    return {
+                        "success": False,
+                        "error": "Failed to load evaluation return data",
+                    }
 
-                # Convert to Series (take first column if multiple)
                 if isinstance(label_data, pd.DataFrame):
                     label = label_data.iloc[:, 0]
                 else:
                     label = label_data
 
-                self.logger.info(f"Loaded {len(label)} label samples")
+                self.logger.info(f"Loaded {len(label)} evaluation return samples")
 
             except Exception as e:
-                self.logger.error(f"Failed to load label data: {e}")
+                self.logger.error(f"Failed to load evaluation return data: {e}")
                 return {
                     "success": False,
                     "error": f"Failed to load label data: {str(e)}",
@@ -3539,10 +3570,14 @@ class OnlineServingService:
             except Exception as e:
                 self.logger.warning(f"Failed to load latest model: {e}")
 
-            # Calculate metrics
+            # Calculate metrics against tradable evaluation returns
             metrics_service = get_model_metrics_service()
             all_metrics = metrics_service.calculate_all_metrics(
-                pred=signals, label=label, model=latest_model, freq=self._freq
+                pred=signals,
+                label=label,
+                model=latest_model,
+                freq=self._freq,
+                return_horizon_days=return_horizon_days,
             )
 
             # Save metrics
@@ -3845,9 +3880,23 @@ class OnlineServingService:
                 f"TopK Dropout Strategy config: topk={topk}, n_drop={n_drop}, account={account}"
             )
 
-            # Apply trend filter: only select ETFs in uptrend (MA5 > MA20)
-            signals = self._apply_trend_filter(signals)
-            self.logger.info(f"Signals after trend filter: {len(signals)} entries")
+            # Optional trend filter (same knob as portfolio generation)
+            if qlib_config.trend_filter_enabled:
+                ma_short = int(
+                    qlib_config.execution.get("trend_filter_ma_short", 5)
+                )
+                ma_long = int(qlib_config.execution.get("trend_filter_ma_long", 20))
+                signals = self._apply_trend_filter(
+                    signals, ma_short=ma_short, ma_long=ma_long
+                )
+                self.logger.info(
+                    f"Signals after trend filter: {len(signals)} entries "
+                    f"(MA{ma_short}>MA{ma_long})"
+                )
+            else:
+                self.logger.info(
+                    f"Trend filter disabled for backtest; using {len(signals)} signals"
+                )
 
             # Check if we have any signals left after filtering
             if len(signals) == 0:
@@ -3879,6 +3928,27 @@ class OnlineServingService:
 
             self.logger.info(f"Backtest period: {start_time} to {end_time}")
 
+            # Prefer system execution.deal_price; fall back to backtest_config YAML
+            bt_exchange = (
+                qlib_config.backtest_params.get("exchange_kwargs", {}) or {}
+            )
+            deal_price = qlib_config.deal_price or bt_exchange.get(
+                "deal_price", "open"
+            )
+            exchange_kwargs = {
+                "limit_threshold": bt_exchange.get("limit_threshold", 0.095),
+                "deal_price": deal_price,
+                "open_cost": bt_exchange.get("open_cost", 0.0001),
+                "close_cost": bt_exchange.get("close_cost", 0.0001),
+                "min_cost": bt_exchange.get("min_cost", 0),
+            }
+            if "trade_unit" in bt_exchange:
+                exchange_kwargs["trade_unit"] = bt_exchange["trade_unit"]
+            self.logger.info(
+                f"Backtest exchange_kwargs: deal_price={deal_price}, "
+                f"trend_filter_enabled={qlib_config.trend_filter_enabled}"
+            )
+
             # Execute backtest using Qlib's standard framework
             backtest_result = backtest_daily(
                 start_time=start_time,
@@ -3886,13 +3956,7 @@ class OnlineServingService:
                 strategy=strategy,
                 account=account,
                 benchmark=benchmark,
-                exchange_kwargs={
-                    "limit_threshold": 0.095,
-                    "deal_price": "close",
-                    "open_cost": 0.0001,
-                    "close_cost": 0.0001,
-                    "min_cost": 0,
-                },
+                exchange_kwargs=exchange_kwargs,
             )
 
             # backtest_daily returns (report_normal, positions_normal) tuple
